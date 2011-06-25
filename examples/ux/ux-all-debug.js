@@ -1,6 +1,6 @@
 /*!
- * Ext JS Library 3.1.1
- * Copyright(c) 2006-2010 Ext JS, LLC
+ * Ext JS Library 3.2.0
+ * Copyright(c) 2006-2010 Ext JS, Inc.
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
@@ -3554,6 +3554,12 @@ Ext.ux.menu.RangeMenu = Ext.extend(Ext.menu.Menu, {
         this.updateTask.delay(this.updateBuffer);
     }
 });
+/*!
+ * Ext JS Library 3.2.0
+ * Copyright(c) 2006-2010 Ext JS, Inc.
+ * licensing@extjs.com
+ * http://www.extjs.com/license
+ */
 Ext.ns('Ext.ux.grid');
 
 /**
@@ -3678,8 +3684,14 @@ summaryRenderer: function(v, params, data){
     },
 
     doWidth : function(col, w, tw){
-        var gs = this.view.getGroups(), s;
-        for(var i = 0, len = gs.length; i < len; i++){
+        if(!this.isGrouped()){
+            return;
+        }
+        var gs = this.view.getGroups(),
+            len = gs.length,
+            i = 0,
+            s;
+        for(; i < len; ++i){
             s = gs[i].childNodes[2];
             s.style.width = tw;
             s.firstChild.style.width = tw;
@@ -3688,26 +3700,47 @@ summaryRenderer: function(v, params, data){
     },
 
     doAllWidths : function(ws, tw){
-        var gs = this.view.getGroups(), s, cells, wlen = ws.length;
-        for(var i = 0, len = gs.length; i < len; i++){
+        if(!this.isGrouped()){
+            return;
+        }
+        var gs = this.view.getGroups(),
+            len = gs.length,
+            i = 0,
+            j, 
+            s, 
+            cells, 
+            wlen = ws.length;
+            
+        for(; i < len; i++){
             s = gs[i].childNodes[2];
             s.style.width = tw;
             s.firstChild.style.width = tw;
             cells = s.firstChild.rows[0].childNodes;
-            for(var j = 0; j < wlen; j++){
+            for(j = 0; j < wlen; j++){
                 cells[j].style.width = ws[j];
             }
         }
     },
 
     doHidden : function(col, hidden, tw){
-        var gs = this.view.getGroups(), s, display = hidden ? 'none' : '';
-        for(var i = 0, len = gs.length; i < len; i++){
+        if(!this.isGrouped()){
+            return;
+        }
+        var gs = this.view.getGroups(),
+            len = gs.length,
+            i = 0,
+            s, 
+            display = hidden ? 'none' : '';
+        for(; i < len; i++){
             s = gs[i].childNodes[2];
             s.style.width = tw;
             s.firstChild.style.width = tw;
             s.firstChild.rows[0].childNodes[col].style.display = display;
         }
+    },
+    
+    isGrouped : function(){
+        return !Ext.isEmpty(this.grid.getStore().groupField);
     },
 
     // Note: requires that all (or the first) record in the
@@ -4808,15 +4841,18 @@ Ext.ux.grid.LockingGridView = Ext.extend(Ext.grid.GridView, {
     unlockText : 'Unlock',
     rowBorderWidth : 1,
     lockedBorderWidth : 1,
+    
     /*
      * This option ensures that height between the rows is synchronized
      * between the locked and unlocked sides. This option only needs to be used
-     * when the row heights isn't predictable.
+     * when the row heights aren't predictable.
      */
     syncHeights: false,
+    
     initTemplates : function(){
         var ts = this.templates || {};
-        if(!ts.master){
+        
+        if (!ts.master) {
             ts.master = new Ext.Template(
                 '<div class="x-grid3" hidefocus="true">',
                     '<div class="x-grid3-locked">',
@@ -4832,38 +4868,48 @@ Ext.ux.grid.LockingGridView = Ext.extend(Ext.grid.GridView, {
                 '</div>'
             );
         }
+        
         this.templates = ts;
+        
         Ext.ux.grid.LockingGridView.superclass.initTemplates.call(this);
     },
+    
     getEditorParent : function(ed){
         return this.el.dom;
     },
+    
     initElements : function(){
-        var E = Ext.Element;
-        var el = this.grid.getGridEl().dom.firstChild;
-        var cs = el.childNodes;
-        this.el = new E(el);
-        this.lockedWrap = new E(cs[0]);
-        this.lockedHd = new E(this.lockedWrap.dom.firstChild);
-        this.lockedInnerHd = this.lockedHd.dom.firstChild;
+        var E  = Ext.Element,
+            el = this.grid.getGridEl().dom.firstChild,
+            cs = el.childNodes;
+            
+        this.el             = new E(el);
+        this.lockedWrap     = new E(cs[0]);
+        this.lockedHd       = new E(this.lockedWrap.dom.firstChild);
+        this.lockedInnerHd  = this.lockedHd.dom.firstChild;
         this.lockedScroller = new E(this.lockedWrap.dom.childNodes[1]);
-        this.lockedBody = new E(this.lockedScroller.dom.firstChild);
-        this.mainWrap = new E(cs[1]);
-        this.mainHd = new E(this.mainWrap.dom.firstChild);
-        if(this.grid.hideHeaders){
+        this.lockedBody     = new E(this.lockedScroller.dom.firstChild);
+        this.mainWrap       = new E(cs[1]);
+        this.mainHd         = new E(this.mainWrap.dom.firstChild);
+        
+        if (this.grid.hideHeaders) {
             this.lockedHd.setDisplayed(false);
             this.mainHd.setDisplayed(false);
         }
-        this.innerHd = this.mainHd.dom.firstChild;
+        
+        this.innerHd  = this.mainHd.dom.firstChild;
         this.scroller = new E(this.mainWrap.dom.childNodes[1]);
+        
         if(this.forceFit){
             this.scroller.setStyle('overflow-x', 'hidden');
         }
-        this.mainBody = new E(this.scroller.dom.firstChild);
-        this.focusEl = new E(this.scroller.dom.childNodes[1]);
-        this.focusEl.swallowEvent('click', true);
+        
+        this.mainBody     = new E(this.scroller.dom.firstChild);
+        this.focusEl      = new E(this.scroller.dom.childNodes[1]);
         this.resizeMarker = new E(cs[2]);
-        this.resizeProxy = new E(cs[3]);
+        this.resizeProxy  = new E(cs[3]);
+        
+        this.focusEl.swallowEvent('click', true);
     },
     
     getLockedRows : function(){
@@ -7195,6 +7241,7 @@ Ext.ux.grid.RowExpander = Ext.extend(Ext.util.Observable, {
     width : 20,
     sortable : false,
     fixed : true,
+    hideable: false,
     menuDisabled : true,
     dataIndex : '',
     id : 'expander',
@@ -7508,7 +7555,12 @@ Ext.ux.layout.RowLayout = Ext.extend(Ext.layout.ContainerLayout, {
 
     // private
     onLayout : function(ct, target){
-        var rs = ct.items.items, len = rs.length, r, i;
+        var rs = ct.items.items,
+            len = rs.length,
+            r,
+            m,
+            i,
+            margins = [];
 
         this.renderAll(ct, target);
 
@@ -7528,8 +7580,10 @@ Ext.ux.layout.RowLayout = Ext.extend(Ext.layout.ContainerLayout, {
 
         for(i = 0; i < len; i++){
             r = rs[i];
+            m = r.getPositionEl().getMargins('tb');
+            margins[i] = m;
             if(!r.rowHeight){
-                ph -= (r.getHeight() + r.getEl().getMargins('tb'));
+                ph -= (r.getHeight() + m);
             }
         }
 
@@ -7537,8 +7591,9 @@ Ext.ux.layout.RowLayout = Ext.extend(Ext.layout.ContainerLayout, {
 
         for(i = 0; i < len; i++){
             r = rs[i];
+            m = margins[i];
             if(r.rowHeight){
-                r.setSize({height: Math.floor(r.rowHeight*ph) - r.getEl().getMargins('tb')});
+                r.setSize({height: Math.floor(r.rowHeight*ph) - m});
             }
         }
 
@@ -7549,7 +7604,6 @@ Ext.ux.layout.RowLayout = Ext.extend(Ext.layout.ContainerLayout, {
                 var ts = this.getLayoutTargetSize();
                 if (ts.width != size.width){
                     this.adjustmentPass = true;
-                    this.layoutTargetSize = ts;
                     this.onLayout(ct, target);
                 }
             }
@@ -7809,31 +7863,8 @@ Ext.reg('selectbox', Ext.ux.form.SelectBox);
 //backwards compat
 Ext.ux.SelectBox = Ext.ux.form.SelectBox;
 /**
- * @class Ext.ux.SliderTip
- * @extends Ext.Tip
- * Simple plugin for using an Ext.Tip with a slider to show the slider value
+ * Plugin for PagingToolbar which replaces the textfield input with a slider 
  */
-Ext.ux.SliderTip = Ext.extend(Ext.Tip, {
-    minWidth: 10,
-    offsets : [0, -10],
-    init : function(slider){
-        slider.on('dragstart', this.onSlide, this);
-        slider.on('drag', this.onSlide, this);
-        slider.on('dragend', this.hide, this);
-        slider.on('destroy', this.destroy, this);
-    },
-
-    onSlide : function(slider){
-        this.show();
-        this.body.update(this.getText(slider));
-        this.doAutoWidth();
-        this.el.alignTo(slider.thumb, 'b-t?', this.offsets);
-    },
-
-    getText : function(slider){
-        return String(slider.getValue());
-    }
-});
 Ext.ux.SlidingPager = Ext.extend(Object, {
     init : function(pbar){
         var idx = pbar.items.indexOf(pbar.inputItem);
@@ -7844,9 +7875,9 @@ Ext.ux.SlidingPager = Ext.extend(Object, {
             width: 114,
             minValue: 1,
             maxValue: 1,
-            plugins: new Ext.ux.SliderTip({
-                getText : function(s){
-                    return String.format('Page <b>{0}</b> of <b>{1}</b>', s.value, s.maxValue);
+            plugins: new Ext.slider.Tip({
+                getText : function(thumb) {
+                    return String.format('Page <b>{0}</b> of <b>{1}</b>', thumb.value, thumb.slider.maxValue);
                 }
             }),
             listeners: {
@@ -8903,56 +8934,147 @@ Ext.reg('statusbar', Ext.ux.StatusBar);
 /**
  * @class Ext.ux.TabCloseMenu
  * @extends Object 
- * Plugin (ptype = 'tabclosemenu') for adding a close context menu to tabs.
+ * Plugin (ptype = 'tabclosemenu') for adding a close context menu to tabs. Note that the menu respects
+ * the closable configuration on the tab. As such, commands like remove others and remove all will not
+ * remove items that are not closable.
  * 
+ * @constructor
+ * @param {Object} config The configuration options
  * @ptype tabclosemenu
  */
-Ext.ux.TabCloseMenu = function(){
-    var tabs, menu, ctxItem;
-    this.init = function(tp){
-        tabs = tp;
-        tabs.on('contextmenu', onContextMenu);
-    };
+Ext.ux.TabCloseMenu = Ext.extend(Object, {
+    /**
+     * @cfg {String} closeTabText
+     * The text for closing the current tab. Defaults to <tt>'Close Tab'</tt>.
+     */
+    closeTabText: 'Close Tab',
 
-    function onContextMenu(ts, item, e){
-        if(!menu){ // create context menu on first right click
-            menu = new Ext.menu.Menu({            
-            items: [{
-                id: tabs.id + '-close',
-                text: 'Close Tab',
-                handler : function(){
-                    tabs.remove(ctxItem);
-                }
-            },{
-                id: tabs.id + '-close-others',
-                text: 'Close Other Tabs',
-                handler : function(){
-                    tabs.items.each(function(item){
-                        if(item.closable && item != ctxItem){
-                            tabs.remove(item);
-                        }
-                    });
-                }
-            }]});
-        }
-        ctxItem = item;
-        var items = menu.items;
-        items.get(tabs.id + '-close').setDisabled(!item.closable);
-        var disableOthers = true;
+    /**
+     * @cfg {String} closeOtherTabsText
+     * The text for closing all tabs except the current one. Defaults to <tt>'Close Other Tabs'</tt>.
+     */
+    closeOtherTabsText: 'Close Other Tabs',
+    
+    /**
+     * @cfg {Boolean} showCloseAll
+     * Indicates whether to show the 'Close All' option. Defaults to <tt>true</tt>. 
+     */
+    showCloseAll: true,
+
+    /**
+     * @cfg {String} closeAllTabsText
+     * <p>The text for closing all tabs. Defaults to <tt>'Close All Tabs'</tt>.
+     */
+    closeAllTabsText: 'Close All Tabs',
+    
+    constructor : function(config){
+        Ext.apply(this, config || {});
+    },
+
+    //public
+    init : function(tabs){
+        this.tabs = tabs;
+        tabs.on({
+            scope: this,
+            contextmenu: this.onContextMenu,
+            destroy: this.destroy
+        });
+    },
+    
+    destroy : function(){
+        Ext.destroy(this.menu);
+        delete this.menu;
+        delete this.tabs;
+        delete this.active;    
+    },
+
+    // private
+    onContextMenu : function(tabs, item, e){
+        this.active = item;
+        var m = this.createMenu(),
+            disableAll = true,
+            disableOthers = true,
+            closeAll = m.getComponent('closeall');
+        
+        m.getComponent('close').setDisabled(!item.closable);
         tabs.items.each(function(){
-            if(this != item && this.closable){
-                disableOthers = false;
-                return false;
+            if(this.closable){
+                disableAll = false;
+                if(this != item){
+                    disableOthers = false;
+                    return false;
+                }
             }
         });
-        items.get(tabs.id + '-close-others').setDisabled(disableOthers);
-	e.stopEvent();
-        menu.showAt(e.getPoint());
+        m.getComponent('closeothers').setDisabled(disableOthers);
+        if(closeAll){
+            closeAll.setDisabled(disableAll);
+        }
+        
+        e.stopEvent();
+        m.showAt(e.getPoint());
+    },
+    
+    createMenu : function(){
+        if(!this.menu){
+            var items = [{
+                itemId: 'close',
+                text: this.closeTabText,
+                scope: this,
+                handler: this.onClose
+            }];
+            if(this.showCloseAll){
+                items.push('-');
+            }
+            items.push({
+                itemId: 'closeothers',
+                text: this.closeOtherTabsText,
+                scope: this,
+                handler: this.onCloseOthers
+            });
+            if(this.showCloseAll){
+                items.push({
+                    itemId: 'closeall',
+                    text: this.closeAllTabsText,
+                    scope: this,
+                    handler: this.onCloseAll
+                });
+            }
+            this.menu = new Ext.menu.Menu({
+                items: items
+            });
+        }
+        return this.menu;
+    },
+    
+    onClose : function(){
+        this.tabs.remove(this.active);
+    },
+    
+    onCloseOthers : function(){
+        this.doClose(true);
+    },
+    
+    onCloseAll : function(){
+        this.doClose(false);
+    },
+    
+    doClose : function(excludeActive){
+        var items = [];
+        this.tabs.items.each(function(item){
+            if(item.closable){
+                if(!excludeActive || item != this.active){
+                    items.push(item);
+                }    
+            }
+        }, this);
+        Ext.each(items, function(item){
+            this.tabs.remove(item);
+        }, this);
     }
-};
+});
 
-Ext.preg('tabclosemenu', Ext.ux.TabCloseMenu);
-Ext.ns('Ext.ux.grid');
+Ext.preg('tabclosemenu', Ext.ux.TabCloseMenu);Ext.ns('Ext.ux.grid');
 
 /**
  * @class Ext.ux.grid.TableGrid
@@ -9541,31 +9663,25 @@ Ext.ux.ValidationStatus = Ext.extend(Ext.Component, {
             this.showErrors();
         }
     }
-});(function() {    
+});(function() {
     Ext.override(Ext.list.Column, {
-        init : function() {            
-            if(!this.type){
-                this.type = "auto";
-            }
-
-            var st = Ext.data.SortTypes;
-            // named sortTypes are supported, here we look them up
-            if(typeof this.sortType == "string"){
-                this.sortType = st[this.sortType];
-            }
-
-            // set default sortType for strings and dates
-            if(!this.sortType){
-                switch(this.type){
-                    case "string":
-                        this.sortType = st.asUCString;
-                        break;
-                    case "date":
-                        this.sortType = st.asDate;
-                        break;
-                    default:
-                        this.sortType = st.none;
+        init : function() {    
+            var types = Ext.data.Types,
+                st = this.sortType;
+                    
+            if(this.type){
+                if(Ext.isString(this.type)){
+                    this.type = Ext.data.Types[this.type.toUpperCase()] || types.AUTO;
                 }
+            }else{
+                this.type = types.AUTO;
+            }
+
+            // named sortTypes are supported, here we look them up
+            if(Ext.isString(st)){
+                this.sortType = Ext.data.SortTypes[st];
+            }else if(Ext.isEmpty(st)){
+                this.sortType = this.type.sortType;
             }
         }
     });

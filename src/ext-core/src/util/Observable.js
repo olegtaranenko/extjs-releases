@@ -1,6 +1,6 @@
 /*!
- * Ext JS Library 3.1.1
- * Copyright(c) 2006-2010 Ext JS, LLC
+ * Ext JS Library 3.2.0
+ * Copyright(c) 2006-2010 Ext JS, Inc.
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
@@ -302,7 +302,7 @@ this.addEvents('storeloaded', 'storecleared');
      * @return {Boolean} True if the event is being listened for, else false
      */
     hasListener : function(eventName){
-        var e = this.events[eventName];
+        var e = this.events[eventName.toLowerCase()];
         return ISOBJECT(e) && e.listeners.length > 0;
     },
 
@@ -442,13 +442,13 @@ EXTUTIL.Event.prototype = {
     findListener : function(fn, scope){
         var list = this.listeners,
             i = list.length,
-            l,
-            s;
-        while(i--) {
+            l;
+            
+        scope = scope || this.obj;
+        while(i--){
             l = list[i];
-            if(l) {
-                s = l.scope;
-                if(l.fn == fn && (s == scope || s == this.obj)){
+            if(l){
+                if(l.fn == fn && l.scope == scope){
                     return i;
                 }
             }

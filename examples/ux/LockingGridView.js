@@ -1,6 +1,6 @@
 /*!
- * Ext JS Library 3.1.1
- * Copyright(c) 2006-2010 Ext JS, LLC
+ * Ext JS Library 3.2.0
+ * Copyright(c) 2006-2010 Ext JS, Inc.
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
@@ -11,15 +11,18 @@ Ext.ux.grid.LockingGridView = Ext.extend(Ext.grid.GridView, {
     unlockText : 'Unlock',
     rowBorderWidth : 1,
     lockedBorderWidth : 1,
+    
     /*
      * This option ensures that height between the rows is synchronized
      * between the locked and unlocked sides. This option only needs to be used
-     * when the row heights isn't predictable.
+     * when the row heights aren't predictable.
      */
     syncHeights: false,
+    
     initTemplates : function(){
         var ts = this.templates || {};
-        if(!ts.master){
+        
+        if (!ts.master) {
             ts.master = new Ext.Template(
                 '<div class="x-grid3" hidefocus="true">',
                     '<div class="x-grid3-locked">',
@@ -35,38 +38,48 @@ Ext.ux.grid.LockingGridView = Ext.extend(Ext.grid.GridView, {
                 '</div>'
             );
         }
+        
         this.templates = ts;
+        
         Ext.ux.grid.LockingGridView.superclass.initTemplates.call(this);
     },
+    
     getEditorParent : function(ed){
         return this.el.dom;
     },
+    
     initElements : function(){
-        var E = Ext.Element;
-        var el = this.grid.getGridEl().dom.firstChild;
-        var cs = el.childNodes;
-        this.el = new E(el);
-        this.lockedWrap = new E(cs[0]);
-        this.lockedHd = new E(this.lockedWrap.dom.firstChild);
-        this.lockedInnerHd = this.lockedHd.dom.firstChild;
+        var E  = Ext.Element,
+            el = this.grid.getGridEl().dom.firstChild,
+            cs = el.childNodes;
+            
+        this.el             = new E(el);
+        this.lockedWrap     = new E(cs[0]);
+        this.lockedHd       = new E(this.lockedWrap.dom.firstChild);
+        this.lockedInnerHd  = this.lockedHd.dom.firstChild;
         this.lockedScroller = new E(this.lockedWrap.dom.childNodes[1]);
-        this.lockedBody = new E(this.lockedScroller.dom.firstChild);
-        this.mainWrap = new E(cs[1]);
-        this.mainHd = new E(this.mainWrap.dom.firstChild);
-        if(this.grid.hideHeaders){
+        this.lockedBody     = new E(this.lockedScroller.dom.firstChild);
+        this.mainWrap       = new E(cs[1]);
+        this.mainHd         = new E(this.mainWrap.dom.firstChild);
+        
+        if (this.grid.hideHeaders) {
             this.lockedHd.setDisplayed(false);
             this.mainHd.setDisplayed(false);
         }
-        this.innerHd = this.mainHd.dom.firstChild;
+        
+        this.innerHd  = this.mainHd.dom.firstChild;
         this.scroller = new E(this.mainWrap.dom.childNodes[1]);
+        
         if(this.forceFit){
             this.scroller.setStyle('overflow-x', 'hidden');
         }
-        this.mainBody = new E(this.scroller.dom.firstChild);
-        this.focusEl = new E(this.scroller.dom.childNodes[1]);
-        this.focusEl.swallowEvent('click', true);
+        
+        this.mainBody     = new E(this.scroller.dom.firstChild);
+        this.focusEl      = new E(this.scroller.dom.childNodes[1]);
         this.resizeMarker = new E(cs[2]);
-        this.resizeProxy = new E(cs[3]);
+        this.resizeProxy  = new E(cs[3]);
+        
+        this.focusEl.swallowEvent('click', true);
     },
     
     getLockedRows : function(){

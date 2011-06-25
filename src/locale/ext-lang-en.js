@@ -1,6 +1,6 @@
 /*!
- * Ext JS Library 3.1.1
- * Copyright(c) 2006-2010 Ext JS, LLC
+ * Ext JS Library 3.2.0
+ * Copyright(c) 2006-2010 Ext JS, Inc.
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
@@ -13,6 +13,10 @@
  */
 
 Ext.UpdateManager.defaults.indicatorText = '<div class="loading-indicator">Loading...</div>';
+
+if(Ext.data.Types){
+    Ext.data.Types.stripRe = /[\$,%]/g;
+}
 
 if(Ext.DataView){
   Ext.DataView.prototype.emptyText = "";

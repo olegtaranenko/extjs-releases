@@ -1,6 +1,6 @@
 /*!
- * Ext JS Library 3.1.1
- * Copyright(c) 2006-2010 Ext JS, LLC
+ * Ext JS Library 3.2.0
+ * Copyright(c) 2006-2010 Ext JS, Inc.
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
@@ -528,7 +528,7 @@ var combo = new Ext.form.ComboBox({
     // private
     initList : function(){
         if(!this.list){
-            var cls = 'x-combo-list';
+            var cls = 'x-combo-list',
                 listParent = Ext.getDom(this.getListParent() || Ext.getBody()),
                 zindex = parseInt(Ext.fly(listParent).getStyle('z-index'), 10);
 
@@ -768,7 +768,11 @@ var menu = new Ext.menu.Menu({
             },
 
             "tab" : function(e){
-                this.collapse();
+                if (this.forceSelection === true) {
+                    this.collapse();
+                } else {
+                    this.onViewClick(false);
+                }
                 return true;
             },
 
@@ -932,7 +936,7 @@ var menu = new Ext.menu.Menu({
                 // onSelect may have already set the value and by doing so
                 // set the display field properly.  Let's not wipe out the
                 // valueField here by just sending the displayField.
-                if (val == rec.get(this.displayField)){
+                if (val == rec.get(this.displayField) && this.value == rec.get(this.valueField)){
                     return;
                 }
                 val = rec.get(this.valueField || this.displayField);
@@ -1248,7 +1252,7 @@ var menu = new Ext.menu.Menu({
 
     // private
     collapseIf : function(e){
-        if(!e.within(this.wrap) && !e.within(this.list)){
+        if(!this.isDestroyed && !e.within(this.wrap) && !e.within(this.list)){
             this.collapse();
         }
     },

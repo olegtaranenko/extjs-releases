@@ -1,6 +1,6 @@
 /*!
- * Ext JS Library 3.1.1
- * Copyright(c) 2006-2010 Ext JS, LLC
+ * Ext JS Library 3.2.0
+ * Copyright(c) 2006-2010 Ext JS, Inc.
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
@@ -723,7 +723,10 @@ function(grid, rowIndex, columnIndex, e) {
         this.on('bodyresize', v.layout, v);
         v.layout();
         if(this.deferRowRender){
-            v.afterRender.defer(10, this.view);
+            if (!this.deferRowRenderTask){
+                this.deferRowRenderTask = new Ext.util.DelayedTask(v.afterRender, this.view);
+            }
+            this.deferRowRenderTask.delay(10);
         }else{
             v.afterRender();
         }
@@ -764,6 +767,9 @@ function(grid, rowIndex, columnIndex, e) {
 
     // private
     onDestroy : function(){
+        if (this.deferRowRenderTask && this.deferRowRenderTask.cancel){
+            this.deferRowRenderTask.cancel();
+        }
         if(this.rendered){
             Ext.destroy(this.view, this.loadMask);
         }else if(this.store && this.store.autoDestroy){
@@ -776,31 +782,6 @@ function(grid, rowIndex, columnIndex, e) {
 
     // private
     processEvent : function(name, e){
-        this.fireEvent(name, e);
-        var t = e.getTarget(),
-            v = this.view,
-            header = v.findHeaderIndex(t);
-
-        if(header !== false){
-            this.fireEvent('header' + name, this, header, e);
-        }else{
-            var row = v.findRowIndex(t),
-                cell,
-                body;
-            if(row !== false){
-                this.fireEvent('row' + name, this, row, e);
-                cell = v.findCellIndex(t);
-                body = v.findRowBody(t);
-                if(cell !== false){
-                    this.fireEvent('cell' + name, this, row, cell, e);
-                }
-                if(body){
-                    this.fireEvent('rowbody' + name, this, row, e);
-                }
-            }else{
-                this.fireEvent('container' + name, this, e);
-            }
-        }
         this.view.processEvent(name, e);
     },
 
@@ -826,11 +807,12 @@ function(grid, rowIndex, columnIndex, e) {
 
     // private
     walkCells : function(row, col, step, fn, scope){
-        var cm = this.colModel,
-            clen = cm.getColumnCount(),
-            ds = this.store,
-            rlen = ds.getCount(),
+        var cm    = this.colModel,
+            clen  = cm.getColumnCount(),
+            ds    = this.store,
+            rlen  = ds.getCount(),
             first = true;
+
         if(step < 0){
             if(col < 0){
                 row--;
