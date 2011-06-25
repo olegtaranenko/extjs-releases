@@ -1934,7 +1934,7 @@ Employee = Ext.extend(Ext.util.Observable, {
         this.listeners = config.listeners;
 
         // Call our superclass constructor to complete construction process.
-        Employee.superclass.constructor.call(config)
+        Employee.superclass.constructor.call(this, config)
     }
 });
 </code></pre>
@@ -10511,7 +10511,7 @@ Date.parseFunctions['x-date-format'] = myDateParser;
      * may be used as a format string to {@link #format}. Example:</p><pre><code>
 Date.formatFunctions['x-date-format'] = myDateFormatter;
 </code></pre>
-     * <p>A formatting function should return a string repesentation of the passed Date object:<div class="mdetail-params"><ul>
+     * <p>A formatting function should return a string repesentation of the passed Date object, and is passed the following parameters:<div class="mdetail-params"><ul>
      * <li><code>date</code> : Date<div class="sub-desc">The Date to format.</div></li>
      * </ul></div></p>
      * <p>To enable date strings to also be <i>parsed</i> according to that format, a corresponding
@@ -11618,7 +11618,8 @@ console.group('ISO-8601 Granularity Test (see http://www.w3.org/TR/NOTE-datetime
     console.log('Date.parseDate("1997-13-16T19:20:30.45+01:00", "c", true)= %o', Date.parseDate("1997-13-16T19:20:30.45+01:00", "c", true)); // strict date parsing with invalid month value
 console.groupEnd();
 
-//*//**
+//*/
+/**
  * @class Ext.util.MixedCollection
  * @extends Ext.util.Observable
  * A Collection class that maintains both numeric indexes and keys and exposes events.
@@ -13456,13 +13457,16 @@ Ext.extend(Ext.util.ClickRepeater, Ext.util.Observable, {
     enable: function(){
         if(this.disabled){
             this.el.on('mousedown', this.handleMouseDown, this);
+            if (Ext.isIE){
+                this.el.on('dblclick', this.handleDblClick, this);
+            }
             if(this.preventDefault || this.stopDefault){
                 this.el.on('click', this.eventOptions, this);
             }
         }
         this.disabled = false;
     },
-    
+
     /**
      * Disables the repeater and stops events from firing.
      */
@@ -13477,31 +13481,39 @@ Ext.extend(Ext.util.ClickRepeater, Ext.util.Observable, {
         }
         this.disabled = true;
     },
-    
+
     /**
      * Convenience function for setting disabled/enabled by boolean.
      * @param {Boolean} disabled
      */
     setDisabled: function(disabled){
-        this[disabled ? 'disable' : 'enable']();    
+        this[disabled ? 'disable' : 'enable']();
     },
-    
+
     eventOptions: function(e){
         if(this.preventDefault){
             e.preventDefault();
         }
         if(this.stopDefault){
             e.stopEvent();
-        }       
+        }
     },
-    
+
     // private
     destroy : function() {
         this.disable(true);
         Ext.destroy(this.el);
         this.purgeListeners();
     },
-    
+
+    handleDblClick : function(){
+        clearTimeout(this.timer);
+        this.el.blur();
+
+        this.fireEvent("mousedown", this);
+        this.fireEvent("click", this);
+    },
+
     // private
     handleMouseDown : function(){
         clearTimeout(this.timer);
@@ -13517,10 +13529,10 @@ Ext.extend(Ext.util.ClickRepeater, Ext.util.Observable, {
         this.fireEvent("mousedown", this);
         this.fireEvent("click", this);
 
-//      Do not honor delay or interval if acceleration wanted.
+        // Do not honor delay or interval if acceleration wanted.
         if (this.accelerate) {
             this.delay = 400;
-	    }
+        }
         this.timer = this.click.defer(this.delay || this.interval, this);
     },
 
@@ -16554,41 +16566,39 @@ Ext.extend(Ext.Layer, Ext.Element, {
     // this code can execute repeatedly in milliseconds (i.e. during a drag) so
     // code size was sacrificed for effeciency (e.g. no getBox/setBox, no XY calls)
     sync : function(doShow){
-        var sw = this.shadow;
-        if(!this.updating && this.isVisible() && (sw || this.useShim)){
-            var sh = this.getShim();
-
-            var w = this.getWidth(),
-                h = this.getHeight();
-
-            var l = this.getLeft(true),
+        var shadow = this.shadow;
+        if(!this.updating && this.isVisible() && (shadow || this.useShim)){
+            var shim = this.getShim(),
+                w = this.getWidth(),
+                h = this.getHeight(),
+                l = this.getLeft(true),
                 t = this.getTop(true);
 
-            if(sw && !this.shadowDisabled){
-                if(doShow && !sw.isVisible()){
-                    sw.show(this);
+            if(shadow && !this.shadowDisabled){
+                if(doShow && !shadow.isVisible()){
+                    shadow.show(this);
                 }else{
-                    sw.realign(l, t, w, h);
+                    shadow.realign(l, t, w, h);
                 }
-                if(sh){
+                if(shim){
                     if(doShow){
-                       sh.show();
+                       shim.show();
                     }
                     // fit the shim behind the shadow, so it is shimmed too
-                    var a = sw.adjusts, s = sh.dom.style;
-                    s.left = (Math.min(l, l+a.l))+'px';
-                    s.top = (Math.min(t, t+a.t))+'px';
-                    s.width = (w+a.w)+'px';
-                    s.height = (h+a.h)+'px';
+                    var shadowAdj = shadow.el.getXY(), shimStyle = shim.dom.style,
+                        shadowSize = shadow.el.getSize();
+                    shimStyle.left = (shadowAdj[0])+'px';
+                    shimStyle.top = (shadowAdj[1])+'px';
+                    shimStyle.width = (shadowSize.width)+'px';
+                    shimStyle.height = (shadowSize.height)+'px';
                 }
-            }else if(sh){
+            }else if(shim){
                 if(doShow){
-                   sh.show();
+                   shim.show();
                 }
-                sh.setSize(w, h);
-                sh.setLeftTop(l, t);
+                shim.setSize(w, h);
+                shim.setLeftTop(l, t);
             }
-
         }
     },
 
@@ -19867,6 +19877,14 @@ Ext.layout.ColumnLayout = Ext.extend(Ext.layout.ContainerLayout, {
         var target = this.container.getLayoutTarget(), ret;
         if (target) {
             ret = target.getViewSize();
+
+            // IE in strict mode will return a width of 0 on the 1st pass of getViewSize.
+            // Use getStyleSize to verify the 0 width, the adjustment pass will then work properly
+            // with getViewSize
+            if (Ext.isIE && Ext.isStrict && ret.width == 0){
+                ret =  target.getStyleSize();
+            }
+
             ret.width -= target.getPadding('lr');
             ret.height -= target.getPadding('tb');
         }
@@ -23659,8 +23677,8 @@ new Ext.Panel({
                 };
             }
         });
-        //@compat addButton and buttons could possibly be removed
-        //@target 4.0
+        // @compat addButton and buttons could possibly be removed
+        // @target 4.0
         /**
          * This Panel's Array of buttons as created from the <code>{@link #buttons}</code>
          * config property. Read only.
@@ -24013,6 +24031,10 @@ new Ext.Panel({
     onLayout : function(shallow, force){
         Ext.Panel.superclass.onLayout.apply(this, arguments);
         if(this.hasLayout && this.toolbars.length > 0){
+            if(!Ext.isNumber(this.width)){
+                delete this.lastSize;
+                this.setSize(this.width, this.height);
+            }
             Ext.each(this.toolbars, function(tb){
                 tb.doLayout(undefined, force);
             });
@@ -24272,7 +24294,10 @@ new Ext.Panel({
     },
 
     // private
-    onResize : function(w, h){
+    onResize : function(adjWidth, adjHeight, rawWidth, rawHeight){
+        var w = adjWidth,
+            h = adjHeight;
+
         if(Ext.isDefined(w) || Ext.isDefined(h)){
             if(!this.collapsed){
                 // First, set the the Panel's body width.
@@ -24336,7 +24361,8 @@ new Ext.Panel({
             this.onBodyResize(w, h);
         }
         this.syncShadow();
-        Ext.Panel.superclass.onResize.call(this);
+        Ext.Panel.superclass.onResize.call(this, adjWidth, adjHeight, rawWidth, rawHeight);
+
     },
 
     // private
@@ -26581,8 +26607,8 @@ Ext.ProgressBar = Ext.extend(Ext.BoxComponent, {
         );
 
         this.el = position ? tpl.insertBefore(position, {cls: this.baseCls}, true)
-        	: tpl.append(ct, {cls: this.baseCls}, true);
-		        
+            : tpl.append(ct, {cls: this.baseCls}, true);
+                
         if(this.id){
             this.el.dom.id = this.id;
         }
@@ -34405,12 +34431,8 @@ Ext.data.DataReader.prototype = {
             rs.phantom = false; // <-- That's what it's all about
             rs._phid = rs.id;  // <-- copy phantom-id -> _phid, so we can remap in Store#onCreateRecords
             rs.id = this.getId(data);
+            rs.data = data;
 
-            rs.fields.each(function(f) {
-                if (data[f.name] !== f.defaultValue) {
-                    rs.data[f.name] = data[f.name];
-                }
-            });
             rs.commit();
         }
     },
@@ -34442,11 +34464,7 @@ Ext.data.DataReader.prototype = {
                 data = data.shift();
             }
             if (this.isData(data)) {
-                rs.fields.each(function(f) {
-                    if (data[f.name] !== f.defaultValue) {
-                        rs.data[f.name] = data[f.name];
-                    }
-                });
+                rs.data = Ext.apply(rs.data, data);
             }
             rs.commit();
         }
@@ -37132,6 +37150,10 @@ Ext.data.GroupingStore = Ext.extend(Ext.data.Store, {
                     groupDir : this.groupDir
                 });
             }
+            var lo = this.lastOptions;
+            if(lo && lo.params){
+                delete lo.params.groupBy;
+            }
         }
     },
 
@@ -37319,12 +37341,17 @@ paramOrder: 'param1|param2|param'
      * @protected
      */
     onWrite : function(action, trans, result, res, rs) {
-        var data = trans.reader.extractData(result, false);
-        this.fireEvent("write", this, action, data, res, rs, trans.request.arg);
-        trans.request.callback.call(trans.request.scope, data, res, true);
+        var data = trans.reader.extractData(result[trans.reader.meta.root], false);
+        var success = result[trans.reader.meta.successProperty];
+        success = (success !== false);
+        if (success){
+            this.fireEvent("write", this, action, data, res, rs, trans.request.arg);
+        }else{
+            this.fireEvent('exception', this, 'remote', action, trans, result, rs);
+        }
+        trans.request.callback.call(trans.request.scope, data, res, success);
     }
 });
-
 /**
  * @class Ext.data.DirectStore
  * @extends Ext.data.Store
@@ -37377,52 +37404,52 @@ Ext.reg('directstore', Ext.data.DirectStore);
  * @class Ext.Direct
  * @extends Ext.util.Observable
  * <p><b><u>Overview</u></b></p>
- * 
+ *
  * <p>Ext.Direct aims to streamline communication between the client and server
  * by providing a single interface that reduces the amount of common code
  * typically required to validate data and handle returned data packets
  * (reading data, error conditions, etc).</p>
- *  
+ *
  * <p>The Ext.direct namespace includes several classes for a closer integration
  * with the server-side. The Ext.data namespace also includes classes for working
  * with Ext.data.Stores which are backed by data from an Ext.Direct method.</p>
- * 
+ *
  * <p><b><u>Specification</u></b></p>
- * 
- * <p>For additional information consult the 
+ *
+ * <p>For additional information consult the
  * <a href="http://extjs.com/products/extjs/direct.php">Ext.Direct Specification</a>.</p>
- *   
+ *
  * <p><b><u>Providers</u></b></p>
- * 
+ *
  * <p>Ext.Direct uses a provider architecture, where one or more providers are
  * used to transport data to and from the server. There are several providers
  * that exist in the core at the moment:</p><div class="mdetail-params"><ul>
- * 
+ *
  * <li>{@link Ext.direct.JsonProvider JsonProvider} for simple JSON operations</li>
  * <li>{@link Ext.direct.PollingProvider PollingProvider} for repeated requests</li>
  * <li>{@link Ext.direct.RemotingProvider RemotingProvider} exposes server side
  * on the client.</li>
  * </ul></div>
- * 
+ *
  * <p>A provider does not need to be invoked directly, providers are added via
  * {@link Ext.Direct}.{@link Ext.Direct#add add}.</p>
- * 
+ *
  * <p><b><u>Router</u></b></p>
- * 
+ *
  * <p>Ext.Direct utilizes a "router" on the server to direct requests from the client
  * to the appropriate server-side method. Because the Ext.Direct API is completely
  * platform-agnostic, you could completely swap out a Java based server solution
  * and replace it with one that uses C# without changing the client side JavaScript
  * at all.</p>
- * 
+ *
  * <p><b><u>Server side events</u></b></p>
- * 
+ *
  * <p>Custom events from the server may be handled by the client by adding
  * listeners, for example:</p>
  * <pre><code>
 {"type":"event","name":"message","data":"Successfully polled at: 11:19:30 am"}
 
-// add a handler for a 'message' event sent by the server 
+// add a handler for a 'message' event sent by the server
 Ext.Direct.on('message', function(e){
     out.append(String.format('&lt;p>&lt;i>{0}&lt;/i>&lt;/p>', e.data));
             out.el.scrollTo('t', 100000, true);
@@ -37459,7 +37486,7 @@ Ext.Direct = Ext.extend(Ext.util.Observable, {
         LOGIN: 'login',
         SERVER: 'exception'
     },
-    
+
     // private
     constructor: function(){
         this.addEvents(
@@ -37487,14 +37514,14 @@ Ext.Direct = Ext.extend(Ext.util.Observable, {
      * <pre><code>
 var pollProv = new Ext.direct.PollingProvider({
     url: 'php/poll2.php'
-}); 
+});
 
 Ext.Direct.addProvider(
     {
-        "type":"remoting",       // create a {@link Ext.direct.RemotingProvider} 
+        "type":"remoting",       // create a {@link Ext.direct.RemotingProvider}
         "url":"php\/router.php", // url to connect to the Ext.Direct server-side router.
-        "actions":{              // each property within the actions object represents a Class 
-            "TestAction":[       // array of methods within each server side Class   
+        "actions":{              // each property within the actions object represents a Class
+            "TestAction":[       // array of methods within each server side Class
             {
                 "name":"doEcho", // name of method
                 "len":1
@@ -37503,13 +37530,13 @@ Ext.Direct.addProvider(
                 "len":1
             },{
                 "name":"doForm",
-                "formHandler":true, // handle form on server with Ext.Direct.Transaction 
+                "formHandler":true, // handle form on server with Ext.Direct.Transaction
                 "len":1
             }]
         },
         "namespace":"myApplication",// namespace to create the Remoting Provider in
     },{
-        type: 'polling', // create a {@link Ext.direct.PollingProvider} 
+        type: 'polling', // create a {@link Ext.direct.PollingProvider}
         url:  'php/poll.php'
     },
     pollProv // reference to previously created instance
@@ -37519,7 +37546,7 @@ Ext.Direct.addProvider(
      * or config object for a Provider) or any number of Provider descriptions as arguments.  Each
      * Provider description instructs Ext.Direct how to create client-side stub methods.
      */
-    addProvider : function(provider){        
+    addProvider : function(provider){
         var a = arguments;
         if(a.length > 1){
             for(var i = 0, len = a.length; i < len; i++){
@@ -37527,7 +37554,7 @@ Ext.Direct.addProvider(
             }
             return;
         }
-        
+
         // if provider has not already been instantiated
         if(!provider.events){
             provider = new Ext.Direct.PROVIDERS[provider.type](provider);
@@ -37550,14 +37577,14 @@ Ext.Direct.addProvider(
      * Retrieve a {@link Ext.direct.Provider provider} by the
      * <b><tt>{@link Ext.direct.Provider#id id}</tt></b> specified when the provider is
      * {@link #addProvider added}.
-     * @param {String} id Unique identifier assigned to the provider when calling {@link #addProvider} 
+     * @param {String} id Unique identifier assigned to the provider when calling {@link #addProvider}
      */
     getProvider : function(id){
         return this.providers[id];
     },
 
     removeProvider : function(id){
-        var provider = id.id ? id : this.providers[id.id];
+        var provider = id.id ? id : this.providers[id];
         provider.un('data', this.onProviderData, this);
         provider.un('exception', this.onProviderException, this);
         delete this.providers[provider.id];
@@ -38311,16 +38338,10 @@ TestAction.multiply(
         }
     }
 });
-Ext.Direct.PROVIDERS['remoting'] = Ext.direct.RemotingProvider;/*!
- * Ext JS Library 3.1.1
- * Copyright(c) 2006-2010 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
- */
-/**
+Ext.Direct.PROVIDERS['remoting'] = Ext.direct.RemotingProvider;/**
  * @class Ext.Resizable
  * @extends Ext.util.Observable
- * <p>Applies drag handles to an element to make it resizable. The drag handles are inserted into the element 
+ * <p>Applies drag handles to an element to make it resizable. The drag handles are inserted into the element
  * and positioned absolute. Some elements, such as a textarea or image, don't support this. To overcome that, you can wrap
  * the textarea in a div and set 'resizeChild' to true (or to the id of the element), <b>or</b> set wrap:true in your config and
  * the element will be wrapped for you automatically.</p>
@@ -38358,7 +38379,7 @@ resizer.on('resize', myHandler);
  * @param {Object} config configuration options
   */
 Ext.Resizable = Ext.extend(Ext.util.Observable, {
-    
+
     constructor: function(el, config){
         this.el = Ext.get(el);
         if(config && config.wrap){
@@ -38376,7 +38397,7 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
                 config.adjustments = 'auto';
             }
         }
-    
+
         /**
          * The proxy Element that is resized in place of the real Element during the resize operation.
          * This may be queried using {@link Ext.Element#getBox} to provide the new area to resize to.
@@ -38387,9 +38408,9 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
         this.proxy = this.el.createProxy({tag: 'div', cls: 'x-resizable-proxy', id: this.el.id + '-rzproxy'}, Ext.getBody());
         this.proxy.unselectable();
         this.proxy.enableDisplayMode('block');
-    
+
         Ext.apply(this, config);
-        
+
         if(this.pinned){
             this.disableTrackOver = true;
             this.el.addClass('x-resizable-pinned');
@@ -38418,13 +38439,13 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
         }
         // legacy
         this.corner = this.southeast;
-        
+
         if(this.handles.indexOf('n') != -1 || this.handles.indexOf('w') != -1){
             this.updateBox = true;
-        }   
-       
+        }
+
         this.activeHandle = null;
-        
+
         if(this.resizeChild){
             if(typeof this.resizeChild == 'boolean'){
                 this.resizeChild = Ext.get(this.el.dom.firstChild, true);
@@ -38432,7 +38453,7 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
                 this.resizeChild = Ext.get(this.resizeChild, true);
             }
         }
-        
+
         if(this.adjustments == 'auto'){
             var rc = this.resizeChild;
             var hw = this.west, he = this.east, hn = this.north, hs = this.south;
@@ -38443,19 +38464,19 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
             }
             this.adjustments = [
                 (he ? -he.el.getWidth() : 0) + (hw ? -hw.el.getWidth() : 0),
-                (hn ? -hn.el.getHeight() : 0) + (hs ? -hs.el.getHeight() : 0) -1 
+                (hn ? -hn.el.getHeight() : 0) + (hs ? -hs.el.getHeight() : 0) -1
             ];
         }
-        
+
         if(this.draggable){
-            this.dd = this.dynamic ? 
+            this.dd = this.dynamic ?
                 this.el.initDD(null) : this.el.initDDProxy(null, {dragElId: this.proxy.id});
             this.dd.setHandleElId(this.resizeChild ? this.resizeChild.id : this.el.id);
             if(this.constrainTo){
                 this.dd.constrainTo(this.constrainTo);
             }
         }
-        
+
         this.addEvents(
             /**
              * @event beforeresize
@@ -38474,7 +38495,7 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
              */
             'resize'
         );
-        
+
         if(this.width !== null && this.height !== null){
             this.resizeTo(this.width, this.height);
         }else{
@@ -38483,7 +38504,7 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
         if(Ext.isIE){
             this.el.dom.style.zoom = 1;
         }
-        Ext.Resizable.superclass.constructor.call(this);    
+        Ext.Resizable.superclass.constructor.call(this);
     },
 
     /**
@@ -38524,7 +38545,7 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
     enabled : true,
     /**
      * @property enabled Writable. False if resizing is disabled.
-     * @type Boolean 
+     * @type Boolean
      */
     /**
      * @cfg {String} handles String consisting of the resize handles to display (defaults to undefined).
@@ -38588,8 +38609,8 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
      */
     preserveRatio : false,
     /**
-     * @cfg {Boolean/String/Element} resizeChild True to resize the first child, or id/element to resize (defaults to false) 
-     */ 
+     * @cfg {Boolean/String/Element} resizeChild True to resize the first child, or id/element to resize (defaults to false)
+     */
     resizeChild : false,
     /**
      * @cfg {Boolean} transparent True for transparent handles. This is only applied at config time. (defaults to false)
@@ -38606,7 +38627,7 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
      * @cfg {String} handleCls A css class to add to each handle. Defaults to <tt>''</tt>.
      */
 
-    
+
     /**
      * Perform a manual resize and fires the 'resize' event.
      * @param {Number} width
@@ -38669,7 +38690,7 @@ Ext.Resizable = Ext.extend(Ext.util.Observable, {
             e.stopEvent();
             this.activeHandle = handle;
             this.startSizing(e, handle);
-        }          
+        }
     },
 
     // private
@@ -38785,11 +38806,11 @@ new Ext.Panel({
     // private
     constrain : function(v, diff, m, mx){
         if(v - diff < m){
-            diff = v - m;    
+            diff = v - m;
         }else if(v - diff > mx){
-            diff = v - mx; 
+            diff = v - mx;
         }
-        return diff;                
+        return diff;
     },
 
     // private
@@ -38804,15 +38825,15 @@ new Ext.Panel({
             //var curXY = this.startPoint;
             var curSize = this.curSize || this.startBox,
                 x = this.startBox.x, y = this.startBox.y,
-                ox = x, 
+                ox = x,
                 oy = y,
-                w = curSize.width, 
+                w = curSize.width,
                 h = curSize.height,
-                ow = w, 
+                ow = w,
                 oh = h,
-                mw = this.minWidth, 
+                mw = this.minWidth,
                 mh = this.minHeight,
-                mxw = this.maxWidth, 
+                mxw = this.maxWidth,
                 mxh = this.maxHeight,
                 wi = this.widthIncrement,
                 hi = this.heightIncrement,
@@ -38822,10 +38843,10 @@ new Ext.Panel({
                 pos = this.activeHandle.position,
                 tw,
                 th;
-            
+
             switch(pos){
                 case 'east':
-                    w += diffX; 
+                    w += diffX;
                     w = Math.min(Math.max(mw, w), mxw);
                     break;
                 case 'south':
@@ -38833,7 +38854,7 @@ new Ext.Panel({
                     h = Math.min(Math.max(mh, h), mxh);
                     break;
                 case 'southeast':
-                    w += diffX; 
+                    w += diffX;
                     h += diffY;
                     w = Math.min(Math.max(mw, w), mxw);
                     h = Math.min(Math.max(mh, h), mxh);
@@ -38849,7 +38870,7 @@ new Ext.Panel({
                     w -= diffX;
                     break;
                 case 'northeast':
-                    w += diffX; 
+                    w += diffX;
                     w = Math.min(Math.max(mw, w), mxw);
                     diffY = this.constrain(h, diffY, mh, mxh);
                     y += diffY;
@@ -38871,7 +38892,7 @@ new Ext.Panel({
                     w -= diffX;
                     break;
             }
-            
+
             var sw = this.snap(w, wi, mw);
             var sh = this.snap(h, hi, mh);
             if(sw != w || sh != h){
@@ -38896,7 +38917,7 @@ new Ext.Panel({
                 w = sw;
                 h = sh;
             }
-            
+
             if(this.preserveRatio){
                 switch(pos){
                     case 'southeast':
@@ -38947,7 +38968,7 @@ new Ext.Panel({
                         y += th - h;
                         x += tw - w;
                         break;
-                        
+
                 }
             }
             this.proxy.setBounds(x, y, w, h);
@@ -38971,7 +38992,7 @@ new Ext.Panel({
             this.el.removeClass('x-resizable-over');
         }
     },
-    
+
     /**
      * Returns the element this component is bound to.
      * @return {Ext.Element}
@@ -38979,7 +39000,7 @@ new Ext.Panel({
     getEl : function(){
         return this.el;
     },
-    
+
     /**
      * Returns the resizeChild element (or null).
      * @return {Ext.Element}
@@ -38987,9 +39008,9 @@ new Ext.Panel({
     getResizeChild : function(){
         return this.resizeChild;
     },
-    
+
     /**
-     * Destroys this resizable. If the element was wrapped and 
+     * Destroys this resizable. If the element was wrapped and
      * removeEl is not true then the element remains.
      * @param {Boolean} removeEl (optional) true to remove the element from the DOM
      */
@@ -38997,7 +39018,7 @@ new Ext.Panel({
         Ext.destroy(this.dd, this.overlay, this.proxy);
         this.overlay = null;
         this.proxy = null;
-        
+
         var ps = Ext.Resizable.positions;
         for(var k in ps){
             if(typeof ps[k] != 'function' && this[ps[k]]){
@@ -39047,7 +39068,7 @@ Ext.Resizable.Handle = Ext.extend(Object, {
             this.el.setOpacity(0);
         }
         if(!Ext.isEmpty(cls)){
-            this.el.addClass(cls);    
+            this.el.addClass(cls);
         }
         this.el.on('mousedown', this.onMouseDown, this);
         if(!disableTrackOver){
@@ -39056,12 +39077,12 @@ Ext.Resizable.Handle = Ext.extend(Object, {
                 mouseover: this.onMouseOver,
                 mouseout: this.onMouseOut
             });
-        }        
+        }
     },
-    
+
     // private
     afterResize : function(rz){
-        // do nothing    
+        // do nothing
     },
     // private
     onMouseDown : function(e){
@@ -39965,6 +39986,7 @@ Ext.Window = Ext.extend(Ext.Panel, {
           Ext.EventManager.on(window, 'scroll', this.doAnchor, this,
               {buffer: tm == 'number' ? monitorScroll : 50});
       }
+      this.doAnchor();
       return this;
     },
 
@@ -43360,7 +43382,7 @@ new Ext.TabPanel({
         if(this.rendered){
             var items = this.items;
             this.initTab(c, items.indexOf(c));
-            if(items.getCount() == 1){
+            if(items.getCount() == 1 && !this.collapsed){
                 this.syncSize();
             }
             this.delegateUpdates();
@@ -47079,7 +47101,14 @@ myGrid.on('render', function(grid) {
     onDocMouseDown : function(e){
         if(this.autoHide !== true && !this.closable && !e.within(this.el.dom)){
             this.disable();
-            this.enable.defer(100, this);
+            this.doEnable.defer(100, this);
+        }
+    },
+    
+    // private
+    doEnable : function(){
+        if(!this.isDestroyed){
+            this.enable();
         }
     },
 
@@ -47992,7 +48021,7 @@ new Ext.tree.TreePanel({
      * @return {Node}
      */
     setRootNode : function(node){
-        Ext.destroy(this.root);
+        this.destroyRoot();
         if(!node.render){ // attributes passed
             node = this.loader.createNode(node);
         }
@@ -48244,9 +48273,20 @@ new Ext.tree.TreePanel({
             Ext.dd.ScrollManager.unregister(this.body);
             Ext.destroy(this.dropZone, this.dragZone);
         }
-        Ext.destroy(this.root, this.loader);
+        this.destroyRoot();
+        Ext.destroy(this.loader);
         this.nodeHash = this.root = this.loader = null;
         Ext.tree.TreePanel.superclass.beforeDestroy.call(this);
+    },
+    
+    /**
+     * Destroy the root node. Not included by itself because we need to pass the silent parameter.
+     * @private
+     */
+    destroyRoot : function(){
+        if(this.root && this.root.destroy){
+            this.root.destroy(true);
+        }
     }
 
     /**
@@ -49377,10 +49417,11 @@ Ext.extend(Ext.data.Node, Ext.util.Observable, {
             this.setLastChild(node.previousSibling);
         }
 
-        node.clear();
         this.fireEvent("remove", this.ownerTree, this, node);
         if(destroy){
-            node.destroy();
+            node.destroy(true);
+        }else{
+            node.clear();
         }
         return node;
     },
@@ -49398,13 +49439,23 @@ Ext.extend(Ext.data.Node, Ext.util.Observable, {
     /**
      * Destroys the node.
      */
-    destroy : function(){
-        this.purgeListeners();
-        this.clear(true);  
-        Ext.each(this.childNodes, function(n){
-            n.destroy();
-        });
-        this.childNodes = null;
+    destroy : function(/* private */ silent){
+        /*
+         * Silent is to be used in a number of cases
+         * 1) When setRootNode is called.
+         * 2) When destroy on the tree is called
+         * 3) For destroying child nodes on a node
+         */
+        if(silent === true){
+            this.purgeListeners();
+            this.clear(true);
+            Ext.each(this.childNodes, function(n){
+                n.destroy(true);
+            });
+            this.childNodes = null;
+        }else{
+            this.remove(true);
+        }
     },
 
     /**
@@ -49958,15 +50009,12 @@ Ext.extend(Ext.tree.TreeNode, Ext.data.Node, {
     // these methods are overridden to provide lazy rendering support
     // private override
     appendChild : function(n){
-        var node, exists;
         if(!n.render && !Ext.isArray(n)){
             n = this.getLoader().createNode(n);
-        }else{
-            exists = !n.parentNode;
         }
-        node = Ext.tree.TreeNode.superclass.appendChild.call(this, n);
-        if(node){
-            this.afterAdd(node, exists);
+        var node = Ext.tree.TreeNode.superclass.appendChild.call(this, n);
+        if(node && this.childrenRendered){
+            node.render();
         }
         this.ui.updateExpandIcon();
         return node;
@@ -49976,46 +50024,35 @@ Ext.extend(Ext.tree.TreeNode, Ext.data.Node, {
     removeChild : function(node, destroy){
         this.ownerTree.getSelectionModel().unselect(node);
         Ext.tree.TreeNode.superclass.removeChild.apply(this, arguments);
-        // if it's been rendered remove dom node
-        if(node.ui.rendered){
-            node.ui.remove();
-        }
-        if(this.childNodes.length < 1){
-            this.collapse(false, false);
-        }else{
-            this.ui.updateExpandIcon();
-        }
-        if(!this.firstChild && !this.isHiddenRoot()) {
-            this.childrenRendered = false;
+        // only update the ui if we're not destroying
+        if(!destroy){
+            // if it's been rendered remove dom node
+            if(node.ui.rendered){
+                node.ui.remove();
+            }
+            if(this.childNodes.length < 1){
+                this.collapse(false, false);
+            }else{
+                this.ui.updateExpandIcon();
+            }
+            if(!this.firstChild && !this.isHiddenRoot()){
+                this.childrenRendered = false;
+            }
         }
         return node;
     },
 
     // private override
     insertBefore : function(node, refNode){
-        var newNode, exists;
         if(!node.render){
             node = this.getLoader().createNode(node);
-        } else {
-            exists = Ext.isObject(node.parentNode);
         }
-        newNode = Ext.tree.TreeNode.superclass.insertBefore.call(this, node, refNode);
-        if(newNode && refNode){
-            this.afterAdd(newNode, exists);
+        var newNode = Ext.tree.TreeNode.superclass.insertBefore.call(this, node, refNode);
+        if(newNode && refNode && this.childrenRendered){
+            node.render();
         }
         this.ui.updateExpandIcon();
         return newNode;
-    },
-    
-    // private
-    afterAdd : function(node, exists){
-        if(this.childrenRendered){
-            // bulk render if the node already exists
-            node.render(exists);
-        }else if(exists){
-            // make sure we update the indent
-            node.renderIndent(true, true);
-        }
     },
 
     /**
@@ -50298,9 +50335,12 @@ Ext.extend(Ext.tree.TreeNode, Ext.data.Node, {
         }
     },
 
-    destroy : function(){
-        this.unselect(true);
-        Ext.tree.TreeNode.superclass.destroy.call(this);
+    //inherit docs
+    destroy : function(silent){
+        if(silent === true){
+            this.unselect(true);
+        }
+        Ext.tree.TreeNode.superclass.destroy.call(this, silent);
         Ext.destroy(this.ui, this.loader);
         this.ui = this.loader = null;
     },
@@ -54313,6 +54353,10 @@ Ext.menu.Menu = Ext.extend(Ext.Container, {
             }
         }else{
             max = this.getHeight();
+        }
+        // Always respect maxHeight 
+        if (this.maxHeight){
+            max = Math.min(this.maxHeight, max);
         }
         if(full > max && max > 0){
             this.activeMax = max - this.scrollerHeight * 2 - this.el.getFrameWidth('tb') - Ext.num(this.el.shadowOffset, 0);
@@ -58425,18 +58469,26 @@ var combo = new Ext.form.ComboBox({
         }
     },
 
+    getParentZIndex : function(){
+        var zindex;
+        if (this.ownerCt){
+            this.findParentBy(function(ct){
+                zindex = parseInt(ct.getPositionEl().getStyle('z-index'), 10);
+                return !!zindex;
+            });
+        }
+        return zindex;
+    },
+
     // private
     initList : function(){
         if(!this.list){
-            var cls = 'x-combo-list',
+            var cls = 'x-combo-list';
                 listParent = Ext.getDom(this.getListParent() || Ext.getBody()),
-                zindex = parseInt(Ext.fly(listParent).getStyle('z-index') ,10);
+                zindex = parseInt(Ext.fly(listParent).getStyle('z-index'), 10);
 
-            if (this.ownerCt && !zindex){
-                this.findParentBy(function(ct){
-                    zindex = parseInt(ct.getPositionEl().getStyle('z-index'), 10);
-                    return !!zindex;
-                });
+            if (!zindex) {
+                zindex = this.getParentZIndex();
             }
 
             this.list = new Ext.Layer({
@@ -58732,7 +58784,7 @@ var menu = new Ext.menu.Menu({
     // private
     onResize : function(w, h){
         Ext.form.ComboBox.superclass.onResize.apply(this, arguments);
-        if(this.isVisible() && this.list){
+        if(!isNaN(w) && this.isVisible() && this.list){
             this.doResize(w);
         }else{
             this.bufferSize = w;
@@ -58820,7 +58872,6 @@ var menu = new Ext.menu.Menu({
 
     // private
     assertValue  : function(){
-
         var val = this.getRawValue(),
             rec = this.findRecord(this.displayField, val);
 
@@ -58833,11 +58884,16 @@ var menu = new Ext.menu.Menu({
             }
         }else{
             if(rec){
+                // onSelect may have already set the value and by doing so
+                // set the display field properly.  Let's not wipe out the
+                // valueField here by just sending the displayField.
+                if (val == rec.get(this.displayField)){
+                    return;
+                }
                 val = rec.get(this.valueField || this.displayField);
             }
             this.setValue(val);
         }
-
     },
 
     // private
@@ -59159,11 +59215,32 @@ var menu = new Ext.menu.Menu({
         if(this.isExpanded() || !this.hasFocus){
             return;
         }
+
+        if(this.title || this.pageSize){
+            this.assetHeight = 0;
+            if(this.title){
+                this.assetHeight += this.header.getHeight();
+            }
+            if(this.pageSize){
+                this.assetHeight += this.footer.getHeight();
+            }
+        }
+
         if(this.bufferSize){
             this.doResize(this.bufferSize);
             delete this.bufferSize;
         }
         this.list.alignTo.apply(this.list, [this.el].concat(this.listAlign));
+
+        // zindex can change, re-check it and set it if necessary
+        var listParent = Ext.getDom(this.getListParent() || Ext.getBody()),
+            zindex = parseInt(Ext.fly(listParent).getStyle('z-index') ,10);
+        if (!zindex){
+            zindex = this.getParentZIndex();
+        }
+        if (zindex) {
+            this.list.setZIndex(zindex + 5);
+        }
         this.list.show();
         if(Ext.isGecko2){
             this.innerList.setOverflow('auto'); // necessary for FF 2.0/Mac
@@ -59239,6 +59316,10 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
      */
     checked : false,
     /**
+     * @cfg {String} boxLabel The text that appears beside the checkbox
+     */
+    boxLabel: '&#160;',
+    /**
      * @cfg {String/Object} autoCreate A DomHelper element spec, or true for a default element spec (defaults to
      * {tag: 'input', type: 'checkbox', autocomplete: 'off'})
      */
@@ -59250,7 +59331,7 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
      * @cfg {String} inputValue The value that should go into the generated input element's value attribute
      */
     /**
-     * @cfg {Function} handler A function called when the {@link #checked} value changes (can be used instead of 
+     * @cfg {Function} handler A function called when the {@link #checked} value changes (can be used instead of
      * handling the check event). The handler is passed the following parameters:
      * <div class="mdetail-params"><ul>
      * <li><b>checkbox</b> : Ext.form.Checkbox<div class="sub-desc">The Checkbox being toggled.</div></li>
@@ -59264,7 +59345,7 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
 
     // private
     actionMode : 'wrap',
-    
+
 	// private
     initComponent : function(){
         Ext.form.Checkbox.superclass.initComponent.call(this);
@@ -59682,11 +59763,22 @@ Ext.form.CheckboxGroup = Ext.extend(Ext.form.Field, {
 
     // inherit docs from Field
     reset : function(){
-        this.eachItem(function(c){
-            if(c.reset){
-                c.reset();
-            }
-        });
+        if (this.originalValue) {
+            // Clear all items
+            this.eachItem(function(c){
+                if(c.setValue){
+                    c.setValue(false);
+                }
+            });
+            // Set items stored in originalValue
+            this.setValue(this.originalValue);
+        } else {
+            this.eachItem(function(c){
+                if(c.reset){
+                    c.reset();
+                }
+            });
+        }
         // Defer the clearInvalid so if BaseForm's collection is being iterated it will be called AFTER it is complete.
         // Important because reset is being called on both the group and the individual items.
         (function() {
@@ -59725,14 +59817,18 @@ myCheckboxGroup.setValue('cb-col-1,cb-col-3');
         return this;
     },
 
+
     onSetValue: function(id, value){
         if(arguments.length == 1){
             if(Ext.isArray(id)){
-                // an array of boolean values
                 Ext.each(id, function(val, idx){
-                    var item = this.items.itemAt(idx);
-                    if(item){
-                        item.setValue(val);
+                    if (Ext.isObject(val) && val.setValue){ // array of checkbox components to be checked
+                        val.setValue(true);
+                    } else { // an array of boolean values
+                        var item = this.items.itemAt(idx);
+                        if(item){
+                            item.setValue(val);
+                        }
                     }
                 }, this);
             }else if(Ext.isObject(id)){
@@ -60077,7 +60173,7 @@ Ext.reg('hidden', Ext.form.Hidden);/**
  * @param {Object} config Configuration options
  */
 Ext.form.BasicForm = Ext.extend(Ext.util.Observable, {
-    
+
     constructor: function(el, config){
         Ext.apply(this, config);
         if(Ext.isString(this.paramOrder)){
@@ -60118,9 +60214,9 @@ Ext.form.BasicForm = Ext.extend(Ext.util.Observable, {
         if(el){
             this.initEl(el);
         }
-        Ext.form.BasicForm.superclass.constructor.call(this);    
+        Ext.form.BasicForm.superclass.constructor.call(this);
     },
-    
+
     /**
      * @cfg {String} method
      * The request method to use (GET or POST) for form actions if one isn't supplied in the action options.
@@ -60226,7 +60322,7 @@ paramOrder: 'param1|param2|param'
      * <tt>{@link #paramOrder}</tt> nullifies this configuration.
      */
     paramsAsHash: false,
-    
+
     /**
      * @cfg {String} waitTitle
      * The default title to show for the waiting message box (defaults to <tt>'Please Wait...'</tt>)
@@ -60536,6 +60632,12 @@ myFormPanel.getForm().submit({
 
     // private
     beforeAction : function(action){
+        // Call HtmlEditor's syncValue before actions
+        this.items.each(function(f){
+            if(f.isFormField && f.syncValue){
+                f.syncValue();
+            }
+        });
         var o = action.options;
         if(o.waitMsg){
             if(this.waitMsgTarget === true){
@@ -60693,7 +60795,7 @@ myFormPanel.getForm().submit({
                 n = f.getName();
                 key = o[n];
                 val = f.getValue();
-                
+
                 if(Ext.isDefined(key)){
                     if(Ext.isArray(key)){
                         o[n].push(val);
@@ -61072,16 +61174,15 @@ Ext.FormPanel = Ext.extend(Ext.Panel, {
     },
 
     // private
-    processRemove : function(c){
-        // If a single form Field, remove it
-        if(this.isField(c)){
-            this.form.remove(c);
-        // If a Container, its already destroyed by the time it gets here.  Remove any references to destroyed fields.
-        }else if(c.findBy){
-            var isDestroyed = function(o) {
-                return !!o.isDestroyed;
+    processRemove: function(c){
+        if(!this.destroying){
+            // If a single form Field, remove it
+            if(this.isField(c)){
+                this.form.remove(c);
+            // If a Container, its already destroyed by the time it gets here.  Remove any references to destroyed fields.
+            }else if (c.findBy){
+                Ext.each(c.findBy(this.isField), this.form.remove, this.form);
             }
-            this.form.items.filterBy(isDestroyed, this.form).each(this.form.remove, this.form);
         }
     },
 
@@ -61161,8 +61262,7 @@ Ext.FormPanel = Ext.extend(Ext.Panel, {
 });
 Ext.reg('form', Ext.FormPanel);
 
-Ext.form.FormPanel = Ext.FormPanel;
-/**
+Ext.form.FormPanel = Ext.FormPanel;/**
  * @class Ext.form.FieldSet
  * @extends Ext.Panel
  * Standard container used for grouping items within a {@link Ext.form.FormPanel form}.
@@ -61232,7 +61332,7 @@ Ext.form.FieldSet = Ext.extend(Ext.Panel, {
      * If <tt>true</tt> is specified, the default DomHelper config object used to create the element
      * is:</p><pre><code>
      * {tag: 'input', type: 'checkbox', name: this.checkboxName || this.id+'-checkbox'}
-     * </code></pre>   
+     * </code></pre>
      */
     /**
      * @cfg {String} checkboxName The name to assign to the fieldset's checkbox if <tt>{@link #checkboxToggle} = true</tt>
@@ -61248,7 +61348,7 @@ Ext.form.FieldSet = Ext.extend(Ext.Panel, {
      * @cfg {Number} labelWidth The width of labels. This property cascades to child containers.
      */
     /**
-     * @cfg {String} itemCls A css class to apply to the <tt>x-form-item</tt> of fields (see 
+     * @cfg {String} itemCls A css class to apply to the <tt>x-form-item</tt> of fields (see
      * {@link Ext.layout.FormLayout}.{@link Ext.layout.FormLayout#fieldTpl fieldTpl} for details).
      * This property cascades to child containers.
      */
@@ -61304,6 +61404,15 @@ Ext.form.FieldSet = Ext.extend(Ext.Panel, {
             this.checkbox.dom.checked = true;
         }
         Ext.form.FieldSet.superclass.onExpand.call(this, doAnim, animArg);
+        // Align errors for subFields
+        this.items.each(function(){
+            if (this.errorEl && this.alignErrorEl){
+                this.alignErrorEl();
+            }
+            if (this.errorIcon && this.alignErrorIcon){
+                this.alignErrorIcon();
+            }
+        })
     },
 
     /**
@@ -61622,7 +61731,7 @@ Ext.form.HtmlEditor = Ext.extend(Ext.form.Field, {
              * @param {Boolean} sourceEdit True if source edit, false if standard editing.
              */
             'editmodechange'
-        )
+        );
     },
 
     // private
@@ -61804,13 +61913,13 @@ Ext.form.HtmlEditor = Ext.extend(Ext.form.Field, {
             }, this);
         }
 
-
         // stop form submits
         this.mon(tb.el, 'click', function(e){
             e.preventDefault();
         });
 
         this.tb = tb;
+        this.tb.doLayout();
     },
 
     onDisable: function(){
@@ -61844,7 +61953,8 @@ Ext.form.HtmlEditor = Ext.extend(Ext.form.Field, {
      * Note: IE8-Standards has unwanted scroller behavior, so the default meta tag forces IE7 compatibility
      */
     getDocMarkup : function(){
-        return '<html><head><meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7" /><style type="text/css">body{border:0;margin:0;padding:3px;height:98%;cursor:text;}</style></head><body></body></html>';
+        var h = Ext.fly(this.iframe).getHeight() - this.iframePad * 2;
+        return String.format('<html><head><style type="text/css">body{border: 0; margin: 0; padding: {0}px; height: {1}px; cursor: text}</style></head><body></body></html>', this.iframePad, h);
     },
 
     // private
@@ -61870,7 +61980,7 @@ Ext.form.HtmlEditor = Ext.extend(Ext.form.Field, {
         this.el.dom.setAttribute('tabIndex', -1);
         this.el.addClass('x-hidden');
         if(Ext.isIE){ // fix IE 1px bogus margin
-            this.el.applyStyles('margin-top:-1px;margin-bottom:-1px;')
+            this.el.applyStyles('margin-top:-1px;margin-bottom:-1px;');
         }
         this.wrap = this.el.wrap({
             cls:'x-html-editor-wrap', cn:{cls:'x-html-editor-tb'}
@@ -62005,6 +62115,7 @@ Ext.form.HtmlEditor = Ext.extend(Ext.form.Field, {
      * @param {Boolean} sourceEdit (optional) True for source edit, false for standard
      */
     toggleSourceEdit : function(sourceEditMode){
+        var iframeHeight, elHeight;
         if(sourceEditMode === undefined){
             sourceEditMode = !this.sourceEditMode;
         }
@@ -62018,13 +62129,16 @@ Ext.form.HtmlEditor = Ext.extend(Ext.form.Field, {
             }
         }
         if(this.sourceEditMode){
+            iframeHeight = Ext.get(this.iframe).getHeight();
             this.disableItems(true);
             this.syncValue();
             this.iframe.className = 'x-hidden';
             this.el.removeClass('x-hidden');
             this.el.dom.removeAttribute('tabIndex');
             this.el.focus();
+            this.el.dom.style.height = iframeHeight + 'px';
         }else{
+            elHeight = parseInt(this.el.dom.style.height, 10);
             if(this.initialized){
                 this.disableItems(this.readOnly);
             }
@@ -62033,11 +62147,7 @@ Ext.form.HtmlEditor = Ext.extend(Ext.form.Field, {
             this.el.addClass('x-hidden');
             this.el.dom.setAttribute('tabIndex', -1);
             this.deferFocus();
-        }
-        var lastSize = this.lastSize;
-        if(lastSize){
-            delete this.lastSize;
-            this.setSize(lastSize);
+            this.iframe.style.height = elHeight + 'px';
         }
         this.fireEvent('editmodechange', this, this.sourceEditMode);
     },
@@ -63818,9 +63928,9 @@ Ext.form.VTypes = function(){
  * <div class="sub-desc"></div></li>
  * <li><b>{@link Ext.grid.ColumnModel Column model}</b> : Column makeup
  * <div class="sub-desc"></div></li>
- * <li><b>{@link Ext.grid.GridView View}</b> : Encapsulates the user interface 
+ * <li><b>{@link Ext.grid.GridView View}</b> : Encapsulates the user interface
  * <div class="sub-desc"></div></li>
- * <li><b>{@link Ext.grid.AbstractSelectionModel selection model}</b> : Selection behavior 
+ * <li><b>{@link Ext.grid.AbstractSelectionModel selection model}</b> : Selection behavior
  * <div class="sub-desc"></div></li>
  * </ul></div>
  * <p>Example usage:</p>
@@ -64034,15 +64144,15 @@ Ext.grid.GridPanel = Ext.extend(Ext.Panel, {
      * before a call to {@link Ext.Component#render render()}.
      */
     view : null,
-    
+
     /**
      * @cfg {Array} bubbleEvents
      * <p>An array of events that, when fired, should be bubbled to any parent container.
-     * See {@link Ext.util.Observable#enableBubble}. 
+     * See {@link Ext.util.Observable#enableBubble}.
      * Defaults to <tt>[]</tt>.
      */
     bubbleEvents: [],
-    
+
     /**
      * @cfg {Object} viewConfig A config object that will be applied to the grid's UI view.  Any of
      * the config options available for {@link Ext.grid.GridView} can be specified here. This option
@@ -64169,7 +64279,7 @@ Ext.grid.GridPanel = Ext.extend(Ext.Panel, {
              * @param {Ext.EventObject} e
              */
             'headermousedown',
-            
+
             /**
              * @event groupmousedown
              * Fires before a group header is clicked. <b>Only applies for grids with a {@link Ext.grid.GroupingView GroupingView}</b>.
@@ -64179,7 +64289,7 @@ Ext.grid.GridPanel = Ext.extend(Ext.Panel, {
              * @param {Ext.EventObject} e
              */
             'groupmousedown',
-            
+
             /**
              * @event rowbodymousedown
              * Fires before the row body is clicked. <b>Only applies for grids with {@link Ext.grid.GridView#enableRowBody enableRowBody} configured.</b>
@@ -64188,7 +64298,7 @@ Ext.grid.GridPanel = Ext.extend(Ext.Panel, {
              * @param {Ext.EventObject} e
              */
             'rowbodymousedown',
-            
+
             /**
              * @event containermousedown
              * Fires before the container is clicked. The container consists of any part of the grid body that is not covered by a row.
@@ -64289,7 +64399,7 @@ function(grid, rowIndex, columnIndex, e) {
              * @param {Ext.EventObject} e
              */
             'containerdblclick',
-            
+
             /**
              * @event rowbodyclick
              * Fires when the row body is clicked. <b>Only applies for grids with {@link Ext.grid.GridView#enableRowBody enableRowBody} configured.</b>
@@ -64306,7 +64416,7 @@ function(grid, rowIndex, columnIndex, e) {
              * @param {Ext.EventObject} e
              */
             'rowbodydblclick',
-            
+
             /**
              * @event rowcontextmenu
              * Fires when a row is right clicked
@@ -64401,7 +64511,7 @@ function(grid, rowIndex, columnIndex, e) {
             'reconfigure',
             /**
              * @event viewready
-             * Fires when the grid view is available (use this for selecting a default row). 
+             * Fires when the grid view is available (use this for selecting a default row).
              * @param {Grid} this
              */
             'viewready'
@@ -64454,7 +64564,7 @@ function(grid, rowIndex, columnIndex, e) {
             s,
             c,
             oldIndex;
-            
+
         if(cs){
             for(var i = 0, len = cs.length; i < len; i++){
                 s = cs[i];
@@ -64495,7 +64605,7 @@ function(grid, rowIndex, columnIndex, e) {
             store = this.store,
             ss,
             gs;
-            
+
         for(var i = 0, c; (c = this.colModel.config[i]); i++){
             o.columns[i] = {
                 id: c.id,
@@ -64584,7 +64694,7 @@ function(grid, rowIndex, columnIndex, e) {
         var t = e.getTarget(),
             v = this.view,
             header = v.findHeaderIndex(t);
-            
+
         if(header !== false){
             this.fireEvent('header' + name, this, header, e);
         }else{
@@ -64630,10 +64740,10 @@ function(grid, rowIndex, columnIndex, e) {
 
     // private
     walkCells : function(row, col, step, fn, scope){
-        var cm = this.colModel, 
+        var cm = this.colModel,
             clen = cm.getColumnCount(),
-            ds = this.store, 
-            rlen = ds.getCount(), 
+            ds = this.store,
+            rlen = ds.getCount(),
             first = true;
         if(step < 0){
             if(col < 0){
@@ -64673,14 +64783,6 @@ function(grid, rowIndex, columnIndex, e) {
             }
         }
         return null;
-    },
-
-    // private
-    onResize : function(){
-        Ext.grid.GridPanel.superclass.onResize.apply(this, arguments);
-        if(this.viewReady){
-            this.view.layout();
-        }
     },
 
     /**
@@ -64743,129 +64845,129 @@ function(grid, rowIndex, columnIndex, e) {
         return String.format(this.ddText, count, count == 1 ? '' : 's');
     }
 
-    /** 
-     * @cfg {String/Number} activeItem 
-     * @hide 
+    /**
+     * @cfg {String/Number} activeItem
+     * @hide
      */
-    /** 
-     * @cfg {Boolean} autoDestroy 
-     * @hide 
+    /**
+     * @cfg {Boolean} autoDestroy
+     * @hide
      */
-    /** 
-     * @cfg {Object/String/Function} autoLoad 
-     * @hide 
+    /**
+     * @cfg {Object/String/Function} autoLoad
+     * @hide
      */
-    /** 
-     * @cfg {Boolean} autoWidth 
-     * @hide 
+    /**
+     * @cfg {Boolean} autoWidth
+     * @hide
      */
-    /** 
-     * @cfg {Boolean/Number} bufferResize 
-     * @hide 
+    /**
+     * @cfg {Boolean/Number} bufferResize
+     * @hide
      */
-    /** 
-     * @cfg {String} defaultType 
-     * @hide 
+    /**
+     * @cfg {String} defaultType
+     * @hide
      */
-    /** 
-     * @cfg {Object} defaults 
-     * @hide 
+    /**
+     * @cfg {Object} defaults
+     * @hide
      */
-    /** 
-     * @cfg {Boolean} hideBorders 
-     * @hide 
+    /**
+     * @cfg {Boolean} hideBorders
+     * @hide
      */
-    /** 
-     * @cfg {Mixed} items 
-     * @hide 
+    /**
+     * @cfg {Mixed} items
+     * @hide
      */
-    /** 
-     * @cfg {String} layout 
-     * @hide 
+    /**
+     * @cfg {String} layout
+     * @hide
      */
-    /** 
-     * @cfg {Object} layoutConfig 
-     * @hide 
+    /**
+     * @cfg {Object} layoutConfig
+     * @hide
      */
-    /** 
-     * @cfg {Boolean} monitorResize 
-     * @hide 
+    /**
+     * @cfg {Boolean} monitorResize
+     * @hide
      */
-    /** 
-     * @property items 
-     * @hide 
+    /**
+     * @property items
+     * @hide
      */
-    /** 
-     * @method add 
-     * @hide 
+    /**
+     * @method add
+     * @hide
      */
-    /** 
-     * @method cascade 
-     * @hide 
+    /**
+     * @method cascade
+     * @hide
      */
-    /** 
-     * @method doLayout 
-     * @hide 
+    /**
+     * @method doLayout
+     * @hide
      */
-    /** 
-     * @method find 
-     * @hide 
+    /**
+     * @method find
+     * @hide
      */
-    /** 
-     * @method findBy 
-     * @hide 
+    /**
+     * @method findBy
+     * @hide
      */
-    /** 
-     * @method findById 
-     * @hide 
+    /**
+     * @method findById
+     * @hide
      */
-    /** 
-     * @method findByType 
-     * @hide 
+    /**
+     * @method findByType
+     * @hide
      */
-    /** 
-     * @method getComponent 
-     * @hide 
+    /**
+     * @method getComponent
+     * @hide
      */
-    /** 
-     * @method getLayout 
-     * @hide 
+    /**
+     * @method getLayout
+     * @hide
      */
-    /** 
-     * @method getUpdater 
-     * @hide 
+    /**
+     * @method getUpdater
+     * @hide
      */
-    /** 
-     * @method insert 
-     * @hide 
+    /**
+     * @method insert
+     * @hide
      */
-    /** 
-     * @method load 
-     * @hide 
+    /**
+     * @method load
+     * @hide
      */
-    /** 
-     * @method remove 
-     * @hide 
+    /**
+     * @method remove
+     * @hide
      */
-    /** 
-     * @event add 
-     * @hide 
+    /**
+     * @event add
+     * @hide
      */
-    /** 
-     * @event afterlayout 
-     * @hide 
+    /**
+     * @event afterlayout
+     * @hide
      */
-    /** 
-     * @event beforeadd 
-     * @hide 
+    /**
+     * @event beforeadd
+     * @hide
      */
-    /** 
-     * @event beforeremove 
-     * @hide 
+    /**
+     * @event beforeremove
+     * @hide
      */
-    /** 
-     * @event remove 
-     * @hide 
+    /**
+     * @event remove
+     * @hide
      */
 
 
@@ -67236,7 +67338,7 @@ Ext.grid.ColumnModel = Ext.extend(Ext.util.Observable, {
      * configuration options to all <tt><b>{@link #columns}</b></tt>.  Configuration options specified with
      * individual {@link Ext.grid.Column column} configs will supersede these <tt><b>{@link #defaults}</b></tt>.
      */
-    
+
     constructor : function(config){
         /**
 	     * An Array of {@link Ext.grid.Column Column definition} objects representing the configuration
@@ -67325,7 +67427,11 @@ Ext.grid.ColumnModel = Ext.extend(Ext.util.Observable, {
         if(!initial){ // cleanup
             delete this.totalWidth;
             for(i = 0, len = this.config.length; i < len; i++){
-                this.config[i].destroy();
+                c = this.config[i];
+                if(c.setEditor){
+                    //check here, in case we have a special column like a CheckboxSelectionModel
+                    c.setEditor(null);
+                }
             }
         }
 
@@ -67465,7 +67571,7 @@ var columns = grid.getColumnModel().getColumnsBy(function(c){
         }
         return this.config[col].renderer;
     },
-    
+
     getRendererScope : function(col){
         return this.config[col].scope;
     },
@@ -67632,7 +67738,7 @@ var grid = new Ext.grid.GridPanel({
     isCellEditable : function(colIndex, rowIndex){
         var c = this.config[colIndex],
             ed = c.editable;
-            
+
         //force boolean
         return !!(ed || (!Ext.isDefined(ed) && c.editor));
     },
@@ -67714,8 +67820,12 @@ myGrid.getColumnModel().setHidden(0, true); // hide column 0 (0 = the first colu
      * Destroys this column model by purging any event listeners, and removing any editors.
      */
     destroy : function(){
+        var c;
         for(var i = 0, len = this.config.length; i < len; i++){
-            this.config[i].destroy();
+            c = this.config[i];
+            if(c.setEditor){
+                c.setEditor(null);
+            }
         }
         this.purgeListeners();
     }
@@ -68416,7 +68526,7 @@ Ext.grid.Column = Ext.extend(Object, {
      * @cfg {Boolean} hidden
      * Optional. <tt>true</tt> to initially hide this column. Defaults to <tt>false</tt>.
      * A hidden column {@link Ext.grid.GridPanel#enableColumnHide may be shown via the header row menu}.
-     * If a column is never to be shown, simply do not include this column in the Column Model at all. 
+     * If a column is never to be shown, simply do not include this column in the Column Model at all.
      */
     /**
      * @cfg {String} tooltip Optional. A text string to use as the column header's tooltip.  If Quicktips
@@ -68521,10 +68631,10 @@ var grid = new Ext.grid.GridPanel({
      * Defaults to true.
      */
     isColumn : true,
-    
+
     constructor : function(config){
         Ext.apply(this, config);
-        
+
         if(Ext.isString(this.renderer)){
             this.renderer = Ext.util.Format[this.renderer];
         }else if(Ext.isObject(this.renderer)){
@@ -68534,7 +68644,7 @@ var grid = new Ext.grid.GridPanel({
         if(!this.scope){
             this.scope = this;
         }
-        
+
         var ed = this.editor;
         delete this.editor;
         this.setEditor(ed);
@@ -68569,14 +68679,20 @@ var grid = new Ext.grid.GridPanel({
     getEditor: function(rowIndex){
         return this.editable !== false ? this.editor : null;
     },
-    
+
     /**
      * Sets a new editor for this column.
      * @param {Ext.Editor/Ext.form.Field} editor The editor to set
      */
     setEditor : function(editor){
-        if(this.editor){
-            this.editor.destroy();
+        var ed = this.editor;
+        if(ed){
+            if(ed.gridEditor){
+                ed.gridEditor.destroy();
+                delete ed.gridEditor;
+            }else{
+                ed.destroy();
+            }
         }
         this.editor = null;
         if(editor){
@@ -68584,16 +68700,8 @@ var grid = new Ext.grid.GridPanel({
             if(!editor.isXType){
                 editor = Ext.create(editor, 'textfield');
             }
-            //check if it's wrapped in an editor
-            if(!editor.startEdit){
-                editor = new Ext.grid.GridEditor(editor);
-            }
             this.editor = editor;
         }
-    },
-    
-    destroy : function(){
-        this.setEditor(null);
     },
 
     /**
@@ -68603,7 +68711,16 @@ var grid = new Ext.grid.GridPanel({
      * @return {Ext.Editor}
      */
     getCellEditor: function(rowIndex){
-        return this.getEditor(rowIndex);
+        var ed = this.getEditor(rowIndex);
+        if(ed){
+            if(!ed.startEdit){
+                if(!ed.gridEditor){
+                    ed.gridEditor = new Ext.grid.GridEditor(ed);
+                }
+                ed = ed.gridEditor;
+            }
+        }
+        return ed;
     }
 });
 
@@ -69358,6 +69475,7 @@ grid.on('validateedit', function(e) {
     // private
     onEditComplete : function(ed, value, startValue){
         this.editing = false;
+        this.lastActiveEditor = this.activeEditor;
         this.activeEditor = null;
 
         var r = ed.record,

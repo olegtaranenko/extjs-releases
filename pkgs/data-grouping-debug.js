@@ -117,6 +117,10 @@ Ext.data.GroupingStore = Ext.extend(Ext.data.Store, {
                     groupDir : this.groupDir
                 });
             }
+            var lo = this.lastOptions;
+            if(lo && lo.params){
+                delete lo.params.groupBy;
+            }
         }
     },
 

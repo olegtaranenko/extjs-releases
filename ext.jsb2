@@ -8,43 +8,43 @@
         "isDebug": true,
         "fileIncludes": [{
             "text": "Ext.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Ext-more.js",
             "path": "src/core/"
         },{
             "text": "TaskMgr.js",
-            "path": "src/util/core/"
+            "path": "src/ext-core/src/util/"
         },{
             "text": "ext-base-begin.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-dom.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-dom-more.js",
             "path": "src/adapter/"
         },{
             "text": "ext-base-event.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-ajax.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-region.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-point.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-anim.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-anim-extra.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         },{
             "text": "ext-base-end.js",
-            "path": "src/adapter/core/"
+            "path": "src/ext-core/src/adapter/"
         }]
     },{
         "name": "YUI Adapter",
@@ -52,13 +52,13 @@
         "isDebug": true,
         "fileIncludes": [{
             "text": "Ext.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Ext-more.js",
             "path": "src/core/"
         },{
             "text": "TaskMgr.js",
-            "path": "src/util/core/"
+            "path": "src/ext-core/src/util/"
         },{
             "text": "yui-bridge.js",
             "path": "src/adapter/"
@@ -69,13 +69,13 @@
         "isDebug": true,
         "fileIncludes": [{
             "text": "Ext.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Ext-more.js",
             "path": "src/core/"
         },{
             "text": "TaskMgr.js",
-            "path": "src/util/core/"
+            "path": "src/ext-core/src/util/"
         },{
             "text": "prototype-bridge.js",
             "path": "src/adapter/"
@@ -86,13 +86,13 @@
         "isDebug": true,
         "fileIncludes": [{
             "text": "Ext.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Ext-more.js",
             "path": "src/core/"
         },{
             "text": "TaskMgr.js",
-            "path": "src/util/core/"
+            "path": "src/ext-core/src/util/"
         },{
             "text": "jquery-bridge.js",
             "path": "src/adapter/"
@@ -104,37 +104,37 @@
         "pkgDeps": ["ext-base.js"],
         "fileIncludes": [{
             "text": "DomHelper.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "DomHelper-more.js",
             "path": "src/core/"
         },{
             "text": "Template.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Template-more.js",
             "path": "src/core/"
         },{
             "text": "DomQuery.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "DelayedTask.js",
-            "path": "src/util/core/"
+            "path": "src/ext-core/src/util/"
         },{
             "text": "Observable.js",
-            "path": "src/util/core/"
+            "path": "src/ext-core/src/util/"
         },{
             "text": "Observable-more.js",
             "path": "src/util/"
         },{
             "text": "EventManager.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "EventManager-more.js",
             "path": "src/core/"
         },{
             "text": "Element.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Element-more.js",
             "path": "src/core/"
@@ -143,37 +143,37 @@
             "path": "src/core/"
         },{
             "text": "Element.traversal.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Element.traversal-more.js",
             "path": "src/core/"
         },{
             "text": "Element.insertion.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Element.insertion-more.js",
             "path": "src/core/"
         },{
             "text": "Element.style.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Element.style-more.js",
             "path": "src/core/"
         },{
             "text": "Element.position.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Element.position-more.js",
             "path": "src/core/"
         },{
             "text": "Element.scroll.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Element.scroll-more.js",
             "path": "src/core/"
         },{
             "text": "Element.fx.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "Element.fx-more.js",
             "path": "src/core/"
@@ -182,10 +182,10 @@
             "path": "src/core/"
         },{
             "text": "Fx.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "CompositeElementLite.js",
-            "path": "src/core/core/"
+            "path": "src/ext-core/src/core/"
         },{
             "text": "CompositeElementLite-more.js",
             "path": "src/core/"
@@ -194,7 +194,7 @@
             "path": "src/core/"
         },{
             "text": "Connection.js",
-            "path": "src/data/core/"
+            "path": "src/ext-core/src/data/"
         },{
             "text": "UpdateManager.js",
             "path": "src/util/"
@@ -206,7 +206,7 @@
             "path": "src/util/"
         },{
             "text": "JSON.js",
-            "path": "src/util/core/"
+            "path": "src/ext-core/src/util/"
         },{
             "text": "Format.js",
             "path": "src/util/"

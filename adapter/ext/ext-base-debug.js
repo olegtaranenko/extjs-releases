@@ -2369,7 +2369,6 @@ Ext.TaskMgr = new Ext.util.TaskRunner();(function(){
                 }
             };
 
-            unloadListeners = null;
             Ext.EventManager._unload();
 
             doRemove(win, UNLOAD, EU._unload);

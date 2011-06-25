@@ -830,8 +830,8 @@ new Ext.Panel({
                 };
             }
         });
-        //@compat addButton and buttons could possibly be removed
-        //@target 4.0
+        // @compat addButton and buttons could possibly be removed
+        // @target 4.0
         /**
          * This Panel's Array of buttons as created from the <code>{@link #buttons}</code>
          * config property. Read only.
@@ -1184,6 +1184,10 @@ new Ext.Panel({
     onLayout : function(shallow, force){
         Ext.Panel.superclass.onLayout.apply(this, arguments);
         if(this.hasLayout && this.toolbars.length > 0){
+            if(!Ext.isNumber(this.width)){
+                delete this.lastSize;
+                this.setSize(this.width, this.height);
+            }
             Ext.each(this.toolbars, function(tb){
                 tb.doLayout(undefined, force);
             });
@@ -1443,7 +1447,10 @@ new Ext.Panel({
     },
 
     // private
-    onResize : function(w, h){
+    onResize : function(adjWidth, adjHeight, rawWidth, rawHeight){
+        var w = adjWidth,
+            h = adjHeight;
+
         if(Ext.isDefined(w) || Ext.isDefined(h)){
             if(!this.collapsed){
                 // First, set the the Panel's body width.
@@ -1507,7 +1514,8 @@ new Ext.Panel({
             this.onBodyResize(w, h);
         }
         this.syncShadow();
-        Ext.Panel.superclass.onResize.call(this);
+        Ext.Panel.superclass.onResize.call(this, adjWidth, adjHeight, rawWidth, rawHeight);
+
     },
 
     // private

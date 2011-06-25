@@ -74,7 +74,7 @@ Ext.form.FieldSet = Ext.extend(Ext.Panel, {
      * If <tt>true</tt> is specified, the default DomHelper config object used to create the element
      * is:</p><pre><code>
      * {tag: 'input', type: 'checkbox', name: this.checkboxName || this.id+'-checkbox'}
-     * </code></pre>   
+     * </code></pre>
      */
     /**
      * @cfg {String} checkboxName The name to assign to the fieldset's checkbox if <tt>{@link #checkboxToggle} = true</tt>
@@ -90,7 +90,7 @@ Ext.form.FieldSet = Ext.extend(Ext.Panel, {
      * @cfg {Number} labelWidth The width of labels. This property cascades to child containers.
      */
     /**
-     * @cfg {String} itemCls A css class to apply to the <tt>x-form-item</tt> of fields (see 
+     * @cfg {String} itemCls A css class to apply to the <tt>x-form-item</tt> of fields (see
      * {@link Ext.layout.FormLayout}.{@link Ext.layout.FormLayout#fieldTpl fieldTpl} for details).
      * This property cascades to child containers.
      */
@@ -146,6 +146,15 @@ Ext.form.FieldSet = Ext.extend(Ext.Panel, {
             this.checkbox.dom.checked = true;
         }
         Ext.form.FieldSet.superclass.onExpand.call(this, doAnim, animArg);
+        // Align errors for subFields
+        this.items.each(function(){
+            if (this.errorEl && this.alignErrorEl){
+                this.alignErrorEl();
+            }
+            if (this.errorIcon && this.alignErrorIcon){
+                this.alignErrorIcon();
+            }
+        })
     },
 
     /**

@@ -1,3 +1,9 @@
+/*!
+ * Ext JS Library 3.1.1
+ * Copyright(c) 2006-2010 Ext JS, LLC
+ * licensing@extjs.com
+ * http://www.extjs.com/license
+ */
 /**
  * Catalonian Translation by halkon_polako 6-12-2007
  * December correction halkon_polako 11-12-2007

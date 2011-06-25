@@ -1,3 +1,9 @@
+/*!
+ * Ext JS Library 3.1.1
+ * Copyright(c) 2006-2010 Ext JS, LLC
+ * licensing@extjs.com
+ * http://www.extjs.com/license
+ */
 /**
  * Finnish Translations
  * <tuomas.salo (at) iki.fi>

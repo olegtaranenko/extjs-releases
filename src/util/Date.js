@@ -207,7 +207,7 @@ Date.parseFunctions['x-date-format'] = myDateParser;
      * may be used as a format string to {@link #format}. Example:</p><pre><code>
 Date.formatFunctions['x-date-format'] = myDateFormatter;
 </code></pre>
-     * <p>A formatting function should return a string repesentation of the passed Date object:<div class="mdetail-params"><ul>
+     * <p>A formatting function should return a string repesentation of the passed Date object, and is passed the following parameters:<div class="mdetail-params"><ul>
      * <li><code>date</code> : Date<div class="sub-desc">The Date to format.</div></li>
      * </ul></div></p>
      * <p>To enable date strings to also be <i>parsed</i> according to that format, a corresponding

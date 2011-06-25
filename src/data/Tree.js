@@ -448,10 +448,11 @@ Ext.extend(Ext.data.Node, Ext.util.Observable, {
             this.setLastChild(node.previousSibling);
         }
 
-        node.clear();
         this.fireEvent("remove", this.ownerTree, this, node);
         if(destroy){
-            node.destroy();
+            node.destroy(true);
+        }else{
+            node.clear();
         }
         return node;
     },
@@ -469,13 +470,23 @@ Ext.extend(Ext.data.Node, Ext.util.Observable, {
     /**
      * Destroys the node.
      */
-    destroy : function(){
-        this.purgeListeners();
-        this.clear(true);  
-        Ext.each(this.childNodes, function(n){
-            n.destroy();
-        });
-        this.childNodes = null;
+    destroy : function(/* private */ silent){
+        /*
+         * Silent is to be used in a number of cases
+         * 1) When setRootNode is called.
+         * 2) When destroy on the tree is called
+         * 3) For destroying child nodes on a node
+         */
+        if(silent === true){
+            this.purgeListeners();
+            this.clear(true);
+            Ext.each(this.childNodes, function(n){
+                n.destroy(true);
+            });
+            this.childNodes = null;
+        }else{
+            this.remove(true);
+        }
     },
 
     /**

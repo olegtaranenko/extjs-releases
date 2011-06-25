@@ -888,6 +888,7 @@ Ext.Window = Ext.extend(Ext.Panel, {
           Ext.EventManager.on(window, 'scroll', this.doAnchor, this,
               {buffer: tm == 'number' ? monitorScroll : 50});
       }
+      this.doAnchor();
       return this;
     },
 

@@ -203,6 +203,7 @@ grid.on('validateedit', function(e) {
     // private
     onEditComplete : function(ed, value, startValue){
         this.editing = false;
+        this.lastActiveEditor = this.activeEditor;
         this.activeEditor = null;
 
         var r = ed.record,

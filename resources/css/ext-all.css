@@ -917,7 +917,7 @@ textarea {
 /* 2.0.2 style */
 .x-form-check-wrap {
     line-height:18px;
-    height: 22px;
+    height: auto;
 }
 
 .ext-ie .x-form-check-wrap input {
@@ -968,6 +968,10 @@ textarea {
     position:static;
     top:auto;
     vertical-align:top;
+}
+
+.ext-strict .ext-ie8 .x-toolbar-cell .x-form-field-trigger-wrap .x-form-trigger {
+	right: 0; /* IE8 Strict mode trigger bug */
 }
 
 .x-form-field-wrap {
@@ -1425,7 +1429,7 @@ fieldset.x-panel-collapsed .x-fieldset-bwrap {
     width:1px;
 }
 
-.ext-gecko .x-btn button {
+.ext-gecko .x-btn button, .ext-webkit .x-btn button {
     padding-left:0;
     padding-right:0;
 }
@@ -2634,7 +2638,6 @@ a.x-grid3-hd-btn:hover {
 .ext-ie7 .x-grid-panel .x-panel-mc .x-panel-bbar {
     position: static;
 }
-
 
 .ext-ie6 .x-grid3-header {
     position: relative;
@@ -5658,8 +5661,12 @@ ul.x-tab-strip-bottom{
     border-color:#99bbe8;
 }
 
-.x-grid3-hd-row td, .x-grid3-row td, .x-grid3-summary-row td{
-	font:normal 11px arial, tahoma, helvetica, sans-serif;
+.x-grid3-row td, .x-grid3-summary-row td{
+	font:normal 11px/13px arial, tahoma, helvetica, sans-serif;
+}
+
+.x-grid3-hd-row td {
+	font:normal 11px/15px arial, tahoma, helvetica, sans-serif;
 }
 
 .x-grid3-hd-row td {

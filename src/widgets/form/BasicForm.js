@@ -35,7 +35,7 @@
  * @param {Object} config Configuration options
  */
 Ext.form.BasicForm = Ext.extend(Ext.util.Observable, {
-    
+
     constructor: function(el, config){
         Ext.apply(this, config);
         if(Ext.isString(this.paramOrder)){
@@ -76,9 +76,9 @@ Ext.form.BasicForm = Ext.extend(Ext.util.Observable, {
         if(el){
             this.initEl(el);
         }
-        Ext.form.BasicForm.superclass.constructor.call(this);    
+        Ext.form.BasicForm.superclass.constructor.call(this);
     },
-    
+
     /**
      * @cfg {String} method
      * The request method to use (GET or POST) for form actions if one isn't supplied in the action options.
@@ -184,7 +184,7 @@ paramOrder: 'param1|param2|param'
      * <tt>{@link #paramOrder}</tt> nullifies this configuration.
      */
     paramsAsHash: false,
-    
+
     /**
      * @cfg {String} waitTitle
      * The default title to show for the waiting message box (defaults to <tt>'Please Wait...'</tt>)
@@ -494,6 +494,12 @@ myFormPanel.getForm().submit({
 
     // private
     beforeAction : function(action){
+        // Call HtmlEditor's syncValue before actions
+        this.items.each(function(f){
+            if(f.isFormField && f.syncValue){
+                f.syncValue();
+            }
+        });
         var o = action.options;
         if(o.waitMsg){
             if(this.waitMsgTarget === true){
@@ -651,7 +657,7 @@ myFormPanel.getForm().submit({
                 n = f.getName();
                 key = o[n];
                 val = f.getValue();
-                
+
                 if(Ext.isDefined(key)){
                     if(Ext.isArray(key)){
                         o[n].push(val);

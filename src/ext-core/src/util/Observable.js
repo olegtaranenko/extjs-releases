@@ -32,7 +32,7 @@ Employee = Ext.extend(Ext.util.Observable, {
         this.listeners = config.listeners;
 
         // Call our superclass constructor to complete construction process.
-        Employee.superclass.constructor.call(config)
+        Employee.superclass.constructor.call(this, config)
     }
 });
 </code></pre>

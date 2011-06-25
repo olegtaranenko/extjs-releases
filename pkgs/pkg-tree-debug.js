@@ -513,7 +513,7 @@ new Ext.tree.TreePanel({
      * @return {Node}
      */
     setRootNode : function(node){
-        Ext.destroy(this.root);
+        this.destroyRoot();
         if(!node.render){ // attributes passed
             node = this.loader.createNode(node);
         }
@@ -765,9 +765,20 @@ new Ext.tree.TreePanel({
             Ext.dd.ScrollManager.unregister(this.body);
             Ext.destroy(this.dropZone, this.dragZone);
         }
-        Ext.destroy(this.root, this.loader);
+        this.destroyRoot();
+        Ext.destroy(this.loader);
         this.nodeHash = this.root = this.loader = null;
         Ext.tree.TreePanel.superclass.beforeDestroy.call(this);
+    },
+    
+    /**
+     * Destroy the root node. Not included by itself because we need to pass the silent parameter.
+     * @private
+     */
+    destroyRoot : function(){
+        if(this.root && this.root.destroy){
+            this.root.destroy(true);
+        }
     }
 
     /**
@@ -1898,10 +1909,11 @@ Ext.extend(Ext.data.Node, Ext.util.Observable, {
             this.setLastChild(node.previousSibling);
         }
 
-        node.clear();
         this.fireEvent("remove", this.ownerTree, this, node);
         if(destroy){
-            node.destroy();
+            node.destroy(true);
+        }else{
+            node.clear();
         }
         return node;
     },
@@ -1919,13 +1931,23 @@ Ext.extend(Ext.data.Node, Ext.util.Observable, {
     /**
      * Destroys the node.
      */
-    destroy : function(){
-        this.purgeListeners();
-        this.clear(true);  
-        Ext.each(this.childNodes, function(n){
-            n.destroy();
-        });
-        this.childNodes = null;
+    destroy : function(/* private */ silent){
+        /*
+         * Silent is to be used in a number of cases
+         * 1) When setRootNode is called.
+         * 2) When destroy on the tree is called
+         * 3) For destroying child nodes on a node
+         */
+        if(silent === true){
+            this.purgeListeners();
+            this.clear(true);
+            Ext.each(this.childNodes, function(n){
+                n.destroy(true);
+            });
+            this.childNodes = null;
+        }else{
+            this.remove(true);
+        }
     },
 
     /**
@@ -2479,15 +2501,12 @@ Ext.extend(Ext.tree.TreeNode, Ext.data.Node, {
     // these methods are overridden to provide lazy rendering support
     // private override
     appendChild : function(n){
-        var node, exists;
         if(!n.render && !Ext.isArray(n)){
             n = this.getLoader().createNode(n);
-        }else{
-            exists = !n.parentNode;
         }
-        node = Ext.tree.TreeNode.superclass.appendChild.call(this, n);
-        if(node){
-            this.afterAdd(node, exists);
+        var node = Ext.tree.TreeNode.superclass.appendChild.call(this, n);
+        if(node && this.childrenRendered){
+            node.render();
         }
         this.ui.updateExpandIcon();
         return node;
@@ -2497,46 +2516,35 @@ Ext.extend(Ext.tree.TreeNode, Ext.data.Node, {
     removeChild : function(node, destroy){
         this.ownerTree.getSelectionModel().unselect(node);
         Ext.tree.TreeNode.superclass.removeChild.apply(this, arguments);
-        // if it's been rendered remove dom node
-        if(node.ui.rendered){
-            node.ui.remove();
-        }
-        if(this.childNodes.length < 1){
-            this.collapse(false, false);
-        }else{
-            this.ui.updateExpandIcon();
-        }
-        if(!this.firstChild && !this.isHiddenRoot()) {
-            this.childrenRendered = false;
+        // only update the ui if we're not destroying
+        if(!destroy){
+            // if it's been rendered remove dom node
+            if(node.ui.rendered){
+                node.ui.remove();
+            }
+            if(this.childNodes.length < 1){
+                this.collapse(false, false);
+            }else{
+                this.ui.updateExpandIcon();
+            }
+            if(!this.firstChild && !this.isHiddenRoot()){
+                this.childrenRendered = false;
+            }
         }
         return node;
     },
 
     // private override
     insertBefore : function(node, refNode){
-        var newNode, exists;
         if(!node.render){
             node = this.getLoader().createNode(node);
-        } else {
-            exists = Ext.isObject(node.parentNode);
         }
-        newNode = Ext.tree.TreeNode.superclass.insertBefore.call(this, node, refNode);
-        if(newNode && refNode){
-            this.afterAdd(newNode, exists);
+        var newNode = Ext.tree.TreeNode.superclass.insertBefore.call(this, node, refNode);
+        if(newNode && refNode && this.childrenRendered){
+            node.render();
         }
         this.ui.updateExpandIcon();
         return newNode;
-    },
-    
-    // private
-    afterAdd : function(node, exists){
-        if(this.childrenRendered){
-            // bulk render if the node already exists
-            node.render(exists);
-        }else if(exists){
-            // make sure we update the indent
-            node.renderIndent(true, true);
-        }
     },
 
     /**
@@ -2819,9 +2827,12 @@ Ext.extend(Ext.tree.TreeNode, Ext.data.Node, {
         }
     },
 
-    destroy : function(){
-        this.unselect(true);
-        Ext.tree.TreeNode.superclass.destroy.call(this);
+    //inherit docs
+    destroy : function(silent){
+        if(silent === true){
+            this.unselect(true);
+        }
+        Ext.tree.TreeNode.superclass.destroy.call(this, silent);
         Ext.destroy(this.ui, this.loader);
         this.ui = this.loader = null;
     },

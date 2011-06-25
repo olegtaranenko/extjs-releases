@@ -1934,7 +1934,7 @@ Employee = Ext.extend(Ext.util.Observable, {
         this.listeners = config.listeners;
 
         // Call our superclass constructor to complete construction process.
-        Employee.superclass.constructor.call(config)
+        Employee.superclass.constructor.call(this, config)
     }
 });
 </code></pre>
@@ -10511,7 +10511,7 @@ Date.parseFunctions['x-date-format'] = myDateParser;
      * may be used as a format string to {@link #format}. Example:</p><pre><code>
 Date.formatFunctions['x-date-format'] = myDateFormatter;
 </code></pre>
-     * <p>A formatting function should return a string repesentation of the passed Date object:<div class="mdetail-params"><ul>
+     * <p>A formatting function should return a string repesentation of the passed Date object, and is passed the following parameters:<div class="mdetail-params"><ul>
      * <li><code>date</code> : Date<div class="sub-desc">The Date to format.</div></li>
      * </ul></div></p>
      * <p>To enable date strings to also be <i>parsed</i> according to that format, a corresponding
@@ -11618,7 +11618,8 @@ console.group('ISO-8601 Granularity Test (see http://www.w3.org/TR/NOTE-datetime
     console.log('Date.parseDate("1997-13-16T19:20:30.45+01:00", "c", true)= %o', Date.parseDate("1997-13-16T19:20:30.45+01:00", "c", true)); // strict date parsing with invalid month value
 console.groupEnd();
 
-//*//**
+//*/
+/**
  * @class Ext.util.MixedCollection
  * @extends Ext.util.Observable
  * A Collection class that maintains both numeric indexes and keys and exposes events.
@@ -13456,13 +13457,16 @@ Ext.extend(Ext.util.ClickRepeater, Ext.util.Observable, {
     enable: function(){
         if(this.disabled){
             this.el.on('mousedown', this.handleMouseDown, this);
+            if (Ext.isIE){
+                this.el.on('dblclick', this.handleDblClick, this);
+            }
             if(this.preventDefault || this.stopDefault){
                 this.el.on('click', this.eventOptions, this);
             }
         }
         this.disabled = false;
     },
-    
+
     /**
      * Disables the repeater and stops events from firing.
      */
@@ -13477,31 +13481,39 @@ Ext.extend(Ext.util.ClickRepeater, Ext.util.Observable, {
         }
         this.disabled = true;
     },
-    
+
     /**
      * Convenience function for setting disabled/enabled by boolean.
      * @param {Boolean} disabled
      */
     setDisabled: function(disabled){
-        this[disabled ? 'disable' : 'enable']();    
+        this[disabled ? 'disable' : 'enable']();
     },
-    
+
     eventOptions: function(e){
         if(this.preventDefault){
             e.preventDefault();
         }
         if(this.stopDefault){
             e.stopEvent();
-        }       
+        }
     },
-    
+
     // private
     destroy : function() {
         this.disable(true);
         Ext.destroy(this.el);
         this.purgeListeners();
     },
-    
+
+    handleDblClick : function(){
+        clearTimeout(this.timer);
+        this.el.blur();
+
+        this.fireEvent("mousedown", this);
+        this.fireEvent("click", this);
+    },
+
     // private
     handleMouseDown : function(){
         clearTimeout(this.timer);
@@ -13517,10 +13529,10 @@ Ext.extend(Ext.util.ClickRepeater, Ext.util.Observable, {
         this.fireEvent("mousedown", this);
         this.fireEvent("click", this);
 
-//      Do not honor delay or interval if acceleration wanted.
+        // Do not honor delay or interval if acceleration wanted.
         if (this.accelerate) {
             this.delay = 400;
-	    }
+        }
         this.timer = this.click.defer(this.delay || this.interval, this);
     },
 

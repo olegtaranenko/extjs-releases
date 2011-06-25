@@ -145,7 +145,7 @@ li.x-menu-list-item-indent {
 	padding-left:0px;
 }
 li.x-menu-list-item div {
-	display: inline;
+	display: block;
 }
 
 /**
@@ -267,7 +267,7 @@ li.x-menu-list-item div {
     width: 3px;
     top: 1px;
     background: #fff;
-    z-index: 9999;
+    z-index: 8999;
 }
 
 .x-grouptabs-panel .x-grouptabs-panel-body {

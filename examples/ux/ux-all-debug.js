@@ -3903,9 +3903,16 @@ grid.on('afteredit', function(){
      * @return {Object} summaryData
      */
     getSummaryData : function(groupValue){
-        var json = this.grid.getStore().reader.jsonData;
+        var reader = this.grid.getStore().reader,
+            json = reader.jsonData,
+            fields = reader.recordType.prototype.fields,
+            v;
+            
         if(json && json.summaryData){
-            return json.summaryData[groupValue];
+            v = json.summaryData[groupValue];
+            if(v){
+                return reader.extractValues(v, fields.items, fields.length);
+            }
         }
         return null;
     }
@@ -5520,44 +5527,78 @@ Ext.ux.grid.LockingGridView = Ext.extend(Ext.grid.GridView, {
 });
 
 Ext.ux.grid.LockingColumnModel = Ext.extend(Ext.grid.ColumnModel, {
+    /**
+     * Returns true if the given column index is currently locked
+     * @param {Number} colIndex The column index
+     * @return {Boolean} True if the column is locked
+     */
     isLocked : function(colIndex){
         return this.config[colIndex].locked === true;
     },
     
+    /**
+     * Locks or unlocks a given column
+     * @param {Number} colIndex The column index
+     * @param {Boolean} value True to lock, false to unlock
+     * @param {Boolean} suppressEvent Pass false to cause the columnlockchange event not to fire
+     */
     setLocked : function(colIndex, value, suppressEvent){
-        if(this.isLocked(colIndex) == value){
+        if (this.isLocked(colIndex) == value) {
             return;
         }
         this.config[colIndex].locked = value;
-        if(!suppressEvent){
+        if (!suppressEvent) {
             this.fireEvent('columnlockchange', this, colIndex, value);
         }
     },
     
+    /**
+     * Returns the total width of all locked columns
+     * @return {Number} The width of all locked columns
+     */
     getTotalLockedWidth : function(){
         var totalWidth = 0;
-        for(var i = 0, len = this.config.length; i < len; i++){
-            if(this.isLocked(i) && !this.isHidden(i)){
+        for (var i = 0, len = this.config.length; i < len; i++) {
+            if (this.isLocked(i) && !this.isHidden(i)) {
                 totalWidth += this.getColumnWidth(i);
             }
         }
+        
         return totalWidth;
     },
     
-    getLockedCount : function(){
-        for(var i = 0, len = this.config.length; i < len; i++){
-            if(!this.isLocked(i)){
+    /**
+     * Returns the total number of locked columns
+     * @return {Number} The number of locked columns
+     */
+    getLockedCount : function() {
+        var len = this.config.length;
+        
+        for (var i = 0; i < len; i++) {
+            if (!this.isLocked(i)) {
                 return i;
             }
         }
+        
+        //if we get to this point all of the columns are locked so we return the total
+        return len;
     },
     
+    /**
+     * Moves a column from one position to another
+     * @param {Number} oldIndex The current column index
+     * @param {Number} newIndex The destination column index
+     */
     moveColumn : function(oldIndex, newIndex){
-        if(oldIndex < newIndex && this.isLocked(oldIndex) && !this.isLocked(newIndex)){
+        var oldLocked = this.isLocked(oldIndex),
+            newLocked = this.isLocked(newIndex);
+        
+        if (oldIndex < newIndex && oldLocked && !newLocked) {
             this.setLocked(oldIndex, false, true);
-        }else if(oldIndex > newIndex && !this.isLocked(oldIndex) && this.isLocked(newIndex)){
+        } else if (oldIndex > newIndex && !oldLocked && newLocked) {
             this.setLocked(oldIndex, true, true);
         }
+        
         Ext.ux.grid.LockingColumnModel.superclass.moveColumn.apply(this, arguments);
     }
 });
@@ -6727,9 +6768,10 @@ Ext.ux.grid.RowEditor = Ext.extend(Ext.Panel, {
     },
 
     beforedestroy: function() {
+        this.stopMonitoring();
         this.grid.getStore().un('remove', this.onStoreRemove, this);
         this.stopEditing(false);
-        Ext.destroy(this.btns);
+        Ext.destroy(this.btns, this.tooltip);
     },
 
     refreshFields: function(){
@@ -6870,8 +6912,6 @@ Ext.ux.grid.RowEditor = Ext.extend(Ext.Panel, {
                 ed = c.getEditor();
             if(!ed){
                 ed = c.displayEditor || new Ext.form.DisplayField();
-            }else{
-                ed = ed.field;
             }
             if(i == 0){
                 ed.margins = pm('0 1 2 1');
@@ -7007,16 +7047,14 @@ Ext.ux.grid.RowEditor = Ext.extend(Ext.Panel, {
         if(this.isVisible()){
             var index = 0,
                 cm = this.grid.getColumnModel(),
-                c,
-                ed;
+                c;
             if(pt){
                 index = this.getTargetColumnIndex(pt);
             }
             for(var i = index||0, len = cm.getColumnCount(); i < len; i++){
                 c = cm.getColumnAt(i);
-                ed = c.getEditor();
-                if(!c.hidden && ed){
-                    ed.field.focus();
+                if(!c.hidden && c.getEditor()){
+                    c.getEditor().focus();
                     break;
                 }
             }
@@ -7444,6 +7482,14 @@ Ext.ux.layout.RowLayout = Ext.extend(Ext.layout.ContainerLayout, {
         var target = this.container.getLayoutTarget(), ret;
         if (target) {
             ret = target.getViewSize();
+
+            // IE in strict mode will return a height of 0 on the 1st pass of getViewSize.
+            // Use getStyleSize to verify the 0 height, the adjustment pass will then work properly
+            // with getViewSize
+            if (Ext.isIE && Ext.isStrict && ret.height == 0){
+                ret =  target.getStyleSize();
+            }
+
             ret.width -= target.getPadding('lr');
             ret.height -= target.getPadding('tb');
         }
