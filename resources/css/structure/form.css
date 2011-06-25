@@ -1,6 +1,6 @@
 /*!
- * Ext JS Library 3.3.1
- * Copyright(c) 2006-2010 Sencha Inc.
+ * Ext JS Library 3.3.2
+ * Copyright(c) 2006-2011 Sencha Inc.
  * licensing@sencha.com
  * http://www.sencha.com/license
  */
@@ -327,6 +327,10 @@ textarea {
 }
 
 .ext-webkit .x-small-editor .x-form-text{padding-top:3px;font-size:100%;}
+
+.ext-strict .ext-webkit .x-small-editor .x-form-text{
+    height:14px !important;
+}
 
 .x-form-clear {
     clear:both;
