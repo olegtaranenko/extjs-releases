@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 Ext.ns('Ext.ux.form');
 
@@ -18,7 +18,7 @@ Ext.ns('Ext.ux.form');
  * @constructor
  * Create a new MultiSelect
  * @param {Object} config Configuration options
- * @xtype multiselect 
+ * @xtype multiselect
  */
 Ext.ux.form.MultiSelect = Ext.extend(Ext.form.Field,  {
     /**
@@ -110,6 +110,8 @@ Ext.ux.form.MultiSelect = Ext.extend(Ext.form.Field,  {
      * {@link #valueField value}, while the value at index 1 is assumed to be the combo {@link #displayField text}.
      * </div></li></ul></div></li></ul></div>
      */
+    
+    cls: 'ux-form-multiselect',
 
     // private
     defaultAutoCreate : {tag: "div"},
@@ -156,11 +158,12 @@ Ext.ux.form.MultiSelect = Ext.extend(Ext.form.Field,  {
             height: this.height,
             width: this.width,
             style: "padding:0;",
-            tbar: this.tbar,
-            bodyStyle: 'overflow: auto;'
+            tbar: this.tbar
         });
+        fs.body.addClass('ux-mselect');
 
         this.view = new Ext.ListView({
+            selectedClass: 'ux-mselect-selected',
             multiSelect: true,
             store: this.store,
             columns: [{ header: 'Value', width: 1, dataIndex: this.displayField }],
@@ -210,7 +213,9 @@ Ext.ux.form.MultiSelect = Ext.extend(Ext.form.Field,  {
 
     // private
     onViewBeforeClick: function(vw, index, node, e) {
-        if (this.disabled) {return false;}
+        if (this.disabled || this.readOnly) {
+            return false;
+        }
     },
 
     // private
@@ -351,7 +356,7 @@ Ext.extend(Ext.ux.form.MultiSelect.DragZone, Ext.dd.DragZone, {
         this.onStartDrag(x, y);
         return true;
     },
-    
+
     // private
     collectSelection: function(data) {
         data.repairXY = Ext.fly(this.view.getSelectedNodes()[0]).getXY();
@@ -440,9 +445,9 @@ Ext.ux.form.MultiSelect.DropZone = function(ms, config){
 
 Ext.extend(Ext.ux.form.MultiSelect.DropZone, Ext.dd.DropZone, {
     /**
-	 * Part of the Ext.dd.DropZone interface. If no target node is found, the
-	 * whole Element becomes the target, and this causes the drop gesture to append.
-	 */
+     * Part of the Ext.dd.DropZone interface. If no target node is found, the
+     * whole Element becomes the target, and this causes the drop gesture to append.
+     */
     getTargetFromEvent : function(e) {
         var target = e.getTarget();
         return target;
@@ -525,9 +530,14 @@ Ext.extend(Ext.ux.form.MultiSelect.DropZone, Ext.dd.DropZone, {
         var pt = this.getDropPoint(e, n, dd);
         if (n != this.ms.fs.body.dom)
             n = this.view.findItemFromChild(n);
-        var insertAt = (this.ms.appendOnly || (n == this.ms.fs.body.dom)) ? this.view.store.getCount() : this.view.indexOf(n);
-        if (pt == "below") {
-            insertAt++;
+
+        if(this.ms.appendOnly) {
+            insertAt = this.view.store.getCount();
+        } else {
+            insertAt = n == this.ms.fs.body.dom ? this.view.store.getCount() - 1 : this.view.indexOf(n);
+            if (pt == "below") {
+                insertAt++;
+            }
         }
 
         var dir = false;

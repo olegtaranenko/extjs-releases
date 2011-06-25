@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.tree.TreeEditor
@@ -18,6 +18,7 @@
 Ext.tree.TreeEditor = function(tree, fc, config){
     fc = fc || {};
     var field = fc.events ? fc : new Ext.form.TextField(fc);
+    
     Ext.tree.TreeEditor.superclass.constructor.call(this, field, config);
 
     this.tree = tree;
@@ -69,12 +70,20 @@ Ext.extend(Ext.tree.TreeEditor, Ext.Editor, {
     editDelay : 350,
 
     initEditor : function(tree){
-        tree.on('beforeclick', this.beforeNodeClick, this);
-        tree.on('dblclick', this.onNodeDblClick, this);
-        this.on('complete', this.updateNode, this);
-        this.on('beforestartedit', this.fitToTree, this);
+        tree.on({
+            scope      : this,
+            beforeclick: this.beforeNodeClick,
+            dblclick   : this.onNodeDblClick
+        });
+        
+        this.on({
+            scope          : this,
+            complete       : this.updateNode,
+            beforestartedit: this.fitToTree,
+            specialkey     : this.onSpecialKey
+        });
+        
         this.on('startedit', this.bindScroll, this, {delay:10});
-        this.on('specialkey', this.onSpecialKey, this);
     },
 
     // private
@@ -156,5 +165,13 @@ Ext.extend(Ext.tree.TreeEditor, Ext.Editor, {
             e.stopEvent();
             this.completeEdit();
         }
+    },
+    
+    onDestroy : function(){
+        clearTimeout(this.autoEditTimer);
+        Ext.tree.TreeEditor.superclass.onDestroy.call(this);
+        var tree = this.tree;
+        tree.un('beforeclick', this.beforeNodeClick, this);
+        tree.un('dblclick', this.onNodeDblClick, this);
     }
 });

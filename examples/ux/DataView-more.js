@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.DataView.LabelEditor
@@ -101,6 +101,9 @@ Ext.DataView.DragSelector = function(cfg){
         if(!proxy){
             proxy = view.el.createChild({cls:'x-view-selector'});
         }else{
+            if(proxy.dom.parentNode !== view.el.dom){
+                view.el.dom.appendChild(proxy.dom);
+            }
             proxy.setDisplayed('block');
         }
         fillRegions();

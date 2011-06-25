@@ -1,14 +1,22 @@
 <html>
 <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />    
   <title>The source code</title>
     <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
     <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
 </head>
 <body  onload="prettyPrint();">
-    <pre class="prettyprint lang-js">(function(){
+    <pre class="prettyprint lang-js">/*!
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
+ */
+(function(){
 	var doc = document,
 		isCSS1 = doc.compatMode == "CSS1Compat",
 		MAX = Math.max,		
+        ROUND = Math.round,
 		PARSEINT = parseInt;
 		
 	Ext.lib.Dom = {
@@ -86,7 +94,7 @@
 	            if (el.getBoundingClientRect) {
 	                b = el.getBoundingClientRect();
 	                scroll = fly(document).getScroll();
-	                ret = [b.left + scroll.left, b.top + scroll.top];
+	                ret = [ROUND(b.left + scroll.left), ROUND(b.top + scroll.top)];
 	            } else {  
 		            p = el;		
 		            hasAbsolute = fly(el).isStyle("position", "absolute");
@@ -132,7 +140,7 @@
 		            ret = [x,y];
 	            }
          	}
-            return ret
+            return ret;
         },
 
         setXY : function(el, xy) {
@@ -143,7 +151,9 @@
             	pos;            	
             
             for (pos in pts) {	            
-	            if(!isNaN(pts[pos])) style[pos] = pts[pos] + "px"
+	            if (!isNaN(pts[pos])) {
+	                style[pos] = pts[pos] + "px";
+                }
             }
         },
 

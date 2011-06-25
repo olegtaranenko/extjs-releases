@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.form.Checkbox
@@ -27,18 +27,19 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
      */
     checked : false,
     /**
+     * @cfg {String} boxLabel The text that appears beside the checkbox
+     */
+    boxLabel: '&#160;',
+    /**
      * @cfg {String/Object} autoCreate A DomHelper element spec, or true for a default element spec (defaults to
      * {tag: 'input', type: 'checkbox', autocomplete: 'off'})
      */
     defaultAutoCreate : { tag: 'input', type: 'checkbox', autocomplete: 'off'},
     /**
-     * @cfg {String} boxLabel The text that appears beside the checkbox
-     */
-    /**
      * @cfg {String} inputValue The value that should go into the generated input element's value attribute
      */
     /**
-     * @cfg {Function} handler A function called when the {@link #checked} value changes (can be used instead of 
+     * @cfg {Function} handler A function called when the {@link #checked} value changes (can be used instead of
      * handling the check event). The handler is passed the following parameters:
      * <div class="mdetail-params"><ul>
      * <li><b>checkbox</b> : Ext.form.Checkbox<div class="sub-desc">The Checkbox being toggled.</div></li>
@@ -52,7 +53,7 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
 
     // private
     actionMode : 'wrap',
-    
+
 	// private
     initComponent : function(){
         Ext.form.Checkbox.superclass.initComponent.call(this);
@@ -78,18 +79,11 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
     // private
     initEvents : function(){
         Ext.form.Checkbox.superclass.initEvents.call(this);
-        this.mon(this.el, 'click', this.onClick, this);
-        this.mon(this.el, 'change', this.onClick, this);
-    },
-
-	// private
-    getResizeEl : function(){
-        return this.wrap;
-    },
-
-    // private
-    getPositionEl : function(){
-        return this.wrap;
+        this.mon(this.el, {
+            scope: this,
+            click: this.onClick,
+            change: this.onClick
+        });
     },
 
     /**
@@ -120,6 +114,11 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
         }else{
             this.checked = this.el.dom.checked;
         }
+        // Need to repaint for IE, otherwise positioning is broken
+        if (Ext.isIE && !Ext.isStrict) {
+            this.wrap.repaint();
+        }
+        this.resizeEl = this.positionEl = this.wrap;
     },
 
     // private
@@ -141,7 +140,7 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
         if(this.rendered){
             return this.el.dom.checked;
         }
-        return false;
+        return this.checked;
     },
 
 	// private
@@ -159,8 +158,15 @@ Ext.form.Checkbox = Ext.extend(Ext.form.Field,  {
      * @return {Ext.form.Field} this
      */
     setValue : function(v){
-        var checked = this.checked ;
-        this.checked = (v === true || v === 'true' || v == '1' || String(v).toLowerCase() == 'on');
+        var checked = this.checked,
+            inputVal = this.inputValue;
+            
+        if (v === false) {
+            this.checked = false;
+        } else {
+            this.checked = (v === true || v === 'true' || v == '1' || (inputVal ? v == inputVal : String(v).toLowerCase() == 'on'));
+        }
+        
         if(this.rendered){
             this.el.dom.checked = this.checked;
             this.el.dom.defaultChecked = this.checked;

@@ -1,14 +1,13 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 ﻿/**
- * Ext 2.2.0 - Portuguese/Portugal (pt_PT) Translation
+ * Portuguese/Portugal (pt_PT) Translation
  * by Nuno Franco da Costa - francodacosta.com
  * translated from ext-lang-en.js
- * 11 Nov 2008
  */
 
 Ext.UpdateManager.defaults.indicatorText = '<div class="loading-indicator">A carregar...</div>';
@@ -162,7 +161,8 @@ if(Ext.form.DateField){
     maxText           : "A data deste campo deve ser anterior a {0}",
     invalidText       : "{0} n&atilde;o &eacute; uma data v&aacute;lida - deve estar no seguinte formato{1}",
     format            : "y/m/d",
-    altFormats        : "m/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d"
+    altFormats        : "m/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d",
+    startDay          : 0
   });
 }
 
@@ -175,10 +175,10 @@ if(Ext.form.ComboBox){
 
 if(Ext.form.VTypes){
   Ext.apply(Ext.form.VTypes, {
-    emailText    : 'Este campo deve ser um endere&ccedil;o de email no formato "utilizaor@dominio.com"',
+    emailText    : 'Este campo deve ser um endere&ccedil;o de email no formato "utilizador@dominio.com"',
     urlText      : 'Este campo deve ser um URL no formato "http:/'+'/www.dominio.com"',
     alphaText    : 'Este campo deve conter apenas letras e _',
-    alphanumText : 'Este campo deve conter apenas letras, numeros e _'
+    alphanumText : 'Este campo deve conter apenas letras, n@uacute;meros e _'
   });
 }
 
@@ -192,12 +192,12 @@ if(Ext.form.HtmlEditor){
         cls: 'x-html-editor-tip'
       },
       italic : {
-        title: 'Italico (Ctrl+I)',
-        text: 'Transforma o texto em italico.',
+        title: 'It&aacute;lico (Ctrl+I)',
+        text: 'Transforma o texto em it&aacute;lico.',
         cls: 'x-html-editor-tip'
       },
       underline : {
-        title: 'SUblinhar (Ctrl+U)',
+        title: 'Sublinhar (Ctrl+U)',
         text: 'Sublinha o texto.',
         cls: 'x-html-editor-tip'
       },

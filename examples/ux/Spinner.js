@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.ux.Spinner
@@ -89,12 +89,14 @@ Ext.ux.Spinner = Ext.extend(Ext.util.Observable, {
 
     doEnable: function(){
         if (this.wrap) {
+            this.disabled = false;
             this.wrap.removeClass(this.field.disabledClass);
         }
     },
 
     doDisable: function(){
         if (this.wrap) {
+	        this.disabled = true;
             this.wrap.addClass(this.field.disabledClass);
             this.el.removeClass(this.field.disabledClass);
         }
@@ -102,7 +104,7 @@ Ext.ux.Spinner = Ext.extend(Ext.util.Observable, {
 
     doResize: function(w, h){
         if (typeof w == 'number') {
-            this.el.setWidth(this.field.adjustWidth('input', w - this.trigger.getWidth()));
+            this.el.setWidth(w - this.trigger.getWidth());
         }
         this.wrap.setWidth(this.el.getWidth() + this.trigger.getWidth());
     },
@@ -430,6 +432,9 @@ Ext.ux.Spinner = Ext.extend(Ext.util.Observable, {
 
         if (this.repeater) {
             this.repeater.purgeListeners();
+        }
+        if (this.mimicing){
+            Ext.get(Ext.isIE ? document.body : document).un("mousedown", this.mimicBlur, this);
         }
     }
 });

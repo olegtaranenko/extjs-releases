@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 
 Ext.onReady(function(){
@@ -14,7 +14,7 @@ Ext.onReady(function(){
     });
     store.load();
 
-    var listView = new Ext.ListView({
+    var listView = new Ext.list.ListView({
         store: store,
         multiSelect: true,
         emptyText: 'No images to display',
@@ -26,14 +26,16 @@ Ext.onReady(function(){
             dataIndex: 'name'
         },{
             header: 'Last Modified',
+            xtype: 'datecolumn',
+            format: 'm-d h:i a',
             width: .35, 
-            dataIndex: 'lastmod',
-            tpl: '{lastmod:date("m-d h:i a")}'
+            dataIndex: 'lastmod'
         },{
             header: 'Size',
             dataIndex: 'size',
             tpl: '{size:fileSize}',
-            align: 'right'
+            align: 'right',
+            cls: 'listview-filesize'
         }]
     });
     

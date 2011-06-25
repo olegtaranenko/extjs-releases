@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.menu.MenuMgr
@@ -10,17 +10,20 @@
  * @singleton
  */
 Ext.menu.MenuMgr = function(){
-   var menus, active, groups = {}, attached = false, lastShow = new Date();
+   var menus, 
+       active, 
+       map,
+       groups = {}, 
+       attached = false, 
+       lastShow = new Date();
+   
 
    // private - called when first menu is created
    function init(){
        menus = {};
        active = new Ext.util.MixedCollection();
-       Ext.getDoc().addKeyListener(27, function(){
-           if(active.length > 0){
-               hideAll();
-           }
-       });
+       map = Ext.getDoc().addKeyListener(27, hideAll);
+       map.disable();
    }
 
    // private
@@ -30,13 +33,16 @@ Ext.menu.MenuMgr = function(){
            c.each(function(m){
                m.hide();
            });
+           return true;
        }
+       return false;
    }
 
    // private
    function onHide(m){
        active.remove(m);
        if(active.length < 1){
+           map.disable();
            Ext.getDoc().un("mousedown", onMouseDown);
            attached = false;
        }
@@ -48,13 +54,14 @@ Ext.menu.MenuMgr = function(){
        lastShow = new Date();
        active.add(m);
        if(!attached){
+           map.enable();
            Ext.getDoc().on("mousedown", onMouseDown);
            attached = true;
        }
        if(m.parentMenu){
           m.getEl().setZIndex(parseInt(m.parentMenu.getEl().getStyle("z-index"), 10) + 3);
           m.parentMenu.activeChild = m;
-       }else if(last && last.isVisible()){
+       }else if(last && !last.isDestroyed && last.isVisible()){
           m.getEl().setZIndex(parseInt(last.getEl().getStyle("z-index"), 10) + 3);
        }
    }
@@ -87,25 +94,14 @@ Ext.menu.MenuMgr = function(){
        }
    }
 
-   // private
-   function onBeforeCheck(mi, state){
-       if(state){
-           var g = groups[mi.group];
-           for(var i = 0, l = g.length; i < l; i++){
-               if(g[i] != mi){
-                   g[i].setChecked(false);
-               }
-           }
-       }
-   }
-
    return {
 
        /**
         * Hides all menus that are currently visible
+        * @return {Boolean} success True if any active menus were hidden.
         */
        hideAll : function(){
-            hideAll();  
+            return hideAll();
        },
 
        // private
@@ -114,18 +110,12 @@ Ext.menu.MenuMgr = function(){
                init();
            }
            menus[menu.id] = menu;
-           menu.on("beforehide", onBeforeHide);
-           menu.on("hide", onHide);
-           menu.on("beforeshow", onBeforeShow);
-           menu.on("show", onShow);
-           var g = menu.group;
-           if(g && menu.events["checkchange"]){
-               if(!groups[g]){
-                   groups[g] = [];
-               }
-               groups[g].push(menu);
-               menu.on("checkchange", onCheck);
-           }
+           menu.on({
+               beforehide: onBeforeHide,
+               hide: onHide,
+               beforeshow: onBeforeShow,
+               show: onShow
+           });
        },
 
         /**
@@ -156,11 +146,6 @@ Ext.menu.MenuMgr = function(){
            menu.un("hide", onHide);
            menu.un("beforeshow", onBeforeShow);
            menu.un("show", onShow);
-           var g = menu.group;
-           if(g && menu.events["checkchange"]){
-               groups[g].remove(menu);
-               menu.un("checkchange", onCheck);
-           }
        },
 
        // private
@@ -171,7 +156,6 @@ Ext.menu.MenuMgr = function(){
                    groups[g] = [];
                }
                groups[g].push(menuItem);
-               menuItem.on("beforecheckchange", onBeforeCheck);
            }
        },
 
@@ -180,7 +164,23 @@ Ext.menu.MenuMgr = function(){
            var g = menuItem.group;
            if(g){
                groups[g].remove(menuItem);
-               menuItem.un("beforecheckchange", onBeforeCheck);
+           }
+       },
+       
+       // private
+       onCheckChange: function(item, state){
+           if(item.group && state){
+               var group = groups[item.group],
+                   i = 0,
+                   len = group.length,
+                   current;
+                   
+               for(; i < len; i++){
+                   current = group[i];
+                   if(current != item){
+                       current.setChecked(false);
+                   }
+               }
            }
        },
 

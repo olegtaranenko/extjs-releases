@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 Ext.onReady(function(){
 
@@ -18,35 +18,38 @@ Ext.onReady(function(){
         bodyStyle: 'padding:10px',
         contentEl: 'content',
         autoScroll: true,
-        tbar: [{
-            xtype:'splitbutton',
-            text: 'Menu Button',
-            iconCls: 'add16',
-            handler: handleAction.createCallback('Menu Button'),
-            menu: [{text: 'Menu Item 1', handler: handleAction.createCallback('Menu Item 1')}]
-        },'-',{
-            xtype:'splitbutton',
-            text: 'Cut',
-            iconCls: 'add16',
-            handler: handleAction.createCallback('Cut'),
-            menu: [{text: 'Cut menu', handler: handleAction.createCallback('Cut menu')}]
-        },{
-            text: 'Copy',
-            iconCls: 'add16',
-            handler: handleAction.createCallback('Copy')
-        },{
-            text: 'Paste',
-            iconCls: 'add16',
-            menu: [{text: 'Paste menu', handler: handleAction.createCallback('Paste menu')}]
-        },'-',{
-            text: 'Format',
-            iconCls: 'add16',
-            handler: handleAction.createCallback('Format')
-        },'->',{
-            text: 'Right',
-            iconCls: 'add16',
-            handler: handleAction.createCallback('Right')
-        }]
+        tbar: new Ext.Toolbar({
+            enableOverflow: true,
+            items: [{
+                xtype:'splitbutton',
+                text: 'Menu Button',
+                iconCls: 'add16',
+                handler: handleAction.createCallback('Menu Button'),
+                menu: [{text: 'Menu Item 1', handler: handleAction.createCallback('Menu Item 1')}]
+            },'-',{
+                xtype:'splitbutton',
+                text: 'Cut',
+                iconCls: 'add16',
+                handler: handleAction.createCallback('Cut'),
+                menu: [{text: 'Cut menu', handler: handleAction.createCallback('Cut menu')}]
+            },{
+                text: 'Copy',
+                iconCls: 'add16',
+                handler: handleAction.createCallback('Copy')
+            },{
+                text: 'Paste',
+                iconCls: 'add16',
+                menu: [{text: 'Paste menu', handler: handleAction.createCallback('Paste menu')}]
+            },'-',{
+                text: 'Format',
+                iconCls: 'add16',
+                handler: handleAction.createCallback('Format')
+            },'->',{
+                text: 'Right',
+                iconCls: 'add16',
+                handler: handleAction.createCallback('Right')
+            }]
+        })
     });
     p.show();
 

@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.menu.Item
@@ -15,13 +15,7 @@
  * @param {Object} config Configuration options
  * @xtype menuitem
  */
-Ext.menu.Item = function(config){
-    Ext.menu.Item.superclass.constructor.call(this, config);
-    if(this.menu){
-        this.menu = Ext.menu.MenuMgr.get(this.menu);
-    }
-};
-Ext.extend(Ext.menu.Item, Ext.menu.BaseItem, {
+Ext.menu.Item = Ext.extend(Ext.menu.BaseItem, {
     /**
      * @property menu
      * @type Ext.menu.Menu
@@ -60,11 +54,37 @@ Ext.extend(Ext.menu.Item, Ext.menu.BaseItem, {
      * @cfg {Number} showDelay Length of time in milliseconds to wait before showing this item (defaults to 200)
      */
     showDelay: 200,
+    
+    /**
+     * @cfg {String} altText The altText to use for the icon, if it exists. Defaults to <tt>''</tt>.
+     */
+    altText: '',
+    
     // doc'd in BaseItem
     hideDelay: 200,
 
     // private
     ctype: 'Ext.menu.Item',
+
+    initComponent : function(){
+        Ext.menu.Item.superclass.initComponent.call(this);
+        if(this.menu){
+            // If array of items, turn it into an object config so we
+            // can set the ownerCt property in the config
+            if (Ext.isArray(this.menu)){
+                this.menu = { items: this.menu };
+            }
+            
+            // An object config will work here, but an instance of a menu
+            // will have already setup its ref's and have no effect
+            if (Ext.isObject(this.menu)){
+                this.menu.ownerCt = this;
+            }
+            
+            this.menu = Ext.menu.MenuMgr.get(this.menu);
+            this.menu.ownerCt = undefined;
+        }
+    },
 
     // private
     onRender : function(container, position){
@@ -75,7 +95,7 @@ Ext.extend(Ext.menu.Item, Ext.menu.BaseItem, {
                         ' target="{hrefTarget}"',
                     '</tpl>',
                  '>',
-                     '<img src="{icon}" class="x-menu-item-icon {iconCls}"/>',
+                     '<img alt="{altText}" src="{icon}" class="x-menu-item-icon {iconCls}"/>',
                      '<span class="x-menu-item-text">{text}</span>',
                  '</a>'
              );
@@ -84,6 +104,9 @@ Ext.extend(Ext.menu.Item, Ext.menu.BaseItem, {
         this.el = position ? this.itemTpl.insertBefore(position, a, true) : this.itemTpl.append(container, a, true);
         this.iconEl = this.el.child('img.x-menu-item-icon');
         this.textEl = this.el.child('.x-menu-item-text');
+        if(!this.href) { // if no link defined, prevent the default anchor event
+            this.mon(this.el, 'click', Ext.emptyFn, null, { preventDefault: true });
+        }
         Ext.menu.Item.superclass.onRender.call(this, container, position);
     },
 
@@ -95,7 +118,8 @@ Ext.extend(Ext.menu.Item, Ext.menu.BaseItem, {
             hrefTarget: this.hrefTarget,
             icon: this.icon || Ext.BLANK_IMAGE_URL,
             iconCls: this.iconCls || '',
-            text: this.itemText||this.text||'&#160;'
+            text: this.itemText||this.text||'&#160;',
+            altText: this.altText || ''
         };
     },
 
@@ -122,10 +146,13 @@ Ext.extend(Ext.menu.Item, Ext.menu.BaseItem, {
             this.iconEl.replaceClass(oldCls, this.iconCls);
         }
     },
-    
+
     //private
     beforeDestroy: function(){
+        clearTimeout(this.showTimer);
+        clearTimeout(this.hideTimer);
         if (this.menu){
+            delete this.menu.ownerCt;
             this.menu.destroy();
         }
         Ext.menu.Item.superclass.beforeDestroy.call(this);

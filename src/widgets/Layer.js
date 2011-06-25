@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.Layer
@@ -27,9 +27,10 @@
 (function(){
 Ext.Layer = function(config, existingEl){
     config = config || {};
-    var dh = Ext.DomHelper;
-    var cp = config.parentEl, pel = cp ? Ext.getDom(cp) : document.body;
-    if(existingEl){
+    var dh = Ext.DomHelper,
+        cp = config.parentEl, pel = cp ? Ext.getDom(cp) : document.body;
+        
+    if (existingEl) {
         this.dom = Ext.getDom(existingEl);
     }
     if(!this.dom){
@@ -116,8 +117,10 @@ Ext.extend(Ext.Layer, Ext.Element, {
     enableShadow : function(show){
         if(this.shadow){
             this.shadowDisabled = false;
-            this.shadowOffset = this.lastShadowOffset;
-            delete this.lastShadowOffset;
+            if(Ext.isDefined(this.lastShadowOffset)) {
+                this.shadowOffset = this.lastShadowOffset;
+                delete this.lastShadowOffset;
+            }
             if(show){
                 this.sync(true);
             }
@@ -128,41 +131,39 @@ Ext.extend(Ext.Layer, Ext.Element, {
     // this code can execute repeatedly in milliseconds (i.e. during a drag) so
     // code size was sacrificed for effeciency (e.g. no getBox/setBox, no XY calls)
     sync : function(doShow){
-        var sw = this.shadow;
-        if(!this.updating && this.isVisible() && (sw || this.useShim)){
-            var sh = this.getShim();
-
-            var w = this.getWidth(),
-                h = this.getHeight();
-
-            var l = this.getLeft(true),
+        var shadow = this.shadow;
+        if(!this.updating && this.isVisible() && (shadow || this.useShim)){
+            var shim = this.getShim(),
+                w = this.getWidth(),
+                h = this.getHeight(),
+                l = this.getLeft(true),
                 t = this.getTop(true);
 
-            if(sw && !this.shadowDisabled){
-                if(doShow && !sw.isVisible()){
-                    sw.show(this);
+            if(shadow && !this.shadowDisabled){
+                if(doShow && !shadow.isVisible()){
+                    shadow.show(this);
                 }else{
-                    sw.realign(l, t, w, h);
+                    shadow.realign(l, t, w, h);
                 }
-                if(sh){
+                if(shim){
                     if(doShow){
-                       sh.show();
+                       shim.show();
                     }
                     // fit the shim behind the shadow, so it is shimmed too
-                    var a = sw.adjusts, s = sh.dom.style;
-                    s.left = (Math.min(l, l+a.l))+'px';
-                    s.top = (Math.min(t, t+a.t))+'px';
-                    s.width = (w+a.w)+'px';
-                    s.height = (h+a.h)+'px';
+                    var shadowAdj = shadow.el.getXY(), shimStyle = shim.dom.style,
+                        shadowSize = shadow.el.getSize();
+                    shimStyle.left = (shadowAdj[0])+'px';
+                    shimStyle.top = (shadowAdj[1])+'px';
+                    shimStyle.width = (shadowSize.width)+'px';
+                    shimStyle.height = (shadowSize.height)+'px';
                 }
-            }else if(sh){
+            }else if(shim){
                 if(doShow){
-                   sh.show();
+                   shim.show();
                 }
-                sh.setSize(w, h);
-                sh.setLeftTop(l, t);
+                shim.setSize(w, h);
+                shim.setLeftTop(l, t);
             }
-
         }
     },
 
@@ -174,7 +175,7 @@ Ext.extend(Ext.Layer, Ext.Element, {
         }
         this.removeAllListeners();
         Ext.removeNode(this.dom);
-        Ext.Element.uncache(this.id);
+        delete this.dom;
     },
 
     remove : function(){
@@ -245,6 +246,10 @@ Ext.extend(Ext.Layer, Ext.Element, {
             }
         }
         return this;
+    },
+    
+    getConstrainOffset : function(){
+        return this.shadowOffset;    
     },
 
     isVisible : function(){

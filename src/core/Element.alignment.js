@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.Element
@@ -63,28 +63,69 @@ Ext.Element.addMethods({
      */
     anchorTo : function(el, alignment, offsets, animate, monitorScroll, callback){        
 	    var me = this,
-            dom = me.dom;
-	    
-	    function action(){
-            Ext.fly(dom).alignTo(el, alignment, offsets, animate);
-            Ext.callback(callback, Ext.fly(dom));
-        }
+            dom = me.dom,
+            scroll = !Ext.isEmpty(monitorScroll),
+            action = function(){
+                Ext.fly(dom).alignTo(el, alignment, offsets, animate);
+                Ext.callback(callback, Ext.fly(dom));
+            },
+            anchor = this.getAnchor();
+            
+        // previous listener anchor, remove it
+        this.removeAnchor();
+        Ext.apply(anchor, {
+            fn: action,
+            scroll: scroll
+        });
+
+        Ext.EventManager.onWindowResize(action, null);
         
-        Ext.EventManager.onWindowResize(action, me);
-        
-        if(!Ext.isEmpty(monitorScroll)){
-            Ext.EventManager.on(window, 'scroll', action, me,
+        if(scroll){
+            Ext.EventManager.on(window, 'scroll', action, null,
                 {buffer: !isNaN(monitorScroll) ? monitorScroll : 50});
         }
         action.call(me); // align immediately
         return me;
+    },
+    
+    /**
+     * Remove any anchor to this element. See {@link #anchorTo}.
+     * @return {Ext.Element} this
+     */
+    removeAnchor : function(){
+        var me = this,
+            anchor = this.getAnchor();
+            
+        if(anchor && anchor.fn){
+            Ext.EventManager.removeResizeListener(anchor.fn);
+            if(anchor.scroll){
+                Ext.EventManager.un(window, 'scroll', anchor.fn);
+            }
+            delete anchor.fn;
+        }
+        return me;
+    },
+    
+    // private
+    getAnchor : function(){
+        var data = Ext.Element.data,
+            dom = this.dom;
+            if (!dom) {
+                return;
+            }
+            var anchor = data(dom, '_anchor');
+            
+        if(!anchor){
+            anchor = data(dom, '_anchor', {});
+        }
+        return anchor;
     },
 
     /**
      * Gets the x,y coordinates to align this element with another element. See {@link #alignTo} for more info on the
      * supported position values.
      * @param {Mixed} element The element to align to.
-     * @param {String} position The position to align to.
+     * @param {String} position (optional, defaults to "tl-bl?") The position to align to.
      * @param {Array} offsets (optional) Offset the positioning by [x, y]
      * @return {Array} [x, y]
      */
@@ -96,7 +137,7 @@ Ext.Element.addMethods({
         }
         
         o = o || [0,0];
-        p = (p == "?" ? "tl-bl?" : (!/-/.test(p) && p !== "" ? "tl-" + p : p || "tl-bl")).toLowerCase();       
+        p = (!p || p == "?" ? "tl-bl?" : (!(/-/).test(p) && p !== "" ? "tl-" + p : p || "tl-bl")).toLowerCase();       
                 
         var me = this,
         	d = me.dom,
@@ -219,7 +260,7 @@ el.alignTo("other-el", "br-l?");
 el.alignTo("other-el", "c-bl", [-6, 0]);
 </code></pre>
      * @param {Mixed} element The element to align to.
-     * @param {String} position The position to align to.
+     * @param {String} position (optional, defaults to "tl-bl?") The position to align to.
      * @param {Array} offsets (optional) Offset the positioning by [x, y]
      * @param {Boolean/Object} animate (optional) true for the default animation or a standard Element animation config object
      * @return {Ext.Element} this
@@ -265,12 +306,13 @@ el.alignTo("other-el", "c-bl", [-6, 0]);
             vw -= offsets.right;
             vh -= offsets.bottom;
 
-            var vr = vx+vw;
-            var vb = vy+vh;
-
-            var xy = proposedXY || (!local ? this.getXY() : [this.getLeft(true), this.getTop(true)]);
-            var x = xy[0], y = xy[1];
-            var w = this.dom.offsetWidth, h = this.dom.offsetHeight;
+            var vr = vx + vw,
+                vb = vy + vh,
+                xy = proposedXY || (!local ? this.getXY() : [this.getLeft(true), this.getTop(true)]),
+                x = xy[0], y = xy[1],
+                offset = this.getConstrainOffset(),
+                w = this.dom.offsetWidth + offset, 
+                h = this.dom.offsetHeight + offset;
 
             // only move it if it needs it
             var moved = false;
@@ -351,6 +393,11 @@ el.alignTo("other-el", "c-bl", [-6, 0]);
 //         }
 //         return moved ? [x, y] : false;
 //    },
+
+    // private, used internally
+    getConstrainOffset : function(){
+        return 0;
+    },
     
     /**
     * Calculates the x, y to center this element on the screen

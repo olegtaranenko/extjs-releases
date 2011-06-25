@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 Ext.onReady(function(){
 
@@ -140,10 +140,9 @@ Ext.onReady(function(){
                 title:'Company Data',
                 border: true,
                 listeners: {
-                    render: function(g) {
+                    viewready: function(g) {
                         g.getSelectionModel().selectRow(0);
-                    },
-                    delay: 10 // Allow rows to be rendered.
+                    } // Allow rows to be rendered.
                 }
             }
         },{
@@ -174,55 +173,26 @@ Ext.onReady(function(){
                 fieldLabel: 'Last Updated',
                 name: 'lastChange'
             }, {
-                xtype: 'panel',
-                layout: 'table',
-                layoutConfig: {
-                    columns: 4
-                },
-                anchor: '100%',
-                defaults: {
-                    border: false,
-                    layout: 'form',
-                    labelWidth: 15,
-                    style: {
-                        paddingRight: '10px'
-                    }
-                },
-
+                xtype: 'radiogroup',
+                columns: 'auto',
+                fieldLabel: 'Rating',
 // A radio group: A setValue on any of the following 'radio' inputs using the numeric
 // 'rating' field checks the radio instance which has the matching inputValue.
                 items: [{
-                    cellCls: 'x-form-item',
-                    xtype: 'label',
-                    text: 'Rating',
-                       width: 98
+                    name: 'rating',
+                    inputValue: 0,
+                    boxLabel: 'A'
                 }, {
-                    items: {    
-                        xtype: 'radio',
-                        name: 'rating',
-                        inputValue: '0',
-                        fieldLabel: 'A'
-                    }
+                    name: 'rating',
+                    inputValue: 1,
+                    boxLabel: 'B'
                 }, {
-                    items: {
-                        xtype: 'radio',
-                        name: 'rating',
-                        inputValue: '1',
-                        fieldLabel: 'B'
-                    }
-                }, {
-                    items: {
-                        xtype: 'radio',
-                        name: 'rating',
-                        inputValue: '2',
-                        fieldLabel: 'C'
-                    }
+                    name: 'rating',
+                    inputValue: 2,
+                    boxLabel: 'C'
                 }]
             }]
         }],
         renderTo: bd
     });
-    
-    //  Create Panel view code. Ignore.
-    createCodePanel('form-grid.js', 'View code to create this Form');
 });

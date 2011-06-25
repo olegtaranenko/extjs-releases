@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.layout.FitLayout
@@ -29,12 +29,22 @@ Ext.layout.FitLayout = Ext.extend(Ext.layout.ContainerLayout, {
     // private
     monitorResize:true,
 
+    type: 'fit',
+
+    getLayoutTargetSize : function() {
+        var target = this.container.getLayoutTarget();
+        if (!target) {
+            return {};
+        }
+        // Style Sized (scrollbars not included)
+        return target.getStyleSize();
+    },
+
     // private
     onLayout : function(ct, target){
         Ext.layout.FitLayout.superclass.onLayout.call(this, ct, target);
-        if(!this.container.collapsed){
-            var sz = (Ext.isIE6 && Ext.isStrict && target.dom == document.body) ? target.getViewSize() : target.getStyleSize();
-            this.setItemSize(this.activeItem || ct.items.itemAt(0), sz);
+        if(!ct.collapsed){
+            this.setItemSize(this.activeItem || ct.items.itemAt(0), this.getLayoutTargetSize());
         }
     },
 

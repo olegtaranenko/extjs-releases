@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * List compiled by mystix on the extjs.com forums.
@@ -131,6 +131,10 @@ if(Ext.PagingToolbar){
   });
 }
 
+if(Ext.form.BasicForm){
+    Ext.form.BasicForm.prototype.waitTitle = "Please Wait..."
+}
+
 if(Ext.form.Field){
   Ext.form.Field.prototype.invalidText = "The value in this field is invalid";
 }
@@ -163,7 +167,8 @@ if(Ext.form.DateField){
     maxText           : "The date in this field must be before {0}",
     invalidText       : "{0} is not a valid date - it must be in the format {1}",
     format            : "d/m/y",
-    altFormats        : "d/m/Y|d/m/y|d-m-y|d-m-Y|d/m|d-m|dm|dmy|dmY|d|Y-m-d"
+    altFormats        : "d/m/Y|d/m/y|d-m-y|d-m-Y|d/m|d-m|dm|dmy|dmY|d|Y-m-d",
+    startDay          : 0
   });
 }
 
@@ -281,7 +286,9 @@ if(Ext.grid.PropertyColumnModel){
   Ext.apply(Ext.grid.PropertyColumnModel.prototype, {
     nameText   : "Name",
     valueText  : "Value",
-    dateFormat : "j/m/Y"
+    dateFormat : "j/m/Y",
+    trueText: "true",
+    falseText: "false"
   });
 }
 

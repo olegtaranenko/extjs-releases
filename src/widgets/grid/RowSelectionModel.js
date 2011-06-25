@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.grid.RowSelectionModel
@@ -14,60 +14,59 @@
  * @constructor
  * @param {Object} config
  */
-Ext.grid.RowSelectionModel = function(config){
-    Ext.apply(this, config);
-    this.selections = new Ext.util.MixedCollection(false, function(o){
-        return o.id;
-    });
-
-    this.last = false;
-    this.lastActive = false;
-
-    this.addEvents(
-        /**
-         * @event selectionchange
-         * Fires when the selection changes
-         * @param {SelectionModel} this
-         */
-        "selectionchange",
-        /**
-         * @event beforerowselect
-         * Fires before a row is selected, return false to cancel the selection.
-         * @param {SelectionModel} this
-         * @param {Number} rowIndex The index to be selected
-         * @param {Boolean} keepExisting False if other selections will be cleared
-         * @param {Record} record The record to be selected
-         */
-        "beforerowselect",
-        /**
-         * @event rowselect
-         * Fires when a row is selected.
-         * @param {SelectionModel} this
-         * @param {Number} rowIndex The selected index
-         * @param {Ext.data.Record} r The selected record
-         */
-        "rowselect",
-        /**
-         * @event rowdeselect
-         * Fires when a row is deselected.  To prevent deselection
-         * {@link Ext.grid.AbstractSelectionModel#lock lock the selections}. 
-         * @param {SelectionModel} this
-         * @param {Number} rowIndex
-         * @param {Record} record
-         */
-        "rowdeselect"
-    );
-
-    Ext.grid.RowSelectionModel.superclass.constructor.call(this);
-};
-
-Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
+Ext.grid.RowSelectionModel = Ext.extend(Ext.grid.AbstractSelectionModel,  {
     /**
      * @cfg {Boolean} singleSelect
      * <tt>true</tt> to allow selection of only one row at a time (defaults to <tt>false</tt>
      * allowing multiple selections)
      */
     singleSelect : false,
+    
+    constructor : function(config){
+        Ext.apply(this, config);
+        this.selections = new Ext.util.MixedCollection(false, function(o){
+            return o.id;
+        });
+
+        this.last = false;
+        this.lastActive = false;
+
+        this.addEvents(
+	        /**
+	         * @event selectionchange
+	         * Fires when the selection changes
+	         * @param {SelectionModel} this
+	         */
+	        'selectionchange',
+	        /**
+	         * @event beforerowselect
+	         * Fires before a row is selected, return false to cancel the selection.
+	         * @param {SelectionModel} this
+	         * @param {Number} rowIndex The index to be selected
+	         * @param {Boolean} keepExisting False if other selections will be cleared
+	         * @param {Record} record The record to be selected
+	         */
+	        'beforerowselect',
+	        /**
+	         * @event rowselect
+	         * Fires when a row is selected.
+	         * @param {SelectionModel} this
+	         * @param {Number} rowIndex The selected index
+	         * @param {Ext.data.Record} r The selected record
+	         */
+	        'rowselect',
+	        /**
+	         * @event rowdeselect
+	         * Fires when a row is deselected.  To prevent deselection
+	         * {@link Ext.grid.AbstractSelectionModel#lock lock the selections}. 
+	         * @param {SelectionModel} this
+	         * @param {Number} rowIndex
+	         * @param {Record} record
+	         */
+	        'rowdeselect'
+        );
+        Ext.grid.RowSelectionModel.superclass.constructor.call(this);
+    },
 
     /**
      * @cfg {Boolean} moveEditorOnEnter
@@ -78,68 +77,62 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
     initEvents : function(){
 
         if(!this.grid.enableDragDrop && !this.grid.enableDrag){
-            this.grid.on("rowmousedown", this.handleMouseDown, this);
-        }else{ // allow click to work like normal
-            this.grid.on("rowclick", function(grid, rowIndex, e) {
-                if(e.button === 0 && !e.shiftKey && !e.ctrlKey) {
-                    this.selectRow(rowIndex, false);
-                    grid.view.focusRow(rowIndex);
-                }
-            }, this);
+            this.grid.on('rowmousedown', this.handleMouseDown, this);
         }
 
         this.rowNav = new Ext.KeyNav(this.grid.getGridEl(), {
-            "up" : function(e){
-                if(!e.shiftKey || this.singleSelect){
-                    this.selectPrevious(false);
-                }else if(this.last !== false && this.lastActive !== false){
-                    var last = this.last;
-                    this.selectRange(this.last,  this.lastActive-1);
-                    this.grid.getView().focusRow(this.lastActive);
-                    if(last !== false){
-                        this.last = last;
-                    }
-                }else{
-                    this.selectFirstRow();
-                }
-            },
-            "down" : function(e){
-                if(!e.shiftKey || this.singleSelect){
-                    this.selectNext(false);
-                }else if(this.last !== false && this.lastActive !== false){
-                    var last = this.last;
-                    this.selectRange(this.last,  this.lastActive+1);
-                    this.grid.getView().focusRow(this.lastActive);
-                    if(last !== false){
-                        this.last = last;
-                    }
-                }else{
-                    this.selectFirstRow();
-                }
-            },
+            up: this.onKeyPress, 
+            down: this.onKeyPress,
             scope: this
         });
 
-        var view = this.grid.view;
-        view.on("refresh", this.onRefresh, this);
-        view.on("rowupdated", this.onRowUpdated, this);
-        view.on("rowremoved", this.onRemove, this);
+        this.grid.getView().on({
+            scope: this,
+            refresh: this.onRefresh,
+            rowupdated: this.onRowUpdated,
+            rowremoved: this.onRemove
+        });
+    },
+    
+    onKeyPress : function(e, name){
+        var up = name == 'up',
+            method = up ? 'selectPrevious' : 'selectNext',
+            add = up ? -1 : 1,
+            last;
+        if(!e.shiftKey || this.singleSelect){
+            this[method](false);
+        }else if(this.last !== false && this.lastActive !== false){
+            last = this.last;
+            this.selectRange(this.last,  this.lastActive + add);
+            this.grid.getView().focusRow(this.lastActive);
+            if(last !== false){
+                this.last = last;
+            }
+        }else{
+           this.selectFirstRow();
+        }
     },
 
     // private
     onRefresh : function(){
-        var ds = this.grid.store, index;
-        var s = this.getSelections();
+        var ds = this.grid.store,
+            s = this.getSelections(),
+            i = 0,
+            len = s.length, 
+            index, r;
+            
+        this.silent = true;
         this.clearSelections(true);
-        for(var i = 0, len = s.length; i < len; i++){
-            var r = s[i];
+        for(; i < len; i++){
+            r = s[i];
             if((index = ds.indexOfId(r.id)) != -1){
                 this.selectRow(index, true);
             }
         }
         if(s.length != this.selections.getCount()){
-            this.fireEvent("selectionchange", this);
+            this.fireEvent('selectionchange', this);
         }
+        this.silent = false;
     },
 
     // private
@@ -165,8 +158,10 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
         if(!keepExisting){
             this.clearSelections();
         }
-        var ds = this.grid.store;
-        for(var i = 0, len = records.length; i < len; i++){
+        var ds = this.grid.store,
+            i = 0,
+            len = records.length;
+        for(; i < len; i++){
             this.selectRow(ds.indexOf(records[i]), true);
         }
     },
@@ -259,13 +254,16 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
      * Calls the passed function with each selection. If the function returns
      * <tt>false</tt>, iteration is stopped and this function returns
      * <tt>false</tt>. Otherwise it returns <tt>true</tt>.
-     * @param {Function} fn
-     * @param {Object} scope (optional)
+     * @param {Function} fn The function to call upon each iteration. It is passed the selected {@link Ext.data.Record Record}.
+     * @param {Object} scope (optional) The scope (<code>this</code> reference) in which the function is executed. Defaults to this RowSelectionModel.
      * @return {Boolean} true if all selections were iterated
      */
     each : function(fn, scope){
-        var s = this.getSelections();
-        for(var i = 0, len = s.length; i < len; i++){
+        var s = this.getSelections(),
+            i = 0,
+            len = s.length;
+            
+        for(; i < len; i++){
             if(fn.call(scope || this, s[i], i) === false){
                 return false;
             }
@@ -284,8 +282,8 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
             return;
         }
         if(fast !== true){
-            var ds = this.grid.store;
-            var s = this.selections;
+            var ds = this.grid.store,
+                s = this.selections;
             s.each(function(r){
                 this.deselectRow(ds.indexOfId(r.id));
             }, this);
@@ -325,7 +323,7 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
      * @return {Boolean}
      */
     isSelected : function(index){
-        var r = typeof index == "number" ? this.grid.store.getAt(index) : index;
+        var r = Ext.isNumber(index) ? this.grid.store.getAt(index) : index;
         return (r && this.selections.key(r.id) ? true : false);
     },
 
@@ -434,7 +432,7 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
             return;
         }
         var r = this.grid.store.getAt(index);
-        if(r && this.fireEvent("beforerowselect", this, index, keepExisting, r) !== false){
+        if(r && this.fireEvent('beforerowselect', this, index, keepExisting, r) !== false){
             if(!keepExisting || this.singleSelect){
                 this.clearSelections();
             }
@@ -443,8 +441,10 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
             if(!preventViewNotify){
                 this.grid.getView().onRowSelect(index);
             }
-            this.fireEvent("rowselect", this, index, r);
-            this.fireEvent("selectionchange", this);
+            if(!this.silent){
+                this.fireEvent('rowselect', this, index, r);
+                this.fireEvent('selectionchange', this);
+            }
         }
     },
 
@@ -473,15 +473,8 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
             if(!preventViewNotify){
                 this.grid.getView().onRowDeselect(index);
             }
-            this.fireEvent("rowdeselect", this, index, r);
-            this.fireEvent("selectionchange", this);
-        }
-    },
-
-    // private
-    restoreLast : function(){
-        if(this._last){
-            this.last = this._last;
+            this.fireEvent('rowdeselect', this, index, r);
+            this.fireEvent('selectionchange', this);
         }
     },
 
@@ -492,8 +485,14 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
 
     // private
     onEditorKey : function(field, e){
-        var k = e.getKey(), newCell, g = this.grid, ed = g.activeEditor;
-        var shift = e.shiftKey;
+        var k = e.getKey(), 
+            newCell, 
+            g = this.grid, 
+            last = g.lastEdit,
+            ed = g.activeEditor,
+            shift = e.shiftKey,
+            ae, last, r, c;
+            
         if(k == e.TAB){
             e.stopEvent();
             ed.completeEdit();
@@ -503,28 +502,40 @@ Ext.extend(Ext.grid.RowSelectionModel, Ext.grid.AbstractSelectionModel,  {
                 newCell = g.walkCells(ed.row, ed.col+1, 1, this.acceptsNav, this);
             }
         }else if(k == e.ENTER){
-            e.stopEvent();
-            ed.completeEdit();
             if(this.moveEditorOnEnter !== false){
                 if(shift){
-                    newCell = g.walkCells(ed.row - 1, ed.col, -1, this.acceptsNav, this);
+                    newCell = g.walkCells(last.row - 1, last.col, -1, this.acceptsNav, this);
                 }else{
-                    newCell = g.walkCells(ed.row + 1, ed.col, 1, this.acceptsNav, this);
+                    newCell = g.walkCells(last.row + 1, last.col, 1, this.acceptsNav, this);
                 }
             }
-        }else if(k == e.ESC){
-            ed.cancelEdit();
         }
         if(newCell){
-            g.startEditing(newCell[0], newCell[1]);
+            r = newCell[0];
+            c = newCell[1];
+
+            this.onEditorSelect(r, last.row);
+
+            if(g.isEditor && g.editing){ // *** handle tabbing while editorgrid is in edit mode
+                ae = g.activeEditor;
+                if(ae && ae.field.triggerBlur){
+                    // *** if activeEditor is a TriggerField, explicitly call its triggerBlur() method
+                    ae.field.triggerBlur();
+                }
+            }
+            g.startEditing(r, c);
         }
     },
     
-    destroy: function(){
-        if(this.rowNav){
-            this.rowNav.disable();
-            this.rowNav = null;
+    onEditorSelect: function(row, lastRow){
+        if(lastRow != row){
+            this.selectRow(row); // *** highlight newly-selected cell and update selection
         }
+    },
+    
+    destroy : function(){
+        Ext.destroy(this.rowNav);
+        this.rowNav = null;
         Ext.grid.RowSelectionModel.superclass.destroy.call(this);
     }
 });

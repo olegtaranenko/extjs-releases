@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.menu.Separator
@@ -13,11 +13,7 @@
  * @param {Object} config Configuration options
  * @xtype menuseparator
  */
-Ext.menu.Separator = function(config){
-    Ext.menu.Separator.superclass.constructor.call(this, config);
-};
-
-Ext.extend(Ext.menu.Separator, Ext.menu.BaseItem, {
+Ext.menu.Separator = Ext.extend(Ext.menu.BaseItem, {
     /**
      * @cfg {String} itemCls The default CSS class to use for separators (defaults to "x-menu-sep")
      */

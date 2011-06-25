@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.dd.DragZone
@@ -21,8 +21,8 @@
  * by using the event's {@link Ext.EventObject#getTarget getTarget} method to identify a node based on a
  * {@link Ext.DomQuery} selector. For example, to make the nodes of a DataView draggable, use the following
  * technique. Knowledge of the use of the DataView is required:</p><pre><code>
-myDataView.on('render', function() {
-    myDataView.dragZone = new Ext.dd.DragZone(myDataView.getEl(), {
+myDataView.on('render', function(v) {
+    myDataView.dragZone = new Ext.dd.DragZone(v.getEl(), {
 
 //      On receipt of a mousedown event, see if it is within a DataView node.
 //      Return a drag data object if so.
@@ -30,7 +30,7 @@ myDataView.on('render', function() {
 
 //          Use the DataView's own itemSelector (a mandatory property) to
 //          test if the mousedown is within one of the DataView's nodes.
-            var sourceEl = e.getTarget(myDataView.itemSelector, 10);
+            var sourceEl = e.getTarget(v.itemSelector, 10);
 
 //          If the mousedown is within a DataView node, clone the node to produce
 //          a ddel element for use by the drag proxy. Also add application data
@@ -42,8 +42,8 @@ myDataView.on('render', function() {
                     ddel: d,
                     sourceEl: sourceEl,
                     repairXY: Ext.fly(sourceEl).getXY(),
-                    sourceStore: myDataView.store,
-                    draggedRecord: v.getRecord(sourceEl)
+                    sourceStore: v.store,
+                    draggedRecord: v.{@link Ext.DataView#getRecord getRecord}(sourceEl)
                 }
             }
         },
@@ -62,14 +62,15 @@ myDataView.on('render', function() {
  * @param {Mixed} el The container element
  * @param {Object} config
  */
-Ext.dd.DragZone = function(el, config){
-    Ext.dd.DragZone.superclass.constructor.call(this, el, config);
-    if(this.containerScroll){
-        Ext.dd.ScrollManager.register(this.el);
-    }
-};
-
-Ext.extend(Ext.dd.DragZone, Ext.dd.DragSource, {
+Ext.dd.DragZone = Ext.extend(Ext.dd.DragSource, {
+    
+    constructor : function(el, config){
+        Ext.dd.DragZone.superclass.constructor.call(this, el, config);
+        if(this.containerScroll){
+            Ext.dd.ScrollManager.register(this.el);
+        }
+    },
+    
     /**
      * This property contains the data representing the dragged object. This data is set up by the implementation
      * of the {@link #getDragData} method. It must contain a <tt>ddel</tt> property, but can contain
@@ -129,5 +130,12 @@ Ext.extend(Ext.dd.DragZone, Ext.dd.DragSource, {
      */
     getRepairXY : function(e){
         return Ext.Element.fly(this.dragData.ddel).getXY();  
+    },
+    
+    destroy : function(){
+        Ext.dd.DragZone.superclass.destroy.call(this);
+        if(this.containerScroll){
+            Ext.dd.ScrollManager.unregister(this.el);
+        }
     }
 });

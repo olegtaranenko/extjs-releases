@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.layout.TableLayout
@@ -73,6 +73,10 @@ Ext.layout.TableLayout = Ext.extend(Ext.layout.ContainerLayout, {
     // private
     monitorResize:false,
 
+    type: 'table',
+
+    targetCls: 'x-table-layout-ct',
+
     /**
      * @cfg {Object} tableAttrs
      * <p>An object containing properties which are added to the {@link Ext.DomHelper DomHelper} specification
@@ -82,16 +86,16 @@ Ext.layout.TableLayout = Ext.extend(Ext.layout.ContainerLayout, {
     layout: 'table',
     layoutConfig: {
         tableAttrs: {
-        	style: {
-        		width: '100%'
-        	}
+            style: {
+                width: '100%'
+            }
         },
         columns: 3
     }
 }</code></pre>
      */
     tableAttrs:null,
-    
+
     // private
     setContainer : function(ct){
         Ext.layout.TableLayout.superclass.setContainer.call(this, ct);
@@ -100,7 +104,7 @@ Ext.layout.TableLayout = Ext.extend(Ext.layout.ContainerLayout, {
         this.currentColumn = 0;
         this.cells = [];
     },
-
+    
     // private
     onLayout : function(ct, target){
         var cs = ct.items.items, len = cs.length, c, i;
@@ -154,7 +158,7 @@ Ext.layout.TableLayout = Ext.extend(Ext.layout.ContainerLayout, {
         this.getRow(curRow).appendChild(td);
         return td;
     },
-    
+
     // private
     getNextNonSpan: function(colIndex, rowIndex){
         var cols = this.columns;
@@ -171,18 +175,30 @@ Ext.layout.TableLayout = Ext.extend(Ext.layout.ContainerLayout, {
 
     // private
     renderItem : function(c, position, target){
+        // Ensure we have our inner table to get cells to render into.
+        if(!this.table){
+            this.table = target.createChild(
+                Ext.apply({tag:'table', cls:'x-table-layout', cellspacing: 0, cn: {tag: 'tbody'}}, this.tableAttrs), null, true);
+        }
         if(c && !c.rendered){
             c.render(this.getNextCell(c));
-            if(this.extraCls){
-                var t = c.getPositionEl ? c.getPositionEl() : c;
-                t.addClass(this.extraCls);
-            }
+            this.configureItem(c);
+        }else if(c && !this.isValidParent(c, target)){
+            var container = this.getNextCell(c);
+            container.insertBefore(c.getPositionEl().dom, null);
+            c.container = Ext.get(container);
+            this.configureItem(c);
         }
     },
 
     // private
     isValidParent : function(c, target){
-        return true;
+        return c.getPositionEl().up('table', 5).dom.parentNode === (target.dom || target);
+    },
+    
+    destroy: function(){
+        delete this.table;
+        Ext.layout.TableLayout.superclass.destroy.call(this);
     }
 
     /**

@@ -1,8 +1,8 @@
 /*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
+ * Ext JS Library 3.4.0
+ * Copyright(c) 2006-2011 Sencha Inc.
+ * licensing@sencha.com
+ * http://www.sencha.com/license
  */
 /**
  * @class Ext.layout.BoxLayout
@@ -42,8 +42,20 @@ Ext.layout.BoxLayout = Ext.extend(Ext.layout.ContainerLayout, {
     defaultMargins : {left:0,top:0,right:0,bottom:0},
     /**
      * @cfg {String} padding
-     * Defaults to <tt>'0'</tt>. Sets the padding to be applied to all child items managed by this
-     * container's layout. 
+     * <p>Sets the padding to be applied to all child items managed by this layout.</p>
+     * <p>This property must be specified as a string containing
+     * space-separated, numeric padding values. The order of the sides associated
+     * with each value matches the way CSS processes padding values:</p>
+     * <div class="mdetail-params"><ul>
+     * <li>If there is only one value, it applies to all sides.</li>
+     * <li>If there are two values, the top and bottom borders are set to the
+     * first value and the right and left are set to the second.</li>
+     * <li>If there are three values, the top is set to the first value, the left
+     * and right are set to the second, and the bottom is set to the third.</li>
+     * <li>If there are four values, they apply to the top, right, bottom, and
+     * left, respectively.</li>
+     * </ul></div>
+     * <p>Defaults to: <code>"0"</code></p>
      */
     padding : '0',
     // documented in subclasses
@@ -51,367 +63,278 @@ Ext.layout.BoxLayout = Ext.extend(Ext.layout.ContainerLayout, {
 
     // private
     monitorResize : true,
+    type: 'box',
     scrollOffset : 0,
     extraCls : 'x-box-item',
-    ctCls : 'x-box-layout-ct',
+    targetCls : 'x-box-layout-ct',
     innerCls : 'x-box-inner',
 
-    // private
-    isValidParent : function(c, target){
-        return c.getEl().dom.parentNode == this.innerCt.dom;
-    },
+    constructor : function(config){
+        Ext.layout.BoxLayout.superclass.constructor.call(this, config);
 
-    // private
-    onLayout : function(ct, target){
-        var cs = ct.items.items, len = cs.length, c, i, last = len-1, cm;
-
-        if(!this.innerCt){
-            target.addClass(this.ctCls);
-
-            // the innerCt prevents wrapping and shuffling while
-            // the container is resizing
-            this.innerCt = target.createChild({cls:this.innerCls});
-            this.padding = this.parseMargins(this.padding); 
+        if (Ext.isString(this.defaultMargins)) {
+            this.defaultMargins = this.parseMargins(this.defaultMargins);
         }
-        this.renderAll(ct, this.innerCt);
+        
+        var handler = this.overflowHandler;
+        
+        if (typeof handler == 'string') {
+            handler = {
+                type: handler
+            };
+        }
+        
+        var handlerType = 'none';
+        if (handler && handler.type != undefined) {
+            handlerType = handler.type;
+        }
+        
+        var constructor = Ext.layout.boxOverflow[handlerType];
+        if (constructor[this.type]) {
+            constructor = constructor[this.type];
+        }
+        
+        this.overflowHandler = new constructor(this, handler);
+    },
+
+    /**
+     * @private
+     * Runs the child box calculations and caches them in childBoxCache. Subclasses can used these cached values
+     * when laying out
+     */
+    onLayout: function(container, target) {
+        Ext.layout.BoxLayout.superclass.onLayout.call(this, container, target);
+
+        var tSize = this.getLayoutTargetSize(),
+            items = this.getVisibleItems(container),
+            calcs = this.calculateChildBoxes(items, tSize),
+            boxes = calcs.boxes,
+            meta  = calcs.meta;
+        
+        //invoke the overflow handler, if one is configured
+        if (tSize.width > 0) {
+            var handler = this.overflowHandler,
+                method  = meta.tooNarrow ? 'handleOverflow' : 'clearOverflow';
+            
+            var results = handler[method](calcs, tSize);
+            
+            if (results) {
+                if (results.targetSize) {
+                    tSize = results.targetSize;
+                }
+                
+                if (results.recalculate) {
+                    items = this.getVisibleItems(container);
+                    calcs = this.calculateChildBoxes(items, tSize);
+                    boxes = calcs.boxes;
+                }
+            }
+        }
+        
+        /**
+         * @private
+         * @property layoutTargetLastSize
+         * @type Object
+         * Private cache of the last measured size of the layout target. This should never be used except by
+         * BoxLayout subclasses during their onLayout run.
+         */
+        this.layoutTargetLastSize = tSize;
+        
+        /**
+         * @private
+         * @property childBoxCache
+         * @type Array
+         * Array of the last calculated height, width, top and left positions of each visible rendered component
+         * within the Box layout.
+         */
+        this.childBoxCache = calcs;
+        
+        this.updateInnerCtSize(tSize, calcs);
+        this.updateChildBoxes(boxes);
+
+        // Putting a box layout into an overflowed container is NOT correct and will make a second layout pass necessary.
+        this.handleTargetOverflow(tSize, container, target);
+    },
+
+    /**
+     * Resizes and repositions each child component
+     * @param {Array} boxes The box measurements
+     */
+    updateChildBoxes: function(boxes) {
+        for (var i = 0, length = boxes.length; i < length; i++) {
+            var box  = boxes[i],
+                comp = box.component;
+            
+            if (box.dirtySize) {
+                comp.setSize(box.width, box.height);
+            }
+            // Don't set positions to NaN
+            if (isNaN(box.left) || isNaN(box.top)) {
+                continue;
+            }
+            
+            comp.setPosition(box.left, box.top);
+        }
+    },
+
+    /**
+     * @private
+     * Called by onRender just before the child components are sized and positioned. This resizes the innerCt
+     * to make sure all child items fit within it. We call this before sizing the children because if our child
+     * items are larger than the previous innerCt size the browser will insert scrollbars and then remove them
+     * again immediately afterwards, giving a performance hit.
+     * Subclasses should provide an implementation.
+     * @param {Object} currentSize The current height and width of the innerCt
+     * @param {Array} calculations The new box calculations of all items to be laid out
+     */
+    updateInnerCtSize: function(tSize, calcs) {
+        var align   = this.align,
+            padding = this.padding,
+            width   = tSize.width,
+            height  = tSize.height;
+        
+        if (this.type == 'hbox') {
+            var innerCtWidth  = width,
+                innerCtHeight = calcs.meta.maxHeight + padding.top + padding.bottom;
+
+            if (align == 'stretch') {
+                innerCtHeight = height;
+            } else if (align == 'middle') {
+                innerCtHeight = Math.max(height, innerCtHeight);
+            }
+        } else {
+            var innerCtHeight = height,
+                innerCtWidth  = calcs.meta.maxWidth + padding.left + padding.right;
+
+            if (align == 'stretch') {
+                innerCtWidth = width;
+            } else if (align == 'center') {
+                innerCtWidth = Math.max(width, innerCtWidth);
+            }
+        }
+
+        this.innerCt.setSize(innerCtWidth || undefined, innerCtHeight || undefined);
+    },
+
+    /**
+     * @private
+     * This should be called after onLayout of any BoxLayout subclass. If the target's overflow is not set to 'hidden',
+     * we need to lay out a second time because the scrollbars may have modified the height and width of the layout
+     * target. Having a Box layout inside such a target is therefore not recommended.
+     * @param {Object} previousTargetSize The size and height of the layout target before we just laid out
+     * @param {Ext.Container} container The container
+     * @param {Ext.Element} target The target element
+     */
+    handleTargetOverflow: function(previousTargetSize, container, target) {
+        var overflow = target.getStyle('overflow');
+
+        if (overflow && overflow != 'hidden' &&!this.adjustmentPass) {
+            var newTargetSize = this.getLayoutTargetSize();
+            if (newTargetSize.width != previousTargetSize.width || newTargetSize.height != previousTargetSize.height){
+                this.adjustmentPass = true;
+                this.onLayout(container, target);
+            }
+        }
+
+        delete this.adjustmentPass;
     },
 
     // private
-    renderItem : function(c){
-        if(typeof c.margins == 'string'){
+    isValidParent : function(c, target) {
+        return this.innerCt && c.getPositionEl().dom.parentNode == this.innerCt.dom;
+    },
+
+    /**
+     * @private
+     * Returns all items that are both rendered and visible
+     * @return {Array} All matching items
+     */
+    getVisibleItems: function(ct) {
+        var ct  = ct || this.container,
+            t   = ct.getLayoutTarget(),
+            cti = ct.items.items,
+            len = cti.length,
+
+            i, c, items = [];
+
+        for (i = 0; i < len; i++) {
+            if((c = cti[i]).rendered && this.isValidParent(c, t) && c.hidden !== true  && c.collapsed !== true && c.shouldLayout !== false){
+                items.push(c);
+            }
+        }
+
+        return items;
+    },
+
+    // private
+    renderAll : function(ct, target) {
+        if (!this.innerCt) {
+            // the innerCt prevents wrapping and shuffling while the container is resizing
+            this.innerCt = target.createChild({cls:this.innerCls});
+            this.padding = this.parseMargins(this.padding);
+        }
+        Ext.layout.BoxLayout.superclass.renderAll.call(this, ct, this.innerCt);
+    },
+
+    getLayoutTargetSize : function() {
+        var target = this.container.getLayoutTarget(), ret;
+        
+        if (target) {
+            ret = target.getViewSize();
+
+            // IE in strict mode will return a width of 0 on the 1st pass of getViewSize.
+            // Use getStyleSize to verify the 0 width, the adjustment pass will then work properly
+            // with getViewSize
+            if (Ext.isIE && Ext.isStrict && ret.width == 0){
+                ret =  target.getStyleSize();
+            }
+
+            ret.width  -= target.getPadding('lr');
+            ret.height -= target.getPadding('tb');
+        }
+        
+        return ret;
+    },
+
+    // private
+    renderItem : function(c) {
+        if(Ext.isString(c.margins)){
             c.margins = this.parseMargins(c.margins);
         }else if(!c.margins){
             c.margins = this.defaultMargins;
         }
         Ext.layout.BoxLayout.superclass.renderItem.apply(this, arguments);
     },
+    
+    /**
+     * @private
+     */
+    destroy: function() {
+        Ext.destroy(this.overflowHandler);
+        
+        Ext.layout.BoxLayout.superclass.destroy.apply(this, arguments);
+    }
+});
 
-    getTargetSize : function(target){
-        return (Ext.isIE6 && Ext.isStrict && target.dom == document.body) ? target.getStyleSize() : target.getViewSize();
+/**
+ * @class Ext.layout.boxOverflow.None
+ * @extends Object
+ * Base class for Box Layout overflow handlers. These specialized classes are invoked when a Box Layout
+ * (either an HBox or a VBox) has child items that are either too wide (for HBox) or too tall (for VBox)
+ * for its container.
+ */
+
+Ext.layout.boxOverflow.None = Ext.extend(Object, {
+    constructor: function(layout, config) {
+        this.layout = layout;
+        
+        Ext.apply(this, config || {});
     },
     
-    getItems: function(ct){
-        var items = [];
-        ct.items.each(function(c){
-            if(c.isVisible()){
-                items.push(c);
-            }
-        });
-        return items;
-    }
-
-    /**
-     * @property activeItem
-     * @hide
-     */
+    handleOverflow: Ext.emptyFn,
+    
+    clearOverflow: Ext.emptyFn
 });
 
-/**
- * @class Ext.layout.VBoxLayout
- * @extends Ext.layout.BoxLayout
- * A layout that arranges items vertically
- */
-Ext.layout.VBoxLayout = Ext.extend(Ext.layout.BoxLayout, {
-    /**
-     * @cfg {String} align
-     * Controls how the child items of the container are aligned. Acceptable configuration values for this
-     * property are:
-     * <div class="mdetail-params"><ul>
-     * <li><b><tt>left</tt></b> : <b>Default</b><div class="sub-desc">child items are aligned horizontally
-     * at the <b>left</b> side of the container</div></li>
-     * <li><b><tt>center</tt></b> : <div class="sub-desc">child items are aligned horizontally at the
-     * <b>mid-width</b> of the container</div></li>
-     * <li><b><tt>stretch</tt></b> : <div class="sub-desc">child items are stretched horizontally to fill
-     * the width of the container</div></li>
-     * <li><b><tt>stretchmax</tt></b> : <div class="sub-desc">child items are stretched horizontally to
-     * the size of the largest item.</div></li>
-     * </ul></div>
-     */
-    align : 'left', // left, center, stretch, strechmax
-    /**
-     * @cfg {String} pack
-     * Controls how the child items of the container are packed together. Acceptable configuration values
-     * for this property are:
-     * <div class="mdetail-params"><ul>
-     * <li><b><tt>start</tt></b> : <b>Default</b><div class="sub-desc">child items are packed together at
-     * <b>top</b> side of container</div></li>
-     * <li><b><tt>center</tt></b> : <div class="sub-desc">child items are packed together at
-     * <b>mid-height</b> of container</div></li>
-     * <li><b><tt>end</tt></b> : <div class="sub-desc">child items are packed together at <b>bottom</b>
-     * side of container</div></li>
-     * </ul></div>
-     */
-    /**
-     * @cfg {Number} flex
-     * This configuation option is to be applied to <b>child <tt>items</tt></b> of the container managed
-     * by this layout. Each child item with a <tt>flex</tt> property will be flexed <b>vertically</b>
-     * according to each item's <b>relative</b> <tt>flex</tt> value compared to the sum of all items with
-     * a <tt>flex</tt> value specified.  Any child items that have either a <tt>flex = 0</tt> or
-     * <tt>flex = undefined</tt> will not be 'flexed' (the initial size will not be changed).
-     */
 
-    // private
-    onLayout : function(ct, target){
-        Ext.layout.VBoxLayout.superclass.onLayout.call(this, ct, target);
-                    
-        
-        var cs = this.getItems(ct), cm, ch, margin,
-            size = this.getTargetSize(target),
-            w = size.width - target.getPadding('lr') - this.scrollOffset,
-            h = size.height - target.getPadding('tb'),
-            l = this.padding.left, t = this.padding.top,
-            isStart = this.pack == 'start',
-            isRestore = ['stretch', 'stretchmax'].indexOf(this.align) == -1,
-            stretchWidth = w - (this.padding.left + this.padding.right),
-            extraHeight = 0,
-            maxWidth = 0,
-            totalFlex = 0,
-            flexHeight = 0,
-            usedHeight = 0;
-            
-        Ext.each(cs, function(c){
-            cm = c.margins;
-            totalFlex += c.flex || 0;
-            ch = c.getHeight();
-            margin = cm.top + cm.bottom;
-            extraHeight += ch + margin;
-            flexHeight += margin + (c.flex ? 0 : ch);
-            maxWidth = Math.max(maxWidth, c.getWidth() + cm.left + cm.right);
-        });
-        extraHeight = h - extraHeight - this.padding.top - this.padding.bottom;
-        
-        var innerCtWidth = maxWidth + this.padding.left + this.padding.right;
-        switch(this.align){
-            case 'stretch':
-                this.innerCt.setSize(w, h);
-                break;
-            case 'stretchmax':
-            case 'left':
-                this.innerCt.setSize(innerCtWidth, h);
-                break;
-            case 'center':
-                this.innerCt.setSize(w = Math.max(w, innerCtWidth), h);
-                break;
-        }
-
-        var availHeight = Math.max(0, h - this.padding.top - this.padding.bottom - flexHeight),
-            leftOver = availHeight,
-            heights = [],
-            restore = [],
-            idx = 0,
-            availableWidth = Math.max(0, w - this.padding.left - this.padding.right);
-            
-
-        Ext.each(cs, function(c){
-            if(isStart && c.flex){
-                ch = Math.floor(availHeight * (c.flex / totalFlex));
-                leftOver -= ch;
-                heights.push(ch);
-            }
-        }); 
-        
-        if(this.pack == 'center'){
-            t += extraHeight ? extraHeight / 2 : 0;
-        }else if(this.pack == 'end'){
-            t += extraHeight;
-        }
-        Ext.each(cs, function(c){
-            cm = c.margins;
-            t += cm.top;
-            c.setPosition(l + cm.left, t);
-            if(isStart && c.flex){
-                ch = Math.max(0, heights[idx++] + (leftOver-- > 0 ? 1 : 0));
-                if(isRestore){
-                    restore.push(c.getWidth());
-                }
-                c.setSize(availableWidth, ch);
-            }else{
-                ch = c.getHeight();
-            }
-            t += ch + cm.bottom;
-        });
-        
-        idx = 0;
-        Ext.each(cs, function(c){
-            cm = c.margins;
-            if(this.align == 'stretch'){
-                c.setWidth((stretchWidth - (cm.left + cm.right)).constrain(
-                    c.minWidth || 0, c.maxWidth || 1000000));
-            }else if(this.align == 'stretchmax'){
-                c.setWidth((maxWidth - (cm.left + cm.right)).constrain(
-                    c.minWidth || 0, c.maxWidth || 1000000));
-            }else{
-                if(this.align == 'center'){
-                    var diff = availableWidth - (c.getWidth() + cm.left + cm.right);
-                    if(diff > 0){
-                        c.setPosition(l + cm.left + (diff/2), c.y);
-                    }
-                }
-                if(isStart && c.flex){
-                    c.setWidth(restore[idx++]);
-                }
-            }
-        }, this);
-    }
-    /**
-     * @property activeItem
-     * @hide
-     */
-});
-
-Ext.Container.LAYOUTS.vbox = Ext.layout.VBoxLayout;
-
-/**
- * @class Ext.layout.HBoxLayout
- * @extends Ext.layout.BoxLayout
- * A layout that arranges items horizontally
- */
-Ext.layout.HBoxLayout = Ext.extend(Ext.layout.BoxLayout, {
-    /**
-     * @cfg {String} align
-     * Controls how the child items of the container are aligned. Acceptable configuration values for this
-     * property are:
-     * <div class="mdetail-params"><ul>
-     * <li><b><tt>top</tt></b> : <b>Default</b><div class="sub-desc">child items are aligned vertically
-     * at the <b>left</b> side of the container</div></li>
-     * <li><b><tt>middle</tt></b> : <div class="sub-desc">child items are aligned vertically at the
-     * <b>mid-height</b> of the container</div></li>
-     * <li><b><tt>stretch</tt></b> : <div class="sub-desc">child items are stretched vertically to fill
-     * the height of the container</div></li>
-     * <li><b><tt>stretchmax</tt></b> : <div class="sub-desc">child items are stretched vertically to
-     * the size of the largest item.</div></li>
-     */
-    align : 'top', // top, middle, stretch, strechmax
-    /**
-     * @cfg {String} pack
-     * Controls how the child items of the container are packed together. Acceptable configuration values
-     * for this property are:
-     * <div class="mdetail-params"><ul>
-     * <li><b><tt>start</tt></b> : <b>Default</b><div class="sub-desc">child items are packed together at
-     * <b>left</b> side of container</div></li>
-     * <li><b><tt>center</tt></b> : <div class="sub-desc">child items are packed together at
-     * <b>mid-width</b> of container</div></li>
-     * <li><b><tt>end</tt></b> : <div class="sub-desc">child items are packed together at <b>right</b>
-     * side of container</div></li>
-     * </ul></div>
-     */
-    /**
-     * @cfg {Number} flex
-     * This configuation option is to be applied to <b>child <tt>items</tt></b> of the container managed
-     * by this layout. Each child item with a <tt>flex</tt> property will be flexed <b>horizontally</b>
-     * according to each item's <b>relative</b> <tt>flex</tt> value compared to the sum of all items with
-     * a <tt>flex</tt> value specified.  Any child items that have either a <tt>flex = 0</tt> or
-     * <tt>flex = undefined</tt> will not be 'flexed' (the initial size will not be changed).
-     */
-
-    // private
-    onLayout : function(ct, target){
-        Ext.layout.HBoxLayout.superclass.onLayout.call(this, ct, target);
-        
-        var cs = this.getItems(ct), cm, cw, margin,
-            size = this.getTargetSize(target),
-            w = size.width - target.getPadding('lr') - this.scrollOffset,
-            h = size.height - target.getPadding('tb'),
-            l = this.padding.left, t = this.padding.top,
-            isStart = this.pack == 'start',
-            isRestore = ['stretch', 'stretchmax'].indexOf(this.align) == -1,
-            stretchHeight = h - (this.padding.top + this.padding.bottom),
-            extraWidth = 0,
-            maxHeight = 0,
-            totalFlex = 0,
-            flexWidth = 0,
-            usedWidth = 0;
-        
-        Ext.each(cs, function(c){
-            cm = c.margins;
-            totalFlex += c.flex || 0;
-            cw = c.getWidth();
-            margin = cm.left + cm.right;
-            extraWidth += cw + margin;
-            flexWidth += margin + (c.flex ? 0 : cw);
-            maxHeight = Math.max(maxHeight, c.getHeight() + cm.top + cm.bottom);
-        });
-        extraWidth = w - extraWidth - this.padding.left - this.padding.right;
-        
-        var innerCtHeight = maxHeight + this.padding.top + this.padding.bottom;
-        switch(this.align){
-            case 'stretch':
-                this.innerCt.setSize(w, h);
-                break;
-            case 'stretchmax':
-            case 'top':
-                this.innerCt.setSize(w, innerCtHeight);
-                break;
-            case 'middle':
-                this.innerCt.setSize(w, h = Math.max(h, innerCtHeight));
-                break;
-        }
-        
-
-        var availWidth = Math.max(0, w - this.padding.left - this.padding.right - flexWidth),
-            leftOver = availWidth,
-            widths = [],
-            restore = [],
-            idx = 0,
-            availableHeight = Math.max(0, h - this.padding.top - this.padding.bottom);
-            
-
-        Ext.each(cs, function(c){
-            if(isStart && c.flex){
-                cw = Math.floor(availWidth * (c.flex / totalFlex));
-                leftOver -= cw;
-                widths.push(cw);
-            }
-        }); 
-        
-        if(this.pack == 'center'){
-            l += extraWidth ? extraWidth / 2 : 0;
-        }else if(this.pack == 'end'){
-            l += extraWidth;
-        }
-        Ext.each(cs, function(c){
-            cm = c.margins;
-            l += cm.left;
-            c.setPosition(l, t + cm.top);
-            if(isStart && c.flex){
-                cw = Math.max(0, widths[idx++] + (leftOver-- > 0 ? 1 : 0));
-                if(isRestore){
-                    restore.push(c.getHeight());
-                }
-                c.setSize(cw, availableHeight);
-            }else{
-                cw = c.getWidth();
-            }
-            l += cw + cm.right;
-        });
-        
-        idx = 0;
-        Ext.each(cs, function(c){
-            var cm = c.margins;
-            if(this.align == 'stretch'){
-                c.setHeight((stretchHeight - (cm.top + cm.bottom)).constrain(
-                    c.minHeight || 0, c.maxHeight || 1000000));
-            }else if(this.align == 'stretchmax'){
-                c.setHeight((maxHeight - (cm.top + cm.bottom)).constrain(
-                    c.minHeight || 0, c.maxHeight || 1000000));
-            }else{
-                if(this.align == 'middle'){
-                    var diff = availableHeight - (c.getHeight() + cm.top + cm.bottom);
-                    if(diff > 0){
-                        c.setPosition(c.x, t + cm.top + (diff/2));
-                    }
-                }
-                if(isStart && c.flex){
-                    c.setHeight(restore[idx++]);
-                }
-            }
-        }, this);
-    }
-
-    /**
-     * @property activeItem
-     * @hide
-     */
-});
-
-Ext.Container.LAYOUTS.hbox = Ext.layout.HBoxLayout;
+Ext.layout.boxOverflow.none = Ext.layout.boxOverflow.None;
