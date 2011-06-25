@@ -1,6 +1,27 @@
-/*!
- * Ext JS Library 3.4.0
- * Copyright(c) 2006-2011 Sencha Inc.
- * licensing@sencha.com
- * http://www.sencha.com/license
- */
+.icon-user {
+    background-image: url(images/user.png) !important;
+}
+
+.icon-user-add {
+    background-image: url(images/user_add.gif) !important;
+}
+
+.icon-save {
+    background-image: url(images/save.gif) !important;
+}
+
+.icon-reset {
+    background-image: url(images/stop.png) !important;
+}
+
+.icon-grid {
+    background-image: url(images/grid.png) !important;
+}
+
+.icon-add {
+    background-image: url(images/add.png) !important;
+}
+
+.icon-delete {
+    background-image: url(images/delete.png) !important;
+}

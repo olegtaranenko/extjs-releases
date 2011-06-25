@@ -1,9 +1,3 @@
-/*!
- * Ext JS Library 3.4.0
- * Copyright(c) 2006-2011 Sencha Inc.
- * licensing@sencha.com
- * http://www.sencha.com/license
- */
 Ext.onReady(function(){
 	// expanders
 	Ext.getBody().on('click', function(e, t){
@@ -20,7 +14,7 @@ Ext.onReady(function(){
 		}else{
 			bdi.hide();
 			bd.show();
-			bdi.slideIn('l', {duration:0.2, stopFx: true, easing:'easeOut'});
+			bdi.slideIn('l', {duration:0.2, stopAnimation: true, easing:'easeOut'});
 		}
 
 		t.update(!expanded ? 'Hide details' : 'Show details');

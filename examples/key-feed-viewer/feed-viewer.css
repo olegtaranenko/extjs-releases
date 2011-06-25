@@ -1,74 +1,100 @@
-/*!
- * Ext JS Library 3.4.0
- * Copyright(c) 2006-2011 Sencha Inc.
- * licensing@sencha.com
- * http://www.sencha.com/license
+/**
+ * Icons
  */
-html, body {
-	font: normal 12px tahoma, arial, verdana, sans-serif;
-	margin: 0;
-	padding: 0;
-	border: 0 none;
-	overflow: hidden;
-	height: 100%;
+
+.summary {
+     background-image: url(images/details.gif) !important;
 }
 
-.ext-el-mask {
-    background:#dadadb;
+.reading {
+     background-image: url(images/article.gif) !important;
 }
-.x-grid3-td-title b {
-    font-family:tahoma, verdana;
-    display:block;
-    color:#333;
+
+.post-go {
+    background-image: url(images/post_go.gif) !important;
 }
-.x-grid3-td-title b i {
-    font-weight:normal;
-    font-style: normal;
-    color:#000;
+
+.tab-new {
+    background-image: url(images/tab_new.gif) !important;
 }
-.x-grid3-td-title .topic {
-    padding-left:20px;
-    background:transparent url(images/post.gif) no-repeat 0 2px;
-}
-.x-grid3-td-title .x-grid3-cell-inner {
-    white-space:normal;
-}
-.x-grid3-td-title a {
-    color: #385F95;
-    text-decoration:none;
-}
-.x-grid3-td-title a:hover {
-    text-decoration:underline;
-}
-.details .x-btn-text {
-    background-image: url(images/details.gif);
-}
-.msg-view {
-    background-image: url(../shared/icons/fam/application_view_list.png) !important;
-}
-.add-feed {
+
+.feed-add {
     background-image: url(images/rss_add.gif) !important;
 }
 
-.preview-bottom {
-    background-image: url(images/preview-bottom.gif) !important;
-}
-.preview-right {
-    background-image: url(images/preview-right.gif) !important;
-}
-.preview-hide {
-    background-image: url(images/preview-hide.gif) !important;
+.feed-remove {
+    background-image: url(images/rss_delete.gif) !important;
 }
 
-.tabs {
-    background-image: url( ../desktop/images/tabs.gif ) !important;
+.feed-load {
+    background-image: url(images/rss_load.gif) !important;
 }
-.summary {
+
+.details {
     background-image: url(images/details.gif) !important;
 }
-.x-grid3-row-body p {
-    margin:5px 20px 10px 25px !important;
-    color:#555;
+
+.open-all {
+    background-image: url(images/tabs.gif) !important;
+}
+
+.feed {
+    width: 16px;
+    height: 16px;
+    background-image: url(images/rss.gif) !important;
+}
+
+/**
+ * Other styles
+ */
+.feed-picker-url {
+    float: left;
+    width: 425px;
+}
+.feed-picker-title {
+/*    float: left;*/
+    color: #777;
+    font-size: 10px;
+}
+
+.feed-list {
+    padding: 0 3px 0 3px;
+}
+
+.feed-list-item {
+    margin-top: 3px;
+    padding-left: 20px;
+    font-size: 11px;
+    line-height: 20px;
+    cursor: pointer;
+    background: url(images/rss.gif) no-repeat 0 2px;
+    border: 1px solid #fff;
+}
+
+.feed-list .x-item-selected {
+    font-weight: bold; 
+    color: #15428B;
+    background-color: #DFE8F6;
+    border: 1px dotted #A3BAE9;
+}
+
+.feed-list-item-hover {
+    background-color: #eee;
+}
+
+.topic {
+    padding: 2px 0 0 20px;
+    background:transparent url(images/post.gif) no-repeat;
+}
+
+.topic b {
+    font-family: tahoma, verdana;
+    display: block;
+    color: #333;
+}
+
+.author: {
+    color: #333
 }
 
 .post-date {
@@ -76,81 +102,10 @@ html, body {
     color:#333;
 }
 
-.author {
-    color:#333;
-}
-
-.x-tree {
-    background:#fff !important;
-}
-.x-border-layout-ct {
-    background:transparent;
-}
-body.x-border-layout-ct {
-    background:#c3d5ed url(images/bg.gif) repeat-x left top !important;
-}
-.x-layout-split {
-    background-color:transparent !important;
-}
-
-.x-tree-node div.feeds-node{
-    background:#eee url(images/cmp-bg.gif) repeat-x;
-    margin-top:1px;
-    border-top:1px solid #ddd;
-    border-bottom:1px solid #ccc;
-    padding-top:2px;
-    padding-bottom:1px;
-}
-.feeds-node .x-tree-node-icon {
-    display:none;
-}
-.forum-ct a span {
-    font-weight:bold;
-    color:#222;
-}
-.feed {
-    border:1px solid #fff;
-    margin:3px;
-}
-.feed .x-tree-ec-icon {
-    display:none;
-}
-.feed-icon {
-    background-image:url(images/rss.gif) !important;
-}
-.new-tab {
-    background-image:url(images/new_tab.gif) !important;
-}
-.new-win {
-    background-image:url(images/go-to-post.gif) !important;
-}
-.delete-icon {
-    background-image:url(images/rss_delete.gif) !important;
-}
-.load-icon {
-    background-image:url(images/rss_load.gif) !important;
-}
-.refresh-icon {
-    background-image:url(../shared/icons/fam/table_refresh.png) !important;
-}
-.x-tree-selected {
-    border:1px dotted #a3bae9;
-    background:#DFE8F6;
-}
-.x-tree-node .x-tree-selected a span{
-	background:transparent;
-	color:#15428b;
-    font-weight:bold;
-}
-
-#topic-grid .x-panel-tbar .x-toolbar {
-   /* border-top:0 none; */
-}
-
-
-#main-tabs .x-tab-panel-body {
-    background:transparent;
-    border:0 none;
+.feed-grid .x-grid-rowbody {
+    margin: 5px 20px 10px 25px !important;
+    color: #555;
+    font-size: 11px;
 }
 
 /* Preview classes */
@@ -202,58 +157,3 @@ body.x-border-layout-ct {
 .preview .x-panel-body div.post-body {
     padding:10px;
 }
-/*.single-preview .x-toolbar, #right-preview .preview .x-toolbar {
-    border-top:0 none;
-}*/
-.reading-menu .x-menu-item-checked {
-   border:1px dotted #a3bae9 !important;
-    background:#DFE8F6;
-	padding:0;
-}
-.x-tab-panel-header {
-    border-bottom-width:0 !important;
-}
-#suggested {
-    border-top:0 none;
-}
-#suggested a {
-    text-decoration:none;
-    font-size:11px;
-    color:#15428B;
-    display:block;
-    padding:3px;
-    float:right;
-    margin-right:4px;
-}
-#suggested a:hover {
-    text-decoration:underline;
-    color:#15428B;
-}
-.x-combo-list-item {
-    zoom:1;
-}
-.x-combo-list-item strong {
-    color:#777;
-    font-size:11px;
-    font-style: normal;
-    float:left;
-}
-.x-combo-list-item em {
-    color:#222;
-    font-size:12px;
-    font-style: normal;
-    float:left;
-    width:325px;
-}
-.x-node-ctx {
-    background:#eee !important;
-    border:1px solid #ccc !important;
-}
-/*
-.x-panel.x-aria-focused .x-panel-header,
-.x-panel.x-aria-focused .x-panel-bwrap,
-.x-tab-panel.x-aria-focused .x-tab-panel-header,
-.x-tab-panel.x-aria-focused .x-panel-body,
-.x-toolbar.x-aria-focused {
-    border-color: red;
-}*/
