@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @author Nicolas Ferrero
  *
@@ -32,7 +18,7 @@ Ext.define('Ext.panel.Table', {
 
     uses: [
         'Ext.selection.RowModel',
-        'Ext.grid.Scroller',
+        'Ext.grid.PagingScroller',
         'Ext.grid.header.Container',
         'Ext.grid.Lockable'
     ],
@@ -96,12 +82,6 @@ Ext.define('Ext.panel.Table', {
      */
 
     /**
-     * @cfg {Number} scrollDelta
-     * Number of pixels to scroll when scrolling with mousewheel.
-     */
-    scrollDelta: 40,
-
-    /**
      * @cfg {String/Boolean} scroll
      * Scrollers configuration. Valid values are 'both', 'horizontal' or 'vertical'.
      * True implies 'both'. False implies 'none'.
@@ -110,9 +90,11 @@ Ext.define('Ext.panel.Table', {
 
     /**
      * @cfg {Ext.grid.column.Column[]} columns
-     * An array of {@link Ext.grid.column.Column column} definition objects which define all columns that appear in this
+     * <p>An array of {@link Ext.grid.column.Column column} definition objects which define all columns that appear in this
      * grid. Each column definition provides the header text for the column, and a definition of where the data for that
-     * column comes from.
+     * column comes from.</p>
+     * <p>This can also be a configuration object for a {Ext.grid.header.Container HeaderContainer} which may override
+     * certain default configurations if necessary. For example, the special layout may be overridden to use a simpler layout.</p>
      */
 
     /**
@@ -140,7 +122,7 @@ Ext.define('Ext.panel.Table', {
      * that layouts with GridPanels appear, and lay out more quickly.
      */
 
-     deferRowRender: true,
+    deferRowRender: true,
      
     /**
      * @cfg {Boolean} sortableColumns
@@ -155,12 +137,6 @@ Ext.define('Ext.panel.Table', {
      */
     enableLocking: false,
 
-    verticalScrollDock: 'right',
-    verticalScrollerType: 'gridscroller',
-
-    horizontalScrollerPresentCls: Ext.baseCSSPrefix + 'horizontal-scroller-present',
-    verticalScrollerPresentCls: Ext.baseCSSPrefix + 'vertical-scroller-present',
-
     // private property used to determine where to go down to find views
     // this is here to support locking.
     scrollerOwner: true,
@@ -168,22 +144,43 @@ Ext.define('Ext.panel.Table', {
     invalidateScrollerOnRefresh: true,
 
     /**
-     * @cfg {Boolean} enableColumnMove
+     * @cfg {Boolean} [enableColumnMove=true]
      * False to disable column dragging within this grid.
      */
     enableColumnMove: true,
+    
+    /**
+     * @cfg {Boolean} [restrictColumnReorder=false]
+     * True to constrain column dragging so that a column cannot be dragged in or out of it's
+     * current group. Only relevant while {@link #enableColumnMove} is enabled.
+     */
+    restrictColumnReorder: false,
 
     /**
-     * @cfg {Boolean} enableColumnResize
+     * @cfg {Boolean} [enableColumnResize=true]
      * False to disable column resizing within this grid.
      */
     enableColumnResize: true,
 
     /**
-     * @cfg {Boolean} enableColumnHide
+     * @cfg {Boolean} [enableColumnHide=true]
      * False to disable column hiding within this grid.
      */
     enableColumnHide: true,
+
+    /**
+     * @cfg {Boolean} columnLines Adds column line styling
+     */
+
+    /**
+     * @cfg {Boolean} [rowLines=true] Adds row line styling
+     */
+    rowLines: true,
+
+    /**
+     * @cfg {Boolean} [disableSelection=false]
+     * True to disable selection model.
+     */
 
     initComponent: function() {
         //<debug>
@@ -200,7 +197,6 @@ Ext.define('Ext.panel.Table', {
             vertical    = false,
             horizontal  = false,
             headerCtCfg = me.columns || me.colModel,
-            i           = 0,
             view,
             border = me.border;
 
@@ -208,6 +204,14 @@ Ext.define('Ext.panel.Table', {
             border = false;
         }
 
+        if (me.columnLines) {
+            me.addCls(Ext.baseCSSPrefix + 'grid-with-col-lines');
+        }
+
+        if (me.rowLines) {
+            me.addCls(Ext.baseCSSPrefix + 'grid-with-row-lines');
+        }
+        
         // Look up the configured Store. If none configured, use the fieldless, empty Store defined in Ext.data.Store.
         me.store = Ext.data.StoreManager.lookup(me.store || 'ext-empty-store');
 
@@ -230,7 +234,8 @@ Ext.define('Ext.panel.Table', {
                 enableColumnMove: me.enableColumnMove,
                 enableColumnResize: me.enableColumnResize,
                 enableColumnHide: me.enableColumnHide,
-                border:  border
+                border:  border,
+                restrictReorder: me.restrictColumnReorder
             });
             me.columns = headerCtCfg.items;
 
@@ -254,21 +259,7 @@ Ext.define('Ext.panel.Table', {
              * Fires when the grid view is available (use this for selecting a default row).
              * @param {Ext.panel.Table} this
              */
-            'viewready',
-            /**
-             * @event scrollerhide
-             * Fires when a scroller is hidden.
-             * @param {Ext.grid.Scroller} scroller
-             * @param {String} orientation Orientation, can be 'vertical' or 'horizontal'
-             */
-            'scrollerhide',
-            /**
-             * @event scrollershow
-             * Fires when a scroller is shown.
-             * @param {Ext.grid.Scroller} scroller
-             * @param {String} orientation Orientation, can be 'vertical' or 'horizontal'
-             */
-            'scrollershow'
+            'viewready'
         );
 
         me.bodyCls = me.bodyCls || '';
@@ -287,7 +278,7 @@ Ext.define('Ext.panel.Table', {
             // If we were not configured with a ready-made headerCt (either by direct config with a headerCt property, or by passing
             // a HeaderContainer instance as the 'columns' property, then go ahead and create one from the config object created above.
             if (!me.headerCt) {
-                me.headerCt = Ext.create('Ext.grid.header.Container', headerCtCfg);
+                me.headerCt = new Ext.grid.header.Container(headerCtCfg);
             }
 
             // Extract the array of Column objects
@@ -314,28 +305,8 @@ Ext.define('Ext.panel.Table', {
                 horizontal = true;
             } else if (scroll === 'vertical') {
                 vertical = true;
-            // All other values become 'none' or false.
-            } else {
-                me.headerCt.availableSpaceOffset = 0;
             }
 
-            if (vertical) {
-                me.verticalScroller = Ext.ComponentManager.create(me.initVerticalScroller());
-                me.mon(me.verticalScroller, {
-                    bodyscroll: me.onVerticalScroll,
-                    scope: me
-                });
-            }
-
-            if (horizontal) {
-                me.horizontalScroller = Ext.ComponentManager.create(me.initHorizontalScroller());
-                me.mon(me.horizontalScroller, {
-                    bodyscroll: me.onHorizontalScroll,
-                    scope: me
-                });
-            }
-
-            me.headerCt.on('resize', me.onHeaderResize, me);
             me.relayHeaderCtEvents(me.headerCt);
             me.features = me.features || [];
             if (!Ext.isArray(me.features)) {
@@ -350,34 +321,42 @@ Ext.define('Ext.panel.Table', {
             // getView converts viewConfig into a View instance
             view = me.getView();
 
-            view.on({
-                afterrender: function () {
-                    // hijack the view el's scroll method
-                    view.el.scroll = Ext.Function.bind(me.elScroll, me);
-                    // We use to listen to document.body wheel events, but that's a
-                    // little much. We scope just to the view now.
-                    me.mon(view.el, {
-                        mousewheel: me.onMouseWheel,
-                        scope: me
-                    });
-                },
-                single: true
-            });
             me.items = [view];
             me.hasView = true;
+
+            if (vertical) {
+                // If the Store is buffered, create a PagingScroller to monitor the View's scroll progress,
+                // load the Store's prefetch buffer when it detects we are nearing an edge.
+                if (me.store.buffered) {
+                    me.verticalScroller = new Ext.grid.PagingScroller(Ext.apply({
+                        panel: me,
+                        store: me.store,
+                        view: me.view
+                    }, me.verticalScroller));
+                }
+            }
+
+            if (horizontal) {
+                // Add a listener to synchronize the horizontal scroll position of the headers
+                // with the table view's element... Unless we are not showing headers!
+                if (!me.hideHeaders) {
+                    view.on({
+                        scroll: {
+                            fn: me.onHorizontalScroll,
+                            element: 'el',
+                            scope: me
+                        }
+                    });
+                }
+            }
 
             me.mon(view.store, {
                 load: me.onStoreLoad,
                 scope: me
             });
             me.mon(view, {
-                viewReady: me.onViewReady,
-                resize: me.onViewResize,
-                refresh: {
-                    fn: me.onViewRefresh,
-                    scope: me,
-                    buffer: 50
-                },
+                viewready: me.onViewReady,
+                refresh: me.onViewRefresh,
                 scope: me
             });
             this.relayEvents(view, [
@@ -546,19 +525,6 @@ Ext.define('Ext.panel.Table', {
 
         me.callParent(arguments);
     },
-    
-    onRender: function(){
-        var vScroll = this.verticalScroller,
-            hScroll = this.horizontalScroller;
-
-        if (vScroll) {
-            vScroll.ensureDimension();
-        }
-        if (hScroll) {
-            hScroll.ensureDimension();
-        }
-        this.callParent(arguments);    
-    },
 
     // state management
     initStateEvents: function(){
@@ -570,37 +536,6 @@ Ext.define('Ext.panel.Table', {
             }
         });
         this.callParent();
-    },
-
-    /**
-     * Returns the horizontal scroller config.
-     */
-    initHorizontalScroller: function () {
-        var me = this,
-            ret = {
-                xtype: 'gridscroller',
-                dock: 'bottom',
-                section: me,
-                store: me.store
-            };
-
-        return ret;
-    },
-
-    /**
-     * Returns the vertical scroller config.
-     */
-    initVerticalScroller: function () {
-        var me = this,
-            ret = me.verticalScroller || {};
-
-        Ext.applyIf(ret, {
-            xtype: me.verticalScrollerType,
-            dock: me.verticalScrollDock,
-            store: me.store
-        });
-
-        return ret;
     },
 
     relayHeaderCtEvents: function (headerCt) {
@@ -638,15 +573,15 @@ Ext.define('Ext.panel.Table', {
             state = me.callParent(),
             sorter = me.store.sorters.first();
 
-        state.columns = (me.headerCt || me).getColumnsState();
+        state = me.addPropertyToState(state, 'columns', (me.headerCt || me).getColumnsState());
 
         if (sorter) {
-            state.sort = {
+            state = me.addPropertyToState(state, 'sort', {
                 property: sorter.property,
-                direction: sorter.direction
-            };
+                direction: sorter.direction,
+                root: sorter.root
+            });
         }
-
         return state;
     },
 
@@ -668,12 +603,13 @@ Ext.define('Ext.panel.Table', {
 
         if (sorter) {
             if (store.remoteSort) {
-                store.sorters.add(Ext.create('Ext.util.Sorter', {
+                // Pass false to prevent a sort from occurring
+                store.sort({
                     property: sorter.property,
-                    direction: sorter.direction
-                }));
-            }
-            else {
+                    direction: sorter.direction,
+                    root: sorter.root
+                }, null, false);
+            } else {
                 store.sort(sorter.property, sorter.direction);
             }
         }
@@ -697,8 +633,9 @@ Ext.define('Ext.panel.Table', {
 
         if (!me.view) {
             sm = me.getSelectionModel();
-            me.view = me.createComponent(Ext.apply({}, me.viewConfig, {
-                deferInitialRefresh: me.deferRowRender,
+            me.view = Ext.widget(Ext.apply({}, me.viewConfig, {
+                deferInitialRefresh: me.deferRowRender !== false,
+                scroll: me.scroll,
                 xtype: me.viewType,
                 store: me.store,
                 headerCt: me.headerCt,
@@ -724,34 +661,6 @@ Ext.define('Ext.panel.Table', {
      */
     setAutoScroll: Ext.emptyFn,
 
-    // This method hijacks Ext.view.Table's el scroll method.
-    // This enables us to keep the virtualized scrollbars in sync
-    // with the view. It currently does NOT support animation.
-    elScroll: function(direction, distance, animate) {
-        var me = this,
-            scroller;
-
-        if (direction === "up" || direction === "left") {
-            distance = -distance;
-        }
-        
-        if (direction === "down" || direction === "up") {
-            scroller = me.getVerticalScroller();
-            
-            //if the grid does not currently need a vertical scroller don't try to update it (EXTJSIV-3891)
-            if (scroller) {
-                scroller.scrollByDeltaY(distance);
-            }
-        } else {
-            scroller = me.getHorizontalScroller();
-            
-            //if the grid does not currently need a horizontal scroller don't try to update it (EXTJSIV-3891)
-            if (scroller) {
-                scroller.scrollByDeltaX(distance);
-            }
-        }
-    },
-
     /**
      * @private
      * Processes UI events from the view. Propagates them to whatever internal Components need to process them.
@@ -772,323 +681,67 @@ Ext.define('Ext.panel.Table', {
         }
     },
 
-    /**
-     * Requests a recalculation of scrollbars and puts them in if they are needed.
-     */
-    determineScrollbars: function() {
-        // Set a flag so that afterComponentLayout does not recurse back into here.
-        if (this.determineScrollbarsRunning) {
-            return;
-        }
-        this.determineScrollbarsRunning = true;
-        var me = this,
-            view = me.view,
-            box,
-            tableEl,
-            scrollWidth,
-            clientWidth,
-            scrollHeight,
-            clientHeight,
-            verticalScroller = me.verticalScroller,
-            horizontalScroller = me.horizontalScroller,
-            curScrollbars = (verticalScroller   && verticalScroller.ownerCt === me ? 1 : 0) |
-                            (horizontalScroller && horizontalScroller.ownerCt === me ? 2 : 0),
-            reqScrollbars = 0; // 1 = vertical, 2 = horizontal, 3 = both
-
-        // If we are not collapsed, and the view has been rendered AND filled, then we can determine scrollbars
-        if (!me.collapsed && view && view.viewReady) {
-
-            // Calculate maximum, *scrollbarless* space which the view has available.
-            // It will be the Fit Layout's calculated size, plus the widths of any currently shown scrollbars
-            box = view.el.getSize();
-
-            clientWidth  = box.width  + ((curScrollbars & 1) ? verticalScroller.width : 0);
-            clientHeight = box.height + ((curScrollbars & 2) ? horizontalScroller.height : 0);
-
-            // Calculate the width of the scrolling block
-            // There will never be a horizontal scrollbar if all columns are flexed.
-
-            scrollWidth = (me.headerCt.query('[flex]').length && !me.headerCt.layout.tooNarrow) ? 0 : me.headerCt.getFullWidth();
-
-            // Calculate the height of the scrolling block
-            if (verticalScroller && verticalScroller.el) {
-                scrollHeight = verticalScroller.getSizeCalculation().height;
-            } else {
-                tableEl = view.el.child('table', true);
-                scrollHeight = tableEl ? tableEl.offsetHeight : 0;
-            }
-
-            // View is too high.
-            // Definitely need a vertical scrollbar
-            if (scrollHeight > clientHeight) {
-                reqScrollbars = 1;
-
-                // But if scrollable block width goes into the zone required by the vertical scrollbar, we'll also need a horizontal
-                if (horizontalScroller && ((clientWidth - scrollWidth) < verticalScroller.width)) {
-                    reqScrollbars = 3;
-                }
-            }
-
-            // View height fits. But we stil may need a horizontal scrollbar, and this might necessitate a vertical one.
-            else {
-                // View is too wide.
-                // Definitely need a horizontal scrollbar
-                if (scrollWidth > clientWidth) {
-                    reqScrollbars = 2;
-
-                    // But if scrollable block height goes into the zone required by the horizontal scrollbar, we'll also need a vertical
-                    if (verticalScroller && ((clientHeight - scrollHeight) < horizontalScroller.height)) {
-                        reqScrollbars = 3;
-                    }
-                }
-            }
-
-            // If scrollbar requirements have changed, change 'em...
-            if (reqScrollbars !== curScrollbars) {
-
-                // Suspend component layout while we add/remove the docked scrollers
-                me.suspendLayout = true;
-                if (reqScrollbars & 1) {
-                    me.showVerticalScroller();
-                } else {
-                    me.hideVerticalScroller();
-                }
-                if (reqScrollbars & 2) {
-                    me.showHorizontalScroller();
-                } else {
-                    me.hideHorizontalScroller();
-                }
-                me.suspendLayout = false;
-
-                // Lay out the Component.
-                me.doComponentLayout();
-                // Lay out me.items
-                me.getLayout().layout();
-            }
-        }
-        delete me.determineScrollbarsRunning;
+    scrollByDeltaY: function(yDelta) {
+        this.getView().getEl().scroll('down', yDelta);
     },
 
-    onViewResize: function() {
-        this.determineScrollbars();
-    },
-
-    afterComponentLayout: function() {
-        this.callParent(arguments);
-        this.determineScrollbars();
-        this.invalidateScroller();
-    },
-
-    onHeaderResize: function() {
-        if (!this.componentLayout.layoutBusy && this.view && this.view.rendered) {
-            this.determineScrollbars();
-            this.invalidateScroller();
-        }
+    scrollByDeltaX: function(xDelta) {
+        this.getView().getEl().scroll('right', xDelta);
     },
 
     afterCollapse: function() {
         var me = this;
-        if (me.verticalScroller) {
-            me.verticalScroller.saveScrollPos();
-        }
-        if (me.horizontalScroller) {
-            me.horizontalScroller.saveScrollPos();
-        }
+        me.saveScrollPos();
+        me.saveScrollPos();
         me.callParent(arguments);
     },
 
     afterExpand: function() {
         var me = this;
         me.callParent(arguments);
-        if (me.verticalScroller) {
-            me.verticalScroller.restoreScrollPos();
-        }
-        if (me.horizontalScroller) {
-            me.horizontalScroller.restoreScrollPos();
-        }
+        me.restoreScrollPos();
+        me.restoreScrollPos();
     },
 
-    /**
-     * Hides the verticalScroller and removes the horizontalScrollerPresentCls.
-     */
-    hideHorizontalScroller: function() {
-        var me = this;
-
-        if (me.horizontalScroller && me.horizontalScroller.ownerCt === me) {
-            me.verticalScroller.setReservedSpace(0);
-            me.removeDocked(me.horizontalScroller, false);
-            me.removeCls(me.horizontalScrollerPresentCls);
-            me.fireEvent('scrollerhide', me.horizontalScroller, 'horizontal');
-        }
+    saveScrollPos: function() {
 
     },
 
-    /**
-     * Shows the horizontalScroller and add the horizontalScrollerPresentCls.
-     */
-    showHorizontalScroller: function() {
-        var me = this;
+    restoreScrollPos: function() {
 
-        if (me.verticalScroller) {
-            me.verticalScroller.setReservedSpace(Ext.getScrollbarSize().height - 1);
-        }
-        if (me.horizontalScroller && me.horizontalScroller.ownerCt !== me) {
-            me.addDocked(me.horizontalScroller);
-            me.addCls(me.horizontalScrollerPresentCls);
-            me.fireEvent('scrollershow', me.horizontalScroller, 'horizontal');
-        }
-    },
-
-    /**
-     * Hides the verticalScroller and removes the verticalScrollerPresentCls.
-     */
-    hideVerticalScroller: function() {
-        var me = this;
-
-        me.setHeaderReserveOffset(false);
-        if (me.verticalScroller && me.verticalScroller.ownerCt === me) {
-            me.removeDocked(me.verticalScroller, false);
-            me.removeCls(me.verticalScrollerPresentCls);
-            me.fireEvent('scrollerhide', me.verticalScroller, 'vertical');
-        }
-    },
-
-    /**
-     * Shows the verticalScroller and adds the verticalScrollerPresentCls.
-     */
-    showVerticalScroller: function() {
-        var me = this;
-
-        me.setHeaderReserveOffset(true);
-        if (me.verticalScroller && me.verticalScroller.ownerCt !== me) {
-            me.addDocked(me.verticalScroller);
-            me.addCls(me.verticalScrollerPresentCls);
-            me.fireEvent('scrollershow', me.verticalScroller, 'vertical');
-        }
-    },
-
-    setHeaderReserveOffset: function (reserveOffset) {
-        var headerCt = this.headerCt,
-            layout = headerCt.layout;
-
-        // only trigger a layout when reserveOffset is changing
-        if (layout && layout.reserveOffset !== reserveOffset) {
-            layout.reserveOffset = reserveOffset;
-            if (!this.suspendLayout) {
-                headerCt.doLayout();
-            }
-        }
-    },
-
-    /**
-     * Invalides scrollers that are present and forces a recalculation. (Not related to showing/hiding the scrollers)
-     */
-    invalidateScroller: function() {
-        var me = this,
-            vScroll = me.verticalScroller,
-            hScroll = me.horizontalScroller;
-
-        if (vScroll) {
-            vScroll.invalidate();
-        }
-        if (hScroll) {
-            hScroll.invalidate();
-        }
     },
 
     // refresh the view when a header moves
     onHeaderMove: function(headerCt, header, fromIdx, toIdx) {
-        this.view.refresh();
+        this.view.moveColumn(fromIdx, toIdx);
     },
 
     // Section onHeaderHide is invoked after view.
     onHeaderHide: function(headerCt, header) {
-        this.invalidateScroller();
     },
 
     onHeaderShow: function(headerCt, header) {
-        this.invalidateScroller();
     },
 
-    getVerticalScroller: function() {
-        return this.getScrollerOwner().down('gridscroller[dock=' + this.verticalScrollDock + ']');
-    },
-
-    getHorizontalScroller: function() {
-        return this.getScrollerOwner().down('gridscroller[dock=bottom]');
-    },
-
-    onMouseWheel: function(e) {
-        var me = this,
-            vertScroller = me.getVerticalScroller(),
-            horizScroller = me.getHorizontalScroller(),
-            scrollDelta = -me.scrollDelta,
-            deltas = e.getWheelDeltas(),
-            deltaX = scrollDelta * deltas.x,
-            deltaY = scrollDelta * deltas.y,
-            vertScrollerEl, horizScrollerEl,
-            vertScrollerElDom, horizScrollerElDom,
-            horizontalCanScrollLeft, horizontalCanScrollRight,
-            verticalCanScrollDown, verticalCanScrollUp;
-
-        // calculate whether or not both scrollbars can scroll right/left and up/down
-        if (horizScroller) {
-            horizScrollerEl = horizScroller.scrollEl;
-            if (horizScrollerEl) {
-                horizScrollerElDom = horizScrollerEl.dom;
-                horizontalCanScrollRight = horizScrollerElDom.scrollLeft !== horizScrollerElDom.scrollWidth - horizScrollerElDom.clientWidth;
-                horizontalCanScrollLeft  = horizScrollerElDom.scrollLeft !== 0;
-            }
-        }
-        if (vertScroller) {
-            vertScrollerEl = vertScroller.scrollEl;
-            if (vertScrollerEl) {
-                vertScrollerElDom = vertScrollerEl.dom;
-                verticalCanScrollDown = vertScrollerElDom.scrollTop !== vertScrollerElDom.scrollHeight - vertScrollerElDom.clientHeight;
-                verticalCanScrollUp   = vertScrollerElDom.scrollTop !== 0;
-            }
-        }
-
-        if (horizScroller) {
-            if ((deltaX < 0 && horizontalCanScrollLeft) || (deltaX > 0 && horizontalCanScrollRight)) {
-                e.stopEvent();
-                horizScroller.scrollByDeltaX(deltaX);
-            }
-        }
-        if (vertScroller) {
-            if ((deltaY < 0 && verticalCanScrollUp) || (deltaY > 0 && verticalCanScrollDown)) {
-                e.stopEvent();
-                vertScroller.scrollByDeltaY(deltaY);
-            }
-        }
-    },
-
-    /**
+/**
      * @private
      * Fires the TablePanel's viewready event when the view declares that its internal DOM is ready
      */
     onViewReady: function() {
-        var me = this;
-        me.fireEvent('viewready', me);
-        if (me.deferRowRender) {
-            me.determineScrollbars();
-            me.invalidateScroller();
-        }
+         this.fireEvent('viewready', this);   
     },
 
     /**
      * @private
-     * Determines and invalidates scrollers on view refresh
+     * Tracks when the first data arrives in the grid, and if it needs to be initially refitted to fit within the Panel's scrollWidth, updates
+     * the header container's layhout.
      */
     onViewRefresh: function() {
-        var me = this;
 
-        // Refresh *during* render must be ignored.
-        if (!me.rendering) {
-            this.determineScrollbars();
-            if (this.invalidateScrollerOnRefresh) {
-                this.invalidateScroller();
-            }
+        // First "real", (that is with data) refresh of View should relay the header container if there is any flexing, or grouping.
+        if (this.store.getCount() && !this.firstDataArrived && this.headerCt.down('gridcolumn[flex]') || this.headerCt.down('gridcolumn[isGroupHeader]')) {
+            this.firstDataArrived = true;
+            this.headerCt.updateLayout();
         }
     },
 
@@ -1098,13 +751,9 @@ Ext.define('Ext.panel.Table', {
      */
     setScrollTop: function(top) {
         var me               = this,
-            rootCmp          = me.getScrollerOwner(),
-            verticalScroller = me.getVerticalScroller();
+            rootCmp          = me.getScrollerOwner();
 
         rootCmp.virtualScrollTop = top;
-        if (verticalScroller) {
-            verticalScroller.setScrollTop(top);
-        }
     },
 
     getScrollerOwner: function() {
@@ -1116,42 +765,14 @@ Ext.define('Ext.panel.Table', {
     },
 
     /**
-     * Scrolls the TablePanel by deltaY
-     * @param {Number} deltaY
-     */
-    scrollByDeltaY: function(deltaY) {
-        var verticalScroller = this.getVerticalScroller();
-
-        if (verticalScroller) {
-            verticalScroller.scrollByDeltaY(deltaY);
-        }
-    },
-
-    /**
-     * Scrolls the TablePanel by deltaX
-     * @param {Number} deltaX
-     */
-    scrollByDeltaX: function(deltaX) {
-        var horizontalScroller = this.getHorizontalScroller();
-
-        if (horizontalScroller) {
-            horizontalScroller.scrollByDeltaX(deltaX);
-        }
-    },
-
-    /**
      * Gets left hand side marker for header resizing.
      * @private
      */
     getLhsMarker: function() {
         var me = this;
-
-        if (!me.lhsMarker) {
-            me.lhsMarker = Ext.DomHelper.append(me.el, {
+        return me.lhsMarker || (me.lhsMarker = Ext.DomHelper.append(me.el, {
                 cls: Ext.baseCSSPrefix + 'grid-resize-marker'
-            }, true);
-        }
-        return me.lhsMarker;
+            }, true));
     },
 
     /**
@@ -1161,12 +782,9 @@ Ext.define('Ext.panel.Table', {
     getRhsMarker: function() {
         var me = this;
 
-        if (!me.rhsMarker) {
-            me.rhsMarker = Ext.DomHelper.append(me.el, {
+        return me.rhsMarker || (me.rhsMarker = Ext.DomHelper.append(me.el, {
                 cls: Ext.baseCSSPrefix + 'grid-resize-marker'
-            }, true);
-        }
-        return me.rhsMarker;
+            }, true));
     },
 
     /**
@@ -1211,17 +829,6 @@ Ext.define('Ext.panel.Table', {
         return this.selModel;
     },
 
-    onVerticalScroll: function(event, target) {
-        var owner = this.getScrollerOwner(),
-            items = owner.query('tableview'),
-            i = 0,
-            len = items.length;
-
-        for (; i < len; i++) {
-            items[i].el.dom.scrollTop = target.scrollTop;
-        }
-    },
-
     onHorizontalScroll: function(event, target) {
         var owner = this.getScrollerOwner(),
             items = owner.query('tableview'),
@@ -1245,11 +852,8 @@ Ext.define('Ext.panel.Table', {
     },
     
     beforeDestroy: function(){
-        // may be some duplication here since the horizontal and vertical
-        // scroller may be part of the docked items, but we need to clean
-        // them up in case they aren't visible.
-        Ext.destroy(this.horizontalScroller, this.verticalScroller);
-        this.callParent();
+        Ext.destroy(this.verticalScroller);
+        this.callParent();    
     },
 
     /**
@@ -1266,7 +870,7 @@ Ext.define('Ext.panel.Table', {
             me.reconfigureLockable(store, columns);
         } else {
             if (columns) {
-                headerCt.suspendLayout = true;
+                headerCt.suspendLayouts();
                 headerCt.removeAll();
                 headerCt.add(columns);
             }
@@ -1277,8 +881,7 @@ Ext.define('Ext.panel.Table', {
                 me.getView().refresh();
             }
             if (columns) {
-                headerCt.suspendLayout = false;
-                me.forceComponentLayout();
+                headerCt.resumeLayouts(true);
             }
         }
         me.fireEvent('reconfigure', me);

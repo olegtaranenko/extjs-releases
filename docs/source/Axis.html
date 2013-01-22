@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-chart-axis-Axis'>/**
 </span> * @class Ext.chart.axis.Axis
- * @extends Ext.chart.axis.Abstract
  *
  * Defines axis for charts. The axis position, type, style can be configured.
  * The axes are defined in an axes array of configuration objects where the type,
@@ -178,13 +177,12 @@ Ext.define('Ext.chart.axis.Axis', {
 
         //if one series is stacked I have to aggregate the values
         //for the scale.
-        // TODO(zhangbei): the code below does not support series that stack on 1 side but non-stacked axis
-        // listed in axis config. For example, a Area series whose axis : ['left', 'bottom'].
-        // Assuming only stack on y-axis.
+
         for (i = 0, l = series.length; !aggregate &amp;&amp; i &lt; l; i++) {
-            aggregate = aggregate || (me.position == 'left' || me.position == 'right') &amp;&amp; series[i].stacked;
+            aggregate = aggregate || ln &gt; 1 &amp;&amp; series[i].stacked;
             excludes = series[i].__excludes || excludes;
         }
+
         store.each(function(record) {
             if (aggregate) {
                 if (!isFinite(min)) {

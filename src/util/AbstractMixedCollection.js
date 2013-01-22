@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.util.AbstractMixedCollection
  * @private
@@ -31,12 +17,10 @@ Ext.define('Ext.util.AbstractMixedCollection', {
         me.keys = [];
         me.length = 0;
 
-        me.addEvents(
             /**
              * @event clear
              * Fires when the collection is cleared.
              */
-            'clear',
 
             /**
              * @event add
@@ -45,7 +29,6 @@ Ext.define('Ext.util.AbstractMixedCollection', {
              * @param {Object} o The item added.
              * @param {String} key The key associated with the added item.
              */
-            'add',
 
             /**
              * @event replace
@@ -54,16 +37,12 @@ Ext.define('Ext.util.AbstractMixedCollection', {
              * @param {Object} old The item being replaced.
              * @param {Object} new The new item.
              */
-            'replace',
-
             /**
              * @event remove
              * Fires when an item is removed from the collection.
              * @param {Object} o The item being removed.
              * @param {String} key (optional) The key associated with the removed item.
              */
-            'remove'
-        );
 
         me.allowFunctions = allowFunctions === true;
 
@@ -435,7 +414,7 @@ mc.add(otherEl);
      * @return {Boolean} True if the collection contains the Object as an item.
      */
     contains : function(o){
-        return Ext.Array.contains(this.items, o);
+        return typeof this.map[this.getKey(o)] != 'undefined';
     },
 
     /**
@@ -611,7 +590,7 @@ var middleAged = people.filter('age', 24);
 
         //support for the simple case of filtering by property/value
         if (Ext.isString(property)) {
-            filters.push(Ext.create('Ext.util.Filter', {
+            filters.push(new Ext.util.Filter({
                 property     : property,
                 value        : value,
                 anyMatch     : anyMatch,
@@ -758,4 +737,3 @@ var middleAged = people.filter('age', 24);
         return copy;
     }
 });
-

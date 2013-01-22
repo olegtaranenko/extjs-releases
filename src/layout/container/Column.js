@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * This is the layout style of choice for creating structural layouts in a multi-column format where the width of each
  * column can be specified as a percentage or fixed width, but the height is allowed to vary based on the content. This
@@ -80,7 +66,7 @@ If you are unsure which license is appropriate for your use, please contact the 
  */
 Ext.define('Ext.layout.container.Column', {
 
-    extend: 'Ext.layout.container.Auto',
+    extend: 'Ext.layout.container.Container',
     alias: ['layout.column'],
     alternateClassName: 'Ext.layout.ColumnLayout',
 
@@ -90,32 +76,126 @@ Ext.define('Ext.layout.container.Column', {
 
     targetCls: Ext.baseCSSPrefix + 'column-layout-ct',
 
-    scrollOffset: 0,
-
-    bindToOwnerCtComponent: false,
-
-    getRenderTarget : function() {
-        if (!this.innerCt) {
-
-            // the innerCt prevents wrapping and shuffling while
-            // the container is resizing
-            this.innerCt = this.getTarget().createChild({
-                cls: Ext.baseCSSPrefix + 'column-inner'
-            });
-
-            // Column layout uses natural HTML flow to arrange the child items.
-            // To ensure that all browsers (I'm looking at you IE!) add the bottom margin of the last child to the
-            // containing element height, we create a zero-sized element with style clear:both to force a "new line"
-            this.clearEl = this.innerCt.createChild({
-                cls: Ext.baseCSSPrefix + 'clear',
-                role: 'presentation'
-            });
-        }
-        return this.innerCt;
+    // Columns with a columnWidth have their width managed.
+    columnWidthSizePolicy: {
+        setsWidth: 1,
+        setsHeight: 0
     },
 
+    childEls: [
+        'innerCt'
+    ],
+
+    manageOverflow: 2,
+
+    renderTpl: [
+        '<div id="{ownerId}-innerCt" class="',Ext.baseCSSPrefix,'column-inner">',
+            '{%this.renderBody(out,values)%}',
+            '<div class="',Ext.baseCSSPrefix,'clear"></div>',
+        '</div>',
+        '{%this.renderPadder(out,values)%}'
+    ],
+
+    getItemSizePolicy: function (item) {
+        if (item.columnWidth) {
+            return this.columnWidthSizePolicy;
+        }
+        return this.autoSizePolicy;
+    },
+
+    calculate: function (ownerContext) {
+        var me = this,
+            containerSize = me.getContainerSize(ownerContext),
+            innerCtContext = ownerContext.getEl('innerCt', me),
+            items = ownerContext.childItems,
+            len = items.length,
+            contentWidth = 0,
+            itemMarginWidths = [],
+            blocked, availableWidth, i, itemContext, itemMarginWidth, itemWidth;
+
+        // Can never decide upon necessity of horizontal scrollbar (and therefore, narrower content width)
+        // until the component layout has published a height for the target element.
+        if (!ownerContext.autoHeight && !ownerContext.targetContext.hasProp('height')) {
+            me.done = false;
+            return;
+        }
+
+        // No parallel measurement, cannot lay out boxes.
+        if (!containerSize.gotWidth) { //\\ TODO: Deal with target padding width
+            ownerContext.targetContext.block(me, 'width');
+            blocked = true;
+        } else {
+            availableWidth = containerSize.width;
+
+            innerCtContext.setWidth(availableWidth);
+        }
+
+        // we need the widths of the columns we don't manage to proceed so we block on them
+        // if they are not ready...
+        for (i = 0; i < len; ++i) {
+            itemContext = items[i];
+            itemMarginWidth = itemMarginWidths[i] = itemContext.getMarginInfo().width;
+
+            if (itemContext.widthAuthority != 2) { // if (width not managed by this layout)
+                itemWidth = itemContext.getProp('width');
+                if (typeof itemWidth != 'number') {
+                    itemContext.block(me, 'width');
+                    blocked = true;
+                }
+
+                contentWidth += itemWidth + itemMarginWidth;
+            }
+        }
+
+        if (blocked) {
+            // we registered all the values that block this calculation, so abort now...
+            me.done = false;
+            return;
+        }
+
+        // we have all the required widths and margins to proceed...
+
+        availableWidth = (availableWidth < contentWidth) ? 0 : availableWidth - contentWidth;
+
+        for (i = 0; i < len; ++i) {
+            itemContext = items[i];
+            itemMarginWidth = itemMarginWidths[i];
+
+            if (itemContext.widthAuthority == 2) { // if (width managed by this layout)
+                itemWidth = itemContext.target.columnWidth;
+                itemWidth = Math.floor(itemWidth * availableWidth);
+                itemWidth = itemContext.setWidth(itemWidth - itemMarginWidths[i]); // constrains to min/maxWidth
+                contentWidth += itemWidth + itemMarginWidths[i];
+            }
+        }
+
+        // in order for innerCt to have the proper height, all the items must have height
+        // correct in the DOM...
+        blocked = false;
+        for (i = 0; i < len; ++i) {
+            itemContext = items[i];
+
+            if (!itemContext.hasDomProp('height')) {
+                itemContext.domBlock(me, 'height');
+                blocked = true;
+            }
+        }
+
+        if (blocked) {
+            // we registered all the values that block this calculation, so abort now...
+            me.done = false;
+        } else {
+            ownerContext.setContentSize(contentWidth, me.innerCt.getHeight() + ownerContext.targetContext.getPaddingInfo().height);
+            me.calculateOverflow(ownerContext, containerSize);
+        }
+    },
+
+    getRenderTarget : function() {
+        return this.innerCt;
+    }
+
     // private
-    onLayout : function() {
+    /*onLayout_: function() {
         var me = this,
             target = me.getTarget(),
             items = me.getLayoutItems(),
@@ -193,13 +273,5 @@ Ext.define('Ext.layout.container.Column', {
             }
         }
         delete me.adjustmentPass;
-    },
-
-    configureItem: function(item) {
-        this.callParent(arguments);
-
-        if (item.columnWidth) {
-            item.layoutManagedWidth = 1;
-        }
-    }
+    }*/
 });

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A menu item that contains a togglable checkbox by default, but that can also be a part of a radio group.
  *
@@ -68,7 +54,7 @@ Ext.define('Ext.menu.CheckItem', {
 
     afterRender: function() {
         var me = this;
-        this.callParent();
+        me.callParent();
         me.checked = !me.checked;
         me.setChecked(!me.checked, true);
     },
@@ -163,4 +149,3 @@ Ext.define('Ext.menu.CheckItem', {
         }
     }
 });
-

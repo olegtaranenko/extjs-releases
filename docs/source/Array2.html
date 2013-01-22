@@ -18,7 +18,6 @@
   <pre class="prettyprint lang-js"><span id='Ext-data-reader-Array-method-constructor'><span id='Ext-data-reader-Array'>/**
 </span></span> * @author Ed Spencer
  * @class Ext.data.reader.Array
- * @extends Ext.data.reader.Json
  * 
  * &lt;p&gt;Data reader class to create an Array of {@link Ext.data.Model} objects from an Array.
  * Each element of that Array represents a row of data fields. The
@@ -57,6 +56,10 @@ Ext.define('Ext.data.reader.Array', {
     alternateClassName: 'Ext.data.ArrayReader',
     alias : 'reader.array',
 
+    // For Array Reader, methods in the base which use these properties must not see the defaults
+    totalProperty: undefined,
+    successProperty: undefined,
+
 <span id='Ext-data-reader-Array-method-buildExtractors'>    /**
 </span>     * @private
      * Most of the work is done for us by JsonReader, but we need to overwrite the field accessors to just
@@ -64,7 +67,7 @@ Ext.define('Ext.data.reader.Array', {
      */
     buildExtractors: function() {
         this.callParent(arguments);
-        
+
         var fields = this.model.prototype.fields.items,
             i = 0,
             length = fields.length,
@@ -79,10 +82,9 @@ Ext.define('Ext.data.reader.Array', {
                 };
             }(map !== null ? map : i));
         }
-        
+
         this.extractorFunctions = extractorFunctions;
     }
-});
-</pre>
+});</pre>
 </body>
 </html>

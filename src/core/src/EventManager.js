@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.EventManager
  * Registers event handlers that want to receive a normalized EventObject instead of the standard browser event and provides
@@ -117,8 +103,8 @@ Ext.EventManager = {
         var me = Ext.EventManager;
 
         // only unbind these events once
-        if (!me.hasFiredReady) {
-            me.hasFiredReady = true;
+        if (!Ext.isReady) {
+            Ext.isReady = true;
 
             if (document.addEventListener) {
                 document.removeEventListener('DOMContentLoaded', me.fireDocReady, false);
@@ -132,10 +118,8 @@ Ext.EventManager = {
                 }
                 window.detachEvent('onload', me.fireDocReady);
             }
+
             Ext.supports.init();
-        }
-        if (!Ext.isReady) {
-            Ext.isReady = true;
             me.onWindowUnload();
             me.readyEvent.fire();
         }
@@ -155,14 +139,12 @@ Ext.EventManager = {
 
         // force single to be true so our event is only ever fired once.
         options.single = true;
+        readyEvent.addListener(fn, scope, options);
 
         // Document already loaded, let's just fire it
         if (Ext.isReady) {
-            readyEvent.addListener(fn, scope, options);
             readyEvent.fire();
         } else {
-            options.delay = options.delay || 1;
-            readyEvent.addListener(fn, scope, options);
             me.bindReadyEvent();
         }
     },
@@ -233,7 +215,7 @@ Ext.EventManager = {
                     value = config[key];
                     // if the value is a function it must be something like click: function(){}, scope: this
                     // which means that there might be multiple event listeners with shared options
-                    if (Ext.isFunction(value)) {
+                    if (typeof value == 'function') {
                         // shared options
                         args = [element, key, value, config.scope, config];
                     } else {
@@ -241,8 +223,8 @@ Ext.EventManager = {
                         args = [element, key, value.fn, value.scope, value];
                     }
 
-                    if (isRemove === true) {
-                        me.removeListener.apply(this, args);
+                    if (isRemove) {
+                        me.removeListener.apply(me, args);
                     } else {
                         me.addListener.apply(me, args);
                     }
@@ -250,6 +232,8 @@ Ext.EventManager = {
             }
         }
     },
+
+    mouseEnterLeaveRe: /mouseenter|mouseleave/,
 
     /**
      * Normalize cross browser event differences
@@ -259,7 +243,7 @@ Ext.EventManager = {
      * @return {Object} The new event name/function
      */
     normalizeEvent: function(eventName, fn){
-        if (/mouseenter|mouseleave/.test(eventName) && !Ext.supports.MouseEnterLeave) {
+        if (this.mouseEnterLeaveRe.test(eventName) && !Ext.supports.MouseEnterLeave) {
             if (fn) {
                 fn = Ext.Function.createInterceptor(fn, this.contains, this);
             }
@@ -333,20 +317,10 @@ Ext.EventManager = {
             return;
         }
 
-        var dom = Ext.getDom(element),
-            bind,
-            wrap;
+        var dom = element.dom || Ext.getDom(element),
+            bind, wrap;
 
         //<debug>
-        if (!dom){
-            Ext.Error.raise({
-                sourceClass: 'Ext.EventManager',
-                sourceMethod: 'addListener',
-                targetElement: element,
-                eventName: eventName,
-                msg: 'Error adding "' + eventName + '\" listener for nonexistent element "' + element + '"'
-            });
-        }
         if (!fn) {
             Ext.Error.raise({
                 sourceClass: 'Ext.EventManager',
@@ -364,7 +338,6 @@ Ext.EventManager = {
         bind = this.normalizeEvent(eventName, fn);
         wrap = this.createListenerWrap(dom, eventName, bind.fn, scope, options);
 
-
         if (dom.attachEvent) {
             dom.attachEvent('on' + bind.eventName, wrap);
         } else {
@@ -376,7 +349,7 @@ Ext.EventManager = {
         }
 
         // add all required data into the event cache
-        this.getEventListenerCache(dom, eventName).push({
+        this.getEventListenerCache(element.dom ? element : dom, eventName).push({
             fn: fn,
             wrap: wrap,
             scope: scope
@@ -400,7 +373,8 @@ Ext.EventManager = {
         }
 
         var dom = Ext.getDom(element),
-            cache = this.getEventListenerCache(dom, eventName),
+            el = element.dom ? element : Ext.get(dom),
+            cache = this.getEventListenerCache(el, eventName),
             bindName = this.normalizeEvent(eventName).eventName,
             i = cache.length, j,
             listener, wrap, tasks;
@@ -449,19 +423,21 @@ Ext.EventManager = {
     * @param {String/HTMLElement} el The id or html element from which to remove all event handlers.
     */
     removeAll : function(element){
-        var dom = Ext.getDom(element),
-            cache, ev;
-        if (!dom) {
+        var el = element.dom ? element : Ext.get(element),
+            cache, events, eventName;
+
+        if (!el) {
             return;
         }
-        cache = this.getElementEventCache(dom);
+        cache = el.$cache;
+        events = cache.events;
 
-        for (ev in cache) {
-            if (cache.hasOwnProperty(ev)) {
-                this.removeListener(dom, ev);
+        for (eventName in events) {
+            if (events.hasOwnProperty(eventName)) {
+                this.removeListener(el, eventName);
             }
         }
-        Ext.cache[dom.id].events = {};
+        cache.events = {};
     },
 
     /**
@@ -475,10 +451,10 @@ Ext.EventManager = {
             i = 0, len;
 
         if(eventName) {
-            this.removeListener(dom, eventName);
+            this.removeListener(element, eventName);
         }
         else {
-            this.removeAll(dom);
+            this.removeAll(element);
         }
 
         if(dom && dom.childNodes) {
@@ -565,7 +541,7 @@ Ext.EventManager = {
                     f.push('}, ' + options.buffer + ');');
                 }
 
-                gen = Ext.functionFactory('e', 'options', 'fn', 'scope', 'ename', 'dom', 'wrap', 'args', f.join('\n'));
+                gen = Ext.cacheableFunctionFactory('e', 'options', 'fn', 'scope', 'ename', 'dom', 'wrap', 'args', f.join('\n'));
             }
 
             gen.call(dom, e, options, fn, scope, ename, dom, wrap, args);
@@ -580,26 +556,19 @@ Ext.EventManager = {
      * @return {Array} The events for the element
      */
     getEventListenerCache : function(element, eventName) {
+        var elementCache, eventCache, id;
         if (!element) {
             return [];
         }
 
-        var eventCache = this.getElementEventCache(element);
-        return eventCache[eventName] || (eventCache[eventName] = []);
-    },
-
-    /**
-     * Gets the event cache for the object
-     * @private
-     * @param {HTMLElement} element The element
-     * @return {Object} The event cache for the object
-     */
-    getElementEventCache : function(element) {
-        if (!element) {
-            return {};
+        if (element.$cache) {
+            elementCache = element.$cache;
+        } else {
+            elementCache = Ext.cache[id = this.getId(element)] || (Ext.cache[id] = {});
         }
-        var elementCache = Ext.cache[this.getId(element)];
-        return elementCache.events || (elementCache.events = {});
+        eventCache = elementCache.events || (elementCache.events = {});
+        
+        return eventCache[eventName] || (eventCache[eventName] = []);
     },
 
     // --------------------- utility methods ---------------------
@@ -1025,4 +994,3 @@ Ext.EventManager.un = Ext.EventManager.removeListener;
 
     Ext.onReady(initExtCss);
 })();
-

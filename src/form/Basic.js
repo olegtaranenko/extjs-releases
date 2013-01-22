@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.form.Basic
- * @extends Ext.util.Observable
  *
  * Provides input field management, validation, submission, and form loading services for the collection
  * of {@link Ext.form.field.Field Field} instances within a {@link Ext.container.Container}. It is recommended
@@ -115,7 +100,7 @@ Ext.define('Ext.form.Basic', {
             me.paramOrder = me.paramOrder.split(/[\s,|]/);
         }
 
-        me.checkValidityTask = Ext.create('Ext.util.DelayedTask', me.checkValidity, me);
+        me.checkValidityTask = new Ext.util.DelayedTask(me.checkValidity, me);
 
         me.addEvents(
             /**
@@ -158,13 +143,15 @@ Ext.define('Ext.form.Basic', {
     },
 
     /**
-     * Do any post constructor initialization
+     * Do any post layout initialization
      * @private
      */
-    initialize: function(){
-        this.initialized = true;
-        this.onValidityChange(!this.hasInvalidField());
+    initialize : function() {
+        var me = this;
+        me.initialized = true;
+        me.onValidityChange(!me.hasInvalidField());
     },
+
 
     /**
      * @cfg {String} method
@@ -346,7 +333,7 @@ paramOrder: 'param1|param2|param'
     getFields: function() {
         var fields = this._fields;
         if (!fields) {
-            fields = this._fields = Ext.create('Ext.util.MixedCollection');
+            fields = this._fields = new Ext.util.MixedCollection();
             fields.addAll(this.owner.query('[isFormField]'));
         }
         return fields;
@@ -361,7 +348,7 @@ paramOrder: 'param1|param2|param'
         var boundItems = this._boundItems;
         
         if (!boundItems || boundItems.getCount() === 0) {
-            boundItems = this._boundItems = Ext.create('Ext.util.MixedCollection');
+            boundItems = this._boundItems = new Ext.util.MixedCollection();
             boundItems.addAll(this.owner.query('[formBind]'));
         }
         
@@ -392,11 +379,11 @@ paramOrder: 'param1|param2|param'
     isValid: function() {
         var me = this,
             invalid;
-        me.batchLayouts(function() {
-            invalid = me.getFields().filterBy(function(field) {
-                return !field.validate();
-            });
+        Ext.suspendLayouts();
+        invalid = me.getFields().filterBy(function(field) {
+            return !field.validate();
         });
+        Ext.resumeLayouts(true);
         return invalid.length < 1;
     },
 
@@ -874,11 +861,11 @@ myFormPanel.getForm().submit({
      */
     clearInvalid: function() {
         var me = this;
-        me.batchLayouts(function() {
-            me.getFields().each(function(f) {
-                f.clearInvalid();
-            });
+        Ext.suspendLayouts();
+        me.getFields().each(function(f) {
+            f.clearInvalid();
         });
+        Ext.resumeLayouts(true);
         return me;
     },
 
@@ -888,11 +875,11 @@ myFormPanel.getForm().submit({
      */
     reset: function() {
         var me = this;
-        me.batchLayouts(function() {
-            me.getFields().each(function(f) {
-                f.reset();
-            });
+        Ext.suspendLayouts();
+        me.getFields().each(function(f) {
+            f.reset();
         });
+        Ext.resumeLayouts(true);
         return me;
     },
 
@@ -918,39 +905,5 @@ myFormPanel.getForm().submit({
             Ext.applyIf(f, obj);
         });
         return this;
-    },
-
-    /**
-     * @private
-     * Utility wrapper that suspends layouts of all field parent containers for the duration of a given
-     * function. Used during full-form validation and resets to prevent huge numbers of layouts.
-     * @param {Function} fn
-     */
-    batchLayouts: function(fn) {
-        var me = this,
-            suspended = new Ext.util.HashMap();
-
-        // Temporarily suspend layout on each field's immediate owner so we don't get a huge layout cascade
-        me.getFields().each(function(field) {
-            var ownerCt = field.ownerCt;
-            if (!suspended.contains(ownerCt)) {
-                suspended.add(ownerCt);
-                ownerCt.oldSuspendLayout = ownerCt.suspendLayout;
-                ownerCt.suspendLayout = true;
-            }
-        });
-
-        // Invoke the function
-        fn();
-
-        // Un-suspend the container layouts
-        suspended.each(function(id, ct) {
-            ct.suspendLayout = ct.oldSuspendLayout;
-            delete ct.oldSuspendLayout;
-        });
-
-        // Trigger a single layout
-        me.owner.doComponentLayout();
     }
 });
-

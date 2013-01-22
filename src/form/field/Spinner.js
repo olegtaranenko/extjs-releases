@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A field with a pair of up/down spinner buttons. This class is not normally instantiated directly,
  * instead it is subclassed and the {@link #onSpinUp} and {@link #onSpinDown} methods are implemented
@@ -180,7 +166,7 @@ Ext.define('Ext.form.field.Spinner', {
 
         // Init up/down arrow keys
         if (me.keyNavEnabled) {
-            me.spinnerKeyNav = Ext.create('Ext.util.KeyNav', me.inputEl, {
+            me.spinnerKeyNav = new Ext.util.KeyNav(me.inputEl, {
                 scope: me,
                 up: me.spinUp,
                 down: me.spinDown

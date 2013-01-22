@@ -146,14 +146,18 @@ Ext.define('Ext.picker.Color', {
 
 
     // private
-    onRender : function(container, position){
-        var me = this,
-            clickEvent = me.clickEvent;
-
-        Ext.apply(me.renderData, {
+    initRenderData : function(){
+        var me = this;
+        return Ext.apply(me.callParent(), {
             itemCls: me.itemCls,
             colors: me.colors
         });
+    },
+
+    onRender : function(){
+        var me = this,
+            clickEvent = me.clickEvent;
+
         me.callParent(arguments);
 
         me.mon(me.el, clickEvent, me.handleClick, me, {delegate: 'a'});

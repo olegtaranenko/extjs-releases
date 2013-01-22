@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @author Ed Spencer
  *
@@ -48,10 +34,10 @@ Ext.define('Ext.data.Operation', {
     sorters: undefined,
 
     /**
-     * @cfg {Ext.util.Grouper} group
+     * @cfg {Ext.util.Grouper[]} groupers
      * Optional grouping configuration. Only applies to 'read' actions where grouping is desired.
      */
-    group: undefined,
+    groupers: undefined,
 
     /**
      * @cfg {Number} start
@@ -172,17 +158,35 @@ Ext.define('Ext.data.Operation', {
             clientRecords = me.records;
 
             if (clientRecords && clientRecords.length) {
-                mc = Ext.create('Ext.util.MixedCollection', true, function(r) {return r.getId();});
-                mc.addAll(clientRecords);
+                if(clientRecords.length > 1) {
+                    // if this operation has multiple records, client records need to be matched up with server records
+                    // so that any data returned from the server can be updated in the client records.
+                    mc = new Ext.util.MixedCollection();
+                    mc.addAll(serverRecords);
 
-                for (index = serverRecords ? serverRecords.length : 0; index--; ) {
-                    serverRec = serverRecords[index];
-                    clientRec = mc.get(serverRec.getId());
+                    for (index = clientRecords.length; index--; ) {
+                        clientRec = clientRecords[index];
+                        serverRec = mc.findBy(function(record) {
+                            var clientRecordId = clientRec.getId();
+                            if(clientRecordId && record.getId() === clientRecordId) {
+                                return true;
+                            }
+                            // if the server record cannot be found by id, find by internalId.
+                            // this allows client records that did not previously exist on the server
+                            // to be updated with the correct server id and data.
+                            return record.internalId === clientRec.internalId;
+                        });
 
-                    if (clientRec) {
-                        clientRec.beginEdit();
-                        clientRec.set(serverRec.data);
-                        clientRec.endEdit(true);
+                        // replace client record data with server record data
+                        me.updateClientRecord(clientRec, serverRec);
+                    }
+                } else {
+                    // operation only has one record, so just match the first client record up with the first server record
+                    clientRec = clientRecords[0];
+                    serverRec = serverRecords[0];
+                    // if the client record is not a phantom, make sure the ids match before replacing the client data with server data.
+                    if(clientRec.phantom || clientRec.getId() === serverRec.getId()) {
+                        me.updateClientRecord(clientRec, serverRec);
                     }
                 }
 
@@ -192,6 +196,29 @@ Ext.define('Ext.data.Operation', {
                     }
                 }
             }
+        }
+    },
+
+    /**
+     * Replaces the data in a client record with the data from a server record. If either record is undefined, does nothing.
+     * Since non-persistent fields will have default values in the server record, this method only replaces data for persistent
+     * fields to avoid overwriting the client record's data with default values from the server record.
+     * @private
+     * @param {Ext.data.Model} [clientRecord]
+     * @param {Ext.data.Model} [serverRecord]
+     */
+    updateClientRecord: function(clientRecord, serverRecord) {
+        if (clientRecord && serverRecord) {
+            clientRecord.beginEdit();
+            clientRecord.fields.each(function(field) {
+                if(field.persist) {
+                    clientRecord.set(field.name, serverRecord.get(field.name));
+                }
+            });
+            if(clientRecord.phantom) {
+                clientRecord.setId(serverRecord.getId());
+            }
+            clientRecord.endEdit(true);
         }
     },
 

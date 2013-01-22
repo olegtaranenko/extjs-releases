@@ -205,8 +205,7 @@ Ext.define('Ext.toolbar.Toolbar', {
     requires: [
         'Ext.toolbar.Fill',
         'Ext.layout.container.HBox',
-        'Ext.layout.container.VBox',
-        'Ext.FocusManager'
+        'Ext.layout.container.VBox'
     ],
     uses: [
         'Ext.toolbar.Separator'
@@ -253,6 +252,24 @@ Ext.define('Ext.toolbar.Toolbar', {
 
     itemCls: Ext.baseCSSPrefix + 'toolbar-item',
 
+    statics: {
+        shortcuts: {
+            '-' : 'tbseparator',
+            ' ' : 'tbspacer'
+        },
+
+        shortcutsHV: {
+            // horizontal
+            0: {
+                '-&gt;': { xtype: 'tbfill', height: 0 }
+            },
+            // vertical
+            1: {
+                '-&gt;': { xtype: 'tbfill', width: 0 }
+            }
+        }
+    },
+
     initComponent: function() {
         var me = this,
             keys;
@@ -292,12 +309,6 @@ Ext.define('Ext.toolbar.Toolbar', {
          * @param {Boolean} lastOverflow overflow state
          */
         me.addEvents('overflowchange');
-
-        // Subscribe to Ext.FocusManager for key navigation
-        keys = me.vertical ? ['up', 'down'] : ['left', 'right'];
-        Ext.FocusManager.subscribe(me, {
-            keys: keys
-        });
     },
 
     getRefItems: function(deep) {
@@ -337,20 +348,26 @@ Ext.define('Ext.toolbar.Toolbar', {
 
     // private
     lookupComponent: function(c) {
-        if (Ext.isString(c)) {
-            var shortcut = Ext.toolbar.Toolbar.shortcuts[c];
-            if (shortcut) {
+        if (typeof c == 'string') {
+            var T = Ext.toolbar.Toolbar,
+                shortcut = T.shortcutsHV[this.vertical ? 1 : 0][c] || T.shortcuts[c];
+
+            if (typeof shortcut == 'string') {
                 c = {
                     xtype: shortcut
                 };
+            } else if (shortcut) {
+                c = Ext.apply({}, shortcut);
             } else {
                 c = {
                     xtype: 'tbtext',
                     text: c
                 };
             }
+
             this.applyDefaults(c);
         }
+
         return this.callParent(arguments);
     },
 
@@ -383,7 +400,8 @@ Ext.define('Ext.toolbar.Toolbar', {
 
     // private
     constructButton: function(item) {
-        return item.events ? item : this.createComponent(item, item.split ? 'splitbutton' : this.defaultType);
+        return item.events ? item
+                : Ext.widget(item.split ? 'splitbutton' : this.defaultType, item);
     },
 
     // private
@@ -434,12 +452,6 @@ Ext.define('Ext.toolbar.Toolbar', {
     onButtonMenuHide: function(btn) {
         delete this.activeMenuBtn;
     }
-}, function() {
-    this.shortcuts = {
-        '-' : 'tbseparator',
-        ' ' : 'tbspacer',
-        '-&gt;': 'tbfill'
-    };
 });</pre>
 </body>
 </html>

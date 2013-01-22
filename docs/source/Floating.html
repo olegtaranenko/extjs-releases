@@ -37,22 +37,21 @@ Ext.define('Ext.util.Floating', {
      */
     shadow: 'sides',
 
-    constructor: function(config) {
+    constructor: function (dom) {
         var me = this;
-        
-        me.floating = true;
-        me.el = Ext.create('Ext.Layer', Ext.apply({}, config, {
-            hideMode: me.hideMode,
-            hidden: me.hidden,
-            shadow: Ext.isDefined(me.shadow) ? me.shadow : 'sides',
-            shadowOffset: me.shadowOffset,
-            constrain: false,
-            shim: me.shim === false ? false : undefined
-        }), me.el);
-    },
 
-    onFloatRender: function() {
-        var me = this;
+        me.el = new Ext.Layer(Ext.apply({
+            hideMode     : me.hideMode,
+            hidden       : me.hidden,
+            shadow       : (typeof me.shadow != 'undefined') ? me.shadow : 'sides',
+            shadowOffset : me.shadowOffset,
+            constrain    : false,
+            shim         : (me.shim === false) ? false : undefined
+        }, me.floating), dom);
+
+        me.floating = true;  // release config object (if it was one)
+
+        // Perform render-time tasks
         me.zIndexParent = me.getZIndexParent();
         me.setFloatParent(me.ownerCt);
         delete me.ownerCt;
@@ -265,11 +264,14 @@ Ext.define('Ext.util.Floating', {
             if (me.el.shadow &amp;&amp; !me.maximized) {
                 me.el.enableShadow(true);
             }
+            if (me.modal) {
+                me.focus(false, true);
+            }
             me.fireEvent('activate', me);
         } else {
             // Only the *Windows* in a zIndex stack share a shadow. All other types of floaters
             // can keep their shadows all the time
-            if ((me instanceof Ext.window.Window) &amp;&amp; (newActive instanceof Ext.window.Window)) {
+            if (me.isWindow &amp;&amp; (newActive &amp;&amp; newActive.isWindow)) {
                 me.el.disableShadow();
             }
             me.fireEvent('deactivate', me);
@@ -291,9 +293,22 @@ Ext.define('Ext.util.Floating', {
      */
     center: function() {
         var me = this,
+            xy;
+            
+        if (me.isVisible()) {
             xy = me.el.getAlignToXY(me.container, 'c-c');
-        me.setPagePosition(xy);
+            me.setPagePosition(xy);
+        } else {
+            me.needsCenter = true;
+        }
         return me;
+    },
+    
+    onFloatShow: function(){
+        if (this.needsCenter) {
+            this.center();    
+        }
+        delete this.needsCenter;
     },
 
     // private
@@ -311,6 +326,7 @@ Ext.define('Ext.util.Floating', {
 
         this.setSize(size);
     }
-});</pre>
+});
+</pre>
 </body>
 </html>

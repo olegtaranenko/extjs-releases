@@ -1,20 +1,6 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.LoadMask
- * <p>A modal, floating Component which may be shown above a specified {@link Ext.core.Element Element}, or a specified
+ * <p>A modal, floating Component which may be shown above a specified {@link Ext.dom.Element Element}, or a specified
  * {@link Ext.Component Component} while loading data. When shown, the configured owning Element or Component will
  * be covered with a modality mask, and the LoadMask's {@link #msg} will be displayed centered, accompanied by a spinner image.</p>
  * <p>If the {@link #store} config option is specified, the masking will be automatically shown and then hidden synchronized with
@@ -39,7 +25,8 @@ Ext.define('Ext.LoadMask', {
     /* Begin Definitions */
 
     mixins: {
-        floating: 'Ext.util.Floating'
+        floating: 'Ext.util.Floating',
+        bindable: 'Ext.util.Bindable'
     },
 
     uses: ['Ext.data.StoreManager'],
@@ -77,7 +64,11 @@ Ext.define('Ext.LoadMask', {
 
     baseCls: Ext.baseCSSPrefix + 'mask-msg',
 
-    renderTpl: '<div style="position:relative" class="{msgCls}"></div>',
+    childEls: [
+        'msgEl'
+    ],
+
+    renderTpl: '<div id="{id}-msgEl" style="position:relative" class="{[values.$comp.msgCls]}"></div>',
 
     // Private. The whole point is that there's a mask.
     modal: true,
@@ -94,8 +85,7 @@ Ext.define('Ext.LoadMask', {
      * Creates new LoadMask.
      * @param {String/HTMLElement/Ext.Element} el The element, element ID, or DOM node you wish to mask.
      * <p>Also, may be a {@link Ext.Component Component} who's element you wish to mask. If a Component is specified, then
-     * the mask will be automatically sized upon Component resize, the message box will be kept centered,
-     * and the mask only be visible when the Component is.</p>
+     * the mask will be automatically sized upon Componenr resize, and the message box will be kept centered.</p>
      * @param {Object} [config] The config object
      */
     constructor : function(el, config) {
@@ -120,12 +110,6 @@ Ext.define('Ext.LoadMask', {
         if (me.store) {
             me.bindStore(me.store, true);
         }
-        me.renderData = {
-            msgCls: me.msgCls
-        };
-        me.renderSelectors = {
-            msgEl: 'div'
-        };
     },
 
     bindComponent: function(comp) {
@@ -158,32 +142,19 @@ Ext.define('Ext.LoadMask', {
      */
     bindStore : function(store, initial) {
         var me = this;
-
-        if (!initial && me.store) {
-            me.mun(me.store, {
-                scope: me,
-                beforeload: me.onBeforeLoad,
-                load: me.onLoad,
-                exception: me.onLoad
-            });
-            if (!store) {
-                me.store = null;
-            }
-        }
-        if (store) {
-            store = Ext.data.StoreManager.lookup(store);
-            me.mon(store, {
-                scope: me,
-                beforeload: me.onBeforeLoad,
-                load: me.onLoad,
-                exception: me.onLoad
-            });
-
-        }
-        me.store = store;
+        me.mixins.bindable.bindStore.apply(me, arguments);
+        store = me.store;
         if (store && store.isLoading()) {
             me.onBeforeLoad();
         }
+    },
+    
+    getStoreListeners: function(){
+        return {
+            beforeload: this.onBeforeLoad,
+            load: this.onLoad,
+            exception: this.onLoad     
+        };
     },
 
     onDisable : function() {
@@ -215,12 +186,6 @@ Ext.define('Ext.LoadMask', {
                 };
             }
         }
-    },
-
-    onHide: function(){
-        var me = this;
-        me.callParent(arguments);
-        me.showOnParentShow = true;
     },
 
     onShow: function() {

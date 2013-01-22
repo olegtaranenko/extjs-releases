@@ -71,7 +71,7 @@ Ext.define('Ext.menu.CheckItem', {
 
     afterRender: function() {
         var me = this;
-        this.callParent();
+        me.callParent();
         me.checked = !me.checked;
         me.setChecked(!me.checked, true);
     },

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.theme.Base
  * Provides default colors for non-specified things. Should be sub-classed when creating new themes.
@@ -115,6 +101,22 @@ Ext.define('Ext.chart.theme.Base', {
             }, {
                 fill: "#7c7474"
             }, {
+                fill: "#115fa6"
+            }, {
+                fill: "#94ae0a"
+            }, {
+                fill: "#a61120"
+            }, {
+                fill: "#ff8809"
+            }, {
+                fill: "#ffd13e"
+            }, {
+                fill: "#a61187"
+            }, {
+                fill: "#24ad9a"
+            }, {
+                fill: "#7c7474"
+            }, {
                 fill: "#a66111"
             }],
             markerThemes: [{
@@ -124,8 +126,14 @@ Ext.define('Ext.chart.theme.Base', {
                 fill: "#94ae0a",
                 type: 'cross'
             }, {
+                fill: "#115fa6",
+                type: 'plus' 
+            }, {
+                fill: "#94ae0a",
+                type: 'circle'
+            }, {
                 fill: "#a61120",
-                type: 'plus'
+                type: 'cross'
             }]
         });
     }
@@ -167,4 +175,3 @@ Ext.define('Ext.chart.theme.Base', {
         })(categories[i]);
     }
 });
-

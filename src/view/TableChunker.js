@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.view.TableChunker
  * 
@@ -25,7 +11,7 @@ Ext.define('Ext.view.TableChunker', {
     requires: ['Ext.XTemplate'],
     metaTableTpl: [
         '{[this.openTableWrap()]}',
-        '<table class="' + Ext.baseCSSPrefix + 'grid-table ' + Ext.baseCSSPrefix + 'grid-table-resizer" border="0" cellspacing="0" cellpadding="0" {[this.embedFullWidth()]}>',
+        '<table class="' + Ext.baseCSSPrefix + 'grid-table ' + Ext.baseCSSPrefix + 'grid-table-resizer" border="0" cellspacing="0" cellpadding="0" {[this.embedFullWidth(values)]}>',
             '<tbody>',
             '<tr class="' + Ext.baseCSSPrefix + 'grid-header-row">',
             '<tpl for="columns">',
@@ -57,8 +43,15 @@ Ext.define('Ext.view.TableChunker', {
         return tpl;
     },
 
-    embedFullWidth: function() {
-        return 'style="width: {fullWidth}px;"';
+    embedFullWidth: function(values) {
+        var result = 'style="width:{fullWidth}px;';
+
+        // If there are no records, we need to give the table a height so that it
+        // is displayed and causes q scrollbar if the width exceeds the View's width.
+        if (!values.rowCount) {
+            result += 'height:1px;';
+        }
+        return result + '"';
     },
 
     openRows: function() {
@@ -72,7 +65,9 @@ Ext.define('Ext.view.TableChunker', {
     metaRowTpl: [
         '<tr class="' + Ext.baseCSSPrefix + 'grid-row {addlSelector} {[this.embedRowCls()]}" {[this.embedRowAttr()]}>',
             '<tpl for="columns">',
-                '<td class="{cls} ' + Ext.baseCSSPrefix + 'grid-cell ' + Ext.baseCSSPrefix + 'grid-cell-{columnId} {{id}-modified} {{id}-tdCls} {[this.firstOrLastCls(xindex, xcount)]}" {{id}-tdAttr}><div unselectable="on" class="' + Ext.baseCSSPrefix + 'grid-cell-inner ' + Ext.baseCSSPrefix + 'unselectable" style="{{id}-style}; text-align: {align};">{{id}}</div></td>',
+                '<td class="{cls} ' + Ext.baseCSSPrefix + 'grid-cell ' + Ext.baseCSSPrefix + 'grid-cell-{columnId} {{id}-modified} {{id}-tdCls} {[this.firstOrLastCls(xindex, xcount)]}" {{id}-tdAttr}>',
+                    '<div{[parent.enableTextSelection ? "" : " unselectable=\'on\'"]} class="' + Ext.baseCSSPrefix + 'grid-cell-inner{[parent.enableTextSelection ? "" : " ' + Ext.baseCSSPrefix + 'unselectable"]}" style="text-align: {align}; {{id}-style};">{{id}}</div>',
+                '</td>',
             '</tpl>',
         '</tr>'
     ],
@@ -135,19 +130,18 @@ Ext.define('Ext.view.TableChunker', {
             }
         }
         
-        metaRowTpl = Ext.create('Ext.XTemplate', metaRowTpl.join(''), memberFns);
+        metaRowTpl = new Ext.XTemplate(metaRowTpl.join(''), memberFns);
         cfg.row = metaRowTpl.applyTemplate(cfg);
         
-        metaTableTpl = Ext.create('Ext.XTemplate', this.metaTableTpl.join(''), tableTplMemberFns);
+        metaTableTpl = new Ext.XTemplate(this.metaTableTpl.join(''), tableTplMemberFns);
         
         tpl = metaTableTpl.applyTemplate(cfg);
         
         // TODO: Investigate eliminating.
         if (!textOnly) {
-            tpl = Ext.create('Ext.XTemplate', tpl, tplMemberFns);
+            tpl = new Ext.XTemplate(tpl, tplMemberFns);
         }
         return tpl;
         
     }
 });
-

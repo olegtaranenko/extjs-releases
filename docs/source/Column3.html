@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-tree-Column'>/**
 </span> * @class Ext.tree.Column
- * @extends Ext.grid.column.Column
  * 
  * Provides indentation and folder structure markup for a Tree taking into account
  * depth and position within the tree hierarchy.
@@ -27,6 +26,8 @@
 Ext.define('Ext.tree.Column', {
     extend: 'Ext.grid.column.Column',
     alias: 'widget.treecolumn',
+
+    tdCls: Ext.baseCSSPrefix + 'grid-cell-treecolumn',
 
     initComponent: function() {
         var origRenderer = this.renderer || this.defaultRenderer,

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.util.KeyNav
  * <p>Provides a convenient wrapper for normalized keyboard navigation.  KeyNav allows you to bind
@@ -79,7 +65,7 @@ Ext.define('Ext.util.KeyNav', {
             this.map.destroy();
         }
         
-        var map = Ext.create('Ext.util.KeyMap', el, null, this.getKeyEvent('forceKeyDown' in config ? config.forceKeyDown : this.forceKeyDown)),
+        var map = new Ext.util.KeyMap(el, null, this.getKeyEvent('forceKeyDown' in config ? config.forceKeyDown : this.forceKeyDown)),
             keys = Ext.util.KeyNav.keyOptions,
             scope = config.scope || this,
             key;
@@ -180,4 +166,3 @@ Ext.define('Ext.util.KeyNav', {
         return (forceKeyDown || Ext.EventManager.useKeyDown) ? 'keydown' : 'keypress';
     }
 });
-

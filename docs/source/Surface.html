@@ -146,7 +146,7 @@ Ext.define('Ext.draw.Surface', {
     },
 
     requires: ['Ext.draw.CompositeSprite'],
-    uses: ['Ext.draw.engine.Svg', 'Ext.draw.engine.Vml'],
+    uses: ['Ext.draw.engine.Svg', 'Ext.draw.engine.Vml', 'Ext.draw.engine.SvgExporter', 'Ext.draw.engine.ImageExporter'],
 
     separatorRe: /[, ]+/,
 
@@ -172,6 +172,23 @@ Ext.define('Ext.draw.Surface', {
                 }
             }
             return false;
+        },
+        
+        save: function(config, surface){
+            var exportTypes = {
+                    /* 
+                    example adds
+                    'image/png': 'Image',
+                    'image/jpeg': 'Image',
+                    */
+                    'image/png': 'Image',
+                    'image/jpeg': 'Image',
+                    'image/svg+xml': 'Svg'
+                },
+                prefix = exportTypes[config.type] || 'Svg';           
+
+            return (Ext.draw.engine[prefix + 'Exporter']).self.generate(config, surface);
+            
         }
     },
 
@@ -349,8 +366,8 @@ Ext.define('Ext.draw.Surface', {
     // @private
     initItems: function() {
         var items = this.items;
-        this.items = Ext.create('Ext.draw.CompositeSprite');
-        this.groups = Ext.create('Ext.draw.CompositeSprite');
+        this.items = new Ext.draw.CompositeSprite();
+        this.groups = new Ext.draw.CompositeSprite();
         if (items) {
             this.add(items);
         }
@@ -506,6 +523,7 @@ Ext.define('Ext.draw.Surface', {
      *        }
      *    });
      *
+     * @param {Object} gradient A gradient config.
      * @method
      */
     addGradient: Ext.emptyFn,
@@ -524,6 +542,8 @@ Ext.define('Ext.draw.Surface', {
      *         y: 100
      *     });
      *
+     * @param {Ext.draw.Sprite[]/Ext.draw.Sprite...} args One or more Sprite objects of configs.
+     * @return {Ext.draw.Sprite[]/Ext.draw.Sprite} The sprites added.
      */
     add: function() {
         var args = Array.prototype.slice.call(arguments),
@@ -845,7 +865,7 @@ Ext.define('Ext.draw.Surface', {
     createGroup: function(id) {
         var group = this.groups.get(id);
         if (!group) {
-            group = Ext.create('Ext.draw.CompositeSprite', {
+            group = new Ext.draw.CompositeSprite({
                 surface: this
             });
             group.id = id || Ext.id(null, 'ext-surface-group-');

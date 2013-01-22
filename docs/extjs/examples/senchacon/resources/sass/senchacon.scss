@@ -1,0 +1,85 @@
+@import url(http://fonts.googleapis.com/css?family=Ultra);
+
+//base color changes
+$base-color: #174869;
+$base-light-color: lighten($base-color, 10);
+$base-dark-color: darken($base-color, 5);
+
+$neutral-color: #E2DCC3;
+$neutral-light-color: lighten($neutral-color, 14);
+
+//component changes
+$panel-base-color: $neutral-color;
+
+@import 'compass';
+@import 'neptune/default/all';
+
+.x-component-senchacon {
+	background: $base-color url(../images/banner_plain3.jpg);
+    background-repeat: no-repeat;
+    background-position: center top;
+    height: 60px;
+    border-bottom: 1px solid #000;
+
+    font-family: Ultra, serif;
+    color: #faf4db;
+    text-align: center;
+    font-weight: normal;
+    font-size: 25px;
+    line-height: 55px;
+    @include box-shadow(rgba(#000, .5) 0 -1px 1px);
+}
+
+.x-panel-information {
+    font-size: 14px;
+    border-left: 2px solid $panel-base-color;
+
+    h1 {
+        font-size: 25px;
+        font-family: Ultra, serif;
+        color: #F25A34;
+        font-weight: normal;
+        margin-bottom: 5px;
+    }
+
+    h2 {
+        margin-bottom: 10px;
+        color: #ccc;
+    }
+
+    p {
+        line-height: 22px;
+    }
+}
+
+//	@include background-image(linear-gradient(top, lighten($blue, 5), darken($blue, 5)));
+//	border-bottom: 1px solid darken($blue, 15);
+
+//	.x-logo {
+//		padding: 10px 10px 10px 31px;
+
+//		background: url(../images/logo.png) no-repeat 10px 11px;
+
+//		color: #fff;
+//		font-size: 18px;
+//		font-weight: bold;
+//		text-shadow: 0 1px 0 darken(#5C7D25, 5);
+//	}
+//}
+
+//body > .x-panel > .x-panel-body {
+//	background: #E4EAED;
+//}
+
+//.x-grid-body {
+//	border-bottom: 0 !important;
+//}
+
+//#examplePanel-body > .x-panel > .x-panel-body {
+////	background: #E4EAED;
+//	@include background-pattern-blueprint(
+//		$bgcolor: $lightblue,
+//		$majorcolor: lighten($lightblue, 5),
+//		$majorwidth: 1px
+//	);
+//}

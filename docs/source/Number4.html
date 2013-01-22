@@ -107,6 +107,16 @@ Ext.Number.from('abc', 1); // returns 1
         }
 
         return !isNaN(value) ? value : defaultValue;
+    },
+
+<span id='Ext-Number-method-randomInt'>    /**
+</span>     * Returns a random integer between the specified range (inclusive)
+     * @param {Number} from Lowest value to return.
+     * @param {Number} to Highst value to return.
+     * @return {Number} A random integer within the specified range.
+     */
+    randomInt: function (from, to) {
+       return Math.floor(Math.random() * (to - from + 1) + from);
     }
 };
 

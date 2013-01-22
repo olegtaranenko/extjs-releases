@@ -55,13 +55,10 @@ Ext.define('Ext.data.JsonPStore', {
     extend: 'Ext.data.Store',
     alias : 'store.jsonp',
 
-<span id='Ext-data-JsonPStore-cfg-reader'>    /**
-</span>     * @cfg {Ext.data.DataReader} reader @hide
-     */
     constructor: function(config) {
         this.callParent(Ext.apply(config, {
-            reader: Ext.create('Ext.data.reader.Json', config),
-            proxy : Ext.create('Ext.data.proxy.JsonP', config)
+            reader: new Ext.data.reader.Json(config),
+            proxy : new Ext.data.proxy.JsonP(config)
         }));
     }
 });

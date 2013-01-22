@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.draw.engine.Svg
- * @extends Ext.draw.Surface
  * Provides specific methods to draw with SVG.
  */
 Ext.define('Ext.draw.engine.Svg', {
@@ -43,7 +28,7 @@ Ext.define('Ext.draw.engine.Svg', {
         strokeOpacity: "stroke-opacity",
         strokeLinejoin: "stroke-linejoin"
     },
-    
+
     parsers: {},
 
     minDefaults: {
@@ -138,7 +123,7 @@ Ext.define('Ext.draw.engine.Svg', {
         }
         sprite.el = Ext.get(el);
         this.applyZIndex(sprite); //performs the insertion
-        sprite.matrix = Ext.create('Ext.draw.Matrix');
+        sprite.matrix = new Ext.draw.Matrix();
         sprite.bbox = {
             plain: 0,
             transform: 0
@@ -205,7 +190,7 @@ Ext.define('Ext.draw.engine.Svg', {
 
     transform: function(sprite) {
         var me = this,
-            matrix = Ext.create('Ext.draw.Matrix'),
+            matrix = new Ext.draw.Matrix(),
             transforms = sprite.transformations,
             transformsLength = transforms.length,
             i = 0,
@@ -598,7 +583,7 @@ Ext.define('Ext.draw.engine.Svg', {
     },
 
     createItem: function (config) {
-        var sprite = Ext.create('Ext.draw.Sprite', config);
+        var sprite = new Ext.draw.Sprite(config);
         sprite.surface = this;
         return sprite;
     },

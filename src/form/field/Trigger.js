@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Provides a convenient wrapper for TextFields that adds a clickable trigger button (looks like a combobox by default).
  * The trigger has no default action, so you must assign a function to implement the trigger click handler by overriding
@@ -52,15 +38,36 @@ Ext.define('Ext.form.field.Trigger', {
     requires: ['Ext.DomHelper', 'Ext.util.ClickRepeater', 'Ext.layout.component.field.Trigger'],
     alternateClassName: ['Ext.form.TriggerField', 'Ext.form.TwinTriggerField', 'Ext.form.Trigger'],
 
+    childEls: [
+        /**
+         * @property {Ext.CompositeElement} triggerEl
+         * A composite of all the trigger button elements. Only set after the field has been rendered.
+         */
+        { name: 'triggerEl', select: '.' + Ext.baseCSSPrefix + 'form-trigger' },
+
+        /**
+         * @property {Ext.Element} triggerWrap
+         * A reference to the div element wrapping the trigger button(s). Only set after the field has been rendered.
+         */
+        'triggerWrap'
+    ],
+
     // note: {id} here is really {inputId}, but {cmpId} is available
     fieldSubTpl: [
-        '<input id="{id}" type="{type}" ',
-            '<tpl if="name">name="{name}" </tpl>',
-            '<tpl if="size">size="{size}" </tpl>',
-            '<tpl if="tabIdx">tabIndex="{tabIdx}" </tpl>',
-            'class="{fieldCls} {typeCls}" autocomplete="off" />',
-        '<div id="{cmpId}-triggerWrap" class="{triggerWrapCls}" role="presentation">',
-            '{triggerEl}',
+        '<input id="{id}" type="{type}"',
+            '<tpl if="name"> name="{name}"</tpl>',
+            '<tpl if="value"> value="{value}"</tpl>',
+            '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
+            '<tpl if="size"> size="{size}"</tpl>',
+            '<tpl if="maxLength !== undefined"> maxlength="{maxLength}"</tpl>',
+            '<tpl if="readOnly"> readonly="readonly"</tpl>',
+            '<tpl if="disabled"> disabled="disabled"</tpl>',
+            '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
+            '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
+            'class="{fieldCls} {typeCls}{editableCls}" autocomplete="off" />',
+        '<div id="{cmpId}-triggerWrap" class="{triggerWrapCls}" role="presentation"',
+            '<tpl if="triggerWrapStyle"> style="{triggerWrapStyle}"</tpl>',
+            '>{triggerEl}',
             '<div class="{clearCls}" role="presentation"></div>',
         '</div>',
         {
@@ -122,8 +129,8 @@ Ext.define('Ext.form.field.Trigger', {
 
 
     /**
-     * @hide
      * @method autoSize
+     * Not applicable for Trigger field.
      */
     autoSize: Ext.emptyFn,
     // private
@@ -140,19 +147,20 @@ Ext.define('Ext.form.field.Trigger', {
         this.callParent(arguments);
     },
 
-    // private
-    onRender: function(ct, position) {
+    getSubTplData: function() {
         var me = this,
-            triggerCls,
-            triggerBaseCls = me.triggerBaseCls,
             triggerWrapCls = me.triggerWrapCls,
+            triggerBaseCls = me.triggerBaseCls,
             triggerConfigs = [],
-            i;
+            i = 0,
+            readOnly, triggerCls;
 
-        // triggerCls is a synonym for trigger1Cls, so copy it.
+        me.callParent(arguments);
+                
         // TODO this trigger<n>Cls API design doesn't feel clean, especially where it butts up against the
         // single triggerCls config. Should rethink this, perhaps something more structured like a list of
         // trigger config objects that hold cls, handler, etc.
+        // triggerCls is a synonym for trigger1Cls, so copy it.
         if (!me.trigger1Cls) {
             me.trigger1Cls = me.triggerCls;
         }
@@ -165,26 +173,45 @@ Ext.define('Ext.form.field.Trigger', {
             });
         }
         triggerConfigs[i - 1].cls += ' ' + triggerBaseCls + '-last';
+        
+        readOnly = false;
+        
+        if (me.editable === false || me.readOnly === true) {
+            readOnly = true;
+        }
+        // forced because of Ext.form.Text
+        me.subTplData.readOnly = readOnly;
 
-        /**
-         * @property {Ext.Element} triggerWrap
-         * A reference to the div element wrapping the trigger button(s). Only set after the field has been rendered.
-         */
-        me.addChildEls('triggerWrap');
-
-        Ext.applyIf(me.subTplData, {
+        return Ext.applyIf(me.subTplData, {
+            editableCls: (me.readOnly || !me.editable) ? ' ' + Ext.baseCSSPrefix + 'trigger-noedit' : '',
             triggerWrapCls: triggerWrapCls,
+            triggerWrapStyle: (me.readOnly || me.hideTrigger) ? 'display:none' : '',
             triggerEl: Ext.DomHelper.markup(triggerConfigs),
             clearCls: me.clearCls
         });
+    },
+    
+    // private
+    beforeRender: function() {
+        var me = this,
+            triggerBaseCls = me.triggerBaseCls;
+
+        me.callParent();
+
+        if (triggerBaseCls != Ext.baseCSSPrefix + 'form-trigger') {
+            // we may need to rewrite triggerEl if is triggerBaseCls isn't the value we
+            // stuck in childEls
+            me.addChildEls({ name: 'triggerEl', select: '.' + triggerBaseCls });
+        }
+
+        // these start correct in the fieldSubTpl:
+        me.lastTriggerStateFlags = me.getTriggerStateFlags();
+    },
+
+    onRender: function() {
+        var me = this;
 
         me.callParent(arguments);
-
-        /**
-         * @property {Ext.CompositeElement} triggerEl
-         * A composite of all the trigger button elements. Only set after the field has been rendered.
-         */
-        me.triggerEl = Ext.select('.' + triggerBaseCls, true, me.triggerWrap.dom);
 
         me.doc = Ext.getDoc();
         me.initTrigger();
@@ -198,42 +225,6 @@ Ext.define('Ext.form.field.Trigger', {
     onDisable: function() {
         this.callParent();
         this.triggerWrap.mask();
-    },
-    
-    afterRender: function() {
-        this.callParent();
-        this.updateEditState();
-        this.triggerEl.unselectable();
-    },
-
-    updateEditState: function() {
-        var me = this,
-            inputEl = me.inputEl,
-            triggerWrap = me.triggerWrap,
-            noeditCls = Ext.baseCSSPrefix + 'trigger-noedit',
-            displayed,
-            readOnly;
-
-        if (me.rendered) {
-            if (me.readOnly) {
-                inputEl.addCls(noeditCls);
-                readOnly = true;
-                displayed = false;
-            } else {
-                if (me.editable) {
-                    inputEl.removeCls(noeditCls);
-                    readOnly = false;
-                } else {
-                    inputEl.addCls(noeditCls);
-                    readOnly = true;
-                }
-                displayed = !me.hideTrigger;
-            }
-
-            triggerWrap.setDisplayed(displayed);
-            inputEl.dom.readOnly = readOnly;
-            me.doComponentLayout();
-        }
     },
 
     /**
@@ -256,7 +247,7 @@ Ext.define('Ext.form.field.Trigger', {
     setHideTrigger: function(hideTrigger) {
         if (hideTrigger != this.hideTrigger) {
             this.hideTrigger = hideTrigger;
-            this.updateEditState();
+            this.updateLayout();
         }
     },
 
@@ -270,7 +261,7 @@ Ext.define('Ext.form.field.Trigger', {
     setEditable: function(editable) {
         if (editable != this.editable) {
             this.editable = editable;
-            this.updateEditState();
+            this.updateLayout();
         }
     },
 
@@ -282,9 +273,12 @@ Ext.define('Ext.form.field.Trigger', {
      * and hideTrigger.
      */
     setReadOnly: function(readOnly) {
-        if (readOnly != this.readOnly) {
-            this.readOnly = readOnly;
-            this.updateEditState();
+        var me = this,
+            old = me.readOnly;
+            
+        me.callParent(arguments);
+        if (me.readOnly != old) {
+            me.updateLayout();
         }
     },
 
@@ -295,7 +289,7 @@ Ext.define('Ext.form.field.Trigger', {
             triggerEl = me.triggerEl;
 
         if (me.repeatTriggerClick) {
-            me.triggerRepeater = Ext.create('Ext.util.ClickRepeater', triggerWrap, {
+            me.triggerRepeater = new Ext.util.ClickRepeater(triggerWrap, {
                 preventDefault: true,
                 handler: function(cr, e) {
                     me.onTriggerWrapClick(e);
@@ -326,7 +320,7 @@ Ext.define('Ext.form.field.Trigger', {
     // private
     onFocus: function() {
         var me = this;
-        me.callParent();
+        me.callParent(arguments);
         if (!me.mimicing) {
             me.bodyEl.addCls(me.wrapFocusCls);
             me.mimicing = true;
@@ -346,7 +340,33 @@ Ext.define('Ext.form.field.Trigger', {
         }
     },
 
-    // private
+    /**
+     * Returns a set of flags that describe the trigger state. These are just used to easily
+     * determine if the DOM is out-of-sync with the component's properties.
+     * @private
+     */
+    getTriggerStateFlags: function () {
+        var me = this,
+            state = 0;
+
+        if (me.readOnly) {
+            state += 1;
+        }
+        if (me.editable) {
+            state += 2;
+        }
+        if (me.hideTrigger) {
+            state += 4;
+        }
+        return state;
+    },
+
+    /**
+     * @private
+     * @override
+     * The default blur handling must not occur for a TriggerField, implementing this template method as emptyFn disables that.
+     * Instead the tab key is monitored, and the superclass's onBlur is called when tab is detected
+     */
     onBlur: Ext.emptyFn,
 
     // private
@@ -369,8 +389,6 @@ Ext.define('Ext.form.field.Trigger', {
             me.bodyEl.removeCls(me.wrapFocusCls);
         }
     },
-
-    beforeBlur: Ext.emptyFn,
 
     // private
     // This should be overridden by any subclass that needs to check whether or not the field can be blurred.
@@ -407,13 +425,15 @@ Ext.define('Ext.form.field.Trigger', {
     onTriggerClick: Ext.emptyFn
 
     /**
-     * @cfg {Boolean} grow @hide
+     * @cfg {Boolean} grow
+     * Not applicable for Trigger.
      */
     /**
-     * @cfg {Number} growMin @hide
+     * @cfg {Number} growMin
+     * Not applicable for Trigger.
      */
     /**
-     * @cfg {Number} growMax @hide
+     * @cfg {Number} growMax
+     * Not applicable for Trigger.
      */
 });
-

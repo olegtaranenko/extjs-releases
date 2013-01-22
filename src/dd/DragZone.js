@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.dd.DragZone
- * @extends Ext.dd.DragSource
  * <p>This class provides a container DD instance that allows dragging of multiple child source nodes.</p>
  * <p>This class does not move the drag target nodes, but a proxy element which may contain
  * any DOM structure you wish. The DOM element to show in the proxy is provided by either a
@@ -68,7 +53,6 @@ myDataView.on('render', function(v) {
  * cooperates with this DragZone.
  */
 Ext.define('Ext.dd.DragZone', {
-
     extend: 'Ext.dd.DragSource',
 
     /**
@@ -149,4 +133,3 @@ Ext.define('Ext.dd.DragZone', {
         }
     }
 });
-

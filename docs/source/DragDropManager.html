@@ -908,7 +908,7 @@ Ext.define('Ext.dd.DragDropManager', {
         b = y2 + oDD.padding[2];
         l = x1 - oDD.padding[3];
 
-        return Ext.create('Ext.util.Region', t, r, b, l);
+        return new Ext.util.Region(t, r, b, l);
     },
 
 <span id='Ext-dd-DragDropManager-method-isOverTarget'>    /**
@@ -954,7 +954,7 @@ Ext.define('Ext.dd.DragDropManager', {
         var pos = dc.getTargetCoord(pt.x, pt.y);
 
         var el = dc.getDragEl();
-        var curRegion = Ext.create('Ext.util.Region', pos.y,
+        var curRegion = new Ext.util.Region(pos.y,
                                                pos.x + el.offsetWidth,
                                                pos.y + el.offsetHeight,
                                                pos.x );

@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.grid.property.Grid
- * @extends Ext.grid.Panel
  *
  * A specialized grid implementation intended to mimic the traditional property grid as typically seen in
  * development IDEs.  Each row in the grid represents a property of some object, and the data is stored
@@ -50,7 +35,8 @@ Ext.define('Ext.grid.property.Grid', {
        'Ext.grid.CellEditor',
        'Ext.form.field.Date',
        'Ext.form.field.Text',
-       'Ext.form.field.Number'
+       'Ext.form.field.Number',
+       'Ext.form.field.ComboBox'
     ],
 
    /**
@@ -152,7 +138,7 @@ var grid = Ext.create('Ext.grid.property.Grid', {
         me.plugins = me.plugins || [];
 
         // Enable cell editing. Inject a custom startEdit which always edits column 1 regardless of which column was clicked.
-        me.plugins.push(Ext.create('Ext.grid.plugin.CellEditing', {
+        me.plugins.push(new Ext.grid.plugin.CellEditing({
             clicksToEdit: me.clicksToEdit,
 
             // Inject a startEdit which always edits the value column
@@ -176,11 +162,11 @@ var grid = Ext.create('Ext.grid.property.Grid', {
 
         // Create a property.Store from the source object unless configured with a store
         if (!me.store) {
-            me.propStore = me.store = Ext.create('Ext.grid.property.Store', me, me.source);
+            me.propStore = me.store = new Ext.grid.property.Store(me, me.source);
         }
 
         me.store.sort('name', 'ASC');
-        me.columns = Ext.create('Ext.grid.property.HeaderContainer', me, me.store);
+        me.columns = new Ext.grid.property.HeaderContainer(me, me.store);
 
         me.addEvents(
             /**
@@ -212,10 +198,10 @@ var grid = Ext.create('Ext.grid.property.Grid', {
 
         // Set up our default editor set for the 4 atomic data types
         me.editors = {
-            'date'    : Ext.create('Ext.grid.CellEditor', { field: Ext.create('Ext.form.field.Date',   {selectOnFocus: true})}),
-            'string'  : Ext.create('Ext.grid.CellEditor', { field: Ext.create('Ext.form.field.Text',   {selectOnFocus: true})}),
-            'number'  : Ext.create('Ext.grid.CellEditor', { field: Ext.create('Ext.form.field.Number', {selectOnFocus: true})}),
-            'boolean' : Ext.create('Ext.grid.CellEditor', { field: Ext.create('Ext.form.field.ComboBox', {
+            'date'    : new Ext.grid.CellEditor({ field: new Ext.form.field.Date({selectOnFocus: true})}),
+            'string'  : new Ext.grid.CellEditor({ field: new Ext.form.field.Text({selectOnFocus: true})}),
+            'number'  : new Ext.grid.CellEditor({ field: new Ext.form.field.Number({selectOnFocus: true})}),
+            'boolean' : new Ext.grid.CellEditor({ field: new Ext.form.field.ComboBox({
                 editable: false,
                 store: [[ true, me.headerCt.trueText ], [false, me.headerCt.falseText ]]
             })})
@@ -274,7 +260,7 @@ var grid = Ext.create('Ext.grid.property.Grid', {
                 if (!(editor instanceof Ext.form.field.Base)) {
                     editor = Ext.ComponentManager.create(editor, 'textfield');
                 }
-                editor = me.customEditors[propName] = Ext.create('Ext.grid.CellEditor', { field: editor });
+                editor = me.customEditors[propName] = new Ext.grid.CellEditor({ field: editor });
             }
         } else if (Ext.isDate(val)) {
             editor = me.editors.date;
@@ -358,18 +344,10 @@ grid.setSource({
 
     /**
      * @cfg store
-     * @hide
-     */
-    /**
-     * @cfg colModel
-     * @hide
-     */
-    /**
-     * @cfg cm
-     * @hide
+     * Not applicable for property grid.
      */
     /**
      * @cfg columns
-     * @hide
+     * Not applicable for property grid.
      */
 });

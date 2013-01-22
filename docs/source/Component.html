@@ -189,6 +189,23 @@ Ext.define('Ext.Component', {
 </span>     * @cfg {Boolean} [autoScroll=false]
      * `true` to use overflow:'auto' on the components layout element and show scroll bars automatically when necessary,
      * `false` to clip any overflowing content.
+     * This should not be combined with {@link #overflowX} or  {@link #overflowY}.
+     */
+
+<span id='Ext-Component-cfg-overflowX'>    /**
+</span>     * @cfg {String} overflowX
+     * Possible values are:
+     *  * `'auto'` to enable automatic horizontal scrollbar (overflow-x: 'auto').
+     *  * `'scroll'` to always enable horizontal scrollbar (overflow-x: 'scroll').
+     * The default is overflow-x: 'hidden'. This should not be combined with {@link #autoScroll}.
+     */
+
+<span id='Ext-Component-cfg-overflowY'>    /**
+</span>     * @cfg {String} overflowY
+     * Possible values are:
+     *  * `'auto'` to enable automatic vertical scrollbar (overflow-y: 'auto').
+     *  * `'scroll'` to always enable vertical scrollbar (overflow-y: 'scroll').
+     * The default is overflow-y: 'hidden'. This should not be combined with {@link #autoScroll}.
      */
 
 <span id='Ext-Component-cfg-floating'>    /**
@@ -311,8 +328,6 @@ Ext.define('Ext.Component', {
     // Deprecate 5.0
     hideParent: false,
 
-    ariaRole: 'presentation',
-
     bubbleEvents: [],
 
     actionMode: 'el',
@@ -405,19 +420,15 @@ Ext.define('Ext.Component', {
         me.mons = [];
     },
 
+    
     // private
     afterRender: function() {
-        var me = this,
-            resizable = me.resizable;
-
-        if (me.floating) {
-            me.makeFloating(me.floating);
-        } else {
-            me.el.setVisibilityMode(Ext.Element[me.hideMode.toUpperCase()]);
-        }
-
-        if (Ext.isDefined(me.autoScroll)) {
+        var me = this;
+        
+       if (typeof me.autoScroll == 'boolean') {
             me.setAutoScroll(me.autoScroll);
+        } else if (me.overflowX || me.overflowY) {
+            me.setOverflowXY();
         }
         me.callParent();
 
@@ -425,22 +436,12 @@ Ext.define('Ext.Component', {
             me.setPagePosition(me.pageX, me.pageY);
         }
 
-        if (resizable) {
-            me.initResizable(resizable);
+        if (me.resizable) {
+            me.initResizable(me.resizable);
         }
 
         if (me.draggable) {
             me.initDraggable();
-        }
-
-        me.initAria();
-    },
-
-    initAria: function() {
-        var actionEl = this.getActionEl(),
-            role = this.ariaRole;
-        if (role) {
-            actionEl.dom.setAttribute('role', role);
         }
     },
 
@@ -452,7 +453,7 @@ Ext.define('Ext.Component', {
     setAutoScroll : function(scroll){
         var me = this,
             targetEl;
-        scroll = !!scroll;
+
         if (me.rendered) {
             targetEl = me.getTargetEl();
             targetEl.setStyle('overflow', scroll ? 'auto' : '');
@@ -462,13 +463,79 @@ Ext.define('Ext.Component', {
                 targetEl.position();
             }
         }
-        me.autoScroll = scroll;
+
+        me.autoScroll = !!scroll;
         return me;
     },
 
+<span id='Ext-Component-method-setOverflowXY'>    /**
+</span>     * Sets the overflow x/y on the content element of the component. The x/y overflow
+     * values can be any valid CSS overflow (e.g., 'auto' or 'scroll'). By default, the
+     * value is 'hidden'. Passing null for one of the values will erase the inline style.
+     * Passing `undefined` will preserve the current value.
+     *
+     * @param {String} overflowX The overflow-x value.
+     * @param {String} overflowY The overflow-y value.
+     * @return {Ext.Component} this
+     */
+    setOverflowXY: function(overflowX, overflowY){
+        var me = this,
+            targetEl;
+
+        if (overflowX !== undefined) {
+            me.overflowX = overflowX || null;
+        }
+        if (overflowY !== undefined) {
+            me.overflowY = overflowY || null;
+        }
+
+        if (me.rendered) {
+            targetEl = me.getTargetEl();
+            targetEl.setStyle({
+                'overflow-x': me.overflowX || '',
+                'overflow-y': me.overflowY || ''
+            });
+
+            // The scrollable container element must be non-statically positioned or IE6/7 will make
+            // positioned children stay in place rather than scrolling with the rest of the content
+            if (Ext.isIE6 || Ext.isIE7) {
+                if (me.overflowX || me.overflowY) {
+                    targetEl.position();
+                }
+            }
+        }
+
+        return me;
+    },
+
+    beforeRender: function () {
+        var me = this,
+            floating = me.floating,
+            cls;
+
+        if (floating) {
+            me.addCls(Ext.baseCSSPrefix + 'layer');
+
+            cls = floating.cls;
+            if (cls) {
+                me.addCls(cls);
+            }
+        }
+
+        return me.callParent();
+    },
+
     // private
-    makeFloating : function(cfg){
-        this.mixins.floating.constructor.call(this, cfg);
+    makeFloating : function (dom) {
+        this.mixins.floating.constructor.call(this, dom);
+    },
+
+    wrapPrimaryEl: function (dom) {
+        if (this.floating) {
+            this.makeFloating(dom);
+        } else {
+            this.callParent(arguments);
+        }
     },
 
     initResizable: function(resizable) {
@@ -477,11 +544,11 @@ Ext.define('Ext.Component', {
         resizable = Ext.apply({
             target: me,
             dynamic: false,
-            constrainTo: me.constrainTo || (me.floatParent ? me.floatParent.getTargetEl() : me.el.getScopeParent()),
+            constrainTo: me.constrainTo || (me.floatParent ? me.floatParent.getTargetEl() : null),
             handles: me.resizeHandles
         }, resizable);
         resizable.target = me;
-        me.resizer = Ext.create('Ext.resizer.Resizer', resizable);
+        me.resizer = new Ext.resizer.Resizer(resizable);
     },
 
     getDragEl: function() {
@@ -501,80 +568,38 @@ Ext.define('Ext.Component', {
             ddConfig.constrainDelegate = me.constrainDelegate;
         }
 
-        me.dd = Ext.create('Ext.util.ComponentDragger', me, ddConfig);
+        me.dd = new Ext.util.ComponentDragger(me, ddConfig);
     },
 
-<span id='Ext-Component-method-setPosition'>    /**
-</span>     * Sets the left and top of the component. To set the page XY position instead, use {@link #setPagePosition}. This
-     * method fires the {@link #move} event.
-     * @param {Number} left The new left
-     * @param {Number} top The new top
-     * @param {Boolean/Object} [animate] If true, the Component is _animated_ into its new position. You may also pass an
-     * animation configuration.
-     * @return {Ext.Component} this
-     */
-    setPosition: function(x, y, animate) {
+    beforeSetPosition: function () {
         var me = this,
-            el = me.el,
-            to = {},
-            adj, adjX, adjY, xIsNumber, yIsNumber;
+            pos = me.callParent(arguments), // pass all args on for signature decoding
+            to, adj;
 
-        if (Ext.isArray(x)) {
-            animate = y;
-            y = x[1];
-            x = x[0];
-        }
-        me.x = x;
-        me.y = y;
+        if (pos) {
+            adj = me.adjustPosition(pos.x, pos.y);
+            pos.x = adj.x;
+            pos.y = adj.y;
 
-        if (!me.rendered) {
-            return me;
-        }
-
-        adj = me.adjustPosition(x, y);
-        adjX = adj.x;
-        adjY = adj.y;
-        xIsNumber = Ext.isNumber(adjX);
-        yIsNumber = Ext.isNumber(adjY);
-
-        if (xIsNumber || yIsNumber) {
-            if (animate) {
-                if (xIsNumber) {
-                    to.left = adjX;
-                }
-                if (yIsNumber) {
-                    to.top = adjY;
-                }
+            if (pos.anim) {
+                to = me.convertPosition(pos);
 
                 me.stopAnimation();
                 me.animate(Ext.apply({
                     duration: 1000,
                     listeners: {
-                        afteranimate: Ext.Function.bind(me.afterSetPosition, me, [adjX, adjY])
+                        afteranimate: Ext.Function.bind(me.afterSetPosition, me, [pos.x, pos.y])
                     },
                     to: to
-                }, animate));
-            }
-            else {
-                if (!xIsNumber) {
-                    el.setTop(adjY);
-                }
-                else if (!yIsNumber) {
-                    el.setLeft(adjX);
-                }
-                else {
-                    el.setLeftTop(adjX, adjY);
-                }
-                me.afterSetPosition(adjX, adjY);
+                }, pos.anim));
             }
         }
-        return me;
+
+        return pos || null;
     },
 
 <span id='Ext-Component-method-afterSetPosition'>    /**
-</span>     * @private
-     * @template
-     * Template method called after a Component has been positioned.
+</span>     * @private Template method called after a Component has been positioned.
      */
     afterSetPosition: function(ax, ay) {
         this.onPosition(ax, ay);
@@ -738,24 +763,14 @@ Ext.define('Ext.Component', {
 
         if (!me.id) {
             xtype = me.getXType();
-            xtype = xtype ? xtype.replace(Ext.Component.INVALID_ID_CHARS_Re, '-') : 'ext-comp';
+            if (xtype) {
+                xtype = xtype.replace(Ext.Component.INVALID_ID_CHARS_Re, '-');
+            } else {
+                xtype = Ext.isSandboxed ? Ext.getUniqueGlobalNamespace() : 'ext-comp';
+            }
             me.id = xtype + '-' + me.getAutoId();
         }
         return me.id;
-    },
-
-    onEnable: function() {
-        var actionEl = this.getActionEl();
-        actionEl.dom.removeAttribute('aria-disabled');
-        actionEl.dom.disabled = false;
-        this.callParent();
-    },
-
-    onDisable: function() {
-        var actionEl = this.getActionEl();
-        actionEl.dom.setAttribute('aria-disabled', true);
-        actionEl.dom.disabled = true;
-        this.callParent();
     },
 
 <span id='Ext-Component-method-show'>    /**
@@ -793,7 +808,7 @@ Ext.define('Ext.Component', {
 
                 // Notify any owning Container unless it's suspended.
                 // Floating Components do not participate in layouts.
-                if (me.ownerCt &amp;&amp; !me.floating &amp;&amp; !(me.ownerCt.suspendLayout || me.ownerCt.layout.layoutBusy)) {
+                if (me.ownerCt &amp;&amp; !me.floating &amp;&amp; !me.ownerCt.suspendLayout) {
                     me.ownerCt.doLayout();
                 }
                 me.afterShow.apply(me, arguments);
@@ -862,9 +877,11 @@ Ext.define('Ext.Component', {
         var me = this;
         if (me.floating) {
             me.toFront();
+            me.onFloatShow();
         }
         Ext.callback(cb, scope || me);
         me.fireEvent('show', me);
+        delete me.hiddenByLayout;
     },
 
 <span id='Ext-Component-method-hide'>    /**
@@ -892,7 +909,7 @@ Ext.define('Ext.Component', {
                 // Notify any owning Container unless it's suspended.
                 // Floating Components do not participate in layouts.
                 if (me.ownerCt &amp;&amp; !me.floating &amp;&amp; !(me.ownerCt.suspendLayout || me.ownerCt.layout.layoutBusy)) {
-                    me.ownerCt.doLayout();
+                    me.ownerCt.updateLayout();
                 }
             }
         }
@@ -938,8 +955,10 @@ Ext.define('Ext.Component', {
     },
 
     afterHide: function(cb, scope) {
-        Ext.callback(cb, scope || this);
-        this.fireEvent('hide', this);
+        var me = this;
+        Ext.callback(cb, scope || me);
+        me.fireEvent('hide', me);
+        delete me.hiddenByLayout;
     },
 
 <span id='Ext-Component-method-onDestroy'>    /**
@@ -983,11 +1002,12 @@ Ext.define('Ext.Component', {
      */
     focus: function(selectText, delay) {
         var me = this,
-                focusEl;
+            focusEl,
+            focusElDom;
 
         if (delay) {
             if (!me.focusTask) {
-                me.focusTask = Ext.create('Ext.util.DelayedTask', me.focus);
+                me.focusTask = new Ext.util.DelayedTask(me.focus);
             }
             me.focusTask.delay(Ext.isNumber(delay) ? delay : 10, null, me, [selectText, false]);
             return me;
@@ -996,9 +1016,12 @@ Ext.define('Ext.Component', {
         if (me.rendered &amp;&amp; !me.isDestroyed) {
             // getFocusEl could return a Component.
             focusEl = me.getFocusEl();
+            focusElDom = focusEl.dom;
             focusEl.focus();
-            if (focusEl.dom &amp;&amp; selectText === true) {
-                focusEl.dom.select();
+            if (focusElDom) {
+                if (selectText === true) {
+                    focusElDom.select();
+                }
             }
 
             // Focusing a floating Component brings it to the front of its stack.
@@ -1008,17 +1031,6 @@ Ext.define('Ext.Component', {
             }
         }
         return me;
-    },
-
-<span id='Ext-Component-method-getFocusEl'>    /**
-</span>     * @private
-     * Returns the focus holder element associated with this Component. By default, this is the Component's encapsulating
-     * element. Subclasses which use embedded focusable elements (such as Window and Button) should override this for use
-     * by the {@link #focus} method.
-     * @returns {Ext.Element} the focus holing element.
-     */
-    getFocusEl: function() {
-        return this.el;
     },
 
     // private
@@ -1109,7 +1121,9 @@ Ext.define('Ext.Component', {
         var p;
 
         // Iterate up the ownerCt chain until there's no ownerCt, or we find an ancestor which matches using the selector function.
-        for (p = this.ownerCt; p &amp;&amp; !fn(p, this); p = p.ownerCt);
+        for (p = this.ownerCt; p &amp;&amp; !fn(p, this); p = p.ownerCt) {
+            // do nothing
+        }
         return p || null;
     },
 
@@ -1166,7 +1180,6 @@ Ext.define('Ext.Component', {
         }
         return me.proxy;
     }
-
 });
 </pre>
 </body>

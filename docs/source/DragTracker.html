@@ -174,7 +174,7 @@ Ext.define('Ext.dd.DragTracker', {
             'drag'
         );
 
-        this.dragRegion = Ext.create('Ext.util.Region', 0,0,0,0);
+        this.dragRegion = new Ext.util.Region(0,0,0,0);
 
         if (this.el) {
             this.initEl(this.el);

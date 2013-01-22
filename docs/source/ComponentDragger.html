@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-util-ComponentDragger'>/**
 </span> * @class Ext.util.ComponentDragger
- * @extends Ext.dd.DragTracker
  * &lt;p&gt;A subclass of Ext.dd.DragTracker which handles dragging any Component.&lt;/p&gt;
  * &lt;p&gt;This is configured with a Component to be made draggable, and a config object for the
  * {@link Ext.dd.DragTracker} class.&lt;/p&gt;
@@ -25,6 +24,7 @@
  * or a {@link Ext.DomQuery} selector to activate multiple mousedown targets.&lt;/p&gt;
  */
 Ext.define('Ext.util.ComponentDragger', {
+    extend: 'Ext.dd.DragTracker',
 
 <span id='Ext-util-ComponentDragger-cfg-constrain'>    /**
 </span>     * @cfg {Boolean} constrain
@@ -42,8 +42,6 @@ Ext.define('Ext.util.ComponentDragger', {
 </span>     * @cfg {Boolean} constrainDelegate
      * Specify as &lt;code&gt;true&lt;/code&gt; to constrain the drag handles within the {@link #constrainTo} region.
      */
-
-    extend: 'Ext.dd.DragTracker',
 
     autoStart: 500,
 

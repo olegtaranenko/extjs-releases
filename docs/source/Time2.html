@@ -66,7 +66,7 @@ Ext.define('Ext.picker.Time', {
     format : &quot;g:i A&quot;,
 
 <span id='Ext-picker-Time-property-displayField'>    /**
-</span>     * @hide
+</span>     * @private
      * The field in the implicitly-generated Model objects that gets displayed in the list. This is
      * an internal field name only and is not useful to change via config.
      */
@@ -80,8 +80,9 @@ Ext.define('Ext.picker.Time', {
 
     componentCls: Ext.baseCSSPrefix + 'timepicker',
 
-<span id='Ext-picker-Time-property-loadMask'>    /**
-</span>     * @hide
+<span id='Ext-picker-Time-cfg-loadMask'>    /**
+</span>     * @cfg {Boolean/Object} loadMask
+     * Not applicable for Time picker.
      */
     loadMask: false,
 
@@ -169,7 +170,7 @@ Ext.define('Ext.picker.Time', {
             min = utilDate.add(min, 'mi', me.increment);
         }
 
-        return Ext.create('Ext.data.Store', {
+        return new Ext.data.Store({
             fields: ['disp', 'date'],
             data: times
         });

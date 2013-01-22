@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A menu object. This is the container to which you may add {@link Ext.menu.Item menu items}.
  *
@@ -81,13 +67,14 @@ Ext.define('Ext.menu.Menu', {
     allowOtherMenus: false,
 
     /**
-     * @cfg {String} ariaRole @hide
+     * @cfg {String} ariaRole
+     * @private
      */
     ariaRole: 'menu',
 
     /**
-     * @cfg {Boolean} autoRender @hide
-     * floating is true, so autoRender always happens
+     * @cfg {Boolean} autoRender
+     * Not applicable for Menu. Floating is true, so autoRender always happens.
      */
 
     /**
@@ -106,8 +93,8 @@ Ext.define('Ext.menu.Menu', {
     floating: true,
 
     /**
-     * @cfg {Boolean} @hide
-     * Menus are constrained to the document body by default
+     * @cfg {Boolean} constrain
+     * Not applicable for Menu. Menus are constrained to the document body by default.
      */
     constrain: true,
 
@@ -131,7 +118,8 @@ Ext.define('Ext.menu.Menu', {
     isMenu: true,
 
     /**
-     * @cfg {String/Object} layout @hide
+     * @cfg {String/Object} layout
+     * Not applicable for Menu.
      */
 
     /**
@@ -268,7 +256,7 @@ Ext.define('Ext.menu.Menu', {
             me.iconSepEl.setHeight(me.el.getHeight());
         }
 
-        me.keyNav = Ext.create('Ext.menu.KeyNav', me);
+        me.keyNav = new Ext.menu.KeyNav(me);
     },
 
     afterLayout: function() {
@@ -338,47 +326,6 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    clearStretch: function () {
-        // the vbox/stretchmax will set the el sizes and subsequent layouts will not
-        // reconsider them unless we clear the dimensions on the el's here:
-        if (this.rendered) {
-            this.items.each(function (item) {
-                // each menuItem component needs to layout again, so clear its cache
-                if (item.componentLayout) {
-                    delete item.componentLayout.lastComponentSize;
-                }
-                if (item.el) {
-                    item.el.setWidth(null);
-                }
-            });
-        }
-    },
-
-    onAdd: function () {
-        var me = this;
-
-        me.clearStretch();
-        me.callParent(arguments);
-
-        if (Ext.isIE6 || Ext.isIE7) {
-            // TODO - why does this need to be done (and not ok to do now)?
-            Ext.Function.defer(me.doComponentLayout, 10, me);
-        }
-    },
-
-    onRemove: function () {
-        this.clearStretch();
-        this.callParent(arguments);
-
-    },
-
-    redoComponentLayout: function () {
-        if (this.rendered) {
-            this.clearStretch();
-            this.doComponentLayout();
-        }
-    },
-
     // inherit docs
     getFocusEl: function() {
         return this.focusEl;
@@ -398,7 +345,7 @@ Ext.define('Ext.menu.Menu', {
     lookupComponent: function(cmp) {
         var me = this;
 
-        if (Ext.isString(cmp)) {
+        if (typeof cmp == 'string') {
             cmp = me.lookupItemFromString(cmp);
         } else if (Ext.isObject(cmp)) {
             cmp = me.lookupItemFromObject(cmp);
@@ -459,8 +406,8 @@ Ext.define('Ext.menu.Menu', {
     // private
     lookupItemFromString: function(cmp) {
         return (cmp == 'separator' || cmp == '-') ?
-            Ext.createWidget('menuseparator')
-            : Ext.createWidget('menuitem', {
+            new Ext.menu.Separator()
+            : new Ext.menu.Item({
                 canActivate: false,
                 hideOnClick: false,
                 plain: true,
@@ -521,11 +468,14 @@ Ext.define('Ext.menu.Menu', {
         var me = this,
             fromEl = e.getRelatedTarget(),
             mouseEnter = !me.el.contains(fromEl),
-            item = me.getItemFromEvent(e);
+            item = me.getItemFromEvent(e),
+            parentMenu = me.parentMenu,
+            parentItem = me.parentItem;
 
-        if (mouseEnter && me.parentMenu) {
-            me.parentMenu.setActiveItem(me.parentItem);
-            me.parentMenu.mouseMonitor.mouseenter();
+        if (mouseEnter && parentMenu) {
+            parentMenu.setActiveItem(parentItem);
+            parentItem.cancelDeferHide();
+            parentMenu.mouseMonitor.mouseenter();
         }
 
         if (me.disabled) {
@@ -582,9 +532,14 @@ Ext.define('Ext.menu.Menu', {
         if (me.floating && cmp) {
             me.layout.autoSize = true;
 
-            // show off-screen first so that we can calc position without causing a visual jump
-            me.doAutoRender();
-            delete me.needsLayout;
+            // If not rendered, then render visible so that an initial layout will occur, so that positioning may be calculated.
+            // Hide without going through the hide machinery. Ensure flags match so that the subsequent show works.
+            if (!me.el) {
+                me.hidden = false;
+                me.doAutoRender();
+                me.el.hide();
+                me.hidden = true;
+            }
 
             // Component or Element
             cmp = cmp.el || cmp;
@@ -609,7 +564,7 @@ Ext.define('Ext.menu.Menu', {
             returnY = y, normalY, parentEl, scrollTop, viewHeight;
 
         delete me.height;
-        me.setSize();
+        me.updateLayout();
         full = me.getHeight();
         if (me.floating) {
             //if our reset css is scoped, there will be a x-reset wrapper on this menu which we need to skip
@@ -649,4 +604,3 @@ Ext.define('Ext.menu.Menu', {
         me.el.setY(returnY);
     }
 });
-

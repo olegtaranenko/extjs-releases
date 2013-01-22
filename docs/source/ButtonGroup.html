@@ -68,7 +68,7 @@ Ext.define('Ext.container.ButtonGroup', {
      */
 
 <span id='Ext-container-ButtonGroup-cfg-baseCls'>    /**
-</span>     * @cfg {String} baseCls  Defaults to &lt;tt&gt;'x-btn-group'&lt;/tt&gt;.  See {@link Ext.panel.Panel#baseCls}.
+</span>     * @cfg {String} [baseCls='x-btn-group']
      */
     baseCls: Ext.baseCSSPrefix + 'btn-group',
 
@@ -106,21 +106,10 @@ Ext.define('Ext.container.ButtonGroup', {
         me.callParent(arguments);
     },
 
-    afterLayout: function() {
+    beforeRender: function() {
         var me = this;
 
-        me.callParent(arguments);
-
-        // Pugly hack for a pugly browser:
-        // If not an explicitly set width, then size the width to match the inner table
-        if (me.layout.table &amp;&amp; (Ext.isIEQuirks || Ext.isIE6) &amp;&amp; !me.width) {
-            var t = me.getTargetEl();
-            t.setWidth(me.layout.table.offsetWidth + t.getPadding('lr'));
-        }
-    },
-
-    afterRender: function() {
-        var me = this;
+        me.callParent();
 
         //we need to add an addition item in here so the ButtonGroup title is centered
         if (me.header) {
@@ -128,7 +117,6 @@ Ext.define('Ext.container.ButtonGroup', {
             delete me.header.items.items[0].flex;
 
             // For Centering, surround the text with two flex:1 spacers.
-            me.suspendLayout = true;
             me.header.insert(1, {
                 xtype: 'component',
                 ui   : me.ui,
@@ -139,9 +127,7 @@ Ext.define('Ext.container.ButtonGroup', {
                 ui   : me.ui,
                 flex : 1
             });
-            me.suspendLayout = false;
         }
-
         me.callParent(arguments);
     },
 
@@ -169,19 +155,24 @@ Ext.define('Ext.container.ButtonGroup', {
     }
 
 <span id='Ext-container-ButtonGroup-cfg-tools'>    /**
-</span>     * @cfg {Array} tools  @hide
+</span>     * @cfg {Array} tools
+     * Not applicable for ButtonGroup.
      */
 <span id='Ext-container-ButtonGroup-cfg-collapsible'>    /**
-</span>     * @cfg {Boolean} collapsible  @hide
+</span>     * @cfg {Boolean} collapsible
+     * Not applicable for ButtonGroup.
      */
 <span id='Ext-container-ButtonGroup-cfg-collapseMode'>    /**
-</span>     * @cfg {Boolean} collapseMode  @hide
+</span>     * @cfg {Boolean} collapseMode
+     * Not applicable for ButtonGroup.
      */
 <span id='Ext-container-ButtonGroup-cfg-animCollapse'>    /**
-</span>     * @cfg {Boolean} animCollapse  @hide
+</span>     * @cfg {Boolean} animCollapse
+     * Not applicable for ButtonGroup.
      */
 <span id='Ext-container-ButtonGroup-cfg-closable'>    /**
-</span>     * @cfg {Boolean} closable  @hide
+</span>     * @cfg {Boolean} closable
+     * Not applicable for ButtonGroup.
      */
 });
 </pre>

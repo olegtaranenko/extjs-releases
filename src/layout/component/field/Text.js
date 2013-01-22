@@ -1,21 +1,6 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @private
  * @class Ext.layout.component.field.Text
- * @extends Ext.layout.component.field.Field
  * Layout class for {@link Ext.form.field.Text} fields. Handles sizing the input field.
  */
 Ext.define('Ext.layout.component.field.Text', {
@@ -24,7 +9,6 @@ Ext.define('Ext.layout.component.field.Text', {
     requires: ['Ext.util.TextMetrics'],
 
     type: 'textfield',
-
 
     /**
      * Allow layout to proceed if the {@link Ext.form.field.Text#grow} config is enabled and the value has
@@ -39,27 +23,31 @@ Ext.define('Ext.layout.component.field.Text', {
         return me.callParent(arguments) || (owner.grow && value !== lastValue);
     },
 
-
     /**
+     * @private
      * Size the field body contents given the total dimensions of the bodyEl, taking into account the optional
      * {@link Ext.form.field.Text#grow} configurations.
      * @param {Number} width The bodyEl width
      * @param {Number} height The bodyEl height
+     * @param {Ext.layout.ContextItem} ownerContext The context of the owner component.
      */
-    sizeBodyContents: function(width, height) {
-        var size = this.adjustForGrow(width, height);
-        this.setElementSize(this.owner.inputEl, size[0], size[1]);
+    sizeBodyContents: function(width, height, ownerContext) {
+        var size = this.adjustForGrow(width, height, ownerContext),
+            inputElContext = ownerContext.getEl('inputEl');
+
+        inputElContext.setSize(size[0], size[1]);
     },
 
-
     /**
+     * @private
      * Given the target bodyEl dimensions, adjust them if necessary to return the correct final
      * size based on the text field's {@link Ext.form.field.Text#grow grow config}.
      * @param {Number} width The bodyEl width
      * @param {Number} height The bodyEl height
+     * @param {Ext.layout.ContextItem} The context of the owner component.
      * @return {Number[]} [inputElWidth, inputElHeight]
      */
-    adjustForGrow: function(width, height) {
+    adjustForGrow: function(width, height, ownerContext) {
         var me = this,
             owner = me.owner,
             inputEl, value, calcWidth,
@@ -70,15 +58,12 @@ Ext.define('Ext.layout.component.field.Text', {
 
             // Find the width that contains the whole text value
             value = (inputEl.dom.value || (owner.hasFocus ? '' : owner.emptyText) || '') + owner.growAppend;
-            calcWidth = inputEl.getTextWidth(value) + inputEl.getBorderWidth("lr") + inputEl.getPadding("lr");
+            calcWidth = inputEl.getTextWidth(value) + ownerContext.getEl('inputEl').getFrameInfo().width;
 
             // Constrain
             result[0] = Ext.Number.constrain(calcWidth, owner.growMin,
                     Math.max(owner.growMin, Math.min(owner.growMax, Ext.isNumber(width) ? width : Infinity)));
         }
-
         return result;
     }
-
 });
-

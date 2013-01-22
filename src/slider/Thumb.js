@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.slider.Thumb
- * @extends Ext.Base
  * @private
  * Represents a single thumb element on a Slider. This would not usually be created manually and would instead
  * be created internally by an {@link Ext.slider.Multi Multi slider}.
@@ -64,12 +49,22 @@ Ext.define('Ext.slider.Thumb', {
      */
     render: function() {
         var me = this;
-
-        me.el = me.slider.innerEl.insertFirst({cls: me.cls});
-        if (me.disabled) {
-            me.disable();
+        me.el = me.slider.innerEl.insertFirst(me.getElConfig());
+        me.onRender();
+    },
+    
+    onRender: function() {
+        if (this.disabled) {
+            this.disable();
         }
-        me.initEvents();
+        this.initEvents();
+    },
+
+    getElConfig: function() {
+        return {
+            id  : this.id,
+            cls : this.cls
+        };
     },
 
     /**
@@ -80,7 +75,7 @@ Ext.define('Ext.slider.Thumb', {
         if(!animate){
             this.el.setLeft(v);
         }else{
-            Ext.create('Ext.fx.Anim', {
+            new Ext.fx.Anim({
                 target: this.el,
                 duration: 350,
                 to: {
@@ -137,7 +132,7 @@ Ext.define('Ext.slider.Thumb', {
         var me = this,
             el = me.el;
 
-        me.tracker = Ext.create('Ext.dd.DragTracker', {
+        me.tracker = new Ext.dd.DragTracker({
             onBeforeStart: Ext.Function.bind(me.onBeforeDragStart, me),
             onStart      : Ext.Function.bind(me.onDragStart, me),
             onDrag       : Ext.Function.bind(me.onDrag, me),
@@ -255,7 +250,7 @@ Ext.define('Ext.slider.Thumb', {
                 if (!animate) {
                     this.el.setBottom(v);
                 } else {
-                    Ext.create('Ext.fx.Anim', {
+                    new Ext.fx.Anim({
                         target: this.el,
                         duration: 350,
                         to: {
@@ -267,4 +262,3 @@ Ext.define('Ext.slider.Thumb', {
         }
     }
 });
-

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.Array
  * @singleton
@@ -598,7 +584,7 @@ If you are unsure which license is appropriate for your use, please contact the 
             }
 
             if (value && value.length !== undefined && typeof value !== 'string') {
-                return Ext.toArray(value);
+                return ExtArray.toArray(value);
             }
 
             return [value];
@@ -937,6 +923,55 @@ If you are unsure which license is appropriate for your use, please contact the 
             return sum;
         },
 
+        /**
+         * Creates a map (object) keyed by the elements of the given array. The values in
+         * the map are the index+1 of the array element. For example:
+         * 
+         *      var map = Ext.Array.toMap(['a','b','c']);
+         *
+         *      // map = { a: 1, b: 2, c: 3 };
+         * 
+         * Or a key property can be specified:
+         * 
+         *      var map = Ext.Array.toMap([
+         *              { name: 'a' },
+         *              { name: 'b' },
+         *              { name: 'c' }
+         *          ], 'name');
+         *
+         *      // map = { a: 1, b: 2, c: 3 };
+         * 
+         * Lastly, a key extractor can be provided:
+         * 
+         *      var map = Ext.Array.toMap([
+         *              { name: 'a' },
+         *              { name: 'b' },
+         *              { name: 'c' }
+         *          ], function (obj) { return obj.name.toUpperCase(); });
+         *
+         *      // map = { A: 1, B: 2, C: 3 };
+         */
+        toMap: function(array, getKey, scope) {
+            var map = {},
+                i = array.length;
+
+            if (!getKey) {
+                while (i--) {
+                    map[array[i]] = i+1;
+                }
+            } else if (typeof getKey == 'string') {
+                while (i--) {
+                    map[array[i][getKey]] = i+1;
+                }
+            } else {
+                while (i--) {
+                    map[getKey.call(scope, array[i])] = i+1;
+                }
+            }
+
+            return map;
+        },
+
         //<debug>
         _replaceSim: replaceSim, // for unit testing
         _spliceSim: spliceSim,
@@ -958,7 +993,7 @@ If you are unsure which license is appropriate for your use, please contact the 
         /**
          * Inserts items in to an array.
          *
-         * @param {Array} array The Array on which to replace.
+         * @param {Array} array The Array in which to insert.
          * @param {Number} index The index in the array at which to operate.
          * @param {Array} items The array of items to insert at index.
          * @return {Array} The array passed.
@@ -991,6 +1026,8 @@ If you are unsure which license is appropriate for your use, please contact the 
          * @param {Array} array The Array on which to replace.
          * @param {Number} index The index in the array at which to operate.
          * @param {Number} removeCount The number of items to remove at index (can be 0).
+         * @param {Object...} elements The elements to add to the array. If you don't specify
+         * any elements, splice simply removes elements from the array.
          * @return {Array} An array containing the removed items.
          * @method
          */
@@ -1092,4 +1129,3 @@ If you are unsure which license is appropriate for your use, please contact the 
         return ExtArray.toArray.apply(ExtArray, arguments);
     };
 })();
-

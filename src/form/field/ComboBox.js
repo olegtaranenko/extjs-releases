@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @docauthor Jason Johnston <jason@sencha.com>
  *
@@ -79,6 +65,9 @@ Ext.define('Ext.form.field.ComboBox', {
     requires: ['Ext.util.DelayedTask', 'Ext.EventObject', 'Ext.view.BoundList', 'Ext.view.BoundListKeyNav', 'Ext.data.StoreManager'],
     alternateClassName: 'Ext.form.ComboBox',
     alias: ['widget.combobox', 'widget.combo'],
+    mixins: {
+        bindable: 'Ext.util.Bindable'    
+    },
 
     /**
      * @cfg {String} [triggerCls='x-form-arrow-trigger']
@@ -100,11 +89,18 @@ Ext.define('Ext.form.field.ComboBox', {
     fieldSubTpl: [
         '<div class="{hiddenDataCls}" role="presentation"></div>',
         '<input id="{id}" type="{type}" ',
-            '<tpl if="size">size="{size}" </tpl>',
-            '<tpl if="tabIdx">tabIndex="{tabIdx}" </tpl>',
+            '<tpl if="value"> value="{value}"</tpl>',
+            '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
+            '<tpl if="size"> size="{size}"</tpl>',
+            '<tpl if="maxLength !== undefined"> maxlength="{maxLength}"</tpl>',
+            '<tpl if="readOnly"> readonly="readonly"</tpl>',
+            '<tpl if="disabled"> disabled="disabled"</tpl>',
+            '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
+            '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
             'class="{fieldCls} {typeCls}" autocomplete="off" />',
-        '<div id="{cmpId}-triggerWrap" class="{triggerWrapCls}" role="presentation">',
-            '{triggerEl}',
+        '<div id="{cmpId}-triggerWrap" class="{triggerWrapCls}" role="presentation"',
+            '<tpl if="triggerWrapStyle"> style="{triggerWrapStyle}"</tpl>',
+            '>{triggerEl}',
             '<div class="{clearCls}" role="presentation"></div>',
         '</div>',
         {
@@ -501,19 +497,19 @@ Ext.define('Ext.form.field.ComboBox', {
         }
 
         if (!me.displayTpl) {
-            me.displayTpl = Ext.create('Ext.XTemplate',
+            me.displayTpl = new Ext.XTemplate(
                 '<tpl for=".">' +
                     '{[typeof values === "string" ? values : values["' + me.displayField + '"]]}' +
                     '<tpl if="xindex < xcount">' + me.delimiter + '</tpl>' +
                 '</tpl>'
             );
         } else if (Ext.isString(me.displayTpl)) {
-            me.displayTpl = Ext.create('Ext.XTemplate', me.displayTpl);
+            me.displayTpl = new Ext.XTemplate(me.displayTpl);
         }
 
         me.callParent();
 
-        me.doQueryTask = Ext.create('Ext.util.DelayedTask', me.doRawQuery, me);
+        me.doQueryTask = new Ext.util.DelayedTask(me.doRawQuery, me);
 
         // store has already been loaded, setValue
         if (me.store.getCount() > 0) {
@@ -594,46 +590,29 @@ Ext.define('Ext.form.field.ComboBox', {
     resetToDefault: function() {
 
     },
-
-    bindStore: function(store, initial) {
-        var me = this,
-            oldStore = me.store;
-
-        // this code directly accesses this.picker, bc invoking getPicker
-        // would create it when we may be preping to destroy it
-        if (oldStore && !initial) {
-            if (oldStore !== store && oldStore.autoDestroy) {
-                oldStore.destroyStore();
-            } else {
-                oldStore.un({
-                    scope: me,
-                    load: me.onLoad,
-                    exception: me.collapse
-                });
-            }
-            if (!store) {
-                me.store = null;
-                if (me.picker) {
-                    me.picker.bindStore(null);
-                }
-            }
+    
+    onUnbindStore: function(store) {
+        var picker = this.picker;
+        if (!store && picker) {
+            picker.bindStore(null);
         }
-        if (store) {
-            if (!initial) {
-                me.resetToDefault();
-            }
-
-            me.store = Ext.data.StoreManager.lookup(store);
-            me.store.on({
-                scope: me,
-                load: me.onLoad,
-                exception: me.collapse
-            });
-
-            if (me.picker) {
-                me.picker.bindStore(store);
-            }
+    },
+    
+    onBindStore: function(store, initial) {
+        var picker = this.picker;
+        if (!initial) {
+            this.resetToDefault();
         }
+        if (picker) {
+            picker.bindStore(store);
+        }
+    },
+    
+    getStoreListeners: function() {
+        return {
+            load: this.onLoad,
+            exception: this.collapse    
+        }; 
     },
 
     onLoad: function() {
@@ -809,7 +788,7 @@ Ext.define('Ext.form.field.ComboBox', {
 
     doTypeAhead: function() {
         if (!this.typeAheadTask) {
-            this.typeAheadTask = Ext.create('Ext.util.DelayedTask', this.onTypeAhead, this);
+            this.typeAheadTask = new Ext.util.DelayedTask(this.onTypeAhead, this);
         }
         if (this.lastKey != Ext.EventObject.BACKSPACE && this.lastKey != Ext.EventObject.DELETE) {
             this.typeAheadTask.delay(this.typeAheadDelay);
@@ -893,7 +872,7 @@ Ext.define('Ext.form.field.ComboBox', {
                 tpl: me.tpl
             }, me.listConfig, me.defaultListConfig);
 
-        picker = me.picker = Ext.create('Ext.view.BoundList', opts);
+        picker = me.picker = new Ext.view.BoundList(opts);
         if (me.pageSize) {
             picker.pagingToolbar.on('beforechange', me.onPageChange, me);
         }
@@ -916,16 +895,21 @@ Ext.define('Ext.form.field.ComboBox', {
 
     alignPicker: function(){
         var me = this,
-            picker = me.picker,
+            picker = me.getPicker(),
             heightAbove = me.getPosition()[1] - Ext.getBody().getScroll().top,
             heightBelow = Ext.Element.getViewHeight() - heightAbove - me.getHeight(),
             space = Math.max(heightAbove, heightBelow);
 
-        me.callParent();
-        if (picker.getHeight() > space) {
-            picker.setHeight(space - 5); // have some leeway so we aren't flush against
-            me.doAlign();
+        // Allow the picker to height itself naturally.
+        if (picker.height) {
+            delete picker.height;
+            picker.doComponentLayout();
         }
+        // Then ensure that vertically, the dropdown will fit into the space either above or below the inputEl.
+        if (picker.getHeight() > space - 5) {
+            picker.setHeight(space - 5); // have some leeway so we aren't flush against
+        }
+        me.callParent();
     },
 
     onListRefresh: function() {
@@ -1001,7 +985,7 @@ Ext.define('Ext.form.field.ComboBox', {
         if (keyNav) {
             keyNav.enable();
         } else {
-            keyNav = me.listKeyNav = Ext.create('Ext.view.BoundListKeyNav', this.inputEl, {
+            keyNav = me.listKeyNav = new Ext.view.BoundListKeyNav(this.inputEl, {
                 boundList: picker,
                 forceKeyDown: true,
                 tab: function(e) {
@@ -1279,4 +1263,3 @@ Ext.define('Ext.form.field.ComboBox', {
         }
     }
 });
-

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Provides searching of Components within Ext.ComponentManager (globally) or a specific
  * Ext.container.Container on the document with a similar syntax to a CSS selector.
@@ -170,7 +156,7 @@ Ext.define('Ext.ComponentQuery', {
                 candidate;
             for (; i < length; i++) {
                 candidate = items[i];
-                if (candidate.el ? candidate.el.hasCls(className) : EA.contains(candidate.initCls(), className)) {
+                if (candidate.hasCls(className)) {
                     result.push(candidate);
                 }
             }
@@ -241,22 +227,27 @@ Ext.define('Ext.ComponentQuery', {
             method: filterFnPattern
         }];
 
-    // @class Ext.ComponentQuery.Query
-    // This internal class is completely hidden in documentation.
+    /**
+     * @class Ext.ComponentQuery.Query
+     * @private
+     */
     cq.Query = Ext.extend(Object, {
         constructor: function(cfg) {
             cfg = cfg || {};
             Ext.apply(this, cfg);
         },
 
-        // Executes this Query upon the selected root.
-        // The root provides the initial source of candidate Component matches which are progressively
-        // filtered by iterating through this Query's operations cache.
-        // If no root is provided, all registered Components are searched via the ComponentManager.
-        // root may be a Container who's descendant Components are filtered
-        // root may be a Component with an implementation of getRefItems which provides some nested Components such as the
-        // docked items within a Panel.
-        // root may be an array of candidate Components to filter using this Query.
+        /**
+         * @private
+         * Executes this Query upon the selected root.
+         * The root provides the initial source of candidate Component matches which are progressively
+         * filtered by iterating through this Query's operations cache.
+         * If no root is provided, all registered Components are searched via the ComponentManager.
+         * root may be a Container who's descendant Components are filtered
+         * root may be a Component with an implementation of getRefItems which provides some nested Components such as the
+         * docked items within a Panel.
+         * root may be an array of candidate Components to filter using this Query.
+         */
         execute : function(root) {
             var operations = this.operations,
                 i = 0,

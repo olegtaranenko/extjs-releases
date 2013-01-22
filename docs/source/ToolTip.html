@@ -229,16 +229,6 @@ Ext.define('Ext.tip.ToolTip', {
         });
     },
 
-    // private
-    afterRender: function() {
-        var me = this,
-            zIndex;
-
-        me.callParent(arguments);
-        zIndex = parseInt(me.el.getZIndex(), 10) || 0;
-        me.anchorEl.setStyle('z-index', zIndex + 1).setVisibilityMode(Ext.Element.DISPLAY);
-    },
-
 <span id='Ext-tip-ToolTip-method-setTarget'>    /**
 </span>     * Binds this ToolTip to the specified element. The tooltip will be displayed when the mouse moves over the element.
      * @param {String/HTMLElement/Ext.Element} t The Element, HtmlElement, or ID of an element to bind to
@@ -580,18 +570,18 @@ Ext.define('Ext.tip.ToolTip', {
                 me.doConstrain();
             }
             me.toFront(true);
-        }
-
-        if (me.dismissDelay &amp;&amp; me.autoHide !== false) {
-            me.dismissTimer = Ext.defer(me.hide, me.dismissDelay, me);
-        }
-        if (me.anchor) {
-            me.syncAnchor();
-            if (!me.anchorEl.isVisible()) {
-                me.anchorEl.show();
+            me.el.sync(true);
+            if (me.dismissDelay &amp;&amp; me.autoHide !== false) {
+                me.dismissTimer = Ext.defer(me.hide, me.dismissDelay, me);
             }
-        } else {
-            me.anchorEl.hide();
+            if (me.anchor) {
+                me.syncAnchor();
+                if (!me.anchorEl.isVisible()) {
+                    me.anchorEl.show();
+                }
+            } else {
+                me.anchorEl.hide();
+            }
         }
     },
 
@@ -624,6 +614,7 @@ Ext.define('Ext.tip.ToolTip', {
             break;
         }
         me.anchorEl.alignTo(me.el, anchorPos + '-' + targetPos, offset);
+        me.anchorEl.setStyle('z-index', parseInt(me.el.getZIndex(), 10) || 0 + 1).setVisibilityMode(Ext.Element.DISPLAY);
     },
 
     // private

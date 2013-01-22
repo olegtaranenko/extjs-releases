@@ -102,22 +102,22 @@ Ext.define('Ext.window.MessageBox', {
 </span>     * The CSS class that provides the INFO icon image
      * @type String
      */
-    INFO : 'ext-mb-info',
+    INFO : Ext.baseCSSPrefix + 'message-box-info',
 <span id='Ext-window-MessageBox-property-WARNING'>    /**
 </span>     * The CSS class that provides the WARNING icon image
      * @type String
      */
-    WARNING : 'ext-mb-warning',
+    WARNING : Ext.baseCSSPrefix + 'message-box-warning',
 <span id='Ext-window-MessageBox-property-QUESTION'>    /**
 </span>     * The CSS class that provides the QUESTION icon image
      * @type String
      */
-    QUESTION : 'ext-mb-question',
+    QUESTION : Ext.baseCSSPrefix + 'message-box-question',
 <span id='Ext-window-MessageBox-property-ERROR'>    /**
 </span>     * The CSS class that provides the ERROR icon image
      * @type String
      */
-    ERROR : 'ext-mb-error',
+    ERROR : Ext.baseCSSPrefix + 'message-box-error',
 
     // hide it by offsets. Windows are hidden on render by default.
     hideMode: 'offsets',
@@ -185,7 +185,7 @@ Ext.define('Ext.window.MessageBox', {
 
     makeButton: function(btnIdx) {
         var btnId = this.buttonIds[btnIdx];
-        return Ext.create('Ext.button.Button', {
+        return new Ext.button.Button({
             handler: this.btnCallback,
             itemId: btnId,
             scope: this,
@@ -229,31 +229,31 @@ Ext.define('Ext.window.MessageBox', {
 
         me.title = '&amp;#160;';
 
-        me.topContainer = Ext.create('Ext.container.Container', {
+        me.topContainer = new Ext.container.Container({
             anchor: '100%',
             style: {
                 padding: '10px',
                 overflow: 'hidden'
             },
             items: [
-                me.iconComponent = Ext.create('Ext.Component', {
-                    cls: 'ext-mb-icon',
+                me.iconComponent = new Ext.Component({
+                    cls: me.baseCls + '-icon',
                     width: 50,
                     height: me.iconHeight,
                     style: {
                         'float': 'left'
                     }
                 }),
-                me.promptContainer = Ext.create('Ext.container.Container', {
+                me.promptContainer = new Ext.container.Container({
                     layout: {
                         type: 'anchor'
                     },
                     items: [
-                        me.msg = Ext.create('Ext.Component', {
+                        me.msg = new Ext.Component({
                             autoEl: { tag: 'span' },
-                            cls: 'ext-mb-text'
+                            cls: me.baseCls + '-text'
                         }),
-                        me.textField = Ext.create('Ext.form.field.Text', {
+                        me.textField = new Ext.form.field.Text({
                             anchor: '100%',
                             enableKeyEvents: true,
                             listeners: {
@@ -261,7 +261,7 @@ Ext.define('Ext.window.MessageBox', {
                                 scope: me
                             }
                         }),
-                        me.textArea = Ext.create('Ext.form.field.TextArea', {
+                        me.textArea = new Ext.form.field.TextArea({
                             anchor: '100%',
                             height: 75
                         })
@@ -269,7 +269,7 @@ Ext.define('Ext.window.MessageBox', {
                 })
             ]
         });
-        me.progressBar = Ext.create('Ext.ProgressBar', {
+        me.progressBar = new Ext.ProgressBar({
             anchor: '-10',
             style: 'margin-left:10px'
         });
@@ -283,7 +283,7 @@ Ext.define('Ext.window.MessageBox', {
             me.msgButtons[button.itemId] = button;
             me.msgButtons.push(button);
         }
-        me.bottomTb = Ext.create('Ext.toolbar.Toolbar', {
+        me.bottomTb = new Ext.toolbar.Toolbar({
             ui: 'footer',
             dock: 'bottom',
             layout: {
@@ -322,10 +322,13 @@ Ext.define('Ext.window.MessageBox', {
 
     reconfigure: function(cfg) {
         var me = this,
-            buttons = cfg.buttons || 0,
+            buttons = 0,
             hideToolbar = true,
             initialWidth = me.maxWidth,
             i;
+
+        // Restore default buttonText before reconfiguring.
+        me.updateButtonText();
 
         cfg = cfg || {};
         me.cfg = cfg;
@@ -346,6 +349,22 @@ Ext.define('Ext.window.MessageBox', {
         if (cfg.title) {
             me.setTitle(cfg.title||'&amp;#160;');
         }
+
+        // Extract button configs
+        if (Ext.isObject(cfg.buttons)) {
+            me.buttonText = cfg.buttons;
+            buttons = 0;
+        } else {
+            me.buttonText = cfg.buttonText || me.buttonText;
+            buttons = Ext.isNumber(cfg.buttons) ? cfg.buttons : 0;
+        }
+
+        // Apply custom-configured buttonText
+        // Infer additional buttons from the specified property names in the buttonText object
+        buttons = buttons | me.updateButtonText();
+
+        // Delete instance buttonText. Next run of reconfigure will restore to prototype's buttonText
+        delete me.buttonText;
 
         if (!me.rendered) {
             me.width = initialWidth;
@@ -437,6 +456,31 @@ Ext.define('Ext.window.MessageBox', {
         }
     },
 
+<span id='Ext-window-MessageBox-method-updateButtonText'>    /**
+</span>     * @private
+     * Set button text according to current buttonText property object
+     * @return {Number} The buttons bitwise flag based upon the button IDs specified in the buttonText property.
+     */
+    updateButtonText: function() {
+        var me = this,
+            btnId,
+            btn,
+            buttons = 0;
+
+        for (btnId in me.buttonText) {
+            btn = me.msgButtons[btnId];
+            if (btn) {
+                if (me.cfg &amp;&amp; me.cfg.buttonText) {
+                    buttons = buttons | Math.pow(2, Ext.Array.indexOf(me.buttonIds, btnId));
+                }
+                if (btn.text != me.buttonText[btnId]) {
+                    btn.setText(me.buttonText[btnId]);
+                }
+            }
+        }
+        return buttons;
+    },
+
 <span id='Ext-window-MessageBox-method-show'>    /**
 </span>     * Displays a new message box, or reinitializes an existing message box, based on the config options
      * passed in. All display functions (e.g. prompt, alert, etc.) on MessageBox call this function internally,
@@ -449,7 +493,9 @@ Ext.define('Ext.window.MessageBox', {
      * &lt;li&gt;Ext.window.MessageBox.YES&lt;/li&gt;
      * &lt;li&gt;Ext.window.MessageBox.NO&lt;/li&gt;
      * &lt;li&gt;Ext.window.MessageBox.CANCEL&lt;/li&gt;
-     * &lt;/ul&gt;Or false to not show any buttons (defaults to false)&lt;/div&gt;&lt;/li&gt;
+     * &lt;/ul&gt;Or false to not show any buttons (defaults to false)&lt;/div&gt;
+     * &lt;p&gt;This may also be specified as an object hash containing custom button text in the same format as the {@link #buttonText} config.
+     * Button IDs present as property names will be made visible.&lt;/p&gt;&lt;/li&gt;
      * &lt;li&gt;&lt;b&gt;closable&lt;/b&gt; : Boolean&lt;div class=&quot;sub-desc&quot;&gt;False to hide the top-right close button (defaults to true). Note that
      * progress and wait dialogs will ignore this property and always hide the close button as they can only
      * be closed programmatically.&lt;/div&gt;&lt;/li&gt;
@@ -472,6 +518,13 @@ Ext.define('Ext.window.MessageBox', {
      * or &lt;tt&gt;&lt;a href=&quot;#show-option-multiline&quot; ext:member=&quot;show-option-multiline&quot; ext:cls=&quot;Ext.window.MessageBox&quot;&gt;multiline&lt;/a&gt;&lt;/tt&gt; is true&lt;/div&gt;&lt;/li&gt;
      * &lt;li&gt;&lt;b&gt;opt&lt;/b&gt; : Object&lt;div class=&quot;sub-desc&quot;&gt;The config object passed to show.&lt;/div&gt;&lt;/li&gt;
      * &lt;/ul&gt;&lt;/p&gt;&lt;/div&gt;&lt;/li&gt;
+     * &lt;li&gt;&lt;b&gt;buttonText&lt;/b&gt; : Object&lt;div class=&quot;sub-desc&quot;&gt;An object containing string properties which override the
+     * system-supplied button text values just for this invocation. The property names are: &lt;div class=&quot;sub-desc&quot;&gt;&lt;ul&gt;
+     * &lt;li&gt;&lt;tt&gt;ok&lt;/tt&gt;&lt;/li&gt;
+     * &lt;li&gt;&lt;tt&gt;yes&lt;/tt&gt;&lt;/li&gt;
+     * &lt;li&gt;&lt;tt&gt;no&lt;/tt&gt;&lt;/li&gt;
+     * &lt;li&gt;&lt;tt&gt;cancel&lt;/tt&gt;&lt;/li&gt;
+     * &lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/li&gt;
      * &lt;li&gt;&lt;b&gt;scope&lt;/b&gt; : Object&lt;div class=&quot;sub-desc&quot;&gt;The scope (&lt;code&gt;this&lt;/code&gt; reference) in which the function will be executed.&lt;/div&gt;&lt;/li&gt;
      * &lt;li&gt;&lt;b&gt;icon&lt;/b&gt; : String&lt;div class=&quot;sub-desc&quot;&gt;A CSS class that provides a background image to be used as the body icon for the
      * dialog (e.g. Ext.window.MessageBox.WARNING or 'custom-class') (defaults to '')&lt;/div&gt;&lt;/li&gt;
@@ -578,7 +631,7 @@ icon: Ext.window.MessageBox.INFO
     },
 
 <span id='Ext-window-MessageBox-method-setIcon'>    /**
-</span>     * Adds the specified icon to the dialog.  By default, the class 'ext-mb-icon' is applied for default
+</span>     * Adds the specified icon to the dialog.  By default, the class 'x-messagebox-icon' is applied for default
      * styling, and the class passed in is expected to supply the background image url. Pass in empty string ('')
      * to clear any existing icon. This method must be called before the MessageBox is shown.
      * The following built-in icon classes are supported, but you can also pass in a custom class name:
@@ -644,7 +697,7 @@ Ext.window.MessageBox.ERROR
         if (Ext.isString(cfg)) {
             cfg = {
                 title: cfg,
-                icon: 'ext-mb-question',
+                icon: this.QUESTION,
                 msg: msg,
                 buttons: this.YESNO,
                 callback: fn,

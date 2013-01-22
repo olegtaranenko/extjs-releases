@@ -471,7 +471,7 @@ Ext.define('Ext.form.field.Date', {
         var me = this,
             format = Ext.String.format;
 
-        return Ext.create('Ext.picker.Date', {
+        return new Ext.picker.Date({
             pickerField: me,
             ownerCt: me.ownerCt,
             renderTo: document.body,
@@ -542,20 +542,20 @@ Ext.define('Ext.form.field.Date', {
     }
 
 <span id='Ext-form-field-Date-cfg-grow'>    /**
-</span>     * @hide
-     * @cfg {Boolean} grow
+</span>     * @cfg {Boolean} grow
+     * Not applicable for Date field.
      */
 <span id='Ext-form-field-Date-cfg-growMin'>    /**
-</span>     * @hide
-     * @cfg {Number} growMin
+</span>     * @cfg {Number} growMin
+     * Not applicable for Date field.
      */
 <span id='Ext-form-field-Date-cfg-growMax'>    /**
-</span>     * @hide
-     * @cfg {Number} growMax
+</span>     * @cfg {Number} growMax
+     * Not applicable for Date field.
      */
 <span id='Ext-form-field-Date-method-autoSize'>    /**
-</span>     * @hide
-     * @method autoSize
+</span>     * @method autoSize
+     * Not applicable for Date field.
      */
 });
 </pre>

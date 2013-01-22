@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @docauthor Jason Johnston <jason@sencha.com>
  *
@@ -233,8 +219,6 @@ Ext.define('Ext.form.field.Text', {
      */
     emptyCls : Ext.baseCSSPrefix + 'form-empty-field',
 
-    ariaRole: 'textbox',
-
     /**
      * @cfg {Boolean} [enableKeyEvents=false]
      * true to enable the proxying of key events for the HTML input field
@@ -319,14 +303,32 @@ Ext.define('Ext.form.field.Text', {
         this.autoSize();
     },
 
-    afterRender: function(){
-        var me = this;
-        if (me.enforceMaxLength) {
-            me.inputEl.dom.maxLength = me.maxLength;
+    getSubTplData: function() {
+        var me = this,
+            value = me.getRawValue(),
+            isEmpty = me.emptyText && value.length < 1,
+            placeholder;
+
+        if (isEmpty) {
+            if (Ext.supports.Placeholder) {
+                placeholder = me.emptyText;
+            } else {
+                value = me.emptyText;
+            }
         }
-        me.applyEmptyText();
-        me.autoSize();
-        me.callParent();
+
+        return Ext.apply(me.callParent(), {
+            maxLength   : me.enforceMaxLength ? me.maxLength : undefined,
+            readOnly    : me.readOnly,
+            placeholder : placeholder,
+            value       : value,
+            fieldCls    : me.fieldCls + ((isEmpty && (placeholder || value)) ? ' ' + me.emptyCls : '')
+        });
+    },
+
+    afterRender: function(){
+        this.autoSize();
+        this.callParent();
     },
 
     onMouseDown: function(e){
@@ -426,6 +428,7 @@ Ext.define('Ext.form.field.Text', {
             emptyText = me.emptyText,
             isEmpty;
 
+        me.callParent(arguments);
         if (emptyText && !Ext.supports.Placeholder && inputEl.dom.value === emptyText) {
             me.setRawValue('');
             isEmpty = true;
@@ -448,6 +451,7 @@ Ext.define('Ext.form.field.Text', {
 
     // private
     postBlur : function(){
+        this.callParent(arguments);
         this.applyEmptyText();
     },
 
@@ -652,21 +656,29 @@ Ext.define('Ext.form.field.Text', {
      * only takes effect if {@link #grow} = true, and fires the {@link #autosize} event if the width changes.
      */
     autoSize: function() {
-        var me = this,
-            width;
+        var me = this;
+        //\\ TODO: Don: How do we go about defeating any size management, and forcing an auto size?
+        //\\ It looks like this has never worked. It just did a component layout and then compared the inputEl width with what
+        //\\ was last stored.
         if (me.grow && me.rendered) {
+            me.autoSizing = true;
             me.doComponentLayout();
-            width = me.inputEl.getWidth();
-            if (width !== me.lastInputWidth) {
-                me.fireEvent('autosize', width);
-                me.lastInputWidth = width;
-            }
         }
     },
 
-    initAria: function() {
-        this.callParent();
-        this.getActionEl().dom.setAttribute('aria-required', this.allowBlank === false);
+    afterComponentLayout: function() {
+        var me = this,
+            width;
+
+        me.callParent();
+        if (me.autoSizing) {
+            width = me.inputEl.getWidth();
+            if (width !== me.lastInputWidth) {
+                me.fireEvent('autosize', me, width);
+                me.lastInputWidth = width;
+                delete me.autoSizing;
+            }
+        }
     },
 
     /**
@@ -678,6 +690,4 @@ Ext.define('Ext.form.field.Text', {
     getBodyNaturalWidth: function() {
         return Math.round(this.size * 6.5) + 20;
     }
-
 });
-

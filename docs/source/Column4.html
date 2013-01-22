@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-chart-series-Column'>/**
 </span> * @class Ext.chart.series.Column
- * @extends Ext.chart.series.Bar
  *
  * Creates a Column Chart. Much of the methods are inherited from Bar. A Column Chart is a useful
  * visualization technique to display quantitative information for different categories that can
@@ -27,13 +26,13 @@
  *
  *     @example
  *     var store = Ext.create('Ext.data.JsonStore', {
- *         fields: ['name', 'data1', 'data2', 'data3', 'data4', 'data5'],
+ *         fields: ['name', 'data'],
  *         data: [
- *             { 'name': 'metric one',   'data1': 10, 'data2': 12, 'data3': 14, 'data4': 8,  'data5': 13 },
- *             { 'name': 'metric two',   'data1': 7,  'data2': 8,  'data3': 16, 'data4': 10, 'data5': 3  },
- *             { 'name': 'metric three', 'data1': 5,  'data2': 2,  'data3': 14, 'data4': 12, 'data5': 7  },
- *             { 'name': 'metric four',  'data1': 2,  'data2': 14, 'data3': 6,  'data4': 1,  'data5': 23 },
- *             { 'name': 'metric five',  'data1': 27, 'data2': 38, 'data3': 36, 'data4': 13, 'data5': 33 }
+ *             { 'name': 'metric one',   'data':10 },
+ *             { 'name': 'metric two',   'data': 7 },
+ *             { 'name': 'metric three', 'data': 5 },
+ *             { 'name': 'metric four',  'data': 2 },
+ *             { 'name': 'metric five',  'data':27 }
  *         ]
  *     });
  *
@@ -47,7 +46,7 @@
  *             {
  *                 type: 'Numeric',
  *                 position: 'left',
- *                 fields: ['data1'],
+ *                 fields: ['data'],
  *                 label: {
  *                     renderer: Ext.util.Format.numberRenderer('0,0')
  *                 },
@@ -72,19 +71,19 @@
  *                   width: 140,
  *                   height: 28,
  *                   renderer: function(storeItem, item) {
- *                     this.setTitle(storeItem.get('name') + ': ' + storeItem.get('data1') + ' $');
+ *                     this.setTitle(storeItem.get('name') + ': ' + storeItem.get('data') + ' $');
  *                   }
  *                 },
  *                 label: {
  *                   display: 'insideEnd',
  *                   'text-anchor': 'middle',
- *                     field: 'data1',
+ *                     field: 'data',
  *                     renderer: Ext.util.Format.numberRenderer('0'),
  *                     orientation: 'vertical',
  *                     color: '#333'
  *                 },
  *                 xField: 'name',
- *                 yField: 'data1'
+ *                 yField: 'data'
  *             }
  *         ]
  *     });

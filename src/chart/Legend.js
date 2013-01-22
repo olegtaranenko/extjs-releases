@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.Legend
  *
@@ -19,7 +5,7 @@ If you are unsure which license is appropriate for your use, please contact the 
  * The 'chart' member must be set prior to rendering.
  * The legend class displays a list of legend items each of them related with a
  * series being rendered. In order to render the legend item of the proper series
- * the series configuration object must have `showInSeries` set to true.
+ * the series configuration object must have `showInLegend` set to true.
  *
  * The legend configuration object accepts a `position` as parameter.
  * The `position` parameter can be `left`, `right`
@@ -266,7 +252,7 @@ Ext.define('Ext.chart.Legend', {
         chart.series.each(function(series, i) {
             if (series.showInLegend) {
                 Ext.each([].concat(series.yField), function(field, j) {
-                    item = Ext.create('Ext.chart.LegendItem', {
+                    item = new Ext.chart.LegendItem({
                         legend: this,
                         series: series,
                         surface: chart.surface,
@@ -397,4 +383,3 @@ Ext.define('Ext.chart.Legend', {
         }
     }
 });
-

@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-draw-engine-Svg'>/**
 </span> * @class Ext.draw.engine.Svg
- * @extends Ext.draw.Surface
  * Provides specific methods to draw with SVG.
  */
 Ext.define('Ext.draw.engine.Svg', {
@@ -46,7 +45,7 @@ Ext.define('Ext.draw.engine.Svg', {
         strokeOpacity: &quot;stroke-opacity&quot;,
         strokeLinejoin: &quot;stroke-linejoin&quot;
     },
-    
+
     parsers: {},
 
     minDefaults: {
@@ -141,7 +140,7 @@ Ext.define('Ext.draw.engine.Svg', {
         }
         sprite.el = Ext.get(el);
         this.applyZIndex(sprite); //performs the insertion
-        sprite.matrix = Ext.create('Ext.draw.Matrix');
+        sprite.matrix = new Ext.draw.Matrix();
         sprite.bbox = {
             plain: 0,
             transform: 0
@@ -208,7 +207,7 @@ Ext.define('Ext.draw.engine.Svg', {
 
     transform: function(sprite) {
         var me = this,
-            matrix = Ext.create('Ext.draw.Matrix'),
+            matrix = new Ext.draw.Matrix(),
             transforms = sprite.transformations,
             transformsLength = transforms.length,
             i = 0,
@@ -601,7 +600,7 @@ Ext.define('Ext.draw.engine.Svg', {
     },
 
     createItem: function (config) {
-        var sprite = Ext.create('Ext.draw.Sprite', config);
+        var sprite = new Ext.draw.Sprite(config);
         sprite.surface = this;
         return sprite;
     },

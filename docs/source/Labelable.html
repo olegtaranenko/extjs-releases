@@ -40,6 +40,31 @@
 Ext.define(&quot;Ext.form.Labelable&quot;, {
     requires: ['Ext.XTemplate'],
 
+    childEls: [
+<span id='Ext-form-Labelable-property-labelEl'>        /**
+</span>         * @property labelEl
+         * @type Ext.Element
+         * The label Element for this component. Only available after the component has been rendered.
+         */
+        'labelEl',
+
+<span id='Ext-form-Labelable-property-bodyEl'>        /**
+</span>         * @property bodyEl
+         * @type Ext.Element
+         * The div Element wrapping the component's contents. Only available after the component has been rendered.
+         */
+        'bodyEl',
+
+<span id='Ext-form-Labelable-property-errorEl'>        /**
+</span>         * @property errorEl
+         * @type Ext.Element
+         * The div Element that will contain the component's error message(s). Note that depending on the
+         * configured {@link #msgTarget}, this element may be hidden in favor of some other form of
+         * presentation, but will always be present in the DOM for use by assistive technologies.
+         */
+        'errorEl'
+    ],
+
 <span id='Ext-form-Labelable-cfg-labelableRenderTpl'>    /**
 </span>     * @cfg {String/String[]/Ext.XTemplate} labelableRenderTpl
      * The rendering template for the field decorations. Component classes using this mixin should include
@@ -53,11 +78,12 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
                 '&lt;tpl if=&quot;fieldLabel&quot;&gt;{fieldLabel}{labelSeparator}&lt;/tpl&gt;',
             '&lt;/label&gt;',
         '&lt;/tpl&gt;',
-        '&lt;div class=&quot;{baseBodyCls} {fieldBodyCls}&quot; id=&quot;{id}-bodyEl&quot; role=&quot;presentation&quot;&gt;{subTplMarkup}&lt;/div&gt;',
+        '&lt;div class=&quot;{baseBodyCls} {fieldBodyCls}&quot; id=&quot;{id}-bodyEl&quot; role=&quot;presentation&quot;&gt;',
+            '{[values.$comp.getSubTplMarkup()]}',
+        '&lt;/div&gt;',
         '&lt;div id=&quot;{id}-errorEl&quot; class=&quot;{errorMsgCls}&quot; style=&quot;display:none&quot;&gt;&lt;/div&gt;',
         '&lt;div class=&quot;{clearCls}&quot; role=&quot;presentation&quot;&gt;&lt;!-- --&gt;&lt;/div&gt;',
         {
-            compiled: true,
             disableFormats: true
         }
     ],
@@ -238,6 +264,9 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
      */
     initLabelable: function() {
         this.addCls(this.formItemCls);
+        
+        // Prevent first render of active error, at Field render time from signalling a change from undefined to &quot;
+        this.lastActiveError = '';
 
         this.addEvents(
 <span id='Ext-form-Labelable-event-errorchange'>            /**
@@ -258,6 +287,56 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
     getFieldLabel: function() {
         return this.fieldLabel || '';
     },
+    
+<span id='Ext-form-Labelable-method-setFieldLabel'>    /**
+</span>     * Set the label of this field.
+     * @param {String} label The new label. The {@link #labelSeparator} will be automatically appended
+     * to the label string.
+     */
+    setFieldLabel: function(label){
+        label = label || '';
+        
+        var me = this,
+            separator = me.labelSeparator,
+            labelEl = me.labelEl,
+            last;
+        
+        me.fieldLabel = label;
+        if (me.rendered) {
+            if (Ext.isEmpty(label) &amp;&amp; me.hideEmptyLabel) {
+                Ext.destroy(me.labelEl);
+                me.labelEl = null;
+            } else {
+                labelEl = me.createLabelEl();
+                last = label.substr(label.length - 1);
+                // append separator if necessary
+                if (last != separator) {
+                    label += separator;
+                }
+                labelEl.update(label);
+            }
+            me.doComponentLayout();
+        }
+    },
+    
+<span id='Ext-form-Labelable-method-createLabelEl'>    /**
+</span>     * Create the labelEl if it doesn't exist.
+     * @private
+     * @return {Ext.dom.Element} The labelEl
+     */
+    createLabelEl: function(){
+        var me = this;
+        
+        if (!me.labelEl) {
+            me.labelEl = me.el.insertFirst({
+                tag: 'label',
+                htmlFor: me.getInputId(),
+                cls: me.getLabelCls(),
+                style: me.getLabelStyle()
+            });
+        }
+        return me.labelEl;
+    },
 
 <span id='Ext-form-Labelable-method-getLabelableRenderData'>    /**
 </span>     * @protected
@@ -265,10 +344,36 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
      * @return {Object} The template arguments
      */
     getLabelableRenderData: function() {
+        var me = this;
+
+        return Ext.copyTo(
+            {
+                inputId: me.getInputId(),
+                fieldLabel: me.getFieldLabel(),
+                labelCls: me.getLabelCls(),
+                labelStyle: me.getLabelStyle()
+            },
+            me,
+            'hideLabel,hideEmptyLabel,fieldBodyCls,baseBodyCls,errorMsgCls,clearCls,labelSeparator',
+            true
+        );
+    },
+    
+    getLabelCls: function(){
+        var labelCls = this.labelCls,
+            labelClsExtra = this.labelClsExtra;
+            
+        return labelClsExtra ? labelCls + ' ' + labelClsExtra : labelCls;
+    },
+    
+<span id='Ext-form-Labelable-method-getLabelStyle'>    /**
+</span>     * Gets any label styling for the labelEl
+     * @private
+     * @return {String} The label styling
+     */
+    getLabelStyle: function(){
         var me = this,
             labelAlign = me.labelAlign,
-            labelCls = me.labelCls,
-            labelClsExtra = me.labelClsExtra,
             labelPad = me.labelPad,
             labelStyle;
 
@@ -283,46 +388,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
                 labelStyle += 'width:' + me.labelWidth + 'px;';
             }
         }
-
-        return Ext.copyTo(
-            {
-                inputId: me.getInputId(),
-                fieldLabel: me.getFieldLabel(),
-                labelCls: labelClsExtra ? labelCls + ' ' + labelClsExtra : labelCls,
-                labelStyle: labelStyle + (me.labelStyle || ''),
-                subTplMarkup: me.getSubTplMarkup()
-            },
-            me,
-            'hideLabel,hideEmptyLabel,fieldBodyCls,baseBodyCls,errorMsgCls,clearCls,labelSeparator',
-            true
-        );
-    },
-
-    onLabelableRender: function () {
-        this.addChildEls(
-<span id='Ext-form-Labelable-property-labelEl'>            /**
-</span>             * @property labelEl
-             * @type Ext.Element
-             * The label Element for this component. Only available after the component has been rendered.
-             */
-            'labelEl',
-
-<span id='Ext-form-Labelable-property-bodyEl'>            /**
-</span>             * @property bodyEl
-             * @type Ext.Element
-             * The div Element wrapping the component's contents. Only available after the component has been rendered.
-             */
-            'bodyEl',
-
-<span id='Ext-form-Labelable-property-errorEl'>            /**
-</span>             * @property errorEl
-             * @type Ext.Element
-             * The div Element that will contain the component's error message(s). Note that depending on the
-             * configured {@link #msgTarget}, this element may be hidden in favor of some other form of
-             * presentation, but will always be present in the DOM for use by assistive technologies.
-             */
-            'errorEl'
-        );
+        return labelStyle + (me.labelStyle || '');
     },
 
 <span id='Ext-form-Labelable-method-getSubTplMarkup'>    /**

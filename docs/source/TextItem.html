@@ -48,11 +48,14 @@ Ext.define('Ext.toolbar.TextItem', {
     //
     baseCls: Ext.baseCSSPrefix + 'toolbar-text',
 
-    onRender : function() {
-        Ext.apply(this.renderData, {
-            text: this.text
+    beforeRender : function() {
+        var me = this;
+
+        me.callParent();
+
+        Ext.apply(me.renderData, {
+            text: me.text
         });
-        this.callParent(arguments);
     },
 
 <span id='Ext-toolbar-TextItem-method-setText'>    /**

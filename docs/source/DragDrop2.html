@@ -253,7 +253,7 @@ Ext.define('Ext.grid.plugin.DragDrop', {
         var me = this;
 
         if (me.enableDrag) {
-            me.dragZone = Ext.create('Ext.view.DragZone', {
+            me.dragZone = new Ext.view.DragZone({
                 view: view,
                 ddGroup: me.dragGroup || me.ddGroup,
                 dragText: me.dragText
@@ -261,7 +261,7 @@ Ext.define('Ext.grid.plugin.DragDrop', {
         }
 
         if (me.enableDrop) {
-            me.dropZone = Ext.create('Ext.grid.ViewDropZone', {
+            me.dropZone = new Ext.grid.ViewDropZone({
                 view: view,
                 ddGroup: me.dropGroup || me.ddGroup
             });

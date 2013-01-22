@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-layout-component-Draw'>/**
 </span> * @class Ext.layout.component.Draw
- * @extends Ext.layout.component.Component
  * @private
  *
  */
@@ -34,10 +33,18 @@ Ext.define('Ext.layout.component.Draw', {
 
     type: 'draw',
 
-    onLayout : function(width, height) {
-        this.owner.surface.setSize(width, height);
+    finishedLayout: function (ownerContext) {
+        var props = ownerContext.props;
+
+        // We don't want the cost of getProps, so we just use the props data... this is ok
+        // because all the props have been calculated by this time
+
+        this.owner.surface.setSize(props.width, props.height);
+
+        // calls afterComponentLayout, so we want the surface to be sized before that:
         this.callParent(arguments);
     }
-});</pre>
+});
+</pre>
 </body>
 </html>

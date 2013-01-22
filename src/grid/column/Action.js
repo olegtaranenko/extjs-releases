@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A Grid header type which renders an icon, or a series of icons in a grid cell, and offers a scoped click
  * handler for each icon.
@@ -96,7 +82,8 @@ Ext.define('Ext.grid.column.Action', {
      * A tooltip message to be displayed on hover. {@link Ext.tip.QuickTipManager#init Ext.tip.QuickTipManager} must
      * have been initialized.
      */
-    /* @cfg {Boolean} disabled
+    /**
+     * @cfg {Boolean} disabled
      * If true, the action will not respond to click events, and will be displayed semi-opaque.
      */
     /**
@@ -157,7 +144,6 @@ Ext.define('Ext.grid.column.Action', {
      * an `enable` and `disable` method added which will enable and disable the associated action, and
      * update the displayed icon accordingly.
      */
-    header: '&#160;',
 
     actionIdRe: new RegExp(Ext.baseCSSPrefix + 'action-col-(\\d+)'),
 
@@ -196,7 +182,7 @@ Ext.define('Ext.grid.column.Action', {
                 item.disable = Ext.Function.bind(me.disableAction, me, [i]);
                 item.enable = Ext.Function.bind(me.enableAction, me, [i]);
                 v += '<img alt="' + (item.altText || me.altText) + '" src="' + (item.icon || Ext.BLANK_IMAGE_URL) +
-                    '" class="' + Ext.baseCSSPrefix + 'action-col-icon ' + Ext.baseCSSPrefix + 'action-col-' + String(i) + ' ' + (item.disabled ? Ext.baseCSSPrefix + 'item-disabled' : ' ') + (item.iconCls || '') +
+                    '" class="' + Ext.baseCSSPrefix + 'action-col-icon ' + Ext.baseCSSPrefix + 'action-col-' + String(i) + ' ' + (item.disabled ? Ext.baseCSSPrefix + 'item-disabled' : ' ') +
                     ' ' + (Ext.isFunction(item.getClass) ? item.getClass.apply(item.scope||me.scope||me, arguments) : (me.iconCls || '')) + '"' +
                     ((item.tooltip) ? ' data-qtip="' + item.tooltip + '"' : '') + ' />';
             }

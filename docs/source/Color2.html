@@ -230,7 +230,7 @@ Ext.define('Ext.draw.Color', {
             }
         }
 
-        return (typeof r == 'undefined') ? undefined : Ext.create('Ext.draw.Color', r, g, b);
+        return (typeof r == 'undefined') ? undefined : new Ext.draw.Color(r, g, b);
     },
 
 <span id='Ext-draw-Color-method-getGrayscale'>    /**
@@ -296,7 +296,7 @@ Ext.define('Ext.draw.Color', {
             }
             rgb = [rgb[0] + m, rgb[1] + m, rgb[2] + m];
         }
-        return Ext.create('Ext.draw.Color', rgb[0] * 255, rgb[1] * 255, rgb[2] * 255);
+        return new Ext.draw.Color(rgb[0] * 255, rgb[1] * 255, rgb[2] * 255);
     }
 }, function() {
     var prototype = this.prototype;

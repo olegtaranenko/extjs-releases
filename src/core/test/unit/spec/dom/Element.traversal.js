@@ -1,22 +1,8 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 describe("Ext.Element.traversal", function() {
     var proto = Ext.Element,
         el, testEl,
         input, testInputEl,
-        child1, child2, child3, child4, child5;
+        child1, child2, child3, child4, child4_1, child4_1_1;
     
     beforeEach(function() {
         testEl = Ext.getBody().createChild({
@@ -31,8 +17,13 @@ describe("Ext.Element.traversal", function() {
                     id: 'child4',
                     children: [
                         {
-                            id : 'child5',
-                            cls: 'findIt'
+                            id : 'child4_1',
+                            cls: 'findIt',
+                            children: [
+                                {
+                                    id : 'child4_1_1'
+                                }
+                            ]
                         }
                     ]
                 }
@@ -52,7 +43,8 @@ describe("Ext.Element.traversal", function() {
         child2 = Ext.get('child2');
         child3 = Ext.get('child3');
         child4 = Ext.get('child4');
-        child5 = Ext.get('child5');
+        child4_1 = Ext.get('child4_1');
+        child4_1_1 = Ext.get('child4_1_1');
     });
 
     afterEach(function() {
@@ -76,13 +68,13 @@ describe("Ext.Element.traversal", function() {
         describe("when maxDepth", function() {
             describe("1", function() {
                 it("should not return the el", function() {
-                    expect(child5.findParentNode('.wrapper', 1)).toBeNull();
+                    expect(child4_1.findParentNode('.wrapper', 1)).toBeNull();
                 });
             });
             
             describe("2", function() {
                 it("should not return the el", function() {
-                    expect(child5.findParentNode('.wrapper', 2)).toEqual(Ext.getDom(el));
+                    expect(child4_1.findParentNode('.wrapper', 2)).toEqual(Ext.getDom(el));
                 });
             });
         });
@@ -100,13 +92,13 @@ describe("Ext.Element.traversal", function() {
         describe("when maxDepth", function() {
             describe("1", function() {
                 it("should not return the el", function() {
-                    expect(child5.up('.wrapper', 1)).toBeNull();
+                    expect(child4_1.up('.wrapper', 1)).toBeNull();
                 });
             });
             
             describe("2", function() {
                 it("should not return the el", function() {
-                    expect(child5.up('.wrapper', 2)).toEqual(el);
+                    expect(child4_1.up('.wrapper', 2)).toEqual(el);
                 });
             });
         });
@@ -116,7 +108,7 @@ describe("Ext.Element.traversal", function() {
         it("should return an Ext.CompositeELementLite", function() {
             var result = el.select('div');
             expect(result).toBeDefined();
-            expect(result.elements.length).toEqual(5);
+            expect(result.elements.length).toEqual(6);
             expect(result instanceof Ext.CompositeElementLite).toBe(true);
         });
     });
@@ -126,7 +118,7 @@ describe("Ext.Element.traversal", function() {
             var result = el.query('div');
             
             expect(result).toBeDefined();
-            expect(result.length).toEqual(5);
+            expect(result.length).toEqual(6);
             expect(result.isComposite).toBeFalsy();
             expect(Ext.isArray(result)).toBeTruthy();
         });
@@ -276,28 +268,69 @@ describe("Ext.Element.traversal", function() {
         describe("when maxDepth", function() {
             describe("1", function() {
                 it("should not return the el", function() {
-                    expect(child5.findParent('.wrapper', 1)).toBeNull();
+                    expect(child4_1.findParent('.wrapper', 1)).toBeNull();
                 });
             });
             
             describe("2", function() {
                 it("should not return the el", function() {
-                    expect(child5.findParent('.wrapper', 2)).toBeNull();
+                    expect(child4_1.findParent('.wrapper', 2)).toBeNull();
                 });
             });
             
             describe("3", function() {
                 it("should return the el", function() {
-                    expect(child5.findParent('.wrapper', 3)).toEqual(Ext.getDom(el));
+                    expect(child4_1.findParent('.wrapper', 3)).toEqual(Ext.getDom(el));
                 });
             });
             
             describe("NaN", function() {
                 it("should use Number.MAX_VALUE", function() {
-                    expect(child5.findParent('.wrapper', Ext.getBody())).toEqual(Ext.getDom(el));
+                    expect(child4_1.findParent('.wrapper', Ext.getBody())).toEqual(Ext.getDom(el));
                 });
             });
         });
     });
-}, "/src/dom/Element.traversal.js");
+    
+    describe("contains", function(){
+        describe("contains", function(){
+            it('should return false for siblings', function(){
+                expect(Ext.fly(child1).contains(child4_1_1)).toBe(false);
+                expect(Ext.fly(child2).contains(child4_1_1)).toBe(false);
+            });
+            it('should return true for parents', function(){
+                expect(Ext.fly(child4_1).contains(child4_1_1)).toBe(true);
+            });
+            it('should return true for grandparents', function(){
+                expect(Ext.fly(child4).contains(child4_1_1)).toBe(true);
+            });
+            it('should return true for self', function(){
+                expect(Ext.fly(child4_1_1).contains(child4_1_1)).toBe(true);
+            });
+        });
+        
+        if (Ext.core.Element.prototype.isDescendent) describe("isDescendent", function(){
+            it('should return false for grandchildren', function(){
+                expect(Ext.fly(child4).isDescendent(child4_1_1)).toBe(false);
+            });
+            it('should return false for children', function(){
+                expect(Ext.fly(child4_1).isDescendent(child4_1_1)).toBe(false);
+            });
+            it('should return false for siblings', function(){
+                expect(Ext.fly(child4_1_1).isDescendent(child1)).toBe(false);
+                expect(Ext.fly(child4_1_1).isDescendent(child2)).toBe(false);
+            });
+            it('should return true for parents', function(){
+                expect(Ext.fly(child4_1_1).isDescendent(child4_1)).toBe(true);
+            });
+            it('should return true for grandparents', function(){
+                expect(Ext.fly(child4_1_1).isDescendent(child4)).toBe(true);
+            });
+            it('should return true for self', function(){
+                expect(Ext.fly(child4_1_1).isDescendent(child4_1_1)).toBe(true);
+            });
 
+        });
+    })
+    
+}, "/src/dom/Element.traversal.js");

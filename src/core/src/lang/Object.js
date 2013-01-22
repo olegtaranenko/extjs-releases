@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @author Jacky Nguyen <jacky@sencha.com>
  * @docauthor Jacky Nguyen <jacky@sencha.com>
@@ -24,7 +10,21 @@ If you are unsure which license is appropriate for your use, please contact the 
 
 (function() {
 
+// The "constructor" for chain:
+var TemplateClass = function(){};
+
 var ExtObject = Ext.Object = {
+
+    /**
+     * Returns a new object with the given object as the prototype chain.
+     * @param {Object} object The prototype chain for the new object.
+     */
+    chain: function (object) {
+        TemplateClass.prototype = object;
+        var result = new TemplateClass();
+        TemplateClass.prototype = null;
+        return result;
+    },
 
     /**
      * Converts a `name` - `value` pair to an array of objects with support for nested structures. Useful to construct
@@ -227,13 +227,7 @@ var ExtObject = Ext.Object = {
 
                     //<debug error>
                     if (!matchedName) {
-                        Ext.Error.raise({
-                            sourceClass: "Ext.Object",
-                            sourceMethod: "fromQueryString",
-                            queryString: queryString,
-                            recursive: recursive,
-                            msg: 'Malformed query string given, failed parsing name from "' + part + '"'
-                        });
+                        throw new Error('[Ext.Object.fromQueryString] Malformed query string given, failed parsing name from "' + part + '"');
                     }
                     //</debug>
 
@@ -324,7 +318,7 @@ var ExtObject = Ext.Object = {
      *     var extjs = {
      *         companyName: 'Ext JS',
      *         products: ['Ext JS', 'Ext GWT', 'Ext Designer'],
-     *         isSuperCool: true
+     *         isSuperCool: true,
      *         office: {
      *             size: 2000,
      *             location: 'Palo Alto',
@@ -347,9 +341,9 @@ var ExtObject = Ext.Object = {
      *     {
      *         companyName: 'Sencha Inc.',
      *         products: ['Ext JS', 'Ext GWT', 'Ext Designer', 'Sencha Touch', 'Sencha Animator'],
-     *         isSuperCool: true
+     *         isSuperCool: true,
      *         office: {
-     *             size: 30000,
+     *             size: 40000,
      *             location: 'Redwood City'
      *             isFun: true
      *         }
@@ -358,33 +352,25 @@ var ExtObject = Ext.Object = {
      * @param {Object...} object Any number of objects to merge.
      * @return {Object} merged The object that is created as a result of merging all the objects passed in.
      */
-    merge: function(source, key, value) {
-        if (typeof key === 'string') {
-            if (value && value.constructor === Object) {
-                if (source[key] && source[key].constructor === Object) {
-                    ExtObject.merge(source[key], value);
-                }
-                else {
-                    source[key] = Ext.clone(value);
-                }
-            }
-            else {
-                source[key] = value;
-            }
+    merge: function(source) {
+        var i, ln, object, key, value;
 
-            return source;
-        }
-
-        var i = 1,
-            ln = arguments.length,
-            object, property;
-
-        for (; i < ln; i++) {
+        for (i = 1,ln = arguments.length; i < ln; i++) {
             object = arguments[i];
 
-            for (property in object) {
-                if (object.hasOwnProperty(property)) {
-                    ExtObject.merge(source, property, object[property]);
+            for (key in object) {
+                value = object[key];
+
+                if (value && value.constructor === Object) {
+                    if (source[key] && source[key].constructor === Object) {
+                        ExtObject.merge(source[key], value);
+                    }
+                    else {
+                        source[key] = Ext.clone(value);
+                    }
+                }
+                else {
+                    source[key] = value;
                 }
             }
         }
@@ -487,6 +473,41 @@ var ExtObject = Ext.Object = {
         }
 
         return size;
+    },
+
+    /**
+     * @private
+     */
+    classify: function(object) {
+        var prototype = object,
+            objectProperties = [],
+            propertyClassesMap = {},
+            objectClass = function() {
+                var i = 0,
+                    ln = objectProperties.length,
+                    property;
+
+                for (; i < ln; i++) {
+                    property = objectProperties[i];
+                    this[property] = new propertyClassesMap[property];
+                }
+            },
+            key, value;
+
+        for (key in object) {
+            if (object.hasOwnProperty(key)) {
+                value = object[key];
+
+                if (value && value.constructor === Object) {
+                    objectProperties.push(key);
+                    propertyClassesMap[key] = ExtObject.classify(value);
+                }
+            }
+        }
+
+        objectClass.prototype = prototype;
+
+        return objectClass;
     }
 };
 
@@ -518,7 +539,7 @@ Ext.urlEncode = function() {
         args[1] = false;
     }
 
-    return prefix + Ext.Object.toQueryString.apply(Ext.Object, args);
+    return prefix + ExtObject.toQueryString.apply(ExtObject, args);
 };
 
 /**
@@ -530,8 +551,7 @@ Ext.urlEncode = function() {
  * @deprecated 4.0.0 Use {@link Ext.Object#fromQueryString} instead
  */
 Ext.urlDecode = function() {
-    return Ext.Object.fromQueryString.apply(Ext.Object, arguments);
+    return ExtObject.fromQueryString.apply(ExtObject, arguments);
 };
 
 })();
-

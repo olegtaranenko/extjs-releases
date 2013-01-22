@@ -342,10 +342,10 @@ Ext.define('Ext.tab.Panel', {
     plain: false,
 
 <span id='Ext-tab-Panel-cfg-itemCls'>    /**
-</span>     * @cfg {String} itemCls
+</span>     * @cfg {String} [itemCls='x-tabpanel-child']
      * The class added to each child item of this TabPanel.
      */
-    itemCls: 'x-tabpanel-child',
+    itemCls: Ext.baseCSSPrefix + 'tabpanel-child',
 
 <span id='Ext-tab-Panel-cfg-minTabWidth'>    /**
 </span>     * @cfg {Number} minTabWidth
@@ -380,7 +380,7 @@ Ext.define('Ext.tab.Panel', {
             dockedItems = me.dockedItems || [],
             activeTab = me.activeTab || 0;
 
-        me.layout = Ext.create('Ext.layout.container.Card', Ext.apply({
+        me.layout = new Ext.layout.container.Card(Ext.apply({
             owner: me,
             deferredRender: me.deferredRender,
             itemCls: me.itemCls
@@ -389,7 +389,7 @@ Ext.define('Ext.tab.Panel', {
 <span id='Ext-tab-Panel-property-tabBar'>        /**
 </span>         * @property {Ext.tab.Bar} tabBar Internal reference to the docked TabBar
          */
-        me.tabBar = Ext.create('Ext.tab.Bar', Ext.apply({}, me.tabBar, {
+        me.tabBar = new Ext.tab.Bar(Ext.apply({}, me.tabBar, {
             dock: me.tabPosition,
             plain: me.plain,
             border: me.border,
@@ -505,13 +505,12 @@ Ext.define('Ext.tab.Panel', {
                 card: item,
                 disabled: item.disabled,
                 closable: item.closable,
-                hidden: item.hidden,
-                tabBar: me.tabBar
+                hidden: item.hidden &amp;&amp; !item.hiddenByLayout, // only hide if it wasn't hidden by the layout itself
+                tooltip: item.tooltip,
+                tabBar: me.tabBar,
+                closeText: item.closeText
             };
 
-        if (item.closeText) {
-            defaultConfig.closeText = item.closeText;
-        }
         cfg = Ext.applyIf(cfg, defaultConfig);
         item.tab = me.tabBar.insert(index, cfg);
 
@@ -534,11 +533,6 @@ Ext.define('Ext.tab.Panel', {
             if (item.isPanel &amp;&amp; me.border) {
                 item.setBorder(false);
             }
-        }
-
-        // ensure that there is at least one active tab
-        if (this.rendered &amp;&amp; me.items.getCount() === 1) {
-            me.setActiveTab(0);
         }
     },
 

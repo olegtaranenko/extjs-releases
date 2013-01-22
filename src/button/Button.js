@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @docauthor Robert Dougan <rob@sencha.com>
  *
@@ -187,8 +173,7 @@ Ext.define('Ext.button.Button', {
 
     /**
      * @cfg {String} icon
-     * The path to an image to display in the button (the image will be set as the background-image CSS property of the
-     * button by default, so if you want a mixed icon/text button, set cls:'x-btn-text-icon')
+     * The path to an image to display in the button.
      */
 
     /**
@@ -365,31 +350,39 @@ Ext.define('Ext.button.Button', {
      * override {@link #baseParams}. New params can be set using the {@link #setParams} method.
      */
 
-    ariaRole: 'button',
+    childEls: [
+        'btnEl', 'btnWrap', 'btnInnerEl', 'btnIconEl'
+    ],
 
-    // inherited
-    renderTpl:
-        '<em id="{id}-btnWrap" class="{splitCls}">' +
-            '<tpl if="href">' +
-                '<a id="{id}-btnEl" href="{href}" target="{target}"<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl> role="link">' +
-                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner">' +
-                        '{text}' +
-                    '</span>' +
-                        '<span id="{id}-btnIconEl" class="{baseCls}-icon"></span>' +
-                '</a>' +
-            '</tpl>' +
-            '<tpl if="!href">' +
-                '<button id="{id}-btnEl" type="{type}" hidefocus="true"' +
+    renderTpl: [
+        '<em id="{id}-btnWrap"',
+                '<tpl if="splitCls">',
+                    ' class="{splitCls}"',
+                '</tpl>',
+                '>',
+            '<tpl if="href">',
+                '<a id="{id}-btnEl" href="{href}" class="{btnCls}" target="{target}"<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl> role="link">',
+                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner"<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>>',
+                        '{text}',
+                    '</span>',
+                        '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}"></span>',
+                '</a>',
+            '<tpl else>',
+                '<button id="{id}-btnEl" type="{type}" class="{btnCls}" hidefocus="true"',
                     // the autocomplete="off" is required to prevent Firefox from remembering
                     // the button's disabled state between page reloads.
-                    '<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl> role="button" autocomplete="off">' +
-                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner" style="{innerSpanStyle}">' +
-                        '{text}' +
-                    '</span>' +
-                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}">&#160;</span>' +
-                '</button>' +
-            '</tpl>' +
-        '</em>' ,
+                    '<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl> role="button" autocomplete="off">',
+                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner" style="<tpl if="iconUrl">background-image:url({iconUrl});</tpl>{innerSpanStyle}">',
+                        '{text}',
+                    '</span>',
+                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}">&#160;</span>',
+                '</button>',
+            '</tpl>',
+        '</em>',
+        '<tpl if="closable">',
+            '<a id="{id}-closeEl" href="#" class="{baseCls}-close-btn" title="{closeText}"></a>',
+        '</tpl>'
+    ],
 
     /**
      * @cfg {String} scale
@@ -467,6 +460,14 @@ Ext.define('Ext.button.Button', {
      */
 
     maskOnDisable: false,
+    
+    /**
+     * @private
+     * @property persistentPadding
+     * The padding spuriously added to a &lt;button> element which must be accounted for in the margins of the innerEl.
+     * This is calculated at first render time by creating a hidden button and measuring its insides.
+     */
+    persistentPadding: undefined,
 
     // inherit docs
     initComponent: function() {
@@ -566,15 +567,6 @@ Ext.define('Ext.button.Button', {
 
     },
 
-    // private
-    initAria: function() {
-        this.callParent();
-        var actionEl = this.getActionEl();
-        if (this.menu) {
-            actionEl.dom.setAttribute('aria-haspopup', true);
-        }
-    },
-
     // inherit docs
     getActionEl: function() {
         return this.btnEl;
@@ -585,60 +577,107 @@ Ext.define('Ext.button.Button', {
         return this.btnEl;
     },
 
-    // private
-    setButtonCls: function() {
+    // private @override
+    // Buttons add the focus class to the *outermost element*, not the focusEl!
+    onFocus: function(e) {
         var me = this,
-            cls = [],
-            btnIconEl = me.btnIconEl,
-            hide = 'x-hide-display';
+            focusCls = me.focusCls,
+            targetEl = me.getEl();
 
-        if (me.useSetClass) {
-            if (!Ext.isEmpty(me.oldCls)) {
-                me.removeClsWithUI(me.oldCls);
-                me.removeClsWithUI(me.pressedCls);
+        if (!me.disabled) {
+            me.preFocus(e);
+            if (focusCls && targetEl) {
+                targetEl.addCls(me.addClsWithUI(focusCls, true));
             }
-
-            // Check whether the button has an icon or not, and if it has an icon, what is th alignment
-            if (me.iconCls || me.icon) {
-                if (me.text) {
-                    cls.push('icon-text-' + me.iconAlign);
-                } else {
-                    cls.push('icon');
-                }
-                if (btnIconEl) {
-                    btnIconEl.removeCls(hide);
-                }
-            } else {
-                if (me.text) {
-                    cls.push('noicon');
-                }
-                if (btnIconEl) {
-                    btnIconEl.addCls(hide);
-                }
+            if (!me.hasFocus) {
+                me.hasFocus = true;
+                me.fireEvent('focus', me, e);
             }
-
-            me.oldCls = cls;
-            me.addClsWithUI(cls);
-            me.addClsWithUI(me.pressed ? me.pressedCls : null);
         }
     },
 
-    // private
-    onRender: function(ct, position) {
-        // classNames for the button
+    // private @override
+    // Buttons add the focus class to the *outermost element*, not the focusEl!
+    onBlur : function(e) {
         var me = this,
-            repeater, btn;
+            focusCls = me.focusCls,
+            targetEl = me.getEl();
+
+        if (me.destroying) {
+            return;
+        }
+
+        me.beforeBlur(e);
+        if (focusCls && targetEl) {
+            targetEl.removeCls(me.removeClsWithUI(focusCls, true));
+        }
+        if (me.validateOnBlur) {
+            me.validate();
+        }
+        me.hasFocus = false;
+        me.fireEvent('blur', me, e);
+        me.postBlur(e);
+    },
+
+    // private
+    setComponentCls: function() {
+        var me = this,
+            cls = me.getComponentCls();
+
+        if (!Ext.isEmpty(me.oldCls)) {
+            me.removeClsWithUI(me.oldCls);
+            me.removeClsWithUI(me.pressedCls);
+        }
+
+        me.oldCls = cls;
+        me.addClsWithUI(cls);
+    },
+
+    getComponentCls: function() {
+        var me = this,
+            cls = [];
+
+        // Check whether the button has an icon or not, and if it has an icon, what is the alignment
+        if (me.iconCls || me.icon) {
+            if (me.text) {
+                cls.push('icon-text-' + me.iconAlign);
+            } else {
+                cls.push('icon');
+            }
+        } else if (me.text) {
+            cls.push('noicon');
+        }
+
+        cls.push.apply(cls, me.addClsWithUI(cls, true));
+        if (me.pressed) {
+            cls.push.apply(cls, me.addClsWithUI(me.pressedCls));
+        }
+        return cls;
+    },
+
+    beforeRender: function () {
+        var me = this;
+
+        me.callParent();
+
+        // Add all needed classes to the protoElement.
+        me.addCls(me.getComponentCls());
 
         // Apply the renderData to the template args
         Ext.applyIf(me.renderData, me.getTemplateArgs());
 
-        me.addChildEls('btnEl', 'btnWrap', 'btnInnerEl', 'btnIconEl');
-
         if (me.scale) {
-            me.ui = me.ui + '-' + me.scale;
+            me.setScale(me.scale);
         }
+    },
 
-        // Render internal structure
+    // private
+    onRender: function() {
+        var me = this,
+            btn,
+            btnListeners;
+
+        me.doc = Ext.getDoc();
         me.callParent(arguments);
 
         // If it is a split button + has a toolip for the arrow
@@ -646,47 +685,26 @@ Ext.define('Ext.button.Button', {
             me.arrowEl.dom.setAttribute(me.getTipAttr(), me.arrowTooltip);
         }
 
-        // Add listeners to the focus and blur events on the element
-        me.mon(me.btnEl, {
-            scope: me,
-            focus: me.onFocus,
-            blur : me.onBlur
-        });
-
         // Set btn as a local variable for easy access
         btn = me.el;
-
-        if (me.icon) {
-            me.setIcon(me.icon);
-        }
-
-        if (me.iconCls) {
-            me.setIconCls(me.iconCls);
-        }
 
         if (me.tooltip) {
             me.setTooltip(me.tooltip, true);
         }
 
-        if (me.textAlign) {
-            me.setTextAlign(me.textAlign);
-        }
-
         // Add the mouse events to the button
         if (me.handleMouseEvents) {
-            me.mon(btn, {
+            btnListeners = {
                 scope: me,
                 mouseover: me.onMouseOver,
                 mouseout: me.onMouseOut,
                 mousedown: me.onMouseDown
-            });
-
+            };
             if (me.split) {
-                me.mon(btn, {
-                    mousemove: me.onMouseMove,
-                    scope: me
-                });
+                btnListeners.mousemove = me.onMouseMove;
             }
+        } else {
+            btnListeners = {};
         }
 
         // Check if the button has a menu
@@ -697,7 +715,7 @@ Ext.define('Ext.button.Button', {
                 hide: me.onMenuHide
             });
 
-            me.keyMap = Ext.create('Ext.util.KeyMap', me.el, {
+            me.keyMap = new Ext.util.KeyMap(me.el, {
                 key: Ext.EventObject.DOWN,
                 handler: me.onDownKey,
                 scope: me
@@ -706,11 +724,13 @@ Ext.define('Ext.button.Button', {
 
         // Check if it is a repeat button
         if (me.repeat) {
-            repeater = Ext.create('Ext.util.ClickRepeater', btn, Ext.isObject(me.repeat) ? me.repeat: {});
-            me.mon(repeater, 'click', me.onRepeatClick, me);
+            me.mon(new Ext.util.ClickRepeater(btn, Ext.isObject(me.repeat) ? me.repeat: {}), 'click', me.onRepeatClick, me);
         } else {
-            me.mon(btn, me.clickEvent, me.onClick, me);
+            btnListeners[me.clickEvent] = me.onClick;
         }
+
+        // Add whatever button listeners we need
+        me.mon(btn, btnListeners);
 
         // Register the button in the toggle manager
         Ext.ButtonToggleManager.register(me);
@@ -735,7 +755,7 @@ Ext.define('Ext.button.Button', {
      */
     getTemplateArgs: function() {
         var me = this,
-            persistentPadding = me.getPersistentBtnPadding(),
+            persistentPadding = me.getPersistentPadding(),
             innerSpanStyle = '';
 
         // Create negative margin offsets to counteract persistent button padding if needed
@@ -749,9 +769,10 @@ Ext.define('Ext.button.Button', {
             href     : me.getHref(),
             target   : me.target || '_blank',
             type     : me.type,
+            btnCls   : me.getBtnCls(),
             splitCls : me.getSplitCls(),
-            cls      : me.cls,
-            iconCls  : me.iconCls || '',
+            iconUrl  : me.icon,
+            iconCls  : me.iconCls || Ext.baseCSSPrefix + 'hide-display',
             text     : me.text || '&#160;',
             tabIndex : me.tabIndex,
             innerSpanStyle: innerSpanStyle
@@ -789,13 +810,8 @@ Ext.define('Ext.button.Button', {
         return me.split ? (me.baseCls + '-' + me.arrowCls) + ' ' + (me.baseCls + '-' + me.arrowCls + '-' + me.arrowAlign) : '';
     },
 
-    // private
-    afterRender: function() {
-        var me = this;
-        me.useSetClass = true;
-        me.setButtonCls();
-        me.doc = Ext.getDoc();
-        this.callParent(arguments);
+    getBtnCls: function() {
+        return this.align ? this.baseCls + '-' + this.align : '';
     },
 
     /**
@@ -814,7 +830,7 @@ Ext.define('Ext.button.Button', {
             // Remove the previous iconCls from the button
             btnIconEl.removeCls(oldCls);
             btnIconEl.addCls(cls || '');
-            me.setButtonCls();
+            me.setComponentCls();
         }
         return me;
     },
@@ -939,11 +955,11 @@ Ext.define('Ext.button.Button', {
     setText: function(text) {
         var me = this;
         me.text = text;
-        if (me.el) {
+        if (me.rendered) {
             me.btnInnerEl.update(text || '&#160;');
-            me.setButtonCls();
+            me.setComponentCls();
+            me.doComponentLayout();
         }
-        me.doComponentLayout();
         return me;
     },
 
@@ -955,12 +971,12 @@ Ext.define('Ext.button.Button', {
      */
     setIcon: function(icon) {
         var me = this,
-            iconEl = me.btnIconEl;
+            btnInnerEl = me.btnInnerEl;
             
         me.icon = icon;
-        if (iconEl) {
-            iconEl.setStyle('background-image', icon ? 'url(' + icon + ')': '');
-            me.setButtonCls();
+        if (btnInnerEl) {
+            btnInnerEl.setStyle('background-image', icon ? 'url(' + icon + ')': '');
+            me.setComponentCls();
         }
         return me;
     },
@@ -981,12 +997,11 @@ Ext.define('Ext.button.Button', {
      */
     toggle: function(state, suppressEvent) {
         var me = this;
-        state = state === undefined ? !me.pressed : !!state;
+        state = state === undefined ? !me.pressed: !!state;
         if (state !== me.pressed) {
             if (me.rendered) {
                 me[state ? 'addClsWithUI': 'removeClsWithUI'](me.pressedCls);
             }
-            me.btnEl.dom.setAttribute('aria-pressed', state);
             me.pressed = state;
             if (!suppressEvent) {
                 me.fireEvent('toggle', me, state);
@@ -1073,7 +1088,7 @@ Ext.define('Ext.button.Button', {
     },
     
     doToggle: function(){
-        var me = this;
+        var me = this;    
         if (me.enableToggle && (me.allowDepress !== false || !me.pressed)) {
             me.toggle();
         }
@@ -1266,20 +1281,6 @@ Ext.define('Ext.button.Button', {
     },
 
     // private
-    onFocus: function(e) {
-        var me = this;
-        if (!me.disabled) {
-            me.addClsWithUI(me.focusCls);
-        }
-    },
-
-    // private
-    onBlur: function(e) {
-        var me = this;
-        me.removeClsWithUI(me.focusCls);
-    },
-
-    // private
     onMouseDown: function(e) {
         var me = this;
         if (!me.disabled && e.button === 0) {
@@ -1335,56 +1336,56 @@ Ext.define('Ext.button.Button', {
      * element that cannot be removed. This method returns the size of that padding with a one-time detection.
      * @return {Number[]} [top, right, bottom, left]
      */
-    getPersistentBtnPadding: function() {
-        var cls = Ext.button.Button,
-            padding = cls.persistentPadding,
+    getPersistentPadding: function() {
+        var me = this,
+            padding = me.persistentPadding,
             btn, leftTop, btnEl, btnInnerEl;
 
+        // Create auto-size button offscreen and measure its insides
+        // Short-circuit IE as it sometimes gives false positive for padding
         if (!padding) {
-            padding = cls.persistentPadding = [0, 0, 0, 0]; //set early to prevent recursion
-
-            if (!Ext.isIE) { //short-circuit IE as it sometimes gives false positive for padding
-                // Create auto-size button offscreen and measure its insides
-                btn = Ext.create('Ext.button.Button', {
-                    renderTo: Ext.getBody(),
+            padding = me.self.prototype.persistentPadding = [0, 0, 0, 0];
+            if (!Ext.isIE) {
+                btn = new Ext.button.Button({
                     text: 'test',
                     style: 'position:absolute;top:-999px;'
                 });
+                btn.el = Ext.DomHelper.append(Ext.getBody(), btn.getRenderTree(), true);
+                btn.applyChildEls(btn.el);
                 btnEl = btn.btnEl;
                 btnInnerEl = btn.btnInnerEl;
                 btnEl.setSize(null, null); //clear any hard dimensions on the button el to see what it does naturally
-
                 leftTop = btnInnerEl.getOffsetsTo(btnEl);
                 padding[0] = leftTop[1];
                 padding[1] = btnEl.getWidth() - btnInnerEl.getWidth() - leftTop[0];
                 padding[2] = btnEl.getHeight() - btnInnerEl.getHeight() - leftTop[1];
                 padding[3] = leftTop[0];
-
+                
                 btn.destroy();
+                btn.el.remove();
             }
         }
-
         return padding;
     }
-
 }, function() {
-    var groups = {};
+    var groups = {},
+        toggleGroup = function(btn, state) {
+            if (state) {
+                var g = groups[btn.toggleGroup],
+                    length = g.length,
+                    i;
 
-    function toggleGroup(btn, state) {
-        var g, i, l;
-        if (state) {
-            g = groups[btn.toggleGroup];
-            for (i = 0, l = g.length; i < l; i++) {
-                if (g[i] !== btn) {
-                    g[i].toggle(false);
+                for (i = 0; i < length; i++) {
+                    if (g[i] !== btn) {
+                        g[i].toggle(false);
+                    }
                 }
             }
-        }
-    }
+        };
 
     /**
      * Private utility class used by Button
-     * @hide
+     * @private
      */
     Ext.ButtonToggleManager = {
         register: function(btn) {
@@ -1430,4 +1431,3 @@ Ext.define('Ext.button.Button', {
         }
     };
 });
-

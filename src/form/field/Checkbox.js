@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @docauthor Robert Dougan <rob@sencha.com>
  *
@@ -106,19 +92,32 @@ Ext.define('Ext.form.field.Checkbox', {
     extend: 'Ext.form.field.Base',
     alias: ['widget.checkboxfield', 'widget.checkbox'],
     alternateClassName: 'Ext.form.Checkbox',
-    requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager'],
+    requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager', 'Ext.layout.component.field.BoxLabelField'],
+
+    componentLayout: 'boxlabelfield',
+
+    childEls: [
+        /**
+         * @property {Ext.Element} boxLabelEl
+         * A reference to the label element created for the {@link #boxLabel}. Only present if the component has been
+         * rendered and has a boxLabel configured.
+         */
+        'boxLabelEl'
+    ],
 
     // note: {id} here is really {inputId}, but {cmpId} is available
     fieldSubTpl: [
         '<tpl if="boxLabel && boxLabelAlign == \'before\'">',
             '<label id="{cmpId}-boxLabelEl" class="{boxLabelCls} {boxLabelCls}-{boxLabelAlign}" for="{id}">{boxLabel}</label>',
         '</tpl>',
-        // Creates not an actual checkbox, but a button which is given aria role="checkbox" and
+        // Creates not an actual checkbox, but a button which is given aria role="checkbox" (If ARIA is required) and
         // styled with a custom checkbox image. This allows greater control and consistency in
         // styling, and using a button allows it to gain focus and handle keyboard nav properly.
-        '<input type="button" id="{id}" ',
-            '<tpl if="tabIdx">tabIndex="{tabIdx}" </tpl>',
-            'class="{fieldCls} {typeCls}" autocomplete="off" hidefocus="true" />',
+        '<input type="button" id="{id}"',
+            '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
+            '<tpl if="disabled"> disabled="disabled"</tpl>',
+            '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
+            ' class="{fieldCls} {typeCls}" autocomplete="off" hidefocus="true" />',
         '<tpl if="boxLabel && boxLabelAlign == \'after\'">',
             '<label id="{cmpId}-boxLabelEl" class="{boxLabelCls} {boxLabelCls}-{boxLabelAlign}" for="{id}">{boxLabel}</label>',
         '</tpl>',
@@ -209,7 +208,6 @@ Ext.define('Ext.form.field.Checkbox', {
     // private overrides
     checkChangeEvents: [],
     inputType: 'checkbox',
-    ariaRole: 'checkbox',
 
     // private
     onRe: /^on$/i,
@@ -234,24 +232,24 @@ Ext.define('Ext.form.field.Checkbox', {
         me.setValue(checked);
     },
 
-    // private
-    onRender : function(ct, position) {
+    getElConfig: function() {
         var me = this;
 
-        /**
-         * @property {Ext.Element} boxLabelEl
-         * A reference to the label element created for the {@link #boxLabel}. Only present if the component has been
-         * rendered and has a boxLabel configured.
-         */
-        me.addChildEls('boxLabelEl');
+        // Add the checked class if this begins checked
+        if (me.isChecked(me.rawValue, me.inputValue)) {
+            me.addCls(me.checkedCls);
+        }
+        return me.callParent();
+    },
 
-        Ext.applyIf(me.subTplData, {
-            boxLabel: me.boxLabel,
-            boxLabelCls: me.boxLabelCls,
-            boxLabelAlign: me.boxLabelAlign
+    getSubTplData: function() {
+        var me = this;
+        return Ext.apply(me.callParent(), {
+            disabled      : me.readOnly || me.disabled,
+            boxLabel      : me.boxLabel,
+            boxLabelCls   : me.boxLabelCls,
+            boxLabelAlign : me.boxLabelAlign
         });
-
-        me.callParent(arguments);
     },
 
     initEvents: function() {
@@ -288,12 +286,18 @@ Ext.define('Ext.form.field.Checkbox', {
 
     /**
      * Returns the submit value for the checkbox which can be used when submitting forms.
-     * @return {Boolean/Object} True if checked; otherwise either the {@link #uncheckedValue} or null.
+     * @return {String} If checked the {@link #inputValye} is returned; otherwise the {@link #uncheckedValue}
+     * (or null if the latter is not configured).
      */
     getSubmitValue: function() {
         var unchecked = this.uncheckedValue,
             uncheckedVal = Ext.isDefined(unchecked) ? unchecked : null;
         return this.checked ? this.inputValue : uncheckedVal;
+    },
+
+    isChecked: function(rawValue, inputValue) {
+        return (rawValue === true || rawValue === 'true' || rawValue === '1' || rawValue === 1 ||
+                      (((Ext.isString(rawValue) || Ext.isNumber(rawValue)) && inputValue) ? rawValue == inputValue : this.onRe.test(rawValue)));
     },
 
     /**
@@ -307,12 +311,9 @@ Ext.define('Ext.form.field.Checkbox', {
     setRawValue: function(value) {
         var me = this,
             inputEl = me.inputEl,
-            inputValue = me.inputValue,
-            checked = (value === true || value === 'true' || value === '1' || value === 1 ||
-                (((Ext.isString(value) || Ext.isNumber(value)) && inputValue) ? value == inputValue : me.onRe.test(value)));
+            checked = me.isChecked(value, me.inputValue);
 
         if (inputEl) {
-            inputEl.dom.setAttribute('aria-checked', checked);
             me[checked ? 'addCls' : 'removeCls'](me.checkedCls);
         }
 
@@ -390,23 +391,18 @@ Ext.define('Ext.form.field.Checkbox', {
             inputEl = me.inputEl;
         if (inputEl) {
             // Set the button to disabled when readonly
-            inputEl.dom.disabled = readOnly || me.disabled;
+            inputEl.dom.disabled = !!readOnly || me.disabled;
         }
-        me.readOnly = readOnly;
+        me.callParent(arguments);
     },
 
-    // Calculates and returns the natural width of the bodyEl. It's possible that the initial rendering will
-    // cause the boxLabel to wrap and give us a bad width, so we must prevent wrapping while measuring.
+    /**
+     * Calculates and returns the natural width of the bodyEl.
+     */
     getBodyNaturalWidth: function() {
-        var me = this,
-            bodyEl = me.bodyEl,
-            ws = 'white-space',
-            width;
-        bodyEl.setStyle(ws, 'nowrap');
-        width = bodyEl.getWidth();
-        bodyEl.setStyle(ws, '');
-        return width;
+        var labelEl = this.boxLabelEl,
+            inputEl = this.inputEl;
+
+        return labelEl.dom.offsetWidth + labelEl.getMargin('lr') + inputEl.dom.offsetWidth + inputEl.getMargin('lr');
     }
-
 });
-

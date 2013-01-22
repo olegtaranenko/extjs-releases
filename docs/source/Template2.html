@@ -65,7 +65,7 @@ Ext.define('Ext.Template', {
 
     /* Begin Definitions */
 
-    requires: ['Ext.DomHelper', 'Ext.util.Format'],
+    requires: ['Ext.dom.Helper', 'Ext.util.Format'],
 
     inheritableStatics: {
 <span id='Ext-Template-static-method-from'>        /**
@@ -144,30 +144,32 @@ Ext.define('Ext.Template', {
 
     re: /\{([\w\-]+)(?:\:([\w\.]*)(?:\((.*?)?\))?)?\}/g,
 
-<span id='Ext-Template-method-applyTemplate'>    /**
+<span id='Ext-Template-method-apply'>    /**
 </span>     * Returns an HTML fragment of this template with the specified values applied.
      *
      * @param {Object/Array} values The template values. Can be an array if your params are numeric:
      *
      *     var tpl = new Ext.Template('Name: {0}, Age: {1}');
-     *     tpl.applyTemplate(['John', 25]);
+     *     tpl.apply(['John', 25]);
      *
      * or an object:
      *
      *     var tpl = new Ext.Template('Name: {name}, Age: {age}');
-     *     tpl.applyTemplate({name: 'John', age: 25});
+     *     tpl.apply({name: 'John', age: 25});
      *
      * @return {String} The HTML fragment
      */
-    applyTemplate: function(values) {
+    apply: function(values) {
         var me = this,
             useFormat = me.disableFormats !== true,
             fm = Ext.util.Format,
-            tpl = me;
+            tpl = me,
+            ret;
 
         if (me.compiled) {
-            return me.compiled(values);
+            return me.compiled(values).join('');
         }
+
         function fn(m, name, format, args) {
             if (format &amp;&amp; useFormat) {
                 if (args) {
@@ -186,7 +188,37 @@ Ext.define('Ext.Template', {
                 return values[name] !== undefined ? values[name] : &quot;&quot;;
             }
         }
-        return me.html.replace(me.re, fn);
+
+        ret = me.html.replace(me.re, fn);
+        return ret;
+    },
+
+<span id='Ext-Template-method-applyOut'>    /**
+</span>     * Appends the result of this template to the provided output array.
+     * @param {Object/Array} values The template values. See {@link #apply}.
+     * @param {Array} out The array to which output is pushed.
+     * @return {Array} The given out array.
+     */
+    applyOut: function(values, out) {
+        var me = this;
+
+        if (me.compiled) {
+            out.push.apply(out, me.compiled(values));
+        } else {
+            out.push(me.apply(values));
+        }
+
+        return out;
+    },
+
+<span id='Ext-Template-method-applyTemplate'>    /**
+</span>     * @method applyTemplate
+     * @member Ext.Template
+     * Alias for {@link #apply}.
+     * @alias Ext.Template#apply
+     */
+    applyTemplate: function () {
+        return this.apply.apply(this, arguments);
     },
 
 <span id='Ext-Template-method-set'>    /**
@@ -234,7 +266,7 @@ Ext.define('Ext.Template', {
         }
 
         bodyReturn = me.html.replace(me.compileARe, '\\\\').replace(me.compileBRe, '\\n').replace(me.compileCRe, &quot;\\'&quot;).replace(me.re, fn);
-        body = &quot;this.compiled = function(values){ return ['&quot; + bodyReturn + &quot;'].join('');};&quot;;
+        body = &quot;this.compiled = function(values){ return ['&quot; + bodyReturn + &quot;'];};&quot;;
         eval(body);
         return me;
     },
@@ -291,7 +323,7 @@ Ext.define('Ext.Template', {
 
     doInsert: function(where, el, values, returnEl) {
         el = Ext.getDom(el);
-        var newNode = Ext.DomHelper.insertHtml(where, el, this.applyTemplate(values));
+        var newNode = Ext.DomHelper.insertHtml(where, el, this.apply(values));
         return returnEl ? Ext.get(newNode, true) : newNode;
     },
 
@@ -305,18 +337,9 @@ Ext.define('Ext.Template', {
      */
     overwrite: function(el, values, returnElement) {
         el = Ext.getDom(el);
-        el.innerHTML = this.applyTemplate(values);
+        el.innerHTML = this.apply(values);
         return returnElement ? Ext.get(el.firstChild, true) : el.firstChild;
     }
-}, function() {
-
-<span id='Ext-Template-method-apply'>    /**
-</span>     * @method apply
-     * @member Ext.Template
-     * Alias for {@link #applyTemplate}.
-     * @alias Ext.Template#applyTemplate
-     */
-    this.createAlias('apply', 'applyTemplate');
 });
 </pre>
 </body>

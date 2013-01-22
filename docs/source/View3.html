@@ -367,7 +367,23 @@ Ext.define('Ext.view.View', {
              * @param {HTMLElement} node The node to be selected
              * @param {HTMLElement[]} selections Array of currently selected nodes
              */
-            'beforeselect'
+            'beforeselect',
+            
+<span id='Ext-view-View-event-highlightitem'>            /**
+</span>             * @event highlightitem
+             * Fires when a node is highlighted using keyboard navigation, or mouseover.
+             * @param {Ext.view.View} view This View Component.
+             * @param {Ext.Element} node The highlighted node.
+             */
+            'highlightitem',
+            
+<span id='Ext-view-View-event-unhighlightitem'>            /**
+</span>             * @event unhighlightitem
+             * Fires when a node is unhighlighted using keyboard navigation, or mouseout.
+             * @param {Ext.view.View} view This View Component.
+             * @param {Ext.Element} node The previously highlighted node.
+             */
+            'unhighlightitem'
         );
     },
     // private
@@ -585,6 +601,7 @@ Ext.define('Ext.view.View', {
         me.clearHighlight();
         me.highlightedItem = item;
         Ext.fly(item).addCls(me.overItemCls);
+        me.fireEvent('highlightitem', me, item);
     },
 
 <span id='Ext-view-View-method-clearHighlight'>    /**
@@ -596,16 +613,21 @@ Ext.define('Ext.view.View', {
 
         if (highlighted) {
             Ext.fly(highlighted).removeCls(me.overItemCls);
+            me.fireEvent('unhighlightitem', me, highlighted);
             delete me.highlightedItem;
         }
     },
 
     refresh: function() {
-        var me = this;
-        me.clearHighlight();
-        me.callParent(arguments);
-        if (!me.isFixedHeight()) {
-            me.doComponentLayout();
+        this.clearHighlight();
+        this.callParent(arguments);
+        this.refreshHeight();
+        
+    },
+    
+    refreshHeight: function(){
+        if (!this.isFixedHeight()) {
+            this.doComponentLayout();
         }
     }
 });</pre>

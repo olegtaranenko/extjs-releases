@@ -110,10 +110,12 @@ Ext.define('Ext.form.field.Number', {
     alternateClassName: ['Ext.form.NumberField', 'Ext.form.Number'],
 
 <span id='Ext-form-field-Number-cfg-stripCharsRe'>    /**
-</span>     * @cfg {RegExp} stripCharsRe @hide
+</span>     * @cfg {RegExp} stripCharsRe
+     * Not applicable for Number field.
      */
 <span id='Ext-form-field-Number-cfg-maskRe'>    /**
-</span>     * @cfg {RegExp} maskRe @hide
+</span>     * @cfg {RegExp} maskRe
+     * Not applicable for Number field.
      */
 
 <span id='Ext-form-field-Number-cfg-allowDecimals'>    /**
@@ -127,6 +129,14 @@ Ext.define('Ext.form.field.Number', {
      * Character(s) to allow as the decimal separator
      */
     decimalSeparator : '.',
+    
+<span id='Ext-form-field-Number-cfg-submitLocaleSeparator'>    /**
+</span>     * @cfg {Boolean} [submitLocaleSeparator=true]
+     * False to ensure that the {@link #getSubmitValue} method strips
+     * always uses `.` as the separator, regardless of the {@link #decimalSeparator}
+     * configuration.
+     */
+    submitLocaleSeparator: true,
 
 <span id='Ext-form-field-Number-cfg-decimalPrecision'>    /**
 </span>     * @cfg {Number} decimalPrecision
@@ -276,6 +286,16 @@ Ext.define('Ext.form.field.Number', {
         value = me.fixPrecision(value);
         value = Ext.isNumber(value) ? value : parseFloat(String(value).replace(decimalSeparator, '.'));
         value = isNaN(value) ? '' : String(value).replace('.', decimalSeparator);
+        return value;
+    },
+    
+    getSubmitValue: function() {
+        var me = this,
+            value = me.callParent();
+            
+        if (!me.submitLocaleSeparator) {
+            value = value.replace(me.decimalSeparator, '.');
+        }  
         return value;
     },
 

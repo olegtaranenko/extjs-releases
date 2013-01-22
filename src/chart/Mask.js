@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.Mask
  *
@@ -47,7 +33,10 @@ If you are unsure which license is appropriate for your use, please contact the 
  * 
  */
 Ext.define('Ext.chart.Mask', {
-    require: ['Ext.chart.MaskLayer'],
+    requires: [
+        'Ext.chart.MaskLayer'
+    ],
+
     /**
      * Creates new Mask.
      * @param {Object} config (optional) Config object.
@@ -60,11 +49,12 @@ Ext.define('Ext.chart.Mask', {
         if (config) {
             Ext.apply(me, config);
         }
-        if (me.mask) {
+        if (me.enableMask) {
             me.on('afterrender', function() {
                 //create a mask layer component
-                var comp = Ext.create('Ext.chart.MaskLayer', {
-                    renderTo: me.el
+                var comp = new Ext.chart.MaskLayer({
+                    renderTo: me.el,
+                    hidden: true
                 });
                 comp.el.on({
                     'mousemove': function(e) {
@@ -75,7 +65,7 @@ Ext.define('Ext.chart.Mask', {
                     }
                 });
                 //create a resize handler for the component
-                var resizeHandler = Ext.create('Ext.resizer.Resizer', {
+                var resizeHandler = new Ext.resizer.Resizer({
                     el: comp.el,
                     handles: 'all',
                     pinned: true

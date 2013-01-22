@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A specialized container representing the viewable application area (the browser viewport).
  *
@@ -153,9 +139,14 @@ Ext.define('Ext.container.Viewport', {
         var me = this,
             html = Ext.fly(document.body.parentNode),
             el;
+
+        // Get the DOM disruption over with beforfe the Viewport renders and begins a layout
+        Ext.getScrollbarSize();
+
         me.callParent(arguments);
         html.addCls(Ext.baseCSSPrefix + 'viewport');
         if (me.autoScroll) {
+            delete me.autoScroll;
             html.setStyle('overflow', 'auto');
         }
         me.el = el = Ext.getBody();
@@ -164,15 +155,34 @@ Ext.define('Ext.container.Viewport', {
         el.setSize = Ext.emptyFn;
         el.dom.scroll = 'no';
         me.allowDomMove = false;
-        Ext.EventManager.onWindowResize(me.fireResize, me);
         me.renderTo = me.el;
+    },
+    
+    onRender: function() {
+        var me = this;
+
+        me.callParent(arguments);
+
+        // Important to start life as the proper size (to avoid extra layouts)
+        // But after render so that the size is not stamped into the body
         me.width = Ext.Element.getViewportWidth();
         me.height = Ext.Element.getViewportHeight();
     },
 
-    fireResize : function(w, h){
-        // setSize is the single entry point to layouts
-        this.setSize(w, h);
+    afterFirstLayout: function() {
+        var me = this;
+
+        me.callParent(arguments);
+        setTimeout(function() {
+            Ext.EventManager.onWindowResize(me.fireResize, me);
+        }, 1);
+    },
+
+    fireResize : function(width, height){
+        // In IE we can get resize events that have our current size, so we ignore them
+        // to avoid the useless layout...
+        if (width != this.width || height != this.height) {
+            this.setSize(width, height);
+        }
     }
 });
-

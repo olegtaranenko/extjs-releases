@@ -34,12 +34,10 @@ Ext.define('Ext.util.AbstractMixedCollection', {
         me.keys = [];
         me.length = 0;
 
-        me.addEvents(
 <span id='Ext-util-AbstractMixedCollection-event-clear'>            /**
 </span>             * @event clear
              * Fires when the collection is cleared.
              */
-            'clear',
 
 <span id='Ext-util-AbstractMixedCollection-event-add'>            /**
 </span>             * @event add
@@ -48,7 +46,6 @@ Ext.define('Ext.util.AbstractMixedCollection', {
              * @param {Object} o The item added.
              * @param {String} key The key associated with the added item.
              */
-            'add',
 
 <span id='Ext-util-AbstractMixedCollection-event-replace'>            /**
 </span>             * @event replace
@@ -57,16 +54,12 @@ Ext.define('Ext.util.AbstractMixedCollection', {
              * @param {Object} old The item being replaced.
              * @param {Object} new The new item.
              */
-            'replace',
-
 <span id='Ext-util-AbstractMixedCollection-event-remove'>            /**
 </span>             * @event remove
              * Fires when an item is removed from the collection.
              * @param {Object} o The item being removed.
              * @param {String} key (optional) The key associated with the removed item.
              */
-            'remove'
-        );
 
         me.allowFunctions = allowFunctions === true;
 
@@ -438,7 +431,7 @@ mc.add(otherEl);
      * @return {Boolean} True if the collection contains the Object as an item.
      */
     contains : function(o){
-        return Ext.Array.contains(this.items, o);
+        return typeof this.map[this.getKey(o)] != 'undefined';
     },
 
 <span id='Ext-util-AbstractMixedCollection-method-containsKey'>    /**
@@ -614,7 +607,7 @@ var middleAged = people.filter('age', 24);
 
         //support for the simple case of filtering by property/value
         if (Ext.isString(property)) {
-            filters.push(Ext.create('Ext.util.Filter', {
+            filters.push(new Ext.util.Filter({
                 property     : property,
                 value        : value,
                 anyMatch     : anyMatch,

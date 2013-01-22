@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.layout.container.Absolute
- * @extends Ext.layout.container.Anchor
  *
  * This is a layout that inherits the anchoring of {@link Ext.layout.container.Anchor} and adds the
  * ability for x/y positioning using the standard x and y component config options.
@@ -74,33 +59,50 @@ Ext.define('Ext.layout.container.Absolute', {
 
     /* End Definitions */
 
+    targetCls: Ext.baseCSSPrefix + 'abs-layout-ct',
     itemCls: Ext.baseCSSPrefix + 'abs-layout-item',
 
     type: 'absolute',
 
-    onLayout: function() {
+    // private
+    adjustWidthAnchor: function(value, childContext) {
+        var padding = this.targetPadding,
+            x = childContext.getStyle('left');
+
+        return value - x + padding.left;
+    },
+
+    // private
+    adjustHeightAnchor: function(value, childContext) {
+        var padding = this.targetPadding,
+            y = childContext.getStyle('top');
+
+        return value - y + padding.top;
+    },
+
+    // private
+    isValidParent : function(item, target, position) {
+        // Note: Absolute layout does not care about order within the innerCt element because it's an absolutely positioning layout
+        // We only care whether the item is a direct child of the innerCt element.
+        var itemEl = item.el ? item.el.dom : Ext.getDom(item);
+        return (itemEl && itemEl.parentNode === this.getRenderTarget().dom) || false;
+    },
+
+    beginLayout: function (ownerContext) {
         var me = this,
-            target = me.getTarget(),
-            targetIsBody = target.dom === document.body;
+            target = me.getTarget();
+
+        me.callParent(arguments);
 
         // Do not set position: relative; when the absolute layout target is the body
-        if (!targetIsBody) {
+        if (target.dom !== document.body) {
             target.position();
         }
-        me.paddingLeft = target.getPadding('l');
-        me.paddingTop = target.getPadding('t');
-        me.callParent(arguments);
+
+        me.targetPadding = ownerContext.targetContext.getPaddingInfo();
     },
 
-    // private
-    adjustWidthAnchor: function(value, comp) {
-        //return value ? value - comp.getPosition(true)[0] + this.paddingLeft: value;
-        return value ? value - comp.getPosition(true)[0] : value;
-    },
-
-    // private
-    adjustHeightAnchor: function(value, comp) {
-        //return value ? value - comp.getPosition(true)[1] + this.paddingTop: value;
-        return value ? value - comp.getPosition(true)[1] : value;
+    isItemBoxParent: function (itemContext) {
+        return true;
     }
 });

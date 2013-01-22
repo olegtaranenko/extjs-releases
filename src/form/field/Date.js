@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @docauthor Jason Johnston <jason@sencha.com>
  *
@@ -468,7 +454,7 @@ Ext.define('Ext.form.field.Date', {
         var me = this,
             format = Ext.String.format;
 
-        return Ext.create('Ext.picker.Date', {
+        return new Ext.picker.Date({
             pickerField: me,
             ownerCt: me.ownerCt,
             renderTo: document.body,
@@ -539,20 +525,19 @@ Ext.define('Ext.form.field.Date', {
     }
 
     /**
-     * @hide
      * @cfg {Boolean} grow
+     * Not applicable for Date field.
      */
     /**
-     * @hide
      * @cfg {Number} growMin
+     * Not applicable for Date field.
      */
     /**
-     * @hide
      * @cfg {Number} growMax
+     * Not applicable for Date field.
      */
     /**
-     * @hide
      * @method autoSize
+     * Not applicable for Date field.
      */
 });
-

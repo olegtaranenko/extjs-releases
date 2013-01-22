@@ -58,7 +58,7 @@ Ext.define(&quot;Ext.util.Sortable&quot;, {
 </span>         * @property {Ext.util.MixedCollection} sorters
          * The collection of {@link Ext.util.Sorter Sorters} currently applied to this Store
          */
-        me.sorters = Ext.create('Ext.util.AbstractMixedCollection', false, function(item) {
+        me.sorters = new Ext.util.AbstractMixedCollection(false, function(item) {
             return item.id || item.property;
         });
 
@@ -237,7 +237,7 @@ Ext.define(&quot;Ext.util.Sortable&quot;, {
                     field = fields.get(config.property);
                     config.transform = field ? field.sortType : undefined;
                 }
-                sorters[i] = Ext.create('Ext.util.Sorter', config);
+                sorters[i] = new Ext.util.Sorter(config);
             }
         }
 

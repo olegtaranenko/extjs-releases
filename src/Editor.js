@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.Editor
- * @extends Ext.Component
  *
  * <p>
  * The Editor class is used to provide inline editing for elements on the page. The editor
@@ -52,15 +37,15 @@ Ext.define('Ext.Editor', {
 
     /* Begin Definitions */
 
-    extend: 'Ext.Component',
+    extend: 'Ext.container.Container',
 
     alias: 'widget.editor',
 
-    requires: ['Ext.layout.component.Editor'],
+    requires: ['Ext.layout.container.Editor'],
 
     /* End Definitions */
 
-   componentLayout: 'editor',
+   layout: 'editor',
 
     /**
     * @cfg {Ext.form.field.Field} field
@@ -189,7 +174,7 @@ autoSize: {
         me.mon(field, {
             scope: me,
             blur: {
-                fn: me.onBlur,
+                fn: me.onFieldBlur,
                 // slight delay to avoid race condition with startEdits (e.g. grid view refresh)
                 delay: 1
             },
@@ -197,11 +182,12 @@ autoSize: {
         });
 
         if (field.grow) {
-            me.mon(field, 'autosize', me.onAutoSize,  me, {delay: 1});
+            me.mon(field, 'autosize', me.onFieldAutosize,  me, {delay: 1});
         }
         me.floating = {
             constrain: me.constrain
         };
+        me.items = field;
 
         me.callParent(arguments);
 
@@ -265,20 +251,18 @@ autoSize: {
     },
 
     // private
-    onAutoSize: function(){
-        this.doComponentLayout();
+    onFieldAutosize: function(){
+        this.updateLayout();
     },
 
     // private
-    onRender : function(ct, position) {
+    afterRender : function(ct, position) {
         var me = this,
             field = me.field,
             inputEl = field.inputEl;
 
         me.callParent(arguments);
 
-        field.render(me.el);
-        //field.hide();
         // Ensure the field doesn't get submitted as part of any form
         if (inputEl) {
             inputEl.dom.name = '';
@@ -314,7 +298,7 @@ autoSize: {
             }, 10);
         }
 
-        this.fireEvent('specialkey', this, field, event);
+        me.fireEvent('specialkey', me, field, event);
     },
 
     /**
@@ -338,8 +322,11 @@ autoSize: {
         if (me.fireEvent('beforestartedit', me, me.boundEl, value) !== false) {
             me.startValue = value;
             me.show();
+            // temporarily suspend events on field to prevent the "change" event from firing when reset() and setValue() are called
+            field.suspendEvents();
             field.reset();
             field.setValue(value);
+            field.resumeEvents();
             me.realign(true);
             field.focus(false, 10);
             if (field.autoSize) {
@@ -356,7 +343,7 @@ autoSize: {
     realign : function(autoSize) {
         var me = this;
         if (autoSize === true) {
-            me.doComponentLayout();
+            me.updateLayout();
         }
         me.alignTo(me.boundEl, me.alignment, me.offsets);
     },
@@ -422,11 +409,15 @@ autoSize: {
     cancelEdit : function(remainVisible) {
         var me = this,
             startValue = me.startValue,
+            field = me.field,
             value;
 
         if (me.editing) {
             value = me.getValue();
+            // temporarily suspend events on field to prevent the "change" event from firing when setValue() is called
+            field.suspendEvents();
             me.setValue(startValue);
+            field.resumeEvents();
             me.hideEdit(remainVisible);
             me.fireEvent('canceledit', me, value, startValue);
         }
@@ -441,10 +432,10 @@ autoSize: {
     },
 
     // private
-    onBlur : function() {
+    onFieldBlur : function() {
         var me = this;
 
-        // selectSameEditor flag allows the same editor to be started without onBlur firing on itself
+        // selectSameEditor flag allows the same editor to be started without onFieldBlur firing on itself
         if(me.allowBlur === true && me.editing && me.selectSameEditor !== true) {
             me.completeEdit();
         }
@@ -459,7 +450,9 @@ autoSize: {
             me.completeEdit();
             return;
         }
-        field.blur();
+        if (field.hasFocus) {
+            field.blur();
+        }
         if (field.collapse) {
             field.collapse();
         }

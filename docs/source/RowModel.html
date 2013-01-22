@@ -17,7 +17,10 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-selection-RowModel'>/**
 </span> * @class Ext.selection.RowModel
- * @extends Ext.selection.Model
+ *
+ * Implements row based navigation via keyboard.
+ *
+ * Must synchronize across grid sections.
  */
 Ext.define('Ext.selection.RowModel', {
     extend: 'Ext.selection.Model',
@@ -94,7 +97,7 @@ Ext.define('Ext.selection.RowModel', {
 
         me.views = me.views || [];
         me.views.push(view);
-        me.bind(view.getStore(), true);
+        me.bindStore(view.getStore(), true);
 
         view.on({
             itemmousedown: me.onRowMouseDown,
@@ -436,6 +439,7 @@ Ext.define('Ext.selection.RowModel', {
                 }
             }
         }
+        this.callParent();
     },
 
     onEditorTab: function(editingPlugin, e) {
@@ -456,6 +460,7 @@ Ext.define('Ext.selection.RowModel', {
         var record = this.store.getAt(position.row);
         this.select(record);
     }
-});</pre>
+});
+</pre>
 </body>
 </html>

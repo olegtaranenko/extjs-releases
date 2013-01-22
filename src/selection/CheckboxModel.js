@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.selection.CheckboxModel
- * @extends Ext.selection.RowModel
  *
  * A selection model that renders a column of checkboxes that can be toggled to
  * select or deselect rows. The default mode for this selection model is MULTI.
@@ -47,6 +32,12 @@ Ext.define('Ext.selection.CheckboxModel', {
      * checkbox column.
      */
     checkOnly: false,
+    
+    /**
+     * @cfg {Boolean} showHeaderCheckbox <tt>false</tt> to not display the header checkbox at the top of the column.
+     * Defaults to <tt>true</tt>.
+     */
+    showHeaderCheckbox: true,
 
     headerWidth: 24,
 
@@ -128,14 +119,17 @@ Ext.define('Ext.selection.CheckboxModel', {
     onHeaderClick: function(headerCt, header, e) {
         if (header.isCheckerHd) {
             e.stopEvent();
-            var isChecked = header.el.hasCls(Ext.baseCSSPrefix + 'grid-hd-checker-on');
+            var me = this,
+                isChecked = header.el.hasCls(Ext.baseCSSPrefix + 'grid-hd-checker-on');
+                
+            // Prevent focus changes on the view, since we're selecting/deselecting all records
+            me.preventFocus = true;
             if (isChecked) {
-                // We have to supress the event or it will scrollTo the change
-                this.deselectAll(true);
+                me.deselectAll();
             } else {
-                // We have to supress the event or it will scrollTo the change
-                this.selectAll(true);
+                me.selectAll();
             }
+            delete me.preventFocus;
         }
     },
 
@@ -144,10 +138,11 @@ Ext.define('Ext.selection.CheckboxModel', {
      * This should be used when injectCheckbox is set to false.
      */
     getHeaderConfig: function() {
-        var me = this;
+        var me = this,
+            showCheck = me.showHeaderCheckbox !== false;
 
         return {
-            isCheckerHd: true,
+            isCheckerHd: showCheck,
             text : '&#160;',
             width: me.headerWidth,
             sortable: false,
@@ -156,7 +151,7 @@ Ext.define('Ext.selection.CheckboxModel', {
             hideable: false,
             menuDisabled: true,
             dataIndex: '',
-            cls: Ext.baseCSSPrefix + 'column-header-checkbox ',
+            cls: showCheck ? Ext.baseCSSPrefix + 'column-header-checkbox ' : '',
             renderer: Ext.Function.bind(me.renderer, me),
             locked: me.hasLockedHeader()
         };
@@ -168,8 +163,9 @@ Ext.define('Ext.selection.CheckboxModel', {
      * See {@link Ext.grid.column.Column#renderer} for description of allowed parameters.
      */
     renderer: function(value, metaData, record, rowIndex, colIndex, store, view) {
-        metaData.tdCls = Ext.baseCSSPrefix + 'grid-cell-special';
-        return '<div class="' + Ext.baseCSSPrefix + 'grid-row-checker">&#160;</div>';
+        var baseCSSPrefix = Ext.baseCSSPrefix;
+        metaData.tdCls = baseCSSPrefix + 'grid-cell-special ' + baseCSSPrefix + 'grid-cell-row-checker';
+        return '<div class="' + baseCSSPrefix + 'grid-row-checker">&#160;</div>';
     },
 
     // override
@@ -213,4 +209,3 @@ Ext.define('Ext.selection.CheckboxModel', {
         this.toggleUiHeader(hdSelectStatus);
     }
 });
-

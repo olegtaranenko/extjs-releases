@@ -327,7 +327,7 @@ Ext.define('Ext.chart.series.Line', {
             shadows, shadow, shindex, fromPath, fill, fillPath, rendererAttributes,
             x, y, prevX, prevY, firstX, firstY, markerCount, i, j, ln, axis, ends, marker, markerAux, item, xValue,
             yValue, coords, xScale, yScale, minX, maxX, minY, maxY, line, animation, endMarkerStyle,
-            endLineStyle, type, count, items;
+            endLineStyle, type, count;
 
         if (me.fireEvent('beforedraw', me) === false) {
             return;
@@ -335,14 +335,7 @@ Ext.define('Ext.chart.series.Line', {
 
         //if store is empty or the series is excluded in the legend then there's nothing to draw.
         if (!storeCount || me.seriesIsHidden) {
-            items = this.items;
-            if (items) {
-                for (i = 0, ln = items.length; i &lt; ln; ++i) {
-                    if (items[i].sprite) {
-                        items[i].sprite.hide(true);
-                    }
-                }
-            }
+            surface.items.hide(true);
             return;
         }
 

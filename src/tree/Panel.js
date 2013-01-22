@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * The TreePanel provides tree-structured UI representation of tree-structured data.
  * A TreePanel must be bound to a {@link Ext.data.TreeStore}. TreePanel's support
@@ -59,6 +45,12 @@ Ext.define('Ext.tree.Panel', {
     deferRowRender: false,
 
     /**
+     * @private
+     * @cfg {Boolean} [rowLines=false] False so that rows are not separated by lines.
+     */
+    rowLines: false,
+
+    /**
      * @cfg {Boolean} lines False to disable tree lines.
      */
     lines: true,
@@ -88,7 +80,7 @@ Ext.define('Ext.tree.Panel', {
     rootVisible: true,
 
     /**
-     * @cfg {Boolean} displayField The field inside the model that will be used as the node's text.
+     * @cfg {String} [displayField=text] The field inside the model that will be used as the node's text.
      */
     displayField: 'text',
 
@@ -139,7 +131,8 @@ Ext.define('Ext.tree.Panel', {
 
     initComponent: function() {
         var me = this,
-            cls = [me.treeCls];
+            cls = [me.treeCls],
+            view;
 
         if (me.useArrows) {
             cls.push(Ext.baseCSSPrefix + 'tree-arrows');
@@ -155,7 +148,7 @@ Ext.define('Ext.tree.Panel', {
         if (Ext.isString(me.store)) {
             me.store = Ext.StoreMgr.lookup(me.store);
         } else if (!me.store || Ext.isObject(me.store) && !me.store.isStore) {
-            me.store = Ext.create('Ext.data.TreeStore', Ext.apply({}, me.store || {}, {
+            me.store = new Ext.data.TreeStore(Ext.apply({}, me.store || {}, {
                 root: me.root,
                 fields: me.fields,
                 model: me.model,
@@ -282,11 +275,13 @@ Ext.define('Ext.tree.Panel', {
             if (me.initialConfig.hideHeaders === undefined) {
                 me.hideHeaders = true;
             }
+            me.autoWidth = true;
+            me.addCls(Ext.baseCSSPrefix + 'autowidth-table');
             me.columns = [{
                 xtype    : 'treecolumn',
                 text     : 'Name',
-                flex     : 1,
-                dataIndex: me.displayField
+                width    : Ext.isIE6 ? null : 10000,
+                dataIndex: me.displayField         
             }];
         }
 
@@ -295,19 +290,42 @@ Ext.define('Ext.tree.Panel', {
         }
         me.cls = cls.join(' ');
         me.callParent();
+        
+        view = me.getView();
 
-        me.relayEvents(me.getView(), [
+        // Only IE6 requires manual minimum sizing with a stretcher.
+        // All other browsers allow the 1000px wide header to impose a minimum size.
+        if (Ext.isIE6 && me.autoWidth) {
+            view.afterRender = Ext.Function.createSequence(view.afterRender, function() {
+                this.stretcher = view.el.down('th').createChild({style:"height:0px;width:" + (this.getWidth() - Ext.getScrollbarSize().width) + "px"});
+            });
+            view.afterComponentLayout = Ext.Function.createSequence(view.afterComponentLayout, function() {
+                this.stretcher.setWidth((this.getWidth() - Ext.getScrollbarSize().width));
+            });
+        }
+
+        me.relayEvents(view, [
             /**
              * @event checkchange
              * Fires when a node with a checkbox's checked property changes
              * @param {Ext.data.Model} node The node who's checked property was changed
              * @param {Boolean} checked The node's new checked state
              */
-            'checkchange'
+            'checkchange',
+            /**
+             * @event afteritemexpand
+             * @alias Ext.tree.View#afteritemexpand
+             */
+            'afteritemexpand',
+            /**
+             * @event afteritemcollapse
+             * @alias Ext.tree.View#afteritemcollapse
+             */
+            'afteritemcollapse'
         ]);
 
         // If the root is not visible and there is no rootnode defined, then just lets load the store
-        if (!me.getView().rootVisible && !me.getRootNode()) {
+        if (!view.rootVisible && !me.getRootNode()) {
             me.setRootNode({
                 expanded: true
             });
@@ -480,4 +498,3 @@ Ext.define('Ext.tree.Panel', {
         }, me);
     }
 });
-

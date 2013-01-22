@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @docauthor Jason Johnston <jason@sencha.com>
  * 
@@ -196,14 +182,19 @@ Ext.define('Ext.form.Panel', {
 
         me.form = me.createForm();
         me.callParent();
-        me.form.initialize();
+    },
+
+    // Initialize the BasicForm after all layouts have been completed.
+    afterFirstLayout: function() {
+        this.callParent();
+        this.form.initialize();
     },
 
     /**
      * @private
      */
     createForm: function() {
-        return Ext.create('Ext.form.Basic', this, Ext.applyIf({listeners: {}}, this.initialConfig));
+        return new Ext.form.Basic(this, Ext.applyIf({listeners: {}}, this.initialConfig));
     },
 
     /**
@@ -265,28 +256,6 @@ Ext.define('Ext.form.Panel', {
         this.form.submit(options);
     },
 
-    /*
-     * Inherit docs, not using onDisable because it only gets fired
-     * when the component is rendered.
-     */
-    disable: function(silent) {
-        this.callParent(arguments);
-        this.form.getFields().each(function(field) {
-            field.disable();
-        });
-    },
-
-    /*
-     * Inherit docs, not using onEnable because it only gets fired
-     * when the component is rendered.
-     */
-    enable: function(silent) {
-        this.callParent(arguments);
-        this.form.getFields().each(function(field) {
-            field.enable();
-        });
-    },
-
     /**
      * Start an interval task to continuously poll all the fields in the form for changes in their
      * values. This is normally started automatically by setting the {@link #pollForChanges} config.
@@ -294,7 +263,7 @@ Ext.define('Ext.form.Panel', {
      */
     startPolling: function(interval) {
         this.stopPolling();
-        var task = Ext.create('Ext.util.TaskRunner', interval);
+        var task = new Ext.util.TaskRunner(interval);
         task.start({
             interval: 0,
             run: this.checkChange,
@@ -324,4 +293,3 @@ Ext.define('Ext.form.Panel', {
         });
     }
 });
-

@@ -38,7 +38,7 @@ Ext.define('Ext.menu.Manager', {
     init: function() {
         var me = this;
         
-        me.active = Ext.create('Ext.util.MixedCollection');
+        me.active = new Ext.util.MixedCollection();
         Ext.getDoc().addKeyListener(27, function() {
             if (me.active.length &gt; 0) {
                 me.hideAll();
@@ -167,7 +167,7 @@ Ext.define('Ext.menu.Manager', {
         } else if (menu.isMenu) {  // menu instance
             return menu;
         } else if (Ext.isArray(menu)) { // array of menu items
-            return Ext.create('Ext.menu.Menu', {items:menu});
+            return new Ext.menu.Menu({items:menu});
         } else { // otherwise, must be a config
             return Ext.ComponentManager.create(menu, 'menu');
         }

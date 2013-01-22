@@ -197,7 +197,7 @@ Ext.define('Ext.chart.series.Area', {
             math = Math,
             mmin = math.min,
             mmax = math.max,
-            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem;
+            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem, axis, out;
 
         me.setBBox();
         bbox = me.bbox;
@@ -213,7 +213,7 @@ Ext.define('Ext.chart.series.Area', {
         }
 
         if (me.yField &amp;&amp; !Ext.isNumber(minY)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
+            axis = new Ext.chart.axis.Axis({
                 chart: chart,
                 fields: [].concat(me.yField)
             });
@@ -650,7 +650,7 @@ Ext.define('Ext.chart.series.Area', {
                 to.opacity = Math.max(area.__prevOpacity - 0.3, 0);
             }
             if (this.chart.animate) {
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', Ext.apply({
+                area.__highlightAnim = new Ext.fx.Anim(Ext.apply({
                     target: area,
                     to: to
                 }, this.chart.animate));
@@ -674,7 +674,7 @@ Ext.define('Ext.chart.series.Area', {
             }
             if (area.__highlighted) {
                 area.__highlighted = false;
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', {
+                area.__highlightAnim = new Ext.fx.Anim({
                     target: area,
                     to: {
                         fill: area.__prevFill,
@@ -929,7 +929,7 @@ Ext.define('Ext.chart.series.Area', {
             math = Math,
             mmin = math.min,
             mmax = math.max,
-            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem;
+            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem, axis, out;
 
         me.setBBox();
         bbox = me.bbox;
@@ -945,7 +945,7 @@ Ext.define('Ext.chart.series.Area', {
         }
 
         if (me.yField &amp;&amp; !Ext.isNumber(minY)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
+            axis = new Ext.chart.axis.Axis({
                 chart: chart,
                 fields: [].concat(me.yField)
             });
@@ -1382,7 +1382,7 @@ Ext.define('Ext.chart.series.Area', {
                 to.opacity = Math.max(area.__prevOpacity - 0.3, 0);
             }
             if (this.chart.animate) {
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', Ext.apply({
+                area.__highlightAnim = new Ext.fx.Anim(Ext.apply({
                     target: area,
                     to: to
                 }, this.chart.animate));
@@ -1406,7 +1406,7 @@ Ext.define('Ext.chart.series.Area', {
             }
             if (area.__highlighted) {
                 area.__highlighted = false;
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', {
+                area.__highlightAnim = new Ext.fx.Anim({
                     target: area,
                     to: {
                         fill: area.__prevFill,

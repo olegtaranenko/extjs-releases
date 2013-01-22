@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-direct-RemotingProvider'>/**
 </span> * @class Ext.direct.RemotingProvider
- * @extends Ext.direct.JsonProvider
  * 
  * &lt;p&gt;The {@link Ext.direct.RemotingProvider RemotingProvider} exposes access to
  * server side methods on the client (a remote procedure call (RPC) type of
@@ -164,7 +163,7 @@ TestAction.multiply(
             'call'
         );
         me.namespace = (Ext.isString(me.namespace)) ? Ext.ns(me.namespace) : me.namespace || window;
-        me.transactions = Ext.create('Ext.util.MixedCollection');
+        me.transactions = new Ext.util.MixedCollection();
         me.callBuffer = [];
     },
     
@@ -190,7 +189,7 @@ TestAction.multiply(
             methods = actions[action];
             
             for (i = 0, len = methods.length; i &lt; len; ++i) {
-                method = Ext.create('Ext.direct.RemotingMethod', methods[i]);
+                method = new Ext.direct.RemotingMethod(methods[i]);
                 cls[method.name] = this.createHandler(action, method);
             }
         }
@@ -308,7 +307,7 @@ TestAction.multiply(
                 if (transaction &amp;&amp; transaction.retryCount &lt; me.maxRetries) {
                     transaction.retry();
                 } else {
-                    event = Ext.create('Ext.direct.ExceptionEvent', {
+                    event = new Ext.direct.ExceptionEvent({
                         data: null,
                         transaction: transaction,
                         code: Ext.direct.Manager.self.exceptions.TRANSPORT,
@@ -349,7 +348,7 @@ TestAction.multiply(
             scope = callData.scope,
             transaction;
 
-        transaction = Ext.create('Ext.direct.Transaction', {
+        transaction = new Ext.direct.Transaction({
             provider: me,
             args: args,
             action: action,
@@ -437,7 +436,7 @@ TestAction.multiply(
         me.callBuffer.push(transaction);
         if (enableBuffer) {
             if (!me.callTask) {
-                me.callTask = Ext.create('Ext.util.DelayedTask', me.combineAndSend, me);
+                me.callTask = new Ext.util.DelayedTask(me.combineAndSend, me);
             }
             me.callTask.delay(Ext.isNumber(enableBuffer) ? enableBuffer : 10);
         } else {
@@ -470,7 +469,7 @@ TestAction.multiply(
      */
     configureFormRequest : function(action, method, form, callback, scope){
         var me = this,
-            transaction = Ext.create('Ext.direct.Transaction', {
+            transaction = new Ext.direct.Transaction({
                 provider: me,
                 action: action,
                 method: method.name,

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @author Ed Spencer, Tommy Maintz, Brian Moeskau
  *
@@ -339,10 +325,10 @@ Ext.define('Ext.tab.Panel', {
     plain: false,
 
     /**
-     * @cfg {String} itemCls
+     * @cfg {String} [itemCls='x-tabpanel-child']
      * The class added to each child item of this TabPanel.
      */
-    itemCls: 'x-tabpanel-child',
+    itemCls: Ext.baseCSSPrefix + 'tabpanel-child',
 
     /**
      * @cfg {Number} minTabWidth
@@ -377,7 +363,7 @@ Ext.define('Ext.tab.Panel', {
             dockedItems = me.dockedItems || [],
             activeTab = me.activeTab || 0;
 
-        me.layout = Ext.create('Ext.layout.container.Card', Ext.apply({
+        me.layout = new Ext.layout.container.Card(Ext.apply({
             owner: me,
             deferredRender: me.deferredRender,
             itemCls: me.itemCls
@@ -386,7 +372,7 @@ Ext.define('Ext.tab.Panel', {
         /**
          * @property {Ext.tab.Bar} tabBar Internal reference to the docked TabBar
          */
-        me.tabBar = Ext.create('Ext.tab.Bar', Ext.apply({}, me.tabBar, {
+        me.tabBar = new Ext.tab.Bar(Ext.apply({}, me.tabBar, {
             dock: me.tabPosition,
             plain: me.plain,
             border: me.border,
@@ -502,13 +488,12 @@ Ext.define('Ext.tab.Panel', {
                 card: item,
                 disabled: item.disabled,
                 closable: item.closable,
-                hidden: item.hidden,
-                tabBar: me.tabBar
+                hidden: item.hidden && !item.hiddenByLayout, // only hide if it wasn't hidden by the layout itself
+                tooltip: item.tooltip,
+                tabBar: me.tabBar,
+                closeText: item.closeText
             };
 
-        if (item.closeText) {
-            defaultConfig.closeText = item.closeText;
-        }
         cfg = Ext.applyIf(cfg, defaultConfig);
         item.tab = me.tabBar.insert(index, cfg);
 
@@ -531,11 +516,6 @@ Ext.define('Ext.tab.Panel', {
             if (item.isPanel && me.border) {
                 item.setBorder(false);
             }
-        }
-
-        // ensure that there is at least one active tab
-        if (this.rendered && me.items.getCount() === 1) {
-            me.setActiveTab(0);
         }
     },
 
@@ -628,4 +608,3 @@ Ext.define('Ext.tab.Panel', {
         }
     }
 });
-

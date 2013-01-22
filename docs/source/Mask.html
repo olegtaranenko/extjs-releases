@@ -50,7 +50,10 @@
  * 
  */
 Ext.define('Ext.chart.Mask', {
-    require: ['Ext.chart.MaskLayer'],
+    requires: [
+        'Ext.chart.MaskLayer'
+    ],
+
 <span id='Ext-chart-Mask-method-constructor'>    /**
 </span>     * Creates new Mask.
      * @param {Object} config (optional) Config object.
@@ -63,11 +66,12 @@ Ext.define('Ext.chart.Mask', {
         if (config) {
             Ext.apply(me, config);
         }
-        if (me.mask) {
+        if (me.enableMask) {
             me.on('afterrender', function() {
                 //create a mask layer component
-                var comp = Ext.create('Ext.chart.MaskLayer', {
-                    renderTo: me.el
+                var comp = new Ext.chart.MaskLayer({
+                    renderTo: me.el,
+                    hidden: true
                 });
                 comp.el.on({
                     'mousemove': function(e) {
@@ -78,7 +82,7 @@ Ext.define('Ext.chart.Mask', {
                     }
                 });
                 //create a resize handler for the component
-                var resizeHandler = Ext.create('Ext.resizer.Resizer', {
+                var resizeHandler = new Ext.resizer.Resizer({
                     el: comp.el,
                     handles: 'all',
                     pinned: true
@@ -231,6 +235,7 @@ Ext.define('Ext.chart.Mask', {
         me.maskSprite.hide(true);
     }
 });
-    </pre>
+    
+</pre>
 </body>
 </html>

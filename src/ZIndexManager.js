@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.ZIndexManager
  * <p>A class that manages a group of {@link Ext.Component#floating} Components and provides z-order management,
@@ -103,10 +89,11 @@ Ext.define('Ext.ZIndexManager', {
 
     // private
     _setActiveChild: function(comp) {
-        if (comp !== this.front) {
+        var front = this.front;
+        if (comp !== front) {
 
-            if (this.front) {
-                this.front.setActive(false, comp);
+            if (front && !front.destroying) {
+                front.setActive(false, comp);
             }
             this.front = comp;
             if (comp) {
@@ -119,25 +106,27 @@ Ext.define('Ext.ZIndexManager', {
     },
 
     // private
-    _activateLast: function(justHidden) {
-        var comp,
+    _activateLast: function() {
+        var me = this,
             lastActivated = false,
-            i;
+            stack = me.zIndexStack,
+            i = stack.length - 1,
+            comp;
 
         // Go down through the z-index stack.
         // Activate the next visible one down.
         // Keep going down to find the next visible modal one to shift the modal mask down under
-        for (i = this.zIndexStack.length-1; i >= 0; --i) {
-            comp = this.zIndexStack[i];
+        for (; i >= 0; --i) {
+            comp = stack[i];
             if (!comp.hidden) {
                 if (!lastActivated) {
-                    this._setActiveChild(comp);
+                    me._setActiveChild(comp);
                     lastActivated = true;
                 }
 
                 // Move any modal mask down to just under the next modal floater down the stack
                 if (comp.modal) {
-                    this._showModalMask(comp);
+                    me._showModalMask(comp);
                     return;
                 }
             }
@@ -145,46 +134,39 @@ Ext.define('Ext.ZIndexManager', {
 
         // none to activate, so there must be no modal mask.
         // And clear the currently active property
-        this._hideModalMask();
+        me._hideModalMask();
         if (!lastActivated) {
-            this._setActiveChild(null);
+            me._setActiveChild(null);
         }
     },
 
     _showModalMask: function(comp) {
-        var zIndex = comp.el.getStyle('zIndex') - 4,
+        var me = this,
+            zIndex = comp.el.getStyle('zIndex') - 4,
             maskTarget = comp.floatParent ? comp.floatParent.getTargetEl() : Ext.get(comp.getEl().dom.parentNode),
-            parentBox;
-        
-        if (!maskTarget) {
-            //<debug>
-            Ext.global.console && Ext.global.console.warn && Ext.global.console.warn('mask target could not be found. Mask cannot be shown');
-            //</debug>
-            return;
-        }
-        
-        parentBox = maskTarget.getBox();
+            parentBox = maskTarget.getBox();
 
-        if (!this.mask) {
-            this.mask = Ext.getBody().createChild({
+        if (!me.mask) {
+            me.mask = Ext.getBody().createChild({
                 cls: Ext.baseCSSPrefix + 'mask'
             });
-            this.mask.setVisibilityMode(Ext.Element.DISPLAY);
-            this.mask.on('click', this._onMaskClick, this);
+            me.mask.setVisibilityMode(Ext.Element.DISPLAY);
+            me.mask.on('click', me._onMaskClick, me);
         }
         if (maskTarget.dom === document.body) {
             parentBox.height = Ext.Element.getViewHeight();
         }
         maskTarget.addCls(Ext.baseCSSPrefix + 'body-masked');
-        this.mask.setBox(parentBox);
-        this.mask.setStyle('zIndex', zIndex);
-        this.mask.show();
+        me.mask.setBox(parentBox);
+        me.mask.setStyle('zIndex', zIndex);
+        me.mask.show();
     },
 
     _hideModalMask: function() {
-        if (this.mask && this.mask.dom.parentNode) {
-            Ext.get(this.mask.dom.parentNode).removeCls(Ext.baseCSSPrefix + 'body-masked');
-            this.mask.hide();
+        var mask = this.mask;
+        if (mask && mask.dom.parentNode) {
+            Ext.get(mask.dom.parentNode).removeCls(Ext.baseCSSPrefix + 'body-masked');
+            mask.hide();
         }
     },
 
@@ -195,8 +177,9 @@ Ext.define('Ext.ZIndexManager', {
     },
 
     _onContainerResize: function() {
-        if (this.mask && this.mask.isVisible()) {
-            this.mask.setSize(Ext.get(this.mask.dom.parentNode).getViewSize(true));
+        var mask = this.mask;
+        if (mask && mask.isVisible()) {
+            mask.setSize(Ext.get(mask.dom.parentNode).getViewSize(true));
         }
     },
 
@@ -212,14 +195,16 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * @param {Ext.Component} comp The Component to register.
      */
     register : function(comp) {
+        var me = this;
+        
         if (comp.zIndexManager) {
             comp.zIndexManager.unregister(comp);
         }
-        comp.zIndexManager = this;
+        comp.zIndexManager = me;
 
-        this.list[comp.id] = comp;
-        this.zIndexStack.push(comp);
-        comp.on('hide', this._activateLast, this);
+        me.list[comp.id] = comp;
+        me.zIndexStack.push(comp);
+        comp.on('hide', me._activateLast, me);
     },
 
     /**
@@ -229,14 +214,17 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * @param {Ext.Component} comp The Component to unregister.
      */
     unregister : function(comp) {
+        var me = this,
+            list = me.list;
+        
         delete comp.zIndexManager;
-        if (this.list && this.list[comp.id]) {
-            delete this.list[comp.id];
-            comp.un('hide', this._activateLast);
-            Ext.Array.remove(this.zIndexStack, comp);
+        if (list && list[comp.id]) {
+            delete list[comp.id];
+            comp.un('hide', me._activateLast);
+            Ext.Array.remove(me.zIndexStack, comp);
 
             // Destruction requires that the topmost visible floater be activated. Same as hiding.
-            this._activateLast(comp);
+            me._activateLast();
         }
     },
 
@@ -256,15 +244,17 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * if it was already in front
      */
     bringToFront : function(comp) {
-        comp = this.get(comp);
-        if (comp !== this.front) {
-            Ext.Array.remove(this.zIndexStack, comp);
-            this.zIndexStack.push(comp);
-            this.assignZIndices();
+        var me = this;
+        
+        comp = me.get(comp);
+        if (comp !== me.front) {
+            Ext.Array.remove(me.zIndexStack, comp);
+            me.zIndexStack.push(comp);
+            me.assignZIndices();
             return true;
         }
         if (comp.modal) {
-            this._showModalMask(comp);
+            me._showModalMask(comp);
         }
         return false;
     },
@@ -275,10 +265,12 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * @return {Ext.Component} The Component
      */
     sendToBack : function(comp) {
-        comp = this.get(comp);
-        Ext.Array.remove(this.zIndexStack, comp);
-        this.zIndexStack.unshift(comp);
-        this.assignZIndices();
+        var me = this;
+        
+        comp = me.get(comp);
+        Ext.Array.remove(me.zIndexStack, comp);
+        me.zIndexStack.unshift(comp);
+        me.assignZIndices();
         return comp;
     },
 
@@ -286,9 +278,16 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * Hides all Components managed by this ZIndexManager.
      */
     hideAll : function() {
-        for (var id in this.list) {
-            if (this.list[id].isComponent && this.list[id].isVisible()) {
-                this.list[id].hide();
+        var list = this.list,
+            item,
+            id;
+            
+        for (id in list) {
+            if (list.hasOwnProperty(id)) {
+                item = list[id];
+                if (item.isComponent && item.isVisible()) {
+                    item.hide();
+                }
             }
         }
     },
@@ -301,12 +300,13 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      */
     hide: function() {
         var i = 0,
-            ln = this.zIndexStack.length,
+            stack = this.zIndexStack,
+            len = stack.length,
             comp;
 
         this.tempHidden = [];
-        for (; i < ln; i++) {
-            comp = this.zIndexStack[i];
+        for (; i < len; i++) {
+            comp = stack[i];
             if (comp.isVisible()) {
                 this.tempHidden.push(comp);
                 comp.hide();
@@ -320,17 +320,14 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      */
     show: function() {
         var i = 0,
-            ln = this.tempHidden.length,
-            comp,
-            x,
-            y;
+            tempHidden = this.tempHidden,
+            len = tempHidden ? tempHidden.length : 0,
+            comp;
 
-        for (; i < ln; i++) {
-            comp = this.tempHidden[i];
-            x = comp.x;
-            y = comp.y;
+        for (; i < len; i++) {
+            comp = tempHidden[i];
             comp.show();
-            comp.setPosition(x, y);
+            comp.setPosition(comp.x, comp.y);
         }
         delete this.tempHidden;
     },
@@ -355,11 +352,12 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
     getBy : function(fn, scope) {
         var r = [],
             i = 0,
-            len = this.zIndexStack.length,
+            stack = this.zIndexStack,
+            len = stack.length,
             comp;
 
         for (; i < len; i++) {
-            comp = this.zIndexStack[i];
+            comp = stack[i];
             if (fn.call(scope||comp, comp) !== false) {
                 r.push(comp);
             }
@@ -374,11 +372,16 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * @param {Object} scope (optional) The scope (<code>this</code> reference) in which the function is executed. Defaults to the current Component in the iteration.
      */
     each : function(fn, scope) {
-        var comp;
-        for (var id in this.list) {
-            comp = this.list[id];
-            if (comp.isComponent && fn.call(scope || comp, comp) === false) {
-                return;
+        var list = this.list,
+            id,
+            comp;
+            
+        for (id in list) {
+            if (list.hasOwnProperty(id)) {
+                comp = list[id];
+                if (comp.isComponent && fn.call(scope || comp, comp) === false) {
+                    return;
+                }
             }
         }
     },
@@ -392,11 +395,12 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * is executed. Defaults to the current Component in the iteration.
      */
     eachBottomUp: function (fn, scope) {
-        var comp,
-            stack = this.zIndexStack,
-            i, n;
+        var stack = this.zIndexStack,
+            i = 0,
+            len = stack.length,
+            comp;
 
-        for (i = 0, n = stack.length ; i < n; i++) {
+        for (; i < len; i++) {
             comp = stack[i];
             if (comp.isComponent && fn.call(scope || comp, comp) === false) {
                 return;
@@ -413,11 +417,11 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      * is executed. Defaults to the current Component in the iteration.
      */
     eachTopDown: function (fn, scope) {
-        var comp,
-            stack = this.zIndexStack,
-            i;
+        var stack = this.zIndexStack,
+            i = stack.length,
+            comp;
 
-        for (i = stack.length ; i-- > 0; ) {
+        for (; i-- > 0; ) {
             comp = stack[i];
             if (comp.isComponent && fn.call(scope || comp, comp) === false) {
                 return;
@@ -426,13 +430,15 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
     },
 
     destroy: function() {
-        this.each(function(c) {
+        var me = this;
+        
+        me.each(function(c) {
             c.destroy();
         });
-        delete this.zIndexStack;
-        delete this.list;
-        delete this.container;
-        delete this.targetEl;
+        delete me.zIndexStack;
+        delete me.list;
+        delete me.container;
+        delete me.targetEl;
     }
 }, function() {
     /**
@@ -447,4 +453,3 @@ MyDesktop.getDesktop().getManager().register(Ext.MessageBox);
      */
     Ext.WindowManager = Ext.WindowMgr = new this();
 });
-

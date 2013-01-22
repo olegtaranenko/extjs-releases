@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.layout.container.boxOverflow.Menu
- * @extends Ext.layout.container.boxOverflow.None
  * @private
  */
 Ext.define('Ext.layout.container.boxOverflow.Menu', {
@@ -45,10 +30,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
 
         me.callParent(arguments);
 
-        // Before layout, we need to re-show all items which we may have hidden due to a previous overflow.
-        layout.beforeLayout = Ext.Function.createInterceptor(layout.beforeLayout, this.clearOverflow, this);
-
-        me.afterCtCls = me.afterCtCls || Ext.baseCSSPrefix + 'box-menu-' + layout.parallelAfter;
+        me.afterCtCls = me.afterCtCls || Ext.baseCSSPrefix + 'box-menu-' + layout.getNames().right;
         /**
          * @property menuItems
          * @type Array
@@ -56,29 +38,112 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
          */
         me.menuItems = [];
     },
-    
+
+    beginLayout: function (ownerContext) {
+        this.callParent(arguments);
+
+        // Before layout, we need to re-show all items which we may have hidden due to a
+        // previous overflow...
+        this.clearOverflow();
+    },
+
+    beginLayoutCycle: function (ownerContext, firstCycle) {
+        this.callParent(arguments);
+
+        if (!firstCycle) {
+            // if we are being re-run, we need to clear any overflow from the last run and
+            // recache the childItems collection
+            this.clearOverflow();
+
+            this.layout.cacheChildItems(ownerContext);
+        }
+    },
+
     onRemove: function(comp){
         Ext.Array.remove(this.menuItems, comp);
     },
 
-    handleOverflow: function(calculations, targetSize) {
+    // We don't define a prefix in menu overflow.
+    getSuffixConfig: function() {
         var me = this,
             layout = me.layout,
-            methodName = 'get' + layout.parallelPrefixCap,
-            newSize = {},
+            oid = layout.owner.id;
+
+        /**
+         * @private
+         * @property menu
+         * @type Ext.menu.Menu
+         * The expand menu - holds items for every item that cannot be shown
+         * because the container is currently not large enough.
+         */
+        me.menu = new Ext.menu.Menu({
+            listeners: {
+                scope: me,
+                beforeshow: me.beforeMenuShow
+            }
+        });
+
+        /**
+         * @private
+         * @property menuTrigger
+         * @type Ext.button.Button
+         * The expand button which triggers the overflow menu to be shown
+         */
+        me.menuTrigger = new Ext.button.Button({
+            id      : oid + '-menu-trigger',
+            style   : 'display:none',
+            hidden  : true,
+            ownerCt : layout.owner, // To enable the Menu to ascertain a valid zIndexManager owner in the same tree
+            iconCls : Ext.baseCSSPrefix + layout.owner.getXType() + '-more-icon',
+            ui      : layout.owner instanceof Ext.toolbar.Toolbar ? 'default-toolbar' : 'default',
+            menu    : me.menu,
+            getSplitCls: function() { return '';}
+        });
+
+        return {
+            id  : oid + '-overflow-el',
+            cls : Ext.layout.container.Box.prototype.innerCls + ' ' + me.afterCtCls,
+            cn  : me.menuTrigger.getRenderTree()
+        };
+    },
+    
+    getOverflowCls: function() {
+        return Ext.baseCSSPrefix + this.layout.direction + '-box-overflow-body';
+    },
+
+    handleOverflow: function(ownerContext) {
+        var me = this,
+            layout = me.layout,
+            names = layout.getNames(),
+            methodName = 'get' + names.widthCap,
+            plan = ownerContext.state.boxPlan,
             posArgs = [null, null];
 
-        me.callParent(arguments);
-        this.createMenu(calculations, targetSize);
-        newSize[layout.perpendicularPrefix] = targetSize[layout.perpendicularPrefix];
-        newSize[layout.parallelPrefix] = targetSize[layout.parallelPrefix] - me.afterCt[methodName]();
+        me.captureChildElements();
+        me.showTrigger(ownerContext);
 
         // Center the menuTrigger button.
         // TODO: Should we emulate align: 'middle' like this, or should we 'stretchmax' the menuTrigger?
-        posArgs[layout.perpendicularSizeIndex] = (calculations.meta.maxSize - me.menuTrigger['get' + layout.perpendicularPrefixCap]()) / 2;
+        posArgs[names.heightIndex] = (plan.maxSize - me.menuTrigger['get' + names.heightCap]()) / 2;
         me.menuTrigger.setPosition.apply(me.menuTrigger, posArgs);
 
-        return { targetSize: newSize };
+        return {
+            reservedSpace: me.afterCt[methodName]()
+        };
+    },
+
+    /**
+     * @private
+     * Captures reference to the the afterCt element and finishes the render operation of the trigger Button.
+     */
+    captureChildElements: function() {
+        var me = this,
+            el = me.layout.owner.el;
+
+        if (!me.afterCt) {
+            me.afterCt = el.getById(me.layout.owner.id + '-overflow-el');
+            me.menuTrigger.finishRender();
+        }
     },
 
     /**
@@ -87,33 +152,53 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
      * Also called as an interceptor to the layout's onLayout method to reshow
      * previously hidden overflowing items.
      */
-    clearOverflow: function(calculations, targetSize) {
+    clearOverflow: function() {
         var me = this,
-            newWidth = targetSize ? targetSize.width + (me.afterCt ? me.afterCt.getWidth() : 0) : 0,
             items = me.menuItems,
             i = 0,
-            length = items.length,
-            item;
+            length = items.length;
 
         me.hideTrigger();
         for (; i < length; i++) {
             items[i].show();
         }
         items.length = 0;
-
-        return targetSize ? {
-            targetSize: {
-                height: targetSize.height,
-                width : newWidth
-            }
-        } : null;
     },
 
     /**
      * @private
+     * Shows the overflow trigger when enableOverflow is set to true and the items
+     * in the layout are too wide to fit in the space available
      */
-    showTrigger: function() {
-        this.menuTrigger.show();
+    showTrigger: function(ownerContext) {
+        var me = this,
+            layout = me.layout,
+            names = layout.getNames(),
+            startProp = names.x,
+            sizeProp = names.width,
+            plan = ownerContext.state.boxPlan,
+            available = plan.targetSize[sizeProp],
+            childItems = ownerContext.childItems,
+            len = childItems.length,
+            childContext,
+            comp, i, props;
+
+        me.menuTrigger.show();
+        available -= me.afterCt.dom.offsetWidth;
+
+        // Hide all items which are off the end, and store them to allow them to be restored
+        // before each layout operation.
+        me.menuItems.length = 0;
+        for (i = 0; i < len; i++) {
+            childContext = childItems[i];
+            props = childContext.props;
+            if (props[startProp] + props[sizeProp] > available) {
+                comp = childContext.target;
+                me.menuItems.push(comp);
+                comp.hide();
+                // TODO - we need a way to abort the layout for the now hidden child...
+            }
+        }
     },
 
     /**
@@ -141,6 +226,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
             return group.isXType('buttongroup') && !(prev instanceof Ext.toolbar.Separator);
         };
 
+        menu.suspendLayouts();
         me.clearMenu();
         menu.removeAll();
 
@@ -163,6 +249,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
         if (menu.items.length < 1) {
             menu.add(me.noItemsMenuText);
         }
+        menu.resumeLayouts();
     },
     
     /**
@@ -244,85 +331,6 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
                     delete item.menu;
                 }
             });
-        }
-    },
-
-    /**
-     * @private
-     * Creates the overflow trigger and menu used when enableOverflow is set to true and the items
-     * in the layout are too wide to fit in the space available
-     */
-    createMenu: function(calculations, targetSize) {
-        var me = this,
-            layout = me.layout,
-            startProp = layout.parallelBefore,
-            sizeProp = layout.parallelPrefix,
-            available = targetSize[sizeProp],
-            boxes = calculations.boxes,
-            i = 0,
-            len = boxes.length,
-            box;
-
-        if (!me.menuTrigger) {
-            me.createInnerElements();
-
-            /**
-             * @private
-             * @property menu
-             * @type Ext.menu.Menu
-             * The expand menu - holds items for every item that cannot be shown
-             * because the container is currently not large enough.
-             */
-            me.menu = Ext.create('Ext.menu.Menu', {
-                listeners: {
-                    scope: me,
-                    beforeshow: me.beforeMenuShow
-                }
-            });
-
-            /**
-             * @private
-             * @property menuTrigger
-             * @type Ext.button.Button
-             * The expand button which triggers the overflow menu to be shown
-             */
-            me.menuTrigger = Ext.create('Ext.button.Button', {
-                ownerCt : me.layout.owner, // To enable the Menu to ascertain a valid zIndexManager owner in the same tree
-                iconCls : me.layout.owner.menuTriggerCls,
-                ui      : layout.owner instanceof Ext.toolbar.Toolbar ? 'default-toolbar' : 'default',
-                menu    : me.menu,
-                getSplitCls: function() { return '';},
-                renderTo: me.afterCt
-            });
-        }
-        me.showTrigger();
-        available -= me.afterCt.getWidth();
-
-        // Hide all items which are off the end, and store them to allow them to be restored
-        // before each layout operation.
-        me.menuItems.length = 0;
-        for (; i < len; i++) {
-            box = boxes[i];
-            if (box[startProp] + box[sizeProp] > available) {
-                me.menuItems.push(box.component);
-                box.component.hide();
-            }
-        }
-    },
-
-    /**
-     * @private
-     * Creates the beforeCt, innerCt and afterCt elements if they have not already been created
-     * @param {Ext.container.Container} container The Container attached to this Layout instance
-     * @param {Ext.Element} target The target Element
-     */
-    createInnerElements: function() {
-        var me = this,
-            target = me.layout.getRenderTarget();
-
-        if (!this.afterCt) {
-            target.addCls(Ext.baseCSSPrefix + me.layout.direction + '-box-overflow-body');
-            this.afterCt  = target.insertSibling({cls: Ext.layout.container.Box.prototype.innerCls + ' ' + this.afterCtCls}, 'before');
         }
     },
 

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * The Ext.grid.plugin.RowEditing plugin injects editing at a row level for a Grid. When editing begins,
  * a small floating dialog will be shown for the appropriate row. Each editable column will show a field
@@ -92,85 +78,28 @@ Ext.define('Ext.grid.plugin.RowEditing', {
      */
     errorSummary: true,
 
-    /**
-     * @event beforeedit
-     * Fires before row editing is triggered.
-     *
-     * @param {Ext.grid.plugin.Editing} editor
-     * @param {Object} e An edit event with the following properties:
-     *
-     * - grid - The grid this editor is on
-     * - view - The grid view
-     * - store - The grid store
-     * - record - The record being edited
-     * - row - The grid table row
-     * - column - The grid {@link Ext.grid.column.Column Column} defining the column that initiated the edit
-     * - rowIdx - The row index that is being edited
-     * - colIdx - The column index that initiated the edit
-     * - cancel - Set this to true to cancel the edit or return false from your handler.
-     */
-    
-    /**
-     * @event canceledit
-     * Fires when the user has started editing a row but then cancelled the edit
-     * @param {Object} grid The grid
-     */
-    
-    /**
-     * @event edit
-     * Fires after a row is edited. Usage example:
-     *
-     *     grid.on('edit', function(editor, e) {
-     *         // commit the changes right after editing finished
-     *         e.record.commit();
-     *     };
-     *
-     * @param {Ext.grid.plugin.Editing} editor
-     * @param {Object} e An edit event with the following properties:
-     *
-     * - grid - The grid this editor is on
-     * - view - The grid view
-     * - store - The grid store
-     * - record - The record being edited
-     * - row - The grid table row
-     * - column - The grid {@link Ext.grid.column.Column Column} defining the column that initiated the edit
-     * - rowIdx - The row index that is being edited
-     * - colIdx - The column index that initiated the edit
-     */
-    /**
-     * @event validateedit
-     * Fires after a cell is edited, but before the value is set in the record. Return false to cancel the change. The
-     * edit event object has the following properties
-     *
-     * Usage example showing how to remove the red triangle (dirty record indicator) from some records (not all). By
-     * observing the grid's validateedit event, it can be cancelled if the edit occurs on a targeted row (for example)
-     * and then setting the field's new value in the Record directly:
-     *
-     *     grid.on('validateedit', function(editor, e) {
-     *       var myTargetRow = 6;
-     *
-     *       if (e.rowIdx == myTargetRow) {
-     *         e.cancel = true;
-     *         e.record.data[e.field] = e.value;
-     *       }
-     *     });
-     *
-     * @param {Ext.grid.plugin.Editing} editor
-     * @param {Object} e An edit event with the following properties:
-     *
-     * - grid - The grid this editor is on
-     * - view - The grid view
-     * - store - The grid store
-     * - record - The record being edited
-     * - row - The grid table row
-     * - column - The grid {@link Ext.grid.column.Column Column} defining the column that initiated the edit
-     * - rowIdx - The row index that is being edited
-     * - colIdx - The column index that initiated the edit
-     * - cancel - Set this to true to cancel the edit or return false from your handler.
-     */
-
     constructor: function() {
         var me = this;
+        me.addEvents(
+            /**
+             * @event canceledit
+             * Fires when the user has started editing a row but then cancelled the edit.
+             * @param {Ext.grid.plugin.Editing} editor
+             * @param {Object} e An edit event with the following properties:
+             * 
+             * - grid - The grid
+             * - record - The record that was edited
+             * - field - The field name that was edited
+             * - value - The value being set
+             * - row - The grid table row
+             * - column - The grid {@link Ext.grid.column.Column Column} defining the column that was edited.
+             * - rowIdx - The row index that was edited
+             * - colIdx - The column index that was edited
+             * - view - The grid view
+             * - store - The grid store
+             */
+            'canceledit'
+        );
         me.callParent(arguments);
 
         if (!me.clicksToMoveEditor) {
@@ -178,6 +107,19 @@ Ext.define('Ext.grid.plugin.RowEditing', {
         }
 
         me.autoCancel = !!me.autoCancel;
+    },
+
+    init: function(grid) {
+        grid.relayEvents(this, [
+            /**
+             * @event canceledit
+             * Forwarded event from Ext.grid.plugin.RowEditing.
+             * @member Ext.grid.Panel
+             * @alias Ext.grid.plugin.RowEditing#canceledit
+             */
+            'canceledit'
+        ]);
+        this.callParent([grid]);
     },
 
     /**
@@ -217,7 +159,7 @@ Ext.define('Ext.grid.plugin.RowEditing', {
             me.getEditor().cancelEdit();
             me.callParent(arguments);
             
-            me.fireEvent('canceledit', me.context);
+            me.fireEvent('canceledit', me, me.context);
         }
     },
 
@@ -227,7 +169,7 @@ Ext.define('Ext.grid.plugin.RowEditing', {
 
         if (me.editing && me.validateEdit()) {
             me.editing = false;
-            me.fireEvent('edit', me.context);
+            me.fireEvent('edit', me, me.context);
         }
     },
 
@@ -298,19 +240,19 @@ Ext.define('Ext.grid.plugin.RowEditing', {
         if (me.clicksToMoveEditor !== me.clicksToEdit) {
             me.mon(view, 'cell' + moveEditorEvent, me.moveEditorByClick, me);
         }
-
-        view.on('render', function() {
-            // Column events
-            me.mon(headerCt, {
-                add: me.onColumnAdd,
-                remove: me.onColumnRemove,
-                columnresize: me.onColumnResize,
-                columnhide: me.onColumnHide,
-                columnshow: me.onColumnShow,
-                columnmove: me.onColumnMove,
-                scope: me
-            });
-        }, me, { single: true });
+    },
+    
+    addHeaderEvents: function(){
+        var me = this;
+        me.callParent();
+        
+        me.mon(me.grid.headerCt, {
+            scope: me,
+            columnresize: me.onColumnResize,
+            columnhide: me.onColumnHide,
+            columnshow: me.onColumnShow,
+            columnmove: me.onColumnMove
+        });
     },
 
     startEditByClick: function() {
@@ -326,7 +268,7 @@ Ext.define('Ext.grid.plugin.RowEditing', {
             me.superclass.startEditByClick.apply(me, arguments);
         }
     },
-
+    
     // private
     onColumnAdd: function(ct, column) {
         if (column.isHeader) {
@@ -407,4 +349,3 @@ Ext.define('Ext.grid.plugin.RowEditing', {
         me.getEditor().setField(column.field, column);
     }
 });
-

@@ -19,12 +19,14 @@
 </span> * @class Ext
  * @singleton
  */
+var Ext = Ext || {};
 (function() {
     var global = this,
         objectPrototype = Object.prototype,
         toString = objectPrototype.toString,
         enumerables = true,
         enumerablesTest = { toString: 1 },
+        emptyFn = function(){},
         i;
 
     if (typeof Ext === 'undefined') {
@@ -88,10 +90,16 @@
     }, Ext.buildSettings || {});
 
     Ext.apply(Ext, {
-<span id='Ext-method-emptyFn'>        /**
+<span id='Ext-property-emptyFn'>        /**
 </span>         * A reusable empty function
          */
-        emptyFn: function() {},
+        emptyFn: emptyFn,
+
+<span id='Ext-property-emptyString'>        /**
+</span>         * A zero length string which will pass a truth test. Useful for passing to methods
+         * which use a truth test to reject &lt;i&gt;falsy&lt;/i&gt; values where a string value must be cleared.
+         */
+        emptyString: new String(),
 
         baseCSSPrefix: Ext.buildSettings.baseCSSPrefix,
 
@@ -218,36 +226,16 @@
 
 <span id='Ext-method-override'>        /**
 </span>         * Proxy to {@link Ext.Base#override}. Please refer {@link Ext.Base#override} for further details.
-
-    Ext.define('My.cool.Class', {
-        sayHi: function() {
-            alert('Hi!');
-        }
-    }
-
-    Ext.override(My.cool.Class, {
-        sayHi: function() {
-            alert('About to say...');
-
-            this.callOverridden();
-        }
-    });
-
-    var cool = new My.cool.Class();
-    cool.sayHi(); // alerts 'About to say...'
-                  // alerts 'Hi!'
-
-         * Please note that `this.callOverridden()` only works if the class was previously
-         * created with {@link Ext#define)
          *
          * @param {Object} cls The class to override
-         * @param {Object} overrides The list of functions to add to origClass. This should be specified as an object literal
-         * containing one or more methods.
+         * @param {Object} overrides The properties to add to origClass. This should be specified as an object literal
+         * containing one or more properties.
          * @method override
          * @markdown
+         * @deprecated 4.1.0 Use {@link Ext#define Ext.define} instead
          */
         override: function(cls, overrides) {
-            if (cls.prototype.$className) {
+            if (cls.$isClass) {
                 return cls.override(overrides);
             }
             else {
@@ -397,6 +385,12 @@
             return toString.call(value) === '[object Object]';
         },
 
+<span id='Ext-method-isSimpleObject'>        /**
+</span>         * @private
+         */
+        isSimpleObject: function(value) {
+            return value instanceof Object &amp;&amp; value.constructor === Object;
+        },
 <span id='Ext-method-isPrimitive'>        /**
 </span>         * Returns true if the passed value is a JavaScript 'primitive', a string, number or boolean.
          * @param {Object} value The value to test
@@ -493,7 +487,19 @@
          * @return {Boolean}
          */
         isIterable: function(value) {
-            return (value &amp;&amp; typeof value !== 'string') ? value.length !== undefined : false;
+            var type = typeof value,
+                checkLength = false;
+            if (value &amp;&amp; type != 'string') {
+                // Functions have a length property, so we need to filter them out
+                if (type == 'function') {
+                    // In Safari, NodeList/HTMLCollection both return &quot;function&quot; when using typeof, so we need
+                    // to explicitly check them here.
+                    checkLength = value instanceof NodeList || value instanceof HTMLCollection;
+                } else {
+                    checkLength = true;
+                }
+            }
+            return checkLength ? value.length !== undefined : false;
         }
     });
 
@@ -574,19 +580,62 @@
 
             return uniqueGlobalNamespace;
         },
-
-<span id='Ext-method-functionFactory'>        /**
+        
+<span id='Ext-property-functionFactoryCache'>        /**
 </span>         * @private
          */
-        functionFactory: function() {
-            var args = Array.prototype.slice.call(arguments);
-
-            if (args.length &gt; 0) {
-                args[args.length - 1] = 'var Ext=window.' + this.getUniqueGlobalNamespace() + ';' +
-                    args[args.length - 1];
+        functionFactoryCache: {},
+        
+        cacheableFunctionFactory: function() {
+            var me = this,
+                args = Array.prototype.slice.call(arguments),
+                cache = me.functionFactoryCache,
+                idx, fn, ln;
+                
+             if (Ext.enableSandbox) {
+                ln = args.length;
+                if (ln &gt; 0) {
+                    ln--;
+                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                }
             }
-
+            idx = args.join('');
+            fn = cache[idx];
+            if (!fn) {
+                fn = Function.prototype.constructor.apply(Function.prototype, args);
+                
+                cache[idx] = fn;
+            }
+            return fn;
+        },
+        
+        functionFactory: function() {
+            var me = this,
+                args = Array.prototype.slice.call(arguments),
+                ln;
+                
+            if (Ext.enableSandbox) {
+                ln = args.length;
+                if (ln &gt; 0) {
+                    ln--;
+                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                }
+            }
+     
             return Function.prototype.constructor.apply(Function.prototype, args);
+        },
+
+<span id='Ext-property-Logger'>        /**
+</span>         * @property
+         * @private
+         */
+        Logger: {
+            verbose: emptyFn,
+            log: emptyFn,
+            info: emptyFn,
+            warn: emptyFn,
+            error: emptyFn,
+            deprecate: emptyFn
         }
     });
 

@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-grid-feature-Feature'>/**
 </span> * @class Ext.grid.feature.Feature
- * @extends Ext.util.Observable
  * 
  * A feature is a type of plugin that is specific to the {@link Ext.grid.Panel}. It provides several
  * hooks that allows the developer to inject additional functionality at certain points throughout the 
@@ -46,6 +45,10 @@ Ext.define('Ext.grid.feature.Feature', {
     alias: 'feature.feature',
     
     isFeature: true,
+    
+<span id='Ext-grid-feature-Feature-property-disabled'>    /**
+</span>     * True when feature is disabled.
+     */
     disabled: false,
     
 <span id='Ext-grid-feature-Feature-property-hasFeatureEvent'>    /**

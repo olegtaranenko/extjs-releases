@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.Layer
- * @extends Ext.Element
  * An extended {@link Ext.Element} object that supports a shadow and shim, constrain to viewport and
  * automatic maintaining of shadow/shim positions.
  *
@@ -58,14 +43,13 @@ If you are unsure which license is appropriate for your use, please contact the 
  * in a Component having zero dimensions.</li></ul></div>
  */
 Ext.define('Ext.Layer', {
+    extend: 'Ext.Element',
     uses: ['Ext.Shadow'],
 
     // shims are shared among layer to keep from having 100 iframes
     statics: {
         shims: []
     },
-
-    extend: 'Ext.Element',
 
     /**
      * Creates new Layer.
@@ -87,7 +71,7 @@ Ext.define('Ext.Layer', {
         if (!me.dom) {
             me.dom = dh.append(pel, config.dh || {
                 tag: 'div',
-                cls: Ext.baseCSSPrefix + 'layer'
+                cls: Ext.baseCSSPrefix + 'layer' // primarily to give el 'position:absolute'
             });
         } else {
             me.addCls(Ext.baseCSSPrefix + 'layer');
@@ -95,6 +79,14 @@ Ext.define('Ext.Layer', {
                 pel.appendChild(me.dom);
             }
         }
+
+        if (config.id) {
+            me.id = me.dom.id = config.id;
+        } else {
+            me.id = Ext.id(me.dom);
+        }
+
+        Ext.Element.addToCache(me);
 
         if (config.cls) {
             me.addCls(config.cls);
@@ -115,15 +107,9 @@ Ext.define('Ext.Layer', {
             me.setVisibilityMode(Ext.Element.VISIBILITY);
         }
 
-        if (config.id) {
-            me.id = me.dom.id = config.id;
-        } else {
-            me.id = Ext.id(me.dom);
-        }
-        me.position('absolute');
         if (config.shadow) {
             me.shadowOffset = config.shadowOffset || 4;
-            me.shadow = Ext.create('Ext.Shadow', {
+            me.shadow = new Ext.Shadow({
                 offset: me.shadowOffset,
                 mode: config.shadow
             });
@@ -528,4 +514,3 @@ Ext.define('Ext.Layer', {
         return this.callParent(arguments);
     }
 });
-

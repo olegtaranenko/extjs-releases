@@ -126,14 +126,15 @@ Ext.define('Ext.panel.Proxy', {
      * location.
      * @param {HTMLElement} parentNode The proxy's parent DOM node
      * @param {HTMLElement} [before] The sibling node before which the
-     * proxy should be inserted (defaults to the parent's last child if not
-     * specified)
+     * proxy should be inserted. Defaults to the parent's last child if not
+     * specified.
      */
     moveProxy : function(parentNode, before){
         if (this.proxy) {
             parentNode.insertBefore(this.proxy.dom, before);
         }
     }
-});</pre>
+});
+</pre>
 </body>
 </html>

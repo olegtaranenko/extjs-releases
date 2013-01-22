@@ -61,6 +61,12 @@ Ext.define('Ext.tree.Panel', {
 
     deferRowRender: false,
 
+<span id='Ext-tree-Panel-cfg-rowLines'>    /**
+</span>     * @private
+     * @cfg {Boolean} [rowLines=false] False so that rows are not separated by lines.
+     */
+    rowLines: false,
+
 <span id='Ext-tree-Panel-cfg-lines'>    /**
 </span>     * @cfg {Boolean} lines False to disable tree lines.
      */
@@ -91,7 +97,7 @@ Ext.define('Ext.tree.Panel', {
     rootVisible: true,
 
 <span id='Ext-tree-Panel-cfg-displayField'>    /**
-</span>     * @cfg {Boolean} displayField The field inside the model that will be used as the node's text.
+</span>     * @cfg {String} [displayField=text] The field inside the model that will be used as the node's text.
      */
     displayField: 'text',
 
@@ -142,7 +148,8 @@ Ext.define('Ext.tree.Panel', {
 
     initComponent: function() {
         var me = this,
-            cls = [me.treeCls];
+            cls = [me.treeCls],
+            view;
 
         if (me.useArrows) {
             cls.push(Ext.baseCSSPrefix + 'tree-arrows');
@@ -158,7 +165,7 @@ Ext.define('Ext.tree.Panel', {
         if (Ext.isString(me.store)) {
             me.store = Ext.StoreMgr.lookup(me.store);
         } else if (!me.store || Ext.isObject(me.store) &amp;&amp; !me.store.isStore) {
-            me.store = Ext.create('Ext.data.TreeStore', Ext.apply({}, me.store || {}, {
+            me.store = new Ext.data.TreeStore(Ext.apply({}, me.store || {}, {
                 root: me.root,
                 fields: me.fields,
                 model: me.model,
@@ -285,11 +292,13 @@ Ext.define('Ext.tree.Panel', {
             if (me.initialConfig.hideHeaders === undefined) {
                 me.hideHeaders = true;
             }
+            me.autoWidth = true;
+            me.addCls(Ext.baseCSSPrefix + 'autowidth-table');
             me.columns = [{
                 xtype    : 'treecolumn',
                 text     : 'Name',
-                flex     : 1,
-                dataIndex: me.displayField
+                width    : Ext.isIE6 ? null : 10000,
+                dataIndex: me.displayField         
             }];
         }
 
@@ -298,19 +307,42 @@ Ext.define('Ext.tree.Panel', {
         }
         me.cls = cls.join(' ');
         me.callParent();
+        
+        view = me.getView();
 
-        me.relayEvents(me.getView(), [
+        // Only IE6 requires manual minimum sizing with a stretcher.
+        // All other browsers allow the 1000px wide header to impose a minimum size.
+        if (Ext.isIE6 &amp;&amp; me.autoWidth) {
+            view.afterRender = Ext.Function.createSequence(view.afterRender, function() {
+                this.stretcher = view.el.down('th').createChild({style:&quot;height:0px;width:&quot; + (this.getWidth() - Ext.getScrollbarSize().width) + &quot;px&quot;});
+            });
+            view.afterComponentLayout = Ext.Function.createSequence(view.afterComponentLayout, function() {
+                this.stretcher.setWidth((this.getWidth() - Ext.getScrollbarSize().width));
+            });
+        }
+
+        me.relayEvents(view, [
 <span id='Ext-tree-Panel-event-checkchange'>            /**
 </span>             * @event checkchange
              * Fires when a node with a checkbox's checked property changes
              * @param {Ext.data.Model} node The node who's checked property was changed
              * @param {Boolean} checked The node's new checked state
              */
-            'checkchange'
+            'checkchange',
+<span id='Ext-tree-Panel-event-afteritemexpand'>            /**
+</span>             * @event afteritemexpand
+             * @alias Ext.tree.View#afteritemexpand
+             */
+            'afteritemexpand',
+<span id='Ext-tree-Panel-event-afteritemcollapse'>            /**
+</span>             * @event afteritemcollapse
+             * @alias Ext.tree.View#afteritemcollapse
+             */
+            'afteritemcollapse'
         ]);
 
         // If the root is not visible and there is no rootnode defined, then just lets load the store
-        if (!me.getView().rootVisible &amp;&amp; !me.getRootNode()) {
+        if (!view.rootVisible &amp;&amp; !me.getRootNode()) {
             me.setRootNode({
                 expanded: true
             });

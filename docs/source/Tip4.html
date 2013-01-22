@@ -38,7 +38,7 @@ Ext.define('Ext.chart.Tip', {
                 renderer: Ext.emptyFn,
                 constrainPosition: false
             });
-            me.tooltip = Ext.create('Ext.tip.ToolTip', me.tipConfig);
+            me.tooltip = new Ext.tip.ToolTip(me.tipConfig);
             me.chart.surface.on('mousemove', me.tooltip.onMouseMove, me.tooltip);
             me.chart.surface.on('mouseleave', function() {
                 me.hideTip();
@@ -47,7 +47,7 @@ Ext.define('Ext.chart.Tip', {
                 //initialize a surface
                 surface = me.tipConfig.surface;
                 sprites = surface.sprites;
-                tipSurface = Ext.create('Ext.chart.TipSurface', {
+                tipSurface = new Ext.chart.TipSurface({
                     id: 'tipSurfaceComponent',
                     sprites: sprites
                 });

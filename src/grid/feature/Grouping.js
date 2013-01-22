@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.grid.feature.Grouping
- * @extends Ext.grid.feature.Feature
  * 
  * This feature allows to display the grid rows aggregated into groups as specified by the {@link Ext.data.Store#groupers}
  * specified on the Store. The group will show the title for the group name and then the appropriate records for the group
@@ -45,7 +30,6 @@ If you are unsure which license is appropriate for your use, please contact the 
  *         startCollapsed: true // start all groups collapsed
  *     });
  * 
- * @ftype grouping
  * @author Nicolas Ferrero
  */
 Ext.define('Ext.grid.feature.Grouping', {
@@ -103,9 +87,36 @@ Ext.define('Ext.grid.feature.Grouping', {
      */
 
     /**
-     * @cfg {String} groupHeaderTpl
-     * Template snippet, this cannot be an actual template. {name} will be replaced with the current group.
-     * Defaults to 'Group: {name}'
+     * @cfg {String/Array/Ext.Template} groupHeaderTpl
+     * A string Template snippet, an array of strings (optionally followed by an object containing Template methods) to be used to construct a Template, or a Template instance.
+     * 
+     * - Example 1 (Template snippet):
+     * 
+     *       groupHeaderTpl: 'Group: {name}'
+     *     
+     * - Example 2 (Array):
+     * 
+     *       groupHeaderTpl: [
+     *           'Group: ',
+     *           '<div>{name:this.formatName}</div>',
+     *           {
+     *               formatName: function(name) {
+     *                   return Ext.String.trim(name);
+     *               }
+     *           }
+     *       ]
+     *     
+     * - Example 3 (Template Instance):
+     * 
+     *       groupHeaderTpl: Ext.create('Ext.XTemplate',
+     *           'Group: ',
+     *           '<div>{name:this.formatName}</div>',
+     *           {
+     *               formatName: function(name) {
+     *                   return Ext.String.trim(name);
+     *               }
+     *           }
+     *       )
      */
     groupHeaderTpl: 'Group: {name}',
 
@@ -196,12 +207,23 @@ Ext.define('Ext.grid.feature.Grouping', {
     },
 
     getFeatureTpl: function(values, parent, x, xcount) {
-        var me = this;
-        
+        var me = this,
+            tpl = me.groupHeaderTpl;
+
+        // if the groupHeaderTpl is a string or array, lets turn it into an XTemplate before proceeding
+        if(Ext.isString(tpl)) {
+            tpl = new Ext.XTemplate(tpl);
+        } else if(Ext.isArray(tpl)) {
+            tpl = Ext.Array.clone(tpl);
+            Ext.Array.splice(tpl, 0, 0, 'Ext.XTemplate');
+            tpl = Ext.create.apply(Ext, tpl);
+        }
+        me.groupHeaderTpl = tpl;
+   
         return [
             '<tpl if="typeof rows !== \'undefined\'">',
                 // group row tpl
-                '<tr class="' + Ext.baseCSSPrefix + 'grid-group-hd ' + (me.startCollapsed ? me.hdCollapsedCls : '') + ' {hdCollapsedCls}"><td class="' + Ext.baseCSSPrefix + 'grid-cell" colspan="' + parent.columns.length + '" {[this.indentByDepth(values)]}><div class="' + Ext.baseCSSPrefix + 'grid-cell-inner"><div class="' + Ext.baseCSSPrefix + 'grid-group-title">{collapsed}' + me.groupHeaderTpl + '</div></div></td></tr>',
+                '<tr class="' + Ext.baseCSSPrefix + 'grid-group-hd ' + (me.startCollapsed ? me.hdCollapsedCls : '') + ' {hdCollapsedCls}"><td class="' + Ext.baseCSSPrefix + 'grid-cell" colspan="' + parent.columns.length + '" {[this.indentByDepth(values)]}><div class="' + Ext.baseCSSPrefix + 'grid-cell-inner"><div class="' + Ext.baseCSSPrefix + 'grid-group-title">{collapsed}{[this.renderGroupHeaderTpl(values)]}</div></div></td></tr>',
                 // this is the rowbody
                 '<tr id="{viewId}-gp-{name}" class="' + Ext.baseCSSPrefix + 'grid-group-body ' + (me.startCollapsed ? me.collapsedCls : '') + ' {collapsedCls}"><td colspan="' + parent.columns.length + '">{[this.recurse(values)]}</td></tr>',
             '</tpl>'
@@ -209,9 +231,13 @@ Ext.define('Ext.grid.feature.Grouping', {
     },
 
     getFragmentTpl: function() {
+        var me = this;
         return {
-            indentByDepth: this.indentByDepth,
-            depthToIndent: this.depthToIndent
+            indentByDepth: me.indentByDepth,
+            depthToIndent: me.depthToIndent,
+            renderGroupHeaderTpl: function(values) {
+                return me.groupHeaderTpl.apply(values);
+            }
         };
     },
 
@@ -384,45 +410,85 @@ Ext.define('Ext.grid.feature.Grouping', {
     },
 
     /**
-     * Expand a group by the groupBody
-     * @param {Ext.Element} groupBd
-     * @private
+     * Expand a group
+     * @param {String/Ext.Element} group The group name, or the element that contains
+     * the group body
      */
-    expand: function(groupBd) {
+    expand: function(group, /*private*/ preventSizeCalculation) {
         var me = this,
             view = me.view,
             grid = view.up('gridpanel'),
-            groupBdDom = Ext.getDom(groupBd);
+            groupBdDom;
+            
+        
+        if (Ext.isString(group)) {
+            group = Ext.get(view.id + '-gp-' + group);
+        }    
+        groupBdDom = Ext.getDom(group);
             
         me.collapsedState[groupBdDom.id] = false;
 
-        groupBd.removeCls(me.collapsedCls);
-        groupBd.prev().removeCls(me.hdCollapsedCls);
+        group.removeCls(me.collapsedCls);
+        group.prev().removeCls(me.hdCollapsedCls);
 
-        grid.determineScrollbars();
-        grid.invalidateScroller();
+        if (preventSizeCalculation !== true) {
+            view.refreshHeight();
+        }
         view.fireEvent('groupexpand');
+    },
+    
+    /**
+     * Expand all groups
+     */
+    expandAll: function(){
+        var me = this,
+            view = me.view;
+            
+        view.el.select(me.eventSelector).each(function(group){
+            me.expand(group.next(), true);
+        });
+        view.refreshHeight();
     },
 
     /**
-     * Collapse a group by the groupBody
-     * @param {Ext.Element} groupBd
+     * Collapse a group
+     * @param {String/Ext.Element} group The group name, or the element that contains
+     * group body
      * @private
      */
-    collapse: function(groupBd) {
+    collapse: function(group, /*private*/ preventSizeCalculation) {
         var me = this,
             view = me.view,
             grid = view.up('gridpanel'),
-            groupBdDom = Ext.getDom(groupBd);
+            groupBdDom;
+            
+        if (Ext.isString(group)) {
+            group = Ext.get(view.id + '-gp-' + group);    
+        }
+        groupBdDom = Ext.getDom(group);
             
         me.collapsedState[groupBdDom.id] = true;
 
-        groupBd.addCls(me.collapsedCls);
-        groupBd.prev().addCls(me.hdCollapsedCls);
-
-        grid.determineScrollbars();
-        grid.invalidateScroller();
+        group.addCls(me.collapsedCls);
+        group.prev().addCls(me.hdCollapsedCls);
+        
+        if (preventSizeCalculation !== true) {
+            view.refreshHeight();
+        }
         view.fireEvent('groupcollapse');
+    },
+    
+    /**
+     * Collapse all groups
+     */
+    collapseAll: function(){
+        var me = this,
+            view = me.view;
+            
+        view.el.select(me.eventSelector).each(function(group){
+            me.collapse(group.next(), true);
+        });
+        view.refreshHeight();
     },
     
     onGroupChange: function(){
@@ -460,7 +526,7 @@ Ext.define('Ext.grid.feature.Grouping', {
             header = view.headerCt.down('gridcolumn[dataIndex=' + dataIndex + ']'),
             menu = view.headerCt.getMenu();
             
-        return menu.down('menuitem[headerId='+ header.id +']');
+        return header ? menu.down('menuitem[headerId='+ header.id +']') : null;
     },
 
     /**
@@ -518,6 +584,7 @@ Ext.define('Ext.grid.feature.Grouping', {
         // maintain the current tdAttr that a user may ahve set.
         o[tdAttrKey] = this.indentByDepth(data) + " " + (orig[tdAttrKey] ? orig[tdAttrKey] : '');
         o.collapsed = 'true';
+        o.data = record.getData();
         return o;
     },
 
@@ -581,4 +648,3 @@ Ext.define('Ext.grid.feature.Grouping', {
         return returnArray;
     }
 });
-

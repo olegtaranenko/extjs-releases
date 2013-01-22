@@ -1,24 +1,11 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.app.EventBus
  * @private
  */
 Ext.define('Ext.app.EventBus', {
     requires: [
-        'Ext.util.Event'
+        'Ext.util.Event',
+        'Ext.Component'
     ],
     mixins: {
         observable: 'Ext.util.Observable'
@@ -60,7 +47,7 @@ Ext.define('Ext.app.EventBus', {
                             // Fire the event!
                             if (event.fire.apply(event, Array.prototype.slice.call(args, 1)) === false) {
                                 return false;
-                            };
+                            }
                         }
                     }
                 }
@@ -84,7 +71,7 @@ Ext.define('Ext.app.EventBus', {
             Ext.Object.each(listeners, function(ev, listener) {
                 var options = {},
                     scope = controller,
-                    event = Ext.create('Ext.util.Event', controller, ev);
+                    event = new Ext.util.Event(controller, ev);
 
                 // Normalize the listener
                 if (Ext.isObject(listener)) {

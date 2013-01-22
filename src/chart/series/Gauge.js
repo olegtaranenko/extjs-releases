@@ -1,47 +1,52 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.series.Gauge
- * @extends Ext.chart.series.Series
  * 
  * Creates a Gauge Chart. Gauge Charts are used to show progress in a certain variable. There are two ways of using the Gauge chart.
  * One is setting a store element into the Gauge and selecting the field to be used from that store. Another one is instantiating the
  * visualization and using the `setValue` method to adjust the value you want.
  *
- * A chart/series configuration for the Gauge visualization could look like this:
- * 
- *     {
- *         xtype: 'chart',
+ * An example of Gauge visualization:
+ *
+ *     @example
+ *     var store = Ext.create('Ext.data.JsonStore', {
+ *         fields: ['data'],
+ *         data: [
+ *             { 'value':80 }
+ *         ]
+ *     });
+ *
+ *     Ext.create('Ext.chart.Chart', {
+ *         renderTo: Ext.getBody(),
  *         store: store,
+ *         width: 400,
+ *         height: 250,
+ *         animate: true,
+ *         insetPadding: 30,
  *         axes: [{
  *             type: 'gauge',
  *             position: 'gauge',
  *             minimum: 0,
  *             maximum: 100,
  *             steps: 10,
- *             margin: -10
+ *             margin: 10
  *         }],
  *         series: [{
  *             type: 'gauge',
- *             field: 'data1',
- *             donut: false,
+ *             field: 'value',
+ *             donut: 30,
  *             colorSet: ['#F49D10', '#ddd']
  *         }]
- *     }
+ *     });
+ *
+ *     Ext.widget("button", {
+ *         renderTo: Ext.getBody(),
+ *         text: "Refresh",
+ *         handler: function() {
+ *             store.getAt(0).set('value', Math.round(Math.random()*100));
+ *         }
+ *     });
  * 
- * In this configuration we create a special Gauge axis to be used with the gauge visualization (describing half-circle markers), and also we're
+ * In this example we create a special Gauge axis to be used with the gauge visualization (describing half-circle markers), and also we're
  * setting a maximum, minimum and steps configuration options into the axis. The Gauge series configuration contains the store field to be bound to
  * the visual display and the color set to be used with the visualization.
  * 
@@ -464,5 +469,4 @@ Ext.define('Ext.chart.series.Gauge', {
         return me.colorArrayStyle[index % me.colorArrayStyle.length];
     }
 });
-
 

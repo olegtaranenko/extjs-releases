@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.Date
  * A set of useful static methods to deal with date
@@ -144,7 +130,7 @@ function xf(format) {
 Ext.Date = {
     /**
      * Returns the current timestamp
-     * @return {Date} The current timestamp
+     * @return {Number} The current timestamp
      * @method
      */
     now: Date.now || function() {
@@ -999,6 +985,21 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
     dateFormat: function(date, format) {
         return utilDate.format(date, format);
     },
+    
+    /**
+     * Compares if two dates are equal by comparing their values.
+     * @param {Date} date1
+     * @param {Date} date2
+     * @return {Boolean} True if the date values are equal
+     */
+    isEqual: function(date1, date2) {
+        // check we have 2 date objects
+        if (date1 && date2) {
+            return (date1.getTime() === date2.getTime());
+        }
+        // one or both isn't a date, only equal if both are falsey
+        return !(date1 || date2);
+    },
 
     /**
      * Formats a date given the supplied format string.
@@ -1366,4 +1367,3 @@ console.log(dt2); //returns 'Tue Sep 26 2006 00:00:00'
 var utilDate = Ext.Date;
 
 })();
-

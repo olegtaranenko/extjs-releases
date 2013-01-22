@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A time picker which provides a list of times from which to choose. This is used by the Ext.form.field.Time
  * class to allow browsing and selection of valid times, but could also be used with other components.
@@ -63,7 +49,7 @@ Ext.define('Ext.picker.Time', {
     format : "g:i A",
 
     /**
-     * @hide
+     * @private
      * The field in the implicitly-generated Model objects that gets displayed in the list. This is
      * an internal field name only and is not useful to change via config.
      */
@@ -78,7 +64,8 @@ Ext.define('Ext.picker.Time', {
     componentCls: Ext.baseCSSPrefix + 'timepicker',
 
     /**
-     * @hide
+     * @cfg {Boolean/Object} loadMask
+     * Not applicable for Time picker.
      */
     loadMask: false,
 
@@ -166,11 +153,10 @@ Ext.define('Ext.picker.Time', {
             min = utilDate.add(min, 'mi', me.increment);
         }
 
-        return Ext.create('Ext.data.Store', {
+        return new Ext.data.Store({
             fields: ['disp', 'date'],
             data: times
         });
     }
 
 });
-

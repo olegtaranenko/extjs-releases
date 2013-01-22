@@ -103,13 +103,15 @@ Ext.define('Ext.data.proxy.Direct', {
     paramOrderRe: /[\s,|]/,
 
     constructor: function(config){
-        var me = this;
-
-        Ext.apply(me, config);
-        if (Ext.isString(me.paramOrder)) {
-            me.paramOrder = me.paramOrder.split(me.paramOrderRe);
-        }
+        var me = this,
+            paramOrder;
+            
         me.callParent(arguments);
+        
+        paramOrder = me.paramOrder;
+        if (Ext.isString(paramOrder)) {
+            me.paramOrder = paramOrder.split(me.paramOrderRe);
+        }
     },
 
     doRequest: function(operation, callback, scope) {

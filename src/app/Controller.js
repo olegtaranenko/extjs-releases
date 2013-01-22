@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.app.Controller
  *
@@ -209,18 +195,18 @@ Ext.define('Ext.app.Controller', {
      * 
      */
 
-    onClassExtended: function(cls, data) {
+    onClassExtended: function(cls, data, hooks) {
         var className = Ext.getClassName(cls),
             match = className.match(/^(.*)\.controller\./);
 
         if (match !== null) {
             var namespace = Ext.Loader.getPrefix(className) || match[1],
-                onBeforeClassCreated = data.onBeforeClassCreated,
+                onBeforeClassCreated = hooks.onBeforeCreated,
                 requires = [],
                 modules = ['model', 'view', 'store'],
                 prefix;
 
-            data.onBeforeClassCreated = function(cls, data) {
+            hooks.onBeforeCreated = function(cls, data) {
                 var i, ln, module,
                     items, j, subLn, item;
 
@@ -256,7 +242,6 @@ Ext.define('Ext.app.Controller', {
         this.mixins.observable.constructor.call(this, config);
 
         Ext.apply(this, config || {});
-
         this.createGetters('model', this.models);
         this.createGetters('store', this.stores);
         this.createGetters('view', this.views);
@@ -270,7 +255,7 @@ Ext.define('Ext.app.Controller', {
      * A template method that is called when your application boots. It is called before the
      * {@link Ext.app.Application Application}'s launch function is executed so gives a hook point to run any code before
      * your Viewport is created.
-     * 
+     *
      * @param {Ext.app.Application} application
      * @template
      */
@@ -279,7 +264,7 @@ Ext.define('Ext.app.Controller', {
     /**
      * A template method like {@link #init}, but called after the viewport is created.
      * This is called after the {@link Ext.app.Application#launch launch} method of Application is executed.
-     * 
+     *
      * @param {Ext.app.Application} application
      * @template
      */
@@ -315,7 +300,13 @@ Ext.define('Ext.app.Controller', {
             if (!me[fn]) {
                 me[fn] = Ext.Function.pass(me.getRef, [ref, info], me);
             }
+            me.references = me.references || [];
+            me.references.push(ref.toLowerCase());
         });
+    },
+
+    addRef: function(ref) {
+        return this.ref([ref]);
     },
 
     getRef: function(ref, info, config) {
@@ -346,6 +337,10 @@ Ext.define('Ext.app.Controller', {
         }
 
         return cached;
+    },
+
+    hasRef: function(ref) {
+        return this.references && this.references.indexOf(ref.toLowerCase()) !== -1;
     },
 
     /**
@@ -412,9 +407,9 @@ Ext.define('Ext.app.Controller', {
     /**
      * Returns a View class with the given name.  To create an instance of the view,
      * you can use it like it's used by Application to create the Viewport:
-     * 
+     *
      *     this.getView('Viewport').create();
-     * 
+     *
      * @param {String} name
      * @return {Ext.Base} a view class.
      */
@@ -422,4 +417,3 @@ Ext.define('Ext.app.Controller', {
         return this.application.getView(view);
     }
 });
-

@@ -80,7 +80,7 @@ Ext.define('Ext.selection.DataViewModel', {
             };
 
         me.view = view;
-        me.bind(view.getStore());
+        me.bindStore(view.getStore());
 
         view.on(view.triggerEvent, me.onItemClick, me);
         view.on(view.triggerCtEvent, me.onContainerClick, me);
@@ -113,7 +113,7 @@ Ext.define('Ext.selection.DataViewModel', {
         view.el.set({
             tabIndex: -1
         });
-        me.keyNav = Ext.create('Ext.util.KeyNav', view.el, {
+        me.keyNav = new Ext.util.KeyNav(view.el, {
             down: Ext.pass(me.onNavKey, [1], me),
             right: Ext.pass(me.onNavKey, [1], me),
             left: Ext.pass(me.onNavKey, [-1], me),

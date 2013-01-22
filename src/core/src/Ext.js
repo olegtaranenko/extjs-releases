@@ -1,27 +1,15 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext
  * @singleton
  */
+var Ext = Ext || {};
 (function() {
     var global = this,
         objectPrototype = Object.prototype,
         toString = objectPrototype.toString,
         enumerables = true,
         enumerablesTest = { toString: 1 },
+        emptyFn = function(){},
         i;
 
     if (typeof Ext === 'undefined') {
@@ -88,7 +76,13 @@ If you are unsure which license is appropriate for your use, please contact the 
         /**
          * A reusable empty function
          */
-        emptyFn: function() {},
+        emptyFn: emptyFn,
+
+        /**
+         * A zero length string which will pass a truth test. Useful for passing to methods
+         * which use a truth test to reject <i>falsy</i> values where a string value must be cleared.
+         */
+        emptyString: new String(),
 
         baseCSSPrefix: Ext.buildSettings.baseCSSPrefix,
 
@@ -215,36 +209,16 @@ If you are unsure which license is appropriate for your use, please contact the 
 
         /**
          * Proxy to {@link Ext.Base#override}. Please refer {@link Ext.Base#override} for further details.
-
-    Ext.define('My.cool.Class', {
-        sayHi: function() {
-            alert('Hi!');
-        }
-    }
-
-    Ext.override(My.cool.Class, {
-        sayHi: function() {
-            alert('About to say...');
-
-            this.callOverridden();
-        }
-    });
-
-    var cool = new My.cool.Class();
-    cool.sayHi(); // alerts 'About to say...'
-                  // alerts 'Hi!'
-
-         * Please note that `this.callOverridden()` only works if the class was previously
-         * created with {@link Ext#define)
          *
          * @param {Object} cls The class to override
-         * @param {Object} overrides The list of functions to add to origClass. This should be specified as an object literal
-         * containing one or more methods.
+         * @param {Object} overrides The properties to add to origClass. This should be specified as an object literal
+         * containing one or more properties.
          * @method override
          * @markdown
+         * @deprecated 4.1.0 Use {@link Ext#define Ext.define} instead
          */
         override: function(cls, overrides) {
-            if (cls.prototype.$className) {
+            if (cls.$isClass) {
                 return cls.override(overrides);
             }
             else {
@@ -395,6 +369,12 @@ If you are unsure which license is appropriate for your use, please contact the 
         },
 
         /**
+         * @private
+         */
+        isSimpleObject: function(value) {
+            return value instanceof Object && value.constructor === Object;
+        },
+        /**
          * Returns true if the passed value is a JavaScript 'primitive', a string, number or boolean.
          * @param {Object} value The value to test
          * @return {Boolean}
@@ -490,7 +470,19 @@ If you are unsure which license is appropriate for your use, please contact the 
          * @return {Boolean}
          */
         isIterable: function(value) {
-            return (value && typeof value !== 'string') ? value.length !== undefined : false;
+            var type = typeof value,
+                checkLength = false;
+            if (value && type != 'string') {
+                // Functions have a length property, so we need to filter them out
+                if (type == 'function') {
+                    // In Safari, NodeList/HTMLCollection both return "function" when using typeof, so we need
+                    // to explicitly check them here.
+                    checkLength = value instanceof NodeList || value instanceof HTMLCollection;
+                } else {
+                    checkLength = true;
+                }
+            }
+            return checkLength ? value.length !== undefined : false;
         }
     });
 
@@ -571,19 +563,62 @@ If you are unsure which license is appropriate for your use, please contact the 
 
             return uniqueGlobalNamespace;
         },
-
+        
         /**
          * @private
          */
-        functionFactory: function() {
-            var args = Array.prototype.slice.call(arguments);
-
-            if (args.length > 0) {
-                args[args.length - 1] = 'var Ext=window.' + this.getUniqueGlobalNamespace() + ';' +
-                    args[args.length - 1];
+        functionFactoryCache: {},
+        
+        cacheableFunctionFactory: function() {
+            var me = this,
+                args = Array.prototype.slice.call(arguments),
+                cache = me.functionFactoryCache,
+                idx, fn, ln;
+                
+             if (Ext.enableSandbox) {
+                ln = args.length;
+                if (ln > 0) {
+                    ln--;
+                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                }
             }
-
+            idx = args.join('');
+            fn = cache[idx];
+            if (!fn) {
+                fn = Function.prototype.constructor.apply(Function.prototype, args);
+                
+                cache[idx] = fn;
+            }
+            return fn;
+        },
+        
+        functionFactory: function() {
+            var me = this,
+                args = Array.prototype.slice.call(arguments),
+                ln;
+                
+            if (Ext.enableSandbox) {
+                ln = args.length;
+                if (ln > 0) {
+                    ln--;
+                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                }
+            }
+     
             return Function.prototype.constructor.apply(Function.prototype, args);
+        },
+
+        /**
+         * @property
+         * @private
+         */
+        Logger: {
+            verbose: emptyFn,
+            log: emptyFn,
+            info: emptyFn,
+            warn: emptyFn,
+            error: emptyFn,
+            deprecate: emptyFn
         }
     });
 
@@ -596,4 +631,3 @@ If you are unsure which license is appropriate for your use, please contact the 
     Ext.type = Ext.typeOf;
 
 })();
-

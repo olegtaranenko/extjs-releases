@@ -47,8 +47,6 @@ Ext.define('Ext.data.Tree', {
     constructor: function(root) {
         var me = this;
 
-        
-
         me.mixins.observable.constructor.call(me);
 
         if (root) {
@@ -73,7 +71,6 @@ Ext.define('Ext.data.Tree', {
         var me = this;
 
         me.root = node;
-        Ext.data.NodeInterface.decorate(node);
 
         if (me.fireEvent('beforeappend', null, node) !== false) {
             node.set('root', true);
@@ -224,6 +221,20 @@ Ext.define('Ext.data.Tree', {
         this.unregisterNode(node, true);
     },
 
+<span id='Ext-data-Tree-method-onNodeIdChanged'>    /**
+</span>     * Fired when a node's id changes.  Updates the node's id in the node hash.
+     * @private
+     * @param {Ext.data.NodeInterface} node 
+     * @param {Number} oldId The old id
+     * @param {Number} newId The new id
+     */
+    onNodeIdChanged: function(oldId, newId) {
+        var nodeHash = this.nodeHash;
+
+        nodeHash[newId] = nodeHash[oldId];
+        delete nodeHash[oldId];
+    },
+
 <span id='Ext-data-Tree-method-getNodeById'>    /**
 </span>     * Gets a node in this tree by its id.
      * @param {String} id
@@ -240,11 +251,14 @@ Ext.define('Ext.data.Tree', {
      * @param {Boolean} [includeChildren] True to unregister any child nodes
      */
     registerNode : function(node, includeChildren) {
-        this.nodeHash[node.getId() || node.internalId] = node;
+        var me = this;
+
+        me.nodeHash[node.getId() || node.internalId] = node;
+        node.on('idchanged', me.onNodeIdChanged, me);
         if (includeChildren === true) {
             node.eachChild(function(child){
-                this.registerNode(child, true);
-            }, this);
+                me.registerNode(child, true);
+            });
         }
     },
 

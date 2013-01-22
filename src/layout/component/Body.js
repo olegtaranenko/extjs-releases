@@ -1,22 +1,7 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Component layout for components which maintain an inner body element which must be resized to synchronize with the
  * Component size.
  * @class Ext.layout.component.Body
- * @extends Ext.layout.component.Component
  * @private
  */
 
@@ -26,54 +11,80 @@ Ext.define('Ext.layout.component.Body', {
 
     alias: ['layout.body'],
 
-    extend: 'Ext.layout.component.Component',
-
-    uses: ['Ext.layout.container.Container'],
+    extend: 'Ext.layout.component.Auto',
 
     /* End Definitions */
 
     type: 'body',
-    
-    onLayout: function(width, height) {
-        var me = this,
-            owner = me.owner;
 
-        // Size the Component's encapsulating element according to the dimensions
-        me.setTargetSize(width, height);
+    beginLayout: function (ownerContext) {
+        this.callParent(arguments);
 
-        // Size the Component's body element according to the content box of the encapsulating element
-        me.setBodySize.apply(me, arguments);
-
-        // We need to bind to the owner whenever we do not have a user set height or width.
-        if (owner && owner.layout && owner.layout.isLayout) {
-            if (!Ext.isNumber(owner.height) || !Ext.isNumber(owner.width)) {
-                owner.layout.bindToOwnerCtComponent = true;
-            }
-            else {
-                owner.layout.bindToOwnerCtComponent = false;
-            }
-        }
-        
-        me.callParent(arguments);
+        ownerContext.bodyContext = ownerContext.getEl('body');
     },
 
-    /**
-     * @private
-     * <p>Sizes the Component's body element to fit exactly within the content box of the Component's encapsulating element.<p>
-     */
-    setBodySize: function(width, height) {
+    calculate: function(ownerContext) {
+        // Subtle But Important:
+        // 
+        // We don't want to call getProp/hasProp et.al. unless we in fact need that value
+        // for our results! If we call it and don't need it, the layout manager will think
+        // we depend on it and will schedule us again should it change.
+
         var me = this,
-            owner = me.owner,
-            frameSize = owner.frameSize,
-            isNumber = Ext.isNumber;
+            fixedHeight = ownerContext.heightAuthority > 0,
+            fixedWidth  = ownerContext.widthAuthority > 0,
+            height, width, bodyContext, frameInfo;
 
-        if (isNumber(width)) {
-            width -= owner.el.getFrameWidth('lr') - frameSize.left - frameSize.right;
-        }
-        if (isNumber(height)) {
-            height -= owner.el.getFrameWidth('tb') - frameSize.top - frameSize.bottom;
-        }
+        me.callParent(arguments);
 
-        me.setElementSize(owner.body, width, height);
+        bodyContext = ownerContext.bodyContext;
+        frameInfo = ownerContext.getFrameInfo();
+
+        // Either fix the body size based upon this Component's frame info (padding)
+        // Or adjust this Componentts auto size, accounting for extra size added by the body's padding 
+        if (fixedWidth) {
+            width = ownerContext.getProp('width');
+            if (width === undefined) {
+                me.done = false;
+            } else {
+                bodyContext.setWidth(width - frameInfo.width);
+            }
+        }
+        if (fixedHeight) {
+            height = ownerContext.getProp('height');
+            if (height === undefined) {
+                me.done = false;
+            } else {
+               bodyContext.setHeight(height - frameInfo.height);
+            }
+        }
+    },
+
+    calculateOwnerHeightFromContentHeight: function (ownerContext, contentHeight) {
+        return contentHeight + ownerContext.getFrameInfo().height;
+    },
+
+    calculateOwnerWidthFromContentWidth: function (ownerContext, contentWidth) {
+        return contentWidth + ownerContext.getFrameInfo().width;
+    },
+
+    getContentWidth: function (ownerContext) {
+        return ownerContext.bodyContext.el.dom.offsetWidth;
+    },
+
+    getContentHeight: function (ownerContext) {
+        return ownerContext.bodyContext.el.dom.offsetHeight;
+    },
+
+    publishOwnerHeight: function (ownerContext, contentHeight) {
+        this.callParent(arguments);
+
+        ownerContext.bodyContext.setProp('height', contentHeight, false);
+    },
+
+    publishOwnerWidth: function (ownerContext, contentWidth) {
+        this.callParent(arguments);
+
+        ownerContext.bodyContext.setProp('width', contentWidth, false);
     }
 });

@@ -1,21 +1,6 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Component layout for Tip/ToolTip/etc. components
  * @class Ext.layout.component.Tip
- * @extends Ext.layout.component.Dock
  * @private
  */
 
@@ -29,9 +14,55 @@ Ext.define('Ext.layout.component.Tip', {
 
     /* End Definitions */
 
-    type: 'tip',
+    type: 'tip'
+
+    // TODO - The logic commented out below won't work. At a minimum it has a "callParent"
+    // in doLayout but there is no parent and it would not accept a size if there were. It
+    // seems like this is all about correcting for autoWidth problems, but that really is
+    // a problem w/dock layout and panel in general. That should include the positioning
+    // trick as well. This is what the (perhaps ill-named) "boxParent" logic is all about.
+
+    // In case we do need it, I've done just the position game in a way that works with the
+    // layout sequence, but this should not be needed.
+
+    /*
+    beginLayout: function (ownerContext) {
+        this.callParent(arguments);
+
+        // Position offscreen so the natural width is not affected by the viewport's
+        // right edge:
+
+        var el = ownerContext.el;
+
+        ownerContext.savedXY = el.getXY();
+
+        el.setXY([-9999,-9999]);
+    },
+
+    finishedLayout: function (ownerContext) {
+        this.callParent(arguments);
+
+        // Restore position
+        ownerContext.el.setXY(ownerContext.savedXY);
+    }*/
     
-    onLayout: function(width, height) {
+    /*calculate: function(ownerContext) {
+        var me = this,
+            width, height;
+
+        me.callParent(arguments);
+
+        width = ownerContext.getProp('width');
+        height = ownerContext.getProp('height');
+
+        if (Ext.isNumber(width) && Ext.isNumber(height)) {
+            ownerContext.queueFn(this, this.doLayout, [width, height]);
+        } else {
+            me.done = false;
+        }
+    },
+
+    doLayout: function(width, height) {
         var me = this,
             owner = me.owner,
             el = owner.el,
@@ -43,9 +74,6 @@ Ext.define('Ext.layout.component.Tip', {
 
         // Position offscreen so the natural width is not affected by the viewport's right edge
         el.setXY([-9999,-9999]);
-
-        // Calculate initial layout
-        this.callParent(arguments);
 
         // Handle min/maxWidth for auto-width tips
         if (!Ext.isNumber(width)) {
@@ -64,7 +92,7 @@ Ext.define('Ext.layout.component.Tip', {
                 constrainedWidth = maxWidth;
             }
             if (constrainedWidth) {
-                this.callParent([constrainedWidth, height]);
+                this.callParent([constrainedWidth, height]);  // OOPS - no parent to call
             }
         }
 
@@ -86,6 +114,5 @@ Ext.define('Ext.layout.component.Tip', {
         }
         width += me.frameWidth + body.getPadding('lr');
         return width;
-    }
+    }*/
 });
-

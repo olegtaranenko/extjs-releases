@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @docauthor Jason Johnston <jason@sencha.com>
  *
@@ -107,10 +93,12 @@ Ext.define('Ext.form.field.Number', {
     alternateClassName: ['Ext.form.NumberField', 'Ext.form.Number'],
 
     /**
-     * @cfg {RegExp} stripCharsRe @hide
+     * @cfg {RegExp} stripCharsRe
+     * Not applicable for Number field.
      */
     /**
-     * @cfg {RegExp} maskRe @hide
+     * @cfg {RegExp} maskRe
+     * Not applicable for Number field.
      */
 
     /**
@@ -124,6 +112,14 @@ Ext.define('Ext.form.field.Number', {
      * Character(s) to allow as the decimal separator
      */
     decimalSeparator : '.',
+    
+    /**
+     * @cfg {Boolean} [submitLocaleSeparator=true]
+     * False to ensure that the {@link #getSubmitValue} method strips
+     * always uses `.` as the separator, regardless of the {@link #decimalSeparator}
+     * configuration.
+     */
+    submitLocaleSeparator: true,
 
     /**
      * @cfg {Number} decimalPrecision
@@ -275,6 +271,16 @@ Ext.define('Ext.form.field.Number', {
         value = isNaN(value) ? '' : String(value).replace('.', decimalSeparator);
         return value;
     },
+    
+    getSubmitValue: function() {
+        var me = this,
+            value = me.callParent();
+            
+        if (!me.submitLocaleSeparator) {
+            value = value.replace(me.decimalSeparator, '.');
+        }  
+        return value;
+    },
 
     onChange: function() {
         var me = this,
@@ -350,4 +356,3 @@ Ext.define('Ext.form.field.Number', {
         }
     }
 });
-

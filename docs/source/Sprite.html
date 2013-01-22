@@ -288,7 +288,7 @@ Ext.define('Ext.draw.Sprite', {
         if (!me.el) {
             me.surface.createSpriteElement(me);
         }
-        me.dd = Ext.create('Ext.draw.SpriteDD', me, Ext.isBoolean(me.draggable) ? null : me.draggable);
+        me.dd = new Ext.draw.SpriteDD(me, Ext.isBoolean(me.draggable) ? null : me.draggable);
         me.on('beforedestroy', me.dd.destroy, me.dd);
     },
 

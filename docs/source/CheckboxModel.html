@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-selection-CheckboxModel'>/**
 </span> * @class Ext.selection.CheckboxModel
- * @extends Ext.selection.RowModel
  *
  * A selection model that renders a column of checkboxes that can be toggled to
  * select or deselect rows. The default mode for this selection model is MULTI.
@@ -50,6 +49,12 @@ Ext.define('Ext.selection.CheckboxModel', {
      * checkbox column.
      */
     checkOnly: false,
+    
+<span id='Ext-selection-CheckboxModel-cfg-showHeaderCheckbox'>    /**
+</span>     * @cfg {Boolean} showHeaderCheckbox &lt;tt&gt;false&lt;/tt&gt; to not display the header checkbox at the top of the column.
+     * Defaults to &lt;tt&gt;true&lt;/tt&gt;.
+     */
+    showHeaderCheckbox: true,
 
     headerWidth: 24,
 
@@ -131,14 +136,17 @@ Ext.define('Ext.selection.CheckboxModel', {
     onHeaderClick: function(headerCt, header, e) {
         if (header.isCheckerHd) {
             e.stopEvent();
-            var isChecked = header.el.hasCls(Ext.baseCSSPrefix + 'grid-hd-checker-on');
+            var me = this,
+                isChecked = header.el.hasCls(Ext.baseCSSPrefix + 'grid-hd-checker-on');
+                
+            // Prevent focus changes on the view, since we're selecting/deselecting all records
+            me.preventFocus = true;
             if (isChecked) {
-                // We have to supress the event or it will scrollTo the change
-                this.deselectAll(true);
+                me.deselectAll();
             } else {
-                // We have to supress the event or it will scrollTo the change
-                this.selectAll(true);
+                me.selectAll();
             }
+            delete me.preventFocus;
         }
     },
 
@@ -147,10 +155,11 @@ Ext.define('Ext.selection.CheckboxModel', {
      * This should be used when injectCheckbox is set to false.
      */
     getHeaderConfig: function() {
-        var me = this;
+        var me = this,
+            showCheck = me.showHeaderCheckbox !== false;
 
         return {
-            isCheckerHd: true,
+            isCheckerHd: showCheck,
             text : '&amp;#160;',
             width: me.headerWidth,
             sortable: false,
@@ -159,7 +168,7 @@ Ext.define('Ext.selection.CheckboxModel', {
             hideable: false,
             menuDisabled: true,
             dataIndex: '',
-            cls: Ext.baseCSSPrefix + 'column-header-checkbox ',
+            cls: showCheck ? Ext.baseCSSPrefix + 'column-header-checkbox ' : '',
             renderer: Ext.Function.bind(me.renderer, me),
             locked: me.hasLockedHeader()
         };
@@ -171,8 +180,9 @@ Ext.define('Ext.selection.CheckboxModel', {
      * See {@link Ext.grid.column.Column#renderer} for description of allowed parameters.
      */
     renderer: function(value, metaData, record, rowIndex, colIndex, store, view) {
-        metaData.tdCls = Ext.baseCSSPrefix + 'grid-cell-special';
-        return '&lt;div class=&quot;' + Ext.baseCSSPrefix + 'grid-row-checker&quot;&gt;&amp;#160;&lt;/div&gt;';
+        var baseCSSPrefix = Ext.baseCSSPrefix;
+        metaData.tdCls = baseCSSPrefix + 'grid-cell-special ' + baseCSSPrefix + 'grid-cell-row-checker';
+        return '&lt;div class=&quot;' + baseCSSPrefix + 'grid-row-checker&quot;&gt;&amp;#160;&lt;/div&gt;';
     },
 
     // override

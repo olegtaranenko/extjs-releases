@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-grid-feature-RowBody'>/**
 </span> * @class Ext.grid.feature.RowBody
- * @extends Ext.grid.feature.Feature
  *
  * The rowbody feature enhances the grid's markup to have an additional
  * tr -&gt; td -&gt; div which spans the entire width of the original row.
@@ -29,8 +28,6 @@
  *
  * Will expose additional events on the gridview with the prefix of 'rowbody'.
  * For example: 'rowbodyclick', 'rowbodydblclick', 'rowbodycontextmenu'.
- *
- * @ftype rowbody
  */
 Ext.define('Ext.grid.feature.RowBody', {
     extend: 'Ext.grid.feature.Feature',

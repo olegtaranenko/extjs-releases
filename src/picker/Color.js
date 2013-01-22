@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Color picker provides a simple color palette for choosing colors. The picker can be rendered to any container. The
  * available default to a standard 40-color palette; this can be customized with the {@link #colors} config.
@@ -143,14 +129,18 @@ Ext.define('Ext.picker.Color', {
 
 
     // private
-    onRender : function(container, position){
-        var me = this,
-            clickEvent = me.clickEvent;
-
-        Ext.apply(me.renderData, {
+    initRenderData : function(){
+        var me = this;
+        return Ext.apply(me.callParent(), {
             itemCls: me.itemCls,
             colors: me.colors
         });
+    },
+
+    onRender : function(){
+        var me = this,
+            clickEvent = me.clickEvent;
+
         me.callParent(arguments);
 
         me.mon(me.el, clickEvent, me.handleClick, me, {delegate: 'a'});
@@ -226,4 +216,3 @@ Ext.define('Ext.picker.Color', {
         return this.value || null;
     }
 });
-

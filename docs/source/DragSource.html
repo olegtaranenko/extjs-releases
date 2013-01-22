@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-dd-DragSource'>/**
 </span> * @class Ext.dd.DragSource
- * @extends Ext.dd.DDProxy
  * A simple class that provides the basic implementation needed to make any element draggable.
  */
 Ext.define('Ext.dd.DragSource', {
@@ -73,7 +72,8 @@ Ext.define('Ext.dd.DragSource', {
         Ext.apply(this, config);
 
         if(!this.proxy){
-            this.proxy = Ext.create('Ext.dd.StatusProxy', {
+            this.proxy = new Ext.dd.StatusProxy({
+                id: this.el.id + '-drag-status-proxy',
                 animRepair: this.animRepair
             });
         }
@@ -344,9 +344,15 @@ Ext.define('Ext.dd.DragSource', {
      */
     onStartDrag: Ext.emptyFn,
 
+    alignElWithMouse: function() {
+        this.proxy.ensureAttachedToBody(true);
+        return this.callParent(arguments);
+    },
+
     // private override
     startDrag: function(x, y) {
         this.proxy.reset();
+        this.proxy.hidden = false;
         this.dragging = true;
         this.proxy.update(&quot;&quot;);
         this.onInitDrag(x, y);

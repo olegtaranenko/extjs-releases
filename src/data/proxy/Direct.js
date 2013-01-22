@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * This class is used to send requests to the server using {@link Ext.direct.Manager Ext.Direct}. When a
  * request is made, the transport mechanism is handed off to the appropriate
@@ -100,13 +86,15 @@ Ext.define('Ext.data.proxy.Direct', {
     paramOrderRe: /[\s,|]/,
 
     constructor: function(config){
-        var me = this;
-
-        Ext.apply(me, config);
-        if (Ext.isString(me.paramOrder)) {
-            me.paramOrder = me.paramOrder.split(me.paramOrderRe);
-        }
+        var me = this,
+            paramOrder;
+            
         me.callParent(arguments);
+        
+        paramOrder = me.paramOrder;
+        if (Ext.isString(paramOrder)) {
+            me.paramOrder = paramOrder.split(me.paramOrderRe);
+        }
     },
 
     doRequest: function(operation, callback, scope) {
@@ -191,4 +179,3 @@ Ext.define('Ext.data.proxy.Direct', {
         return '';
     }
 });
-

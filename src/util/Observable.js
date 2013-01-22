@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Base class that provides a common interface for publishing events. Subclasses are expected to to have a property
  * "events" with all the events defined, and, optionally, a property "listeners" with configured listeners defined.
@@ -153,11 +139,12 @@ Ext.define('Ext.util.Observable', {
         var me = this;
 
         Ext.apply(me, config);
+
+        me.events = me.events || {};
         if (me.listeners) {
             me.on(me.listeners);
             delete me.listeners;
         }
-        me.events = me.events || {};
 
         if (me.bubbleEvents) {
             me.enableBubble(me.bubbleEvents);
@@ -546,17 +533,15 @@ Ext.define('Ext.util.Observable', {
      */
     addEvents: function(o) {
         var me = this,
-            args,
-            len,
-            i;
+            events = me.events || (me.events = {}),
+            arg, args, i;
 
-            me.events = me.events || {};
-        if (Ext.isString(o)) {
-            args = arguments;
-            i = args.length;
-
-            while (i--) {
-                me.events[args[i]] = me.events[args[i]] || true;
+        if (typeof o == 'string') {
+            for (args = arguments, i = args.length; i--; ) {
+                arg = args[i];
+                if (!events[arg]) {
+                    events[arg] = true;
+                }
             }
         } else {
             Ext.applyIf(me.events, o);
@@ -612,7 +597,7 @@ Ext.define('Ext.util.Observable', {
      *
      * @param {Object} origin The Observable whose events this object is to relay.
      * @param {String[]} events Array of event names to relay.
-     * @param {String} prefix
+     * @param {String} [prefix] A common prefix to attach to the event names
      */
     relayEvents : function(origin, events, prefix) {
         prefix = prefix || '';
@@ -623,7 +608,7 @@ Ext.define('Ext.util.Observable', {
             newName;
 
         for (; i < len; i++) {
-            oldName = events[i].substr(prefix.length);
+            oldName = events[i];
             newName = prefix + oldName;
             me.events[newName] = me.events[newName] || true;
             origin.on(oldName, me.createRelayer(newName));
@@ -682,22 +667,26 @@ Ext.define('Ext.util.Observable', {
      *         }
      *     });
      *
-     * @param {String/String[]} events The event name to bubble, or an Array of event names.
+     * @param {String/String[]} eventNames The event name to bubble, or an Array of event names.
      */
-    enableBubble: function(events) {
-        var me = this;
-        if (!Ext.isEmpty(events)) {
-            events = Ext.isArray(events) ? events: Ext.Array.toArray(arguments);
-            Ext.each(events,
-            function(ename) {
-                ename = ename.toLowerCase();
-                var ce = me.events[ename] || true;
-                if (Ext.isBoolean(ce)) {
-                    ce = new Ext.util.Event(me, ename);
-                    me.events[ename] = ce;
+    enableBubble: function(eventNames) {
+        if (eventNames) {
+            var me = this,
+                names = (typeof eventNames == 'string') ? arguments : eventNames,
+                length = names.length,
+                events = me.events,
+                ename, event, i;
+
+            for (i = 0; i < length; ++i) {
+                ename = names[i].toLowerCase();
+                event = events[ename];
+
+                if (!event || typeof event == 'boolean') {
+                    events[ename] = event = new Ext.util.Event(me, ename);
                 }
-                ce.bubble = true;
-            });
+
+                event.bubble = true;
+            }
         }
     }
 }, function() {
@@ -847,4 +836,3 @@ Ext.define('Ext.util.Observable', {
         };
     }());
 });
-

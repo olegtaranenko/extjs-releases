@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.series.Pie
- * @extends Ext.chart.series.Series
  *
  * Creates a Pie Chart. A Pie Chart is a useful visualization technique to display quantitative information for different
  * categories that also have a meaning as a whole.
@@ -23,13 +8,13 @@ If you are unsure which license is appropriate for your use, please contact the 
  *
  *     @example
  *     var store = Ext.create('Ext.data.JsonStore', {
- *         fields: ['name', 'data1', 'data2', 'data3', 'data4', 'data5'],
+ *         fields: ['name', 'data'],
  *         data: [
- *             { 'name': 'metric one',   'data1': 10, 'data2': 12, 'data3': 14, 'data4': 8,  'data5': 13 },
- *             { 'name': 'metric two',   'data1': 7,  'data2': 8,  'data3': 16, 'data4': 10, 'data5': 3  },
- *             { 'name': 'metric three', 'data1': 5,  'data2': 2,  'data3': 14, 'data4': 12, 'data5': 7  },
- *             { 'name': 'metric four',  'data1': 2,  'data2': 14, 'data3': 6,  'data4': 1,  'data5': 23 },
- *             { 'name': 'metric five',  'data1': 27, 'data2': 38, 'data3': 36, 'data4': 13, 'data5': 33 }
+ *             { 'name': 'metric one',   'data': 10 },
+ *             { 'name': 'metric two',   'data':  7 },
+ *             { 'name': 'metric three', 'data':  5 },
+ *             { 'name': 'metric four',  'data':  2 },
+ *             { 'name': 'metric five',  'data': 27 }
  *         ]
  *     });
  *
@@ -42,7 +27,7 @@ If you are unsure which license is appropriate for your use, please contact the 
  *         theme: 'Base:gradients',
  *         series: [{
  *             type: 'pie',
- *             field: 'data1',
+ *             angleField: 'data',
  *             showInLegend: true,
  *             tips: {
  *                 trackMouse: true,
@@ -52,9 +37,9 @@ If you are unsure which license is appropriate for your use, please contact the 
  *                     // calculate and display percentage on hover
  *                     var total = 0;
  *                     store.each(function(rec) {
- *                         total += rec.get('data1');
+ *                         total += rec.get('data');
  *                     });
- *                     this.setTitle(storeItem.get('name') + ': ' + Math.round(storeItem.get('data1') / total * 100) + '%');
+ *                     this.setTitle(storeItem.get('name') + ': ' + Math.round(storeItem.get('data') / total * 100) + '%');
  *                 }
  *             },
  *             highlight: {
@@ -74,7 +59,7 @@ If you are unsure which license is appropriate for your use, please contact the 
  * In this configuration we set `pie` as the type for the series, set an object with specific style properties for highlighting options
  * (triggered when hovering elements). We also set true to `showInLegend` so all the pie slices can be represented by a legend item.
  *
- * We set `data1` as the value of the field to determine the angle span for each pie slice. We also set a label configuration object
+ * We set `data` as the value of the field to determine the angle span for each pie slice. We also set a label configuration object
  * where we set the field name of the store field to be renderer as text for the label. The labels will also be displayed rotated.
  *
  * We set `contrast` to `true` to flip the color of the label if it is to similar to the background color. Finally, we set the font family
@@ -110,6 +95,16 @@ Ext.define('Ext.chart.series.Pie', {
      * The values bound to this field name must be positive real numbers.
      */
     angleField: false,
+
+    /**
+     * @cfg {String} field
+     * Alias for {@link #angleField}.
+     */
+
+    /**
+     * @cfg {String} xField
+     * Alias for {@link #angleField}.
+     */
 
     /**
      * @cfg {String} lengthField
@@ -1044,5 +1039,4 @@ Ext.define('Ext.chart.series.Pie', {
         return (me.colorSet && me.colorSet[index % me.colorSet.length]) || me.colorArrayStyle[index % me.colorArrayStyle.length];
     }
 });
-
 

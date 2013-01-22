@@ -23,7 +23,7 @@ Ext.define('Ext.panel.DD', {
     constructor : function(panel, cfg){
         this.panel = panel;
         this.dragData = {panel: panel};
-        this.proxy = Ext.create('Ext.panel.Proxy', panel, cfg);
+        this.proxy = new Ext.panel.Proxy(panel, cfg);
 
         this.callParent([panel.el, cfg]);
 

@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.axis.Axis
- * @extends Ext.chart.axis.Abstract
  *
  * Defines axis for charts. The axis position, type, style can be configured.
  * The axes are defined in an axes array of configuration objects where the type,
@@ -175,16 +160,12 @@ Ext.define('Ext.chart.axis.Axis', {
 
         //if one series is stacked I have to aggregate the values
         //for the scale.
-        // TODO(zhangbei): the code below does not support series that stack on 1 side but non-stacked axis
-        // listed in axis config. For example, a Area series whose axis : ['left', 'bottom'].
-        // Assuming only stack on y-axis.
-        // CHANGED BY Nicolas: I removed the check `me.position == 'left'` and `me.position == 'right'` since 
-        // it was constraining the minmax calculation to y-axis stacked
-        // visualizations.
+
         for (i = 0, l = series.length; !aggregate && i < l; i++) {
-            aggregate = aggregate || series[i].stacked;
+            aggregate = aggregate || ln > 1 && series[i].stacked;
             excludes = series[i].__excludes || excludes;
         }
+
         store.each(function(record) {
             if (aggregate) {
                 if (!isFinite(min)) {
@@ -851,4 +832,3 @@ Ext.define('Ext.chart.axis.Axis', {
         }, true);
     }
 });
-

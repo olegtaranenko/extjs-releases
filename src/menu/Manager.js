@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.menu.Manager
  * Provides a common registry of all menus on a page.
@@ -35,7 +21,7 @@ Ext.define('Ext.menu.Manager', {
     init: function() {
         var me = this;
         
-        me.active = Ext.create('Ext.util.MixedCollection');
+        me.active = new Ext.util.MixedCollection();
         Ext.getDoc().addKeyListener(27, function() {
             if (me.active.length > 0) {
                 me.hideAll();
@@ -164,7 +150,7 @@ Ext.define('Ext.menu.Manager', {
         } else if (menu.isMenu) {  // menu instance
             return menu;
         } else if (Ext.isArray(menu)) { // array of menu items
-            return Ext.create('Ext.menu.Menu', {items:menu});
+            return new Ext.menu.Menu({items:menu});
         } else { // otherwise, must be a config
             return Ext.ComponentManager.create(menu, 'menu');
         }

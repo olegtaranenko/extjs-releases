@@ -264,9 +264,9 @@ from : {
         config = config || {};
         // If keyframes are passed, they really want an Animator instead.
         if (config.keyframes) {
-            return Ext.create('Ext.fx.Animator', config);
+            return new Ext.fx.Animator(config);
         }
-        config = Ext.apply(me, config);
+        Ext.apply(me, config);
         if (me.from === undefined) {
             me.from = {};
         }
@@ -285,7 +285,6 @@ from : {
             }
         }
         me.id = Ext.id(null, 'ext-anim-');
-        Ext.fx.Manager.addAnim(me);
         me.addEvents(
 <span id='Ext-fx-Anim-event-beforeanimate'>            /**
 </span>             * @event beforeanimate
@@ -308,11 +307,11 @@ from : {
               */
             'lastframe'
         );
-        me.mixins.observable.constructor.call(me, config);
+        me.mixins.observable.constructor.call(me);
         if (config.callback) {
             me.on('afteranimate', config.callback, config.scope);
         }
-        return me;
+        Ext.fx.Manager.addAnim(me);
     },
 
 <span id='Ext-fx-Anim-method-setAttr'>    /**

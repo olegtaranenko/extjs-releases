@@ -16,30 +16,39 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-panel-Header'>/**
-</span> * @class Ext.panel.Header
- * @extends Ext.container.Container
- * Simple header class which is used for on {@link Ext.panel.Panel} and {@link Ext.window.Window}
+</span> * Simple header class which is used for on {@link Ext.panel.Panel} and {@link Ext.window.Window}.
  */
 Ext.define('Ext.panel.Header', {
     extend: 'Ext.container.Container',
-    uses: ['Ext.panel.Tool', 'Ext.draw.Component', 'Ext.util.CSS'],
+    uses: ['Ext.panel.Tool', 'Ext.draw.Component', 'Ext.util.CSS', 'Ext.layout.component.Body', 'Ext.Img'],
     alias: 'widget.header',
 
     isHeader       : true,
+    focusable      : false,
     defaultType    : 'tool',
     indicateDrag   : false,
     weight         : -1,
+    componentLayout: 'body',
+
+    childEls: [
+        'body'
+    ],
 
     renderTpl: [
         '&lt;div id=&quot;{id}-body&quot; class=&quot;{baseCls}-body&lt;tpl if=&quot;bodyCls&quot;&gt; {bodyCls}&lt;/tpl&gt;',
         '&lt;tpl if=&quot;uiCls&quot;&gt;',
             '&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&lt;/tpl&gt;',
         '&lt;/tpl&gt;&quot;',
-        '&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;&lt;/div&gt;'],
+        '&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;',
+            '{%this.renderContainer(out,values)%}',
+        '&lt;/div&gt;'
+    ],
+
+    headingTpl: '&lt;span id=&quot;{id}-textEl&quot; class=&quot;{cls}-text {cls}-text-{ui}&quot;&gt;{title}&lt;/span&gt;',
 
 <span id='Ext-panel-Header-cfg-title'>    /**
 </span>     * @cfg {String} title
-     * The title text to display
+     * The title text to display.
      */
 
 <span id='Ext-panel-Header-cfg-iconCls'>    /**
@@ -52,7 +61,6 @@ Ext.define('Ext.panel.Header', {
             ruleStyle,
             rule,
             style,
-            titleTextEl,
             ui;
 
         me.indicateDragCls = me.baseCls + '-draggable';
@@ -64,10 +72,11 @@ Ext.define('Ext.panel.Header', {
 
         //add the dock as a ui
         //this is so we support top/right/left/bottom headers
-        me.addClsWithUI(me.orientation);
-        me.addClsWithUI(me.dock);
+        me.addClsWithUI([me.orientation, me.dock]);
 
-        me.addChildEls('body');
+        if (me.indicateDrag) {
+            me.addCls(me.indicateDragCls);
+        }
 
         // Add Icon
         if (!Ext.isEmpty(me.iconCls)) {
@@ -77,20 +86,12 @@ Ext.define('Ext.panel.Header', {
 
         // Add Title
         if (me.orientation == 'vertical') {
-            // Hack for IE6/7's inability to display an inline-block
-            if (Ext.isIE6 || Ext.isIE7) {
-                me.width = this.width || 24;
-            } else if (Ext.isIEQuirks) {
-                me.width = this.width || 25;
-            }
-
             me.layout = {
                 type : 'vbox',
-                align: 'center',
-                clearInnerCtOnLayout: true,
-                bindToOwnerCtContainer: false
+                align: 'center'
             };
             me.textConfig = {
+                width: 15,
                 cls: me.baseCls + '-text',
                 type: 'text',
                 text: me.title,
@@ -118,90 +119,81 @@ Ext.define('Ext.panel.Header', {
                     fill: style.color
                 });
             }
-            me.titleCmp = Ext.create('Ext.draw.Component', {
+            me.titleCmp = new Ext.draw.Component({
+                width     : 15,
                 ariaRole  : 'heading',
-                focusable: false,
-                viewBox: false,
-                flex : 1,
-                autoSize: true,
-                margins: '5 0 0 0',
-                items: [ me.textConfig ],
+                focusable : false,
+                viewBox   : false,
+                flex      : 1,
+                id        : me.id + '_hd',
+                autoSize  : true,
+                margins   : '5 0 0 0',
+                items     : [ me.textConfig ],
+                xhooks: {
+                    setSize: function (width) {
+                        // don't pass 2nd arg (height) on to setSize or we break 'flex:1'
+                        this.callParent([width]);
+                    }
+                },
                 // this is a bit of a cheat: we are not selecting an element of titleCmp
                 // but rather of titleCmp.items[0] (so we cannot use childEls)
-                renderSelectors: {
-                    textEl: '.' + me.baseCls + '-text'
-                }
+                childEls  : [
+                    { name: 'textEl', select: '.' + me.baseCls + '-text' }
+                ]
             });
         } else {
             me.layout = {
                 type : 'hbox',
-                align: 'middle',
-                clearInnerCtOnLayout: true,
-                bindToOwnerCtContainer: false
+                align: 'middle'
             };
-            me.titleCmp = Ext.create('Ext.Component', {
+            me.titleCmp = new Ext.Component({
+                height    : 15,
                 xtype     : 'component',
                 ariaRole  : 'heading',
-                focusable: false,
-                flex : 1,
-                cls: me.baseCls + '-text-container',
-                renderTpl : [
-                    '&lt;span id=&quot;{id}-textEl&quot; class=&quot;{cls}-text {cls}-text-{ui}&quot;&gt;{title}&lt;/span&gt;'
-                ],
+                focusable : false,
+                noWrap    : true,
+                flex      : 1,
+                id        : me.id + '_hd',
+                cls       : me.baseCls + '-text-container',
+                renderTpl : me.getTpl('headingTpl'),
                 renderData: {
                     title: me.title,
                     cls  : me.baseCls,
                     ui   : me.ui
                 },
-                childEls: ['textEl']
+                childEls  : ['textEl']
             });
         }
         me.items.push(me.titleCmp);
 
         // Add Tools
         me.items = me.items.concat(me.tools);
-        this.callParent();
+        me.callParent();
+        
+        me.on({
+            click: me.onClick,
+            element: 'el',
+            scope: me
+        });
     },
 
     initIconCmp: function() {
-        this.iconCmp = Ext.create('Ext.Component', {
+        var me = this;
+        
+        me.iconCmp = new Ext.Img({
+            width: 15,
+            height: 15,
             focusable: false,
-            renderTpl : [
-                '&lt;img id=&quot;{id}-iconEl&quot; alt=&quot;&quot; src=&quot;{blank}&quot; class=&quot;{cls}-icon {iconCls}&quot;/&gt;'
-            ],
-            renderData: {
-                blank  : Ext.BLANK_IMAGE_URL,
-                cls    : this.baseCls,
-                iconCls: this.iconCls,
-                orientation: this.orientation
-            },
-            childEls: ['iconEl'],
-            iconCls: this.iconCls
+            src: Ext.BLANK_IMAGE_URL,
+            cls: [me.baseCls + '-icon', me.iconCls],
+            id: me.id + '-iconEl',
+            iconCls: me.iconCls
         });
     },
 
     afterRender: function() {
-        var me = this;
-
-        me.el.unselectable();
-        if (me.indicateDrag) {
-            me.el.addCls(me.indicateDragCls);
-        }
-        me.mon(me.el, {
-            click: me.onClick,
-            scope: me
-        });
-        me.callParent();
-    },
-
-    afterLayout: function() {
-        var me = this;
-        me.callParent(arguments);
-
-        // IE7 needs a forced repaint to make the top framing div expand to full width
-        if (Ext.isIE7) {
-            me.el.repaint();
-        }
+        this.el.unselectable();
+        this.callParent();
     },
 
     // inherit docs
@@ -341,13 +333,15 @@ Ext.define('Ext.panel.Header', {
      * @param {String} title The title to be set
      */
     setTitle: function(title) {
-        var me = this;
+        var me = this,
+            sprite,
+            surface;
         if (me.rendered) {
             if (me.titleCmp.rendered) {
                 if (me.titleCmp.surface) {
                     me.title = title || '';
-                    var sprite = me.titleCmp.surface.items.items[0],
-                        surface = me.titleCmp.surface;
+                    sprite = me.titleCmp.surface.items.items[0];
+                    surface = me.titleCmp.surface;
 
                     surface.remove(sprite);
                     me.textConfig.type = 'text';
@@ -390,8 +384,7 @@ Ext.define('Ext.panel.Header', {
     setIconCls: function(cls) {
         var me = this,
             isEmpty = !cls || !cls.length,
-            iconCmp = me.iconCmp,
-            el;
+            iconCmp = me.iconCmp;
         
         me.iconCls = cls;
         if (!me.iconCmp &amp;&amp; !isEmpty) {
@@ -400,10 +393,10 @@ Ext.define('Ext.panel.Header', {
         } else if (iconCmp) {
             if (isEmpty) {
                 me.iconCmp.destroy();
+                delete me.iconCmp;
             } else {
-                el = iconCmp.iconEl;
-                el.removeCls(iconCmp.iconCls);
-                el.addCls(cls);
+                iconCmp.removeCls(iconCmp.iconCls);
+                iconCmp.addCls(cls);
                 iconCmp.iconCls = cls;
             }
         }
@@ -425,7 +418,7 @@ Ext.define('Ext.panel.Header', {
      * @param index
      */
     onAdd: function(component, index) {
-        this.callParent([arguments]);
+        this.callParent(arguments);
         if (component instanceof Ext.panel.Tool) {
             component.bindTo(this.ownerCt);
             this.tools[component.type] = component;

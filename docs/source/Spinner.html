@@ -183,7 +183,7 @@ Ext.define('Ext.form.field.Spinner', {
 
         // Init up/down arrow keys
         if (me.keyNavEnabled) {
-            me.spinnerKeyNav = Ext.create('Ext.util.KeyNav', me.inputEl, {
+            me.spinnerKeyNav = new Ext.util.KeyNav(me.inputEl, {
                 scope: me,
                 up: me.spinUp,
                 down: me.spinDown

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.data.Tree
  *
@@ -44,8 +30,6 @@ Ext.define('Ext.data.Tree', {
     constructor: function(root) {
         var me = this;
 
-        
-
         me.mixins.observable.constructor.call(me);
 
         if (root) {
@@ -70,7 +54,6 @@ Ext.define('Ext.data.Tree', {
         var me = this;
 
         me.root = node;
-        Ext.data.NodeInterface.decorate(node);
 
         if (me.fireEvent('beforeappend', null, node) !== false) {
             node.set('root', true);
@@ -222,6 +205,20 @@ Ext.define('Ext.data.Tree', {
     },
 
     /**
+     * Fired when a node's id changes.  Updates the node's id in the node hash.
+     * @private
+     * @param {Ext.data.NodeInterface} node 
+     * @param {Number} oldId The old id
+     * @param {Number} newId The new id
+     */
+    onNodeIdChanged: function(oldId, newId) {
+        var nodeHash = this.nodeHash;
+
+        nodeHash[newId] = nodeHash[oldId];
+        delete nodeHash[oldId];
+    },
+
+    /**
      * Gets a node in this tree by its id.
      * @param {String} id
      * @return {Ext.data.NodeInterface} The match node.
@@ -237,11 +234,14 @@ Ext.define('Ext.data.Tree', {
      * @param {Boolean} [includeChildren] True to unregister any child nodes
      */
     registerNode : function(node, includeChildren) {
-        this.nodeHash[node.getId() || node.internalId] = node;
+        var me = this;
+
+        me.nodeHash[node.getId() || node.internalId] = node;
+        node.on('idchanged', me.onNodeIdChanged, me);
         if (includeChildren === true) {
             node.eachChild(function(child){
-                this.registerNode(child, true);
-            }, this);
+                me.registerNode(child, true);
+            });
         }
     },
 

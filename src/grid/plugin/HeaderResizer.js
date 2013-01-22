@@ -1,21 +1,6 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.grid.plugin.HeaderResizer
- * @extends Ext.util.Observable
- *
+ * 
  * Plugin to add header resizing functionality to a HeaderContainer.
  * Always resizing header to the left of the splitter you are resizing.
  */
@@ -66,7 +51,7 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
 
         headerCt.mon(el, 'mousemove', this.onHeaderCtMouseMove, this);
 
-        this.tracker = Ext.create('Ext.dd.DragTracker', {
+        this.tracker = new Ext.dd.DragTracker({
             disabled: this.disabled,
             onBeforeStart: Ext.Function.bind(this.onBeforeStart, this),
             onStart: Ext.Function.bind(this.onStart, this),
@@ -89,15 +74,27 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
             }
         } else {
             var headerEl = e.getTarget('.' + this.colHeaderCls, 3, true),
-                overHeader, resizeHeader;
+                overHeader, resizeHeader, resizeHeaderOwnerGrid, ownerGrid;
 
             if (headerEl){
                 overHeader = Ext.getCmp(headerEl.id);
 
                 // On left edge, go back to the previous non-hidden header.
                 if (overHeader.isOnLeftEdge(e)) {
-                    resizeHeader = overHeader.previousNode('gridcolumn:not([hidden])');
+                    resizeHeader = overHeader.previousNode('gridcolumn:not([hidden]):not([isGroupHeader])');
 
+                    // There may not *be* a previous non-hidden header.
+                    if (resizeHeader) {
+                        ownerGrid = this.headerCt.up('tablepanel');
+                        resizeHeaderOwnerGrid = resizeHeader.up('tablepanel');
+
+                        // Need to check that previousNode didn't go outside the current grid/tree
+                        // But in the case of a Grid which contains a locked and normal grid, allow previousNode to jump
+                        // from the first column of the normalGrid to the last column of the lockedGrid
+                        if (!((resizeHeaderOwnerGrid === ownerGrid) || ((ownerGrid.ownerCt.isXType('tablepanel')) && ownerGrid.ownerCt.view.lockedGrid === resizeHeaderOwnerGrid))) {
+                            resizeHeader = null;
+                        }
+                    }
                 }
                 // Else, if on the right edge, we're resizing the column we are over
                 else if (overHeader.isOnRightEdge(e)) {
@@ -138,7 +135,7 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         // cache the activeHd because it will be cleared.
         this.dragHd = this.activeHd;
 
-        if (!!this.dragHd && !Ext.fly(t).hasCls('x-column-header-trigger') && !this.headerCt.dragging) {
+        if (!!this.dragHd && !Ext.fly(t).hasCls(Ext.baseCSSPrefix + 'column-header-trigger') && !this.headerCt.dragging) {
             //this.headerCt.dragging = true;
             this.tracker.constrainTo = this.getConstrainRegion();
             return true;
@@ -171,7 +168,7 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
             headerCt = me.headerCt,
             t        = e.getTarget();
 
-        if (me.dragHd && !Ext.fly(t).hasCls('x-column-header-trigger')) {
+        if (me.dragHd && !Ext.fly(t).hasCls(Ext.baseCSSPrefix + 'column-header-trigger')) {
             headerCt.dragging = true;
         }
 
@@ -249,22 +246,20 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
                 delete dragHd.flex;
             }
 
-            this.headerCt.suspendLayout = true;
-            dragHd.setWidth(this.origWidth + offset[0], false);
-
-            // In the case of forceFit, change the following Header width.
-            // Then apply the two width changes by laying out the owning HeaderContainer
-            // If HeaderContainer is configured forceFit, inhibit upstream layout notification, so that
-            // we can also shrink the following Header by an equal amount, and *then* inform the upstream layout.
+            // Set the new column width.
+            dragHd.width = this.origWidth + offset[0];
+ 
+            // In the case of forceFit, change the following Header width only allowing it to shrink as far as its minWidth.
             if (this.headerCt.forceFit) {
                 nextHd = dragHd.nextNode('gridcolumn:not([hidden]):not([isGroupHeader])');
                 if (nextHd) {
                     delete nextHd.flex;
-                    nextHd.setWidth(nextHd.getWidth() - offset[0], false);
+                    nextHd.width = Math.max(nextHd.minWidth||25, nextHd.getWidth() - offset[0]);
                 }
             }
-            this.headerCt.suspendLayout = false;
-            this.headerCt.doComponentLayout(this.headerCt.getFullWidth());
+
+            // Apply the two width changes by laying out the owning HeaderContainer
+            this.headerCt.doComponentLayout();
         }
     },
 

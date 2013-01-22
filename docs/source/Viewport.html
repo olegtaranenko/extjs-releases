@@ -156,9 +156,14 @@ Ext.define('Ext.container.Viewport', {
         var me = this,
             html = Ext.fly(document.body.parentNode),
             el;
+
+        // Get the DOM disruption over with beforfe the Viewport renders and begins a layout
+        Ext.getScrollbarSize();
+
         me.callParent(arguments);
         html.addCls(Ext.baseCSSPrefix + 'viewport');
         if (me.autoScroll) {
+            delete me.autoScroll;
             html.setStyle('overflow', 'auto');
         }
         me.el = el = Ext.getBody();
@@ -167,15 +172,35 @@ Ext.define('Ext.container.Viewport', {
         el.setSize = Ext.emptyFn;
         el.dom.scroll = 'no';
         me.allowDomMove = false;
-        Ext.EventManager.onWindowResize(me.fireResize, me);
         me.renderTo = me.el;
+    },
+    
+    onRender: function() {
+        var me = this;
+
+        me.callParent(arguments);
+
+        // Important to start life as the proper size (to avoid extra layouts)
+        // But after render so that the size is not stamped into the body
         me.width = Ext.Element.getViewportWidth();
         me.height = Ext.Element.getViewportHeight();
     },
 
-    fireResize : function(w, h){
-        // setSize is the single entry point to layouts
-        this.setSize(w, h);
+    afterFirstLayout: function() {
+        var me = this;
+
+        me.callParent(arguments);
+        setTimeout(function() {
+            Ext.EventManager.onWindowResize(me.fireResize, me);
+        }, 1);
+    },
+
+    fireResize : function(width, height){
+        // In IE we can get resize events that have our current size, so we ignore them
+        // to avoid the useless layout...
+        if (width != this.width || height != this.height) {
+            this.setSize(width, height);
+        }
     }
 });
 </pre>

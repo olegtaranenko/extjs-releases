@@ -311,13 +311,8 @@
  *         }
  *     });
  *
- *     // specify segment of data you want to load using params
- *     store.load({
- *         params:{
- *             start:0,
- *             limit: itemsPerPage
- *         }
- *     });
+ *     // specify the page you want to load
+ *     store.loadPage(1);
  *
  *     Ext.create('Ext.grid.Panel', {
  *         title: 'Simpsons',
@@ -352,26 +347,11 @@ Ext.define('Ext.grid.Panel', {
     normalCfgCopy: ['invalidateScrollerOnRefresh', 'verticalScroller', 'verticalScrollDock', 'verticalScrollerType', 'scroll'],
     lockedCfgCopy: ['invalidateScrollerOnRefresh'],
 
-<span id='Ext-grid-Panel-cfg-columnLines'>    /**
-</span>     * @cfg {Boolean} [columnLines=false] Adds column line styling
+<span id='Ext-grid-Panel-cfg-rowLines'>    /**
+</span>     * @cfg {Boolean} rowLines False to remove row line styling
      */
+    rowLines: true
 
-    initComponent: function() {
-        var me = this;
-
-        if (me.columnLines) {
-            me.setColumnLines(me.columnLines);
-        }
-
-        me.callParent();
-    },
-
-    setColumnLines: function(show) {
-        var me = this,
-            method = (show) ? 'addClsWithUI' : 'removeClsWithUI';
-
-        me[method]('with-col-lines');
-    }
 });
 </pre>
 </body>

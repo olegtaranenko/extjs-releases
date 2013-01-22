@@ -17,7 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-Layer-cfg-hideMode'><span id='Ext-Layer-cfg-visibilityCls'><span id='Ext-Layer-cfg-useDisplay'><span id='Ext-Layer-cfg-shadowOffset'><span id='Ext-Layer-cfg-zindex'><span id='Ext-Layer-cfg-cls'><span id='Ext-Layer-cfg-constrain'><span id='Ext-Layer-cfg-dh'><span id='Ext-Layer-cfg-shadow'><span id='Ext-Layer-cfg-shim'><span id='Ext-Layer'>/**
 </span></span></span></span></span></span></span></span></span></span></span> * @class Ext.Layer
- * @extends Ext.Element
  * An extended {@link Ext.Element} object that supports a shadow and shim, constrain to viewport and
  * automatic maintaining of shadow/shim positions.
  *
@@ -61,14 +60,13 @@
  * in a Component having zero dimensions.&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;
  */
 Ext.define('Ext.Layer', {
+    extend: 'Ext.Element',
     uses: ['Ext.Shadow'],
 
     // shims are shared among layer to keep from having 100 iframes
     statics: {
         shims: []
     },
-
-    extend: 'Ext.Element',
 
 <span id='Ext-Layer-method-constructor'>    /**
 </span>     * Creates new Layer.
@@ -90,7 +88,7 @@ Ext.define('Ext.Layer', {
         if (!me.dom) {
             me.dom = dh.append(pel, config.dh || {
                 tag: 'div',
-                cls: Ext.baseCSSPrefix + 'layer'
+                cls: Ext.baseCSSPrefix + 'layer' // primarily to give el 'position:absolute'
             });
         } else {
             me.addCls(Ext.baseCSSPrefix + 'layer');
@@ -98,6 +96,14 @@ Ext.define('Ext.Layer', {
                 pel.appendChild(me.dom);
             }
         }
+
+        if (config.id) {
+            me.id = me.dom.id = config.id;
+        } else {
+            me.id = Ext.id(me.dom);
+        }
+
+        Ext.Element.addToCache(me);
 
         if (config.cls) {
             me.addCls(config.cls);
@@ -118,15 +124,9 @@ Ext.define('Ext.Layer', {
             me.setVisibilityMode(Ext.Element.VISIBILITY);
         }
 
-        if (config.id) {
-            me.id = me.dom.id = config.id;
-        } else {
-            me.id = Ext.id(me.dom);
-        }
-        me.position('absolute');
         if (config.shadow) {
             me.shadowOffset = config.shadowOffset || 4;
-            me.shadow = Ext.create('Ext.Shadow', {
+            me.shadow = new Ext.Shadow({
                 offset: me.shadowOffset,
                 mode: config.shadow
             });

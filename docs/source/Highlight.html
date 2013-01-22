@@ -109,7 +109,7 @@ Ext.define('Ext.chart.Highlight', {
             sprite._endStyle = to;
         }
         if (animate) {
-            sprite._anim = Ext.create('Ext.fx.Anim', {
+            sprite._anim = new Ext.fx.Anim({
                 target: sprite,
                 from: sprite._from,
                 to: sprite._to,
@@ -158,7 +158,7 @@ Ext.define('Ext.chart.Highlight', {
                 if (animate) {
                     //sprite._to = obj;
                     sprite._endStyle = obj;
-                    sprite._anim = Ext.create('Ext.fx.Anim', {
+                    sprite._anim = new Ext.fx.Anim({
                         target: sprite,
                         to: obj,
                         duration: 150

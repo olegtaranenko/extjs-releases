@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * The TreeStore is a store implementation that is backed by by an {@link Ext.data.Tree}.
  * It provides convenience methods for loading nodes, as well as the ability to use
@@ -98,92 +84,94 @@ Ext.define('Ext.data.TreeStore', {
          */
         fields = config.fields || me.fields;
         if (!fields) {
-            config.fields = [{name: 'text', type: 'string'}];
+            config.fields = [
+                {name: 'text', type: 'string'}
+            ];
         }
 
         me.callParent([config]);
 
         // We create our data tree.
-        me.tree = Ext.create('Ext.data.Tree');
+        me.tree = new Ext.data.Tree();
 
         me.relayEvents(me.tree, [
-            /**
-             * @event append
-             * @alias Ext.data.Tree#append
-             */
+        /**
+         * @event append
+         * @alias Ext.data.Tree#append
+         */
             "append",
 
-            /**
-             * @event remove
-             * @alias Ext.data.Tree#remove
-             */
+        /**
+         * @event remove
+         * @alias Ext.data.Tree#remove
+         */
             "remove",
 
-            /**
-             * @event move
-             * @alias Ext.data.Tree#move
-             */
+        /**
+         * @event move
+         * @alias Ext.data.Tree#move
+         */
             "move",
 
-            /**
-             * @event insert
-             * @alias Ext.data.Tree#insert
-             */
+        /**
+         * @event insert
+         * @alias Ext.data.Tree#insert
+         */
             "insert",
 
-            /**
-             * @event beforeappend
-             * @alias Ext.data.Tree#beforeappend
-             */
+        /**
+         * @event beforeappend
+         * @alias Ext.data.Tree#beforeappend
+         */
             "beforeappend",
 
-            /**
-             * @event beforeremove
-             * @alias Ext.data.Tree#beforeremove
-             */
+        /**
+         * @event beforeremove
+         * @alias Ext.data.Tree#beforeremove
+         */
             "beforeremove",
 
-            /**
-             * @event beforemove
-             * @alias Ext.data.Tree#beforemove
-             */
+        /**
+         * @event beforemove
+         * @alias Ext.data.Tree#beforemove
+         */
             "beforemove",
 
-            /**
-             * @event beforeinsert
-             * @alias Ext.data.Tree#beforeinsert
-             */
+        /**
+         * @event beforeinsert
+         * @alias Ext.data.Tree#beforeinsert
+         */
             "beforeinsert",
 
-             /**
-              * @event expand
-              * @alias Ext.data.Tree#expand
-              */
-             "expand",
+        /**
+         * @event expand
+         * @alias Ext.data.Tree#expand
+         */
+            "expand",
 
-             /**
-              * @event collapse
-              * @alias Ext.data.Tree#collapse
-              */
-             "collapse",
+        /**
+         * @event collapse
+         * @alias Ext.data.Tree#collapse
+         */
+            "collapse",
 
-             /**
-              * @event beforeexpand
-              * @alias Ext.data.Tree#beforeexpand
-              */
-             "beforeexpand",
+        /**
+         * @event beforeexpand
+         * @alias Ext.data.Tree#beforeexpand
+         */
+            "beforeexpand",
 
-             /**
-              * @event beforecollapse
-              * @alias Ext.data.Tree#beforecollapse
-              */
-             "beforecollapse",
+        /**
+         * @event beforecollapse
+         * @alias Ext.data.Tree#beforecollapse
+         */
+            "beforecollapse",
 
-             /**
-              * @event rootchange
-              * @alias Ext.data.Tree#rootchange
-              */
-             "rootchange"
+        /**
+         * @event rootchange
+         * @alias Ext.data.Tree#rootchange
+         */
+            "rootchange"
         ]);
 
         me.tree.on({
@@ -205,14 +193,11 @@ Ext.define('Ext.data.TreeStore', {
             me.setRootNode(root);
         }
 
-        me.addEvents(
-            /**
-             * @event sort
-             * Fires when this TreeStore is sorted.
-             * @param {Ext.data.NodeInterface} node The node that is sorted.
-             */
-            'sort'
-        );
+        /**
+         * @event sort
+         * Fires when this TreeStore is sorted.
+         * @param {Ext.data.NodeInterface} node The node that is sorted.
+         */
 
         //<deprecated since=0.99>
         if (Ext.isDefined(me.nodeParameter)) {
@@ -337,7 +322,7 @@ Ext.define('Ext.data.TreeStore', {
      * @param {Ext.data.Model/Ext.data.NodeInterface/Object} root
      * @return {Ext.data.NodeInterface} The new root
      */
-    setRootNode: function(root) {
+    setRootNode: function(root, /* private */ preventLoad) {
         var me = this;
 
         root = root || {};
@@ -348,9 +333,10 @@ Ext.define('Ext.data.TreeStore', {
                 text: 'Root',
                 allowDrag: false
             });
+            Ext.data.NodeInterface.decorate(me.model);
             root = Ext.ModelManager.create(root, me.model);
         }
-        Ext.data.NodeInterface.decorate(root);
+       
 
         // Because we have decorated the model with new fields,
         // we need to build new extactor functions on the reader.
@@ -360,7 +346,7 @@ Ext.define('Ext.data.TreeStore', {
         me.tree.setRootNode(root);
 
         // If the user has set expanded: true on the root, we want to call the expand function
-        if (!root.isLoaded() && (me.autoLoad === true || root.isExpanded())) {
+        if (preventLoad !== true && !root.isLoaded() && (me.autoLoad === true || root.isExpanded())) {
             me.load({
                 node: root
             });
@@ -405,7 +391,7 @@ Ext.define('Ext.data.TreeStore', {
         if (!node) {
             node = me.setRootNode({
                 expanded: true
-            });
+            }, true);
         }
 
         if (me.clearOnLoad) {
@@ -437,7 +423,7 @@ Ext.define('Ext.data.TreeStore', {
             i = 0, sortCollection;
 
         if (ln && me.sortOnLoad && !me.remoteSort && me.sorters && me.sorters.items) {
-            sortCollection = Ext.create('Ext.util.MixedCollection');
+            sortCollection = new Ext.util.MixedCollection();
             sortCollection.addAll(records);
             sortCollection.sort(me.sorters.items);
             records = sortCollection.items;
@@ -526,7 +512,7 @@ Ext.define('Ext.data.TreeStore', {
      * @param {Ext.data.Operation} operation The operation that just completed
      * @param {Boolean} success True if the operation was successful
      */
-    onUpdateRecords: function(records, operation, success){
+    onUpdateRecords: function(records, operation, success) {
         if (success) {
             var me = this,
                 i = 0,
@@ -557,7 +543,7 @@ Ext.define('Ext.data.TreeStore', {
      * @param {Ext.data.Operation} operation The operation that just completed
      * @param {Boolean} success True if the operation was successful
      */
-    onDestroyRecords: function(records, operation, success){
+    onDestroyRecords: function(records, operation, success) {
         if (success) {
             this.removed = [];
         }
@@ -582,4 +568,3 @@ Ext.define('Ext.data.TreeStore', {
         me.fireEvent('sort', me);
     }
 });
-

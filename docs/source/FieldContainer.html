@@ -144,9 +144,10 @@ Ext.define('Ext.form.FieldContainer', {
 
     maskOnDisable: false,
 
+    fieldSubTpl: '{%this.renderContainer(out,values)%}',
+
     initComponent: function() {
-        var me = this,
-            onSubCmpAddOrRemove = me.onSubCmpAddOrRemove;
+        var me = this;
 
         // Init mixins
         me.initLabelable();
@@ -175,14 +176,6 @@ Ext.define('Ext.form.FieldContainer', {
         me.updateLabel();
     },
 
-    onRender: function() {
-        var me = this;
-
-        me.onLabelableRender();
-
-        me.callParent(arguments);
-    },
-
     initRenderTpl: function() {
         var me = this;
         if (!me.hasOwnProperty('renderTpl')) {
@@ -208,6 +201,26 @@ Ext.define('Ext.form.FieldContainer', {
             }).join(this.labelConnector);
         }
         return label;
+    },
+
+    getSubTplData: function() {
+        var ret = this.initRenderData();
+
+        Ext.apply(ret, this.subTplData);
+        return ret;
+    },
+
+    getSubTplMarkup: function() {
+        var me = this,
+            tpl = me.getTpl('fieldSubTpl'),
+            html;
+
+        if (!tpl.renderContent) {
+            me.setupRenderTpl(tpl);
+        }
+
+        html = tpl.apply(me.getSubTplData());
+        return html;
     },
 
 <span id='Ext-form-FieldContainer-method-updateLabel'>    /**

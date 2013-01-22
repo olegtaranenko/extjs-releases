@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.selection.CellModel
- * @extends Ext.selection.Model
  */
 Ext.define('Ext.selection.CellModel', {
     extend: 'Ext.selection.Model',
@@ -64,7 +49,7 @@ Ext.define('Ext.selection.CellModel', {
         me.primaryView = view;
         me.views = me.views || [];
         me.views.push(view);
-        me.bind(view.getStore(), true);
+        me.bindStore(view.getStore(), true);
 
         view.on({
             cellmousedown: me.onMouseDown,
@@ -91,7 +76,7 @@ Ext.define('Ext.selection.CellModel', {
 
         // view.el has tabIndex -1 to allow for
         // keyboard events to be passed to it.
-        me.keyNav = Ext.create('Ext.util.KeyNav', view.el, {
+        me.keyNav = new Ext.util.KeyNav(view.el, {
             up: me.onKeyUp,
             down: me.onKeyDown,
             right: me.onKeyRight,

@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.series.Radar
- * @extends Ext.chart.series.Series
  *
  * Creates a Radar Chart. A Radar Chart is a useful visualization technique for comparing different quantitative values for
  * a constrained number of categories.
@@ -24,13 +9,13 @@ If you are unsure which license is appropriate for your use, please contact the 
  *
  *     @example
  *     var store = Ext.create('Ext.data.JsonStore', {
- *         fields: ['name', 'data1', 'data2', 'data3', 'data4', 'data5'],
+ *         fields: ['name', 'data1', 'data2', 'data3'],
  *         data: [
- *             { 'name': 'metric one',   'data1': 10, 'data2': 12, 'data3': 14, 'data4': 8,  'data5': 13 },
- *             { 'name': 'metric two',   'data1': 7,  'data2': 8,  'data3': 16, 'data4': 10, 'data5': 3  },
- *             { 'name': 'metric three', 'data1': 5,  'data2': 2,  'data3': 14, 'data4': 12, 'data5': 7  },
- *             { 'name': 'metric four',  'data1': 2,  'data2': 14, 'data3': 6,  'data4': 1,  'data5': 23 },
- *             { 'name': 'metric five',  'data1': 27, 'data2': 38, 'data3': 36, 'data4': 13, 'data5': 33 }
+ *             { 'name': 'metric one',   'data1': 14, 'data2': 12, 'data3': 13 },
+ *             { 'name': 'metric two',   'data1': 16, 'data2':  8, 'data3':  3 },
+ *             { 'name': 'metric three', 'data1': 14, 'data2':  2, 'data3':  7 },
+ *             { 'name': 'metric four',  'data1':  6, 'data2': 14, 'data3': 23 },
+ *             { 'name': 'metric five',  'data1': 36, 'data2': 38, 'data3': 33 }
  *         ]
  *     });
  *
@@ -51,7 +36,7 @@ If you are unsure which license is appropriate for your use, please contact the 
  *         series: [{
  *             type: 'radar',
  *             xField: 'name',
- *             yField: 'data3',
+ *             yField: 'data1',
  *             showInLegend: true,
  *             showMarkers: true,
  *             markerConfig: {
@@ -79,7 +64,7 @@ If you are unsure which license is appropriate for your use, please contact the 
  *         },{
  *             type: 'radar',
  *             xField: 'name',
- *             yField: 'data5',
+ *             yField: 'data3',
  *             showMarkers: true,
  *             showInLegend: true,
  *             markerConfig: {
@@ -431,5 +416,4 @@ Ext.define('Ext.chart.series.Radar', {
         }
     }
 });
-
 

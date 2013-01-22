@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * FieldContainer is a derivation of {@link Ext.container.Container Container} that implements the
  * {@link Ext.form.Labelable Labelable} mixin. This allows it to be configured so that it is rendered with
@@ -141,9 +127,10 @@ Ext.define('Ext.form.FieldContainer', {
 
     maskOnDisable: false,
 
+    fieldSubTpl: '{%this.renderContainer(out,values)%}',
+
     initComponent: function() {
-        var me = this,
-            onSubCmpAddOrRemove = me.onSubCmpAddOrRemove;
+        var me = this;
 
         // Init mixins
         me.initLabelable();
@@ -172,14 +159,6 @@ Ext.define('Ext.form.FieldContainer', {
         me.updateLabel();
     },
 
-    onRender: function() {
-        var me = this;
-
-        me.onLabelableRender();
-
-        me.callParent(arguments);
-    },
-
     initRenderTpl: function() {
         var me = this;
         if (!me.hasOwnProperty('renderTpl')) {
@@ -205,6 +184,26 @@ Ext.define('Ext.form.FieldContainer', {
             }).join(this.labelConnector);
         }
         return label;
+    },
+
+    getSubTplData: function() {
+        var ret = this.initRenderData();
+
+        Ext.apply(ret, this.subTplData);
+        return ret;
+    },
+
+    getSubTplMarkup: function() {
+        var me = this,
+            tpl = me.getTpl('fieldSubTpl'),
+            html;
+
+        if (!tpl.renderContent) {
+            me.setupRenderTpl(tpl);
+        }
+
+        html = tpl.apply(me.getSubTplData());
+        return html;
     },
 
     /**
@@ -268,4 +267,3 @@ Ext.define('Ext.form.FieldContainer', {
         return this.bodyEl || this.callParent();
     }
 });
-

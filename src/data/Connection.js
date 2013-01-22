@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * The Connection class encapsulates a connection to the page's originating domain, allowing requests to be made either
  * to a configured URL, or to a URL specified at request time.
@@ -103,35 +89,30 @@ Ext.define('Ext.data.Connection', {
         config = config || {};
         Ext.apply(this, config);
 
-        this.addEvents(
-            /**
-             * @event beforerequest
-             * Fires before a network request is made to retrieve a data object.
-             * @param {Ext.data.Connection} conn This Connection object.
-             * @param {Object} options The options config object passed to the {@link #request} method.
-             */
-            'beforerequest',
-            /**
-             * @event requestcomplete
-             * Fires if the request was successfully completed.
-             * @param {Ext.data.Connection} conn This Connection object.
-             * @param {Object} response The XHR object containing the response data.
-             * See [The XMLHttpRequest Object](http://www.w3.org/TR/XMLHttpRequest/) for details.
-             * @param {Object} options The options config object passed to the {@link #request} method.
-             */
-            'requestcomplete',
-            /**
-             * @event requestexception
-             * Fires if an error HTTP status was returned from the server.
-             * See [HTTP Status Code Definitions](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html)
-             * for details of HTTP status codes.
-             * @param {Ext.data.Connection} conn This Connection object.
-             * @param {Object} response The XHR object containing the response data.
-             * See [The XMLHttpRequest Object](http://www.w3.org/TR/XMLHttpRequest/) for details.
-             * @param {Object} options The options config object passed to the {@link #request} method.
-             */
-            'requestexception'
-        );
+        /**
+         * @event beforerequest
+         * Fires before a network request is made to retrieve a data object.
+         * @param {Ext.data.Connection} conn This Connection object.
+         * @param {Object} options The options config object passed to the {@link #request} method.
+         */
+        /**
+         * @event requestcomplete
+         * Fires if the request was successfully completed.
+         * @param {Ext.data.Connection} conn This Connection object.
+         * @param {Object} response The XHR object containing the response data.
+         * See [The XMLHttpRequest Object](http://www.w3.org/TR/XMLHttpRequest/) for details.
+         * @param {Object} options The options config object passed to the {@link #request} method.
+         */
+        /**
+         * @event requestexception
+         * Fires if an error HTTP status was returned from the server.
+         * See [HTTP Status Code Definitions](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html)
+         * for details of HTTP status codes.
+         * @param {Ext.data.Connection} conn This Connection object.
+         * @param {Object} response The XHR object containing the response data.
+         * See [The XMLHttpRequest Object](http://www.w3.org/TR/XMLHttpRequest/) for details.
+         * @param {Object} options The options config object passed to the {@link #request} method.
+         */
         this.requests = {};
         this.mixins.observable.constructor.call(this);
     },
@@ -336,16 +317,25 @@ Ext.define('Ext.data.Connection', {
         options = options || {};
 
         var id = Ext.id(),
-                frame = document.createElement('iframe'),
-                hiddens = [],
-                encoding = 'multipart/form-data',
-                buf = {
-                    target: form.target,
-                    method: form.method,
-                    encoding: form.encoding,
-                    enctype: form.enctype,
-                    action: form.action
-                }, hiddenItem;
+            frame = document.createElement('iframe'),
+            hiddens = [],
+            encoding = 'multipart/form-data',
+            buf = {
+                target: form.target,
+                method: form.method,
+                encoding: form.encoding,
+                enctype: form.enctype,
+                action: form.action
+            }, addField = function(name, value) {
+            hiddenItem = document.createElement('input');
+            Ext.fly(hiddenItem).set({
+                type: 'hidden',
+                value: value,
+                name: name
+            });
+            form.appendChild(hiddenItem);
+            hiddens.push(hiddenItem);
+        }, hiddenItem;
 
         /*
          * Originally this behaviour was modified for Opera 10 to apply the secure URL after
@@ -363,7 +353,7 @@ Ext.define('Ext.data.Connection', {
 
         // This is required so that IE doesn't pop the response up in a new window.
         if (document.frames) {
-           document.frames[id].name = id;
+            document.frames[id].name = id;
         }
 
         Ext.fly(form).set({
@@ -376,15 +366,14 @@ Ext.define('Ext.data.Connection', {
 
         // add dynamic params
         if (params) {
-            Ext.iterate(Ext.Object.fromQueryString(params), function(name, value){
-                hiddenItem = document.createElement('input');
-                Ext.fly(hiddenItem).set({
-                    type: 'hidden',
-                    value: value,
-                    name: name
-                });
-                form.appendChild(hiddenItem);
-                hiddens.push(hiddenItem);
+            Ext.iterate(Ext.Object.fromQueryString(params), function(name, value) {
+                if (Ext.isArray(value)) {
+                    Ext.each(value, function(v) {
+                        addField(name, v);
+                    });
+                } else {
+                    addField(name, value);
+                }
             });
         }
 
@@ -432,7 +421,7 @@ Ext.define('Ext.data.Connection', {
         Ext.callback(options.success, options.scope, [response, options]);
         Ext.callback(options.callback, options.scope, [options, true, response]);
 
-        setTimeout(function(){
+        setTimeout(function() {
             Ext.removeNode(frame);
         }, 100);
     },
@@ -441,7 +430,7 @@ Ext.define('Ext.data.Connection', {
      * Detects whether the form is intended to be used for an upload.
      * @private
      */
-    isFormUpload: function(options){
+    isFormUpload: function(options) {
         var form = this.getForm(options);
         if (form) {
             return (options.isUpload || (/multipart\/form-data/i).test(form.getAttribute('enctype')));
@@ -455,7 +444,7 @@ Ext.define('Ext.data.Connection', {
      * @param {Object} options The request options
      * @return {HTMLElement} The form, null if not passed
      */
-    getForm: function(options){
+    getForm: function(options) {
         return Ext.getDom(options.form) || null;
     },
 
@@ -465,8 +454,8 @@ Ext.define('Ext.data.Connection', {
      * @param {Object} scope The scope to execute in
      * @return {Object} The params for the request
      */
-    setOptions: function(options, scope){
-        var me =  this,
+    setOptions: function(options, scope) {
+        var me = this,
             params = options.params || {},
             extraParams = me.extraParams,
             urlParams = options.urlParams,
@@ -556,7 +545,7 @@ Ext.define('Ext.data.Connection', {
      * @param {String} url
      * @return {String} The modified url
      */
-    setupUrl: function(options, url){
+    setupUrl: function(options, url) {
         var form = this.getForm(options);
         if (form) {
             url = url || form.action;
@@ -591,7 +580,7 @@ Ext.define('Ext.data.Connection', {
      * @param {String} method
      * @return {String} The modified method
      */
-    setupMethod: function(options, method){
+    setupMethod: function(options, method) {
         if (this.isFormUpload(options)) {
             return 'POST';
         }
@@ -606,7 +595,7 @@ Ext.define('Ext.data.Connection', {
      * @param {Object} data The data for the request
      * @param {Object} params The params for the request
      */
-    setupHeaders: function(xhr, options, data, params){
+    setupHeaders: function(xhr, options, data, params) {
         var me = this,
             headers = Ext.apply({}, options.headers || {}, me.defaultHeaders || {}),
             contentType = me.defaultPostHeader,
@@ -634,7 +623,7 @@ Ext.define('Ext.data.Connection', {
             headers['X-Requested-With'] = me.defaultXhrHeader;
         }
         // set up all the request headers on the xhr object
-        try{
+        try {
             for (key in headers) {
                 if (headers.hasOwnProperty(key)) {
                     header = headers[key];
@@ -652,25 +641,26 @@ Ext.define('Ext.data.Connection', {
      * Creates the appropriate XHR transport for the browser.
      * @private
      */
-    getXhrInstance: (function(){
-        var options = [function(){
+    getXhrInstance: (function() {
+        var options = [function() {
             return new XMLHttpRequest();
-        }, function(){
+        }, function() {
             return new ActiveXObject('MSXML2.XMLHTTP.3.0');
-        }, function(){
+        }, function() {
             return new ActiveXObject('MSXML2.XMLHTTP');
-        }, function(){
+        }, function() {
             return new ActiveXObject('Microsoft.XMLHTTP');
         }], i = 0,
             len = options.length,
             xhr;
 
-        for(; i < len; ++i) {
-            try{
+        for (; i < len; ++i) {
+            try {
                 xhr = options[i];
                 xhr();
                 break;
-            }catch(e){}
+            } catch(e) {
+            }
         }
         return xhr;
     })(),
@@ -767,7 +757,7 @@ Ext.define('Ext.data.Connection', {
      * @private
      * @param {Object} The request
      */
-    clearTimeout: function(request){
+    clearTimeout: function(request) {
         clearTimeout(request.timeout);
         delete request.timeout;
     },
@@ -777,7 +767,7 @@ Ext.define('Ext.data.Connection', {
      * @private
      * @param {Object} The request
      */
-    cleanup: function(request){
+    cleanup: function(request) {
         request.xhr = null;
         delete request.xhr;
     },
@@ -869,7 +859,7 @@ Ext.define('Ext.data.Connection', {
         while (count--) {
             line = lines[count];
             index = line.indexOf(':');
-            if(index >= 0) {
+            if (index >= 0) {
                 key = line.substr(0, index).toLowerCase();
                 if (line.charAt(index + 1) == ' ') {
                     ++index;
@@ -886,8 +876,12 @@ Ext.define('Ext.data.Connection', {
             requestId : request.id,
             status : xhr.status,
             statusText : xhr.statusText,
-            getResponseHeader : function(header){ return headers[header.toLowerCase()]; },
-            getAllResponseHeaders : function(){ return headers; },
+            getResponseHeader : function(header) {
+                return headers[header.toLowerCase()];
+            },
+            getAllResponseHeaders : function() {
+                return headers;
+            },
             responseText : xhr.responseText,
             responseXML : xhr.responseXML
         };
@@ -914,4 +908,3 @@ Ext.define('Ext.data.Connection', {
         };
     }
 });
-

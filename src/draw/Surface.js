@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A Surface is an interface to render methods inside a draw {@link Ext.draw.Component}.
  * A Surface contains methods to render sprites, get bounding boxes of sprites, add
@@ -143,7 +129,7 @@ Ext.define('Ext.draw.Surface', {
     },
 
     requires: ['Ext.draw.CompositeSprite'],
-    uses: ['Ext.draw.engine.Svg', 'Ext.draw.engine.Vml'],
+    uses: ['Ext.draw.engine.Svg', 'Ext.draw.engine.Vml', 'Ext.draw.engine.SvgExporter', 'Ext.draw.engine.ImageExporter'],
 
     separatorRe: /[, ]+/,
 
@@ -169,6 +155,23 @@ Ext.define('Ext.draw.Surface', {
                 }
             }
             return false;
+        },
+        
+        save: function(config, surface){
+            var exportTypes = {
+                    /* 
+                    example adds
+                    'image/png': 'Image',
+                    'image/jpeg': 'Image',
+                    */
+                    'image/png': 'Image',
+                    'image/jpeg': 'Image',
+                    'image/svg+xml': 'Svg'
+                },
+                prefix = exportTypes[config.type] || 'Svg';           
+
+            return (Ext.draw.engine[prefix + 'Exporter']).self.generate(config, surface);
+            
         }
     },
 
@@ -346,8 +349,8 @@ Ext.define('Ext.draw.Surface', {
     // @private
     initItems: function() {
         var items = this.items;
-        this.items = Ext.create('Ext.draw.CompositeSprite');
-        this.groups = Ext.create('Ext.draw.CompositeSprite');
+        this.items = new Ext.draw.CompositeSprite();
+        this.groups = new Ext.draw.CompositeSprite();
         if (items) {
             this.add(items);
         }
@@ -503,6 +506,7 @@ Ext.define('Ext.draw.Surface', {
      *        }
      *    });
      *
+     * @param {Object} gradient A gradient config.
      * @method
      */
     addGradient: Ext.emptyFn,
@@ -521,6 +525,8 @@ Ext.define('Ext.draw.Surface', {
      *         y: 100
      *     });
      *
+     * @param {Ext.draw.Sprite[]/Ext.draw.Sprite...} args One or more Sprite objects of configs.
+     * @return {Ext.draw.Sprite[]/Ext.draw.Sprite} The sprites added.
      */
     add: function() {
         var args = Array.prototype.slice.call(arguments),
@@ -842,7 +848,7 @@ Ext.define('Ext.draw.Surface', {
     createGroup: function(id) {
         var group = this.groups.get(id);
         if (!group) {
-            group = Ext.create('Ext.draw.CompositeSprite', {
+            group = new Ext.draw.CompositeSprite({
                 surface: this
             });
             group.id = id || Ext.id(null, 'ext-surface-group-');

@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Basic Toolbar class. Although the {@link Ext.container.Container#defaultType defaultType} for Toolbar is {@link Ext.button.Button button}, Toolbar
  * elements (child items for the Toolbar container) may be virtually any type of Component. Toolbar elements can be created explicitly via their
@@ -202,8 +188,7 @@ Ext.define('Ext.toolbar.Toolbar', {
     requires: [
         'Ext.toolbar.Fill',
         'Ext.layout.container.HBox',
-        'Ext.layout.container.VBox',
-        'Ext.FocusManager'
+        'Ext.layout.container.VBox'
     ],
     uses: [
         'Ext.toolbar.Separator'
@@ -250,6 +235,24 @@ Ext.define('Ext.toolbar.Toolbar', {
 
     itemCls: Ext.baseCSSPrefix + 'toolbar-item',
 
+    statics: {
+        shortcuts: {
+            '-' : 'tbseparator',
+            ' ' : 'tbspacer'
+        },
+
+        shortcutsHV: {
+            // horizontal
+            0: {
+                '->': { xtype: 'tbfill', height: 0 }
+            },
+            // vertical
+            1: {
+                '->': { xtype: 'tbfill', width: 0 }
+            }
+        }
+    },
+
     initComponent: function() {
         var me = this,
             keys;
@@ -289,12 +292,6 @@ Ext.define('Ext.toolbar.Toolbar', {
          * @param {Boolean} lastOverflow overflow state
          */
         me.addEvents('overflowchange');
-
-        // Subscribe to Ext.FocusManager for key navigation
-        keys = me.vertical ? ['up', 'down'] : ['left', 'right'];
-        Ext.FocusManager.subscribe(me, {
-            keys: keys
-        });
     },
 
     getRefItems: function(deep) {
@@ -334,20 +331,26 @@ Ext.define('Ext.toolbar.Toolbar', {
 
     // private
     lookupComponent: function(c) {
-        if (Ext.isString(c)) {
-            var shortcut = Ext.toolbar.Toolbar.shortcuts[c];
-            if (shortcut) {
+        if (typeof c == 'string') {
+            var T = Ext.toolbar.Toolbar,
+                shortcut = T.shortcutsHV[this.vertical ? 1 : 0][c] || T.shortcuts[c];
+
+            if (typeof shortcut == 'string') {
                 c = {
                     xtype: shortcut
                 };
+            } else if (shortcut) {
+                c = Ext.apply({}, shortcut);
             } else {
                 c = {
                     xtype: 'tbtext',
                     text: c
                 };
             }
+
             this.applyDefaults(c);
         }
+
         return this.callParent(arguments);
     },
 
@@ -380,7 +383,8 @@ Ext.define('Ext.toolbar.Toolbar', {
 
     // private
     constructButton: function(item) {
-        return item.events ? item : this.createComponent(item, item.split ? 'splitbutton' : this.defaultType);
+        return item.events ? item
+                : Ext.widget(item.split ? 'splitbutton' : this.defaultType, item);
     },
 
     // private
@@ -431,10 +435,4 @@ Ext.define('Ext.toolbar.Toolbar', {
     onButtonMenuHide: function(btn) {
         delete this.activeMenuBtn;
     }
-}, function() {
-    this.shortcuts = {
-        '-' : 'tbseparator',
-        ' ' : 'tbspacer',
-        '->': 'tbfill'
-    };
 });

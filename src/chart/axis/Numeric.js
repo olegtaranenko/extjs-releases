@@ -1,20 +1,5 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.axis.Numeric
- * @extends Ext.chart.axis.Axis
  *
  * An axis to handle numeric values. This axis is used for quantitative data as
  * opposed to the category axis. You can set mininum and maximum values to the
@@ -183,4 +168,3 @@ Ext.define('Ext.chart.axis.Numeric', {
         return this.calcEnds();
     }
 });
-

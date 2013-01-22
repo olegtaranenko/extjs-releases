@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A specialized panel intended for use as an application window. Windows are floated, {@link #resizable}, and
  * {@link #draggable} by default. Windows can be {@link #maximizable maximized} to fill the viewport, restored to
@@ -169,10 +155,10 @@ Ext.define('Ext.window.Window', {
     maximizable: false,
 
     // inherit docs
-    minHeight: 100,
+    minHeight: 50,
 
     // inherit docs
-    minWidth: 200,
+    minWidth: 50,
 
     /**
      * @cfg {Boolean} expandOnShow
@@ -209,16 +195,21 @@ Ext.define('Ext.window.Window', {
     // Inherit docs from Component. Windows hide using visibility.
     hideMode: 'visibility',
 
-    /** @cfg {Boolean} floating @hide Windows are always floating*/
+    /**
+     * @cfg {Boolean} floating
+     * Not applicable for Window. Windows are always floating.
+     */
     floating: true,
 
     ariaRole: 'alertdialog',
 
-    itemCls: 'x-window-item',
+    itemCls: Ext.baseCSSPrefix + 'window-item',
 
     overlapHeader: true,
 
     ignoreHeaderBorderManagement: true,
+
+    isWindow: true,
 
     // private
     initComponent: function() {
@@ -275,6 +266,21 @@ Ext.define('Ext.window.Window', {
         if (me.modal) {
             me.ariaRole = 'dialog';
         }
+
+        // clickToRaise
+        if (me.floating) {
+            me.on({
+                element: 'el',
+                mousedown: me.onMouseDown,
+                scope: me
+            });
+        }
+    },
+
+    getElConfig: function () {
+        var config = this.callParent();
+        config.tabIndex = -1;
+        return config;
     },
 
     // State Management
@@ -357,24 +363,9 @@ Ext.define('Ext.window.Window', {
     // private
     afterRender: function() {
         var me = this,
-            hidden = me.hidden,
             keyMap;
 
-        me.hidden = false;
-        // Component's afterRender sizes and positions the Component
         me.callParent();
-        me.hidden = hidden;
-
-        // Create the proxy after the size has been applied in Component.afterRender
-        me.proxy = me.getProxy();
-
-        // clickToRaise
-        me.mon(me.el, 'mousedown', me.onMouseDown, me);
-        
-        // allow the element to be focusable
-        me.el.set({
-            tabIndex: -1
-        });
 
         // Initialize
         if (me.maximized) {
@@ -389,11 +380,6 @@ Ext.define('Ext.window.Window', {
             //if (hidden) { ? would be consistent w/before/afterShow...
                 keyMap.disable();
             //}
-        }
-
-        if (!hidden) {
-            me.syncMonitorWindowResize();
-            me.doConstrain();
         }
     },
 
@@ -439,7 +425,7 @@ Ext.define('Ext.window.Window', {
              * extra logic is needed at these points, use {@link Ext.Function#createInterceptor createInterceptor} or
              * {@link Ext.Function#createSequence createSequence} to augment the existing implementations.
              */
-            me.dd = Ext.create('Ext.util.ComponentDragger', this, ddConfig);
+            me.dd = new Ext.util.ComponentDragger(this, ddConfig);
             me.relayEvents(me.dd, ['dragstart', 'drag', 'dragend']);
         }
     },
@@ -447,7 +433,7 @@ Ext.define('Ext.window.Window', {
     // private
     onEsc: function(k, e) {
         e.stopEvent();
-        this[this.closeAction]();
+        this.close();
     },
 
     // private
@@ -495,16 +481,14 @@ Ext.define('Ext.window.Window', {
     },
 
     /**
-     * Gets the configured default focus item. If a {@link #defaultFocus} is set, it will receive focus, otherwise the
-     * Container itself will receive focus.
+     * Gets the configured default focus item.  If a {@link #defaultFocus} is set, it will
+     * receive focus when the Window's <code>focus</code> method is called, otherwise the
+     * Window itself will receive focus.
      */
-    getFocusEl: function() {
+    getDefaultFocus: function() {
         var me = this,
             f = me.focusEl,
-            defaultComp = me.defaultButton || me.defaultFocus,
-            t = typeof db,
-            el,
-            ct;
+            defaultComp = me.defaultButton || me.defaultFocus;
 
         if (Ext.isDefined(defaultComp)) {
             if (Ext.isNumber(defaultComp)) {
@@ -515,7 +499,25 @@ Ext.define('Ext.window.Window', {
                 f = defaultComp;
             }
         }
-        return f || me.focusEl;
+        return f || me;
+    },
+
+    /**
+     * @private
+     * @override
+     * Called when a Component's focusEl receives focus.
+     * If there is a valid default focus Component to jump to, focus that,
+     * otherwise continue as usual, focus this Component.
+     */
+    onFocus: function() {
+        var me = this,
+            focusDescendant = me.getDefaultFocus();
+
+        if (focusDescendant !== me) {
+            focusDescendant.focus();
+        } else {
+            me.callParent(arguments);
+        }
     },
 
     // private
@@ -656,6 +658,9 @@ Ext.define('Ext.window.Window', {
             if (me.dd) {
                 me.dd.disable();
             }
+            if (me.resizer) {
+                me.resizer.disable();
+            }
             if (me.collapseTool) {
                 me.collapseTool.hide();
             }
@@ -710,6 +715,10 @@ Ext.define('Ext.window.Window', {
             if (me.dd) {
                 me.dd.enable();
             }
+            
+            if (me.resizer) {
+                me.resizer.enable();
+            }
 
             me.container.removeCls(Ext.baseCSSPrefix + 'window-maximized-ct');
 
@@ -756,10 +765,4 @@ Ext.define('Ext.window.Window', {
         return this[this.maximized ? 'restore': 'maximize']();
     }
 
-    /**
-     * @cfg {Boolean} autoWidth @hide
-     * Absolute positioned element and therefore cannot support autoWidth.
-     * A width is a required configuration.
-     **/
 });
-

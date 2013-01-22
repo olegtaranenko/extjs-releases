@@ -48,16 +48,28 @@ Ext.define('Ext.form.field.TextArea', {
     extend:'Ext.form.field.Text',
     alias: ['widget.textareafield', 'widget.textarea'],
     alternateClassName: 'Ext.form.TextArea',
-    requires: ['Ext.XTemplate', 'Ext.layout.component.field.TextArea'],
+    requires: [
+        'Ext.XTemplate', 
+        'Ext.layout.component.field.TextArea',
+        'Ext.util.DelayedTask'
+    ],
 
     fieldSubTpl: [
-        '&lt;textarea id=&quot;{id}&quot; ',
-            '&lt;tpl if=&quot;name&quot;&gt;name=&quot;{name}&quot; &lt;/tpl&gt;',
-            '&lt;tpl if=&quot;rows&quot;&gt;rows=&quot;{rows}&quot; &lt;/tpl&gt;',
-            '&lt;tpl if=&quot;cols&quot;&gt;cols=&quot;{cols}&quot; &lt;/tpl&gt;',
-            '&lt;tpl if=&quot;tabIdx&quot;&gt;tabIndex=&quot;{tabIdx}&quot; &lt;/tpl&gt;',
-            'class=&quot;{fieldCls} {typeCls}&quot; ',
-            'autocomplete=&quot;off&quot;&gt;',
+        '&lt;textarea id=&quot;{id}&quot;',
+            '&lt;tpl if=&quot;name&quot;&gt; name=&quot;{name}&quot;&lt;/tpl&gt;',
+            '&lt;tpl if=&quot;rows&quot;&gt; rows=&quot;{rows}&quot; &lt;/tpl&gt;',
+            '&lt;tpl if=&quot;cols&quot;&gt; cols=&quot;{cols}&quot; &lt;/tpl&gt;',
+            '&lt;tpl if=&quot;value&quot;&gt; value=&quot;{value}&quot;&lt;/tpl&gt;',
+            '&lt;tpl if=&quot;placeholder&quot;&gt; placeholder=&quot;{placeholder}&quot;&lt;/tpl&gt;',
+            '&lt;tpl if=&quot;size&quot;&gt; size=&quot;{size}&quot;&lt;/tpl&gt;',
+            '&lt;tpl if=&quot;maxLength !== undefined&quot;&gt; maxlength=&quot;{maxLength}&quot;&lt;/tpl&gt;',
+            '&lt;tpl if=&quot;readOnly&quot;&gt; readonly=&quot;readonly&quot;&lt;/tpl&gt;',
+            '&lt;tpl if=&quot;disabled&quot;&gt; disabled=&quot;disabled&quot;&lt;/tpl&gt;',
+            '&lt;tpl if=&quot;tabIdx&quot;&gt; tabIndex=&quot;{tabIdx}&quot;&lt;/tpl&gt;',
+            ' class=&quot;{fieldCls} {typeCls}&quot; ',
+            '&lt;tpl if=&quot;fieldStyle&quot;&gt; style=&quot;{fieldStyle}&quot;&lt;/tpl&gt;',
+            ' autocomplete=&quot;off&quot;&gt;',
+            '&lt;tpl if=&quot;value&quot;&gt;{value}&lt;/tpl&gt;',
         '&lt;/textarea&gt;',
         {
             compiled: true,
@@ -92,10 +104,10 @@ Ext.define('Ext.form.field.TextArea', {
      */
     cols: 20,
 
-<span id='Ext-form-field-TextArea-cfg-cols'>    /**
-</span>     * @cfg {Number} cols
-     * An initial value for the 'cols' attribute on the textarea element. This is only used if the component has no
-     * configured {@link #width} and is not given a width by its container's layout.
+<span id='Ext-form-field-TextArea-cfg-rows'>    /**
+</span>     * @cfg {Number} rows
+     * An initial value for the 'rows' attribute on the textarea element. This is only used if the component has no
+     * configured {@link #height} and is not given a height by its container's layout. Defaults to 4.
      */
     rows: 4,
 
@@ -118,34 +130,70 @@ Ext.define('Ext.form.field.TextArea', {
     componentLayout: 'textareafield',
 
     // private
-    onRender: function(ct, position) {
-        var me = this;
-        Ext.applyIf(me.subTplData, {
+    getSubTplData: function() {
+        var me = this,
+            fieldStyle = me.fieldStyle,
+            ret = me.callParent();
+
+        if (me.grow) {
+            if (me.preventScrollbars) {
+                ret.fieldStyle = (fieldStyle||'') + ';overflow:hidden;height:' + me.growMin + 'px';
+            }
+        }
+
+        Ext.applyIf(ret, {
             cols: me.cols,
             rows: me.rows
         });
 
-        me.callParent(arguments);
+        return ret;
     },
 
-    // private
-    afterRender: function(){
+    afterRender: function () {
         var me = this;
 
         me.callParent(arguments);
 
-        if (me.grow) {
-            if (me.preventScrollbars) {
-                me.inputEl.setStyle('overflow', 'hidden');
-            }
-            me.inputEl.setHeight(me.growMin);
+        me.needsMaxCheck = me.enforceMaxLength &amp;&amp; !Ext.supports.TextAreaMaxLength;
+        if (me.needsMaxCheck) {
+            me.inputEl.on('paste', me.onPaste, me);
+        }
+    },
+
+    onPaste: function(e){
+        var me = this;
+        if (!me.pasteTask) {
+            me.pasteTask = new Ext.util.DelayedTask(me.pasteCheck, me);
+        }
+        // since we can't get the paste data, we'll give the area a chance to populate
+        me.pasteTask.delay(1);
+    },
+    
+    pasteCheck: function(){
+        var me = this,
+            value = me.getValue(),
+            max = me.maxLength;
+            
+        if (value.length &gt; max) {
+            value = value.substr(0, max);
+            me.setValue(value);
         }
     },
 
     // private
     fireKey: function(e) {
-        if (e.isSpecialKey() &amp;&amp; (this.enterIsSpecial || (e.getKey() !== e.ENTER || e.hasModifier()))) {
-            this.fireEvent('specialkey', this, e);
+        var me = this,
+            value;
+            
+        if (e.isSpecialKey() &amp;&amp; (me.enterIsSpecial || (e.getKey() !== e.ENTER || e.hasModifier()))) {
+            me.fireEvent('specialkey', me, e);
+        }
+        
+        if (me.needsMaxCheck) {
+            value = me.getValue();
+            if (value.length &gt;= me.maxLength) {
+                e.stopEvent();
+            }
         }
     },
 
@@ -181,10 +229,16 @@ Ext.define('Ext.form.field.TextArea', {
      */
     getBodyNaturalWidth: function() {
         return Math.round(this.cols * 6.5) + 20;
+    },
+    
+    beforeDestroy: function(){
+        var task = this.pasteTask;
+        if (task) {
+            task.delay();
+        }    
+        this.callParent();
     }
-
 });
-
 </pre>
 </body>
 </html>

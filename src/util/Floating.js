@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * A mixin to add floating capability to a Component.
  */
@@ -34,22 +20,21 @@ Ext.define('Ext.util.Floating', {
      */
     shadow: 'sides',
 
-    constructor: function(config) {
+    constructor: function (dom) {
         var me = this;
-        
-        me.floating = true;
-        me.el = Ext.create('Ext.Layer', Ext.apply({}, config, {
-            hideMode: me.hideMode,
-            hidden: me.hidden,
-            shadow: Ext.isDefined(me.shadow) ? me.shadow : 'sides',
-            shadowOffset: me.shadowOffset,
-            constrain: false,
-            shim: me.shim === false ? false : undefined
-        }), me.el);
-    },
 
-    onFloatRender: function() {
-        var me = this;
+        me.el = new Ext.Layer(Ext.apply({
+            hideMode     : me.hideMode,
+            hidden       : me.hidden,
+            shadow       : (typeof me.shadow != 'undefined') ? me.shadow : 'sides',
+            shadowOffset : me.shadowOffset,
+            constrain    : false,
+            shim         : (me.shim === false) ? false : undefined
+        }, me.floating), dom);
+
+        me.floating = true;  // release config object (if it was one)
+
+        // Perform render-time tasks
         me.zIndexParent = me.getZIndexParent();
         me.setFloatParent(me.ownerCt);
         delete me.ownerCt;
@@ -262,11 +247,14 @@ Ext.define('Ext.util.Floating', {
             if (me.el.shadow && !me.maximized) {
                 me.el.enableShadow(true);
             }
+            if (me.modal) {
+                me.focus(false, true);
+            }
             me.fireEvent('activate', me);
         } else {
             // Only the *Windows* in a zIndex stack share a shadow. All other types of floaters
             // can keep their shadows all the time
-            if ((me instanceof Ext.window.Window) && (newActive instanceof Ext.window.Window)) {
+            if (me.isWindow && (newActive && newActive.isWindow)) {
                 me.el.disableShadow();
             }
             me.fireEvent('deactivate', me);
@@ -288,9 +276,22 @@ Ext.define('Ext.util.Floating', {
      */
     center: function() {
         var me = this,
+            xy;
+            
+        if (me.isVisible()) {
             xy = me.el.getAlignToXY(me.container, 'c-c');
-        me.setPagePosition(xy);
+            me.setPagePosition(xy);
+        } else {
+            me.needsCenter = true;
+        }
         return me;
+    },
+    
+    onFloatShow: function(){
+        if (this.needsCenter) {
+            this.center();    
+        }
+        delete this.needsCenter;
     },
 
     // private

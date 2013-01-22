@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Ext.Direct aims to streamline communication between the client and server by providing a single interface that
  * reduces the amount of common code typically required to validate data and handle returned data packets (reading data,
@@ -98,8 +84,8 @@ Ext.define('Ext.direct.Manager', {
              */
             'exception'
         );
-        me.transactions = Ext.create('Ext.util.MixedCollection');
-        me.providers = Ext.create('Ext.util.MixedCollection');
+        me.transactions = new Ext.util.MixedCollection();
+        me.providers = new Ext.util.MixedCollection();
 
         me.mixins.observable.constructor.call(me);
     },
@@ -251,4 +237,3 @@ Ext.define('Ext.direct.Manager', {
     // Backwards compatibility
     Ext.Direct = Ext.direct.Manager;
 });
-

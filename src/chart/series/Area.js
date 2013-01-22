@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.chart.series.Area
  * @extends Ext.chart.series.Cartesian
@@ -194,7 +180,7 @@ Ext.define('Ext.chart.series.Area', {
             math = Math,
             mmin = math.min,
             mmax = math.max,
-            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem;
+            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem, axis, out;
 
         me.setBBox();
         bbox = me.bbox;
@@ -210,7 +196,7 @@ Ext.define('Ext.chart.series.Area', {
         }
 
         if (me.yField && !Ext.isNumber(minY)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
+            axis = new Ext.chart.axis.Axis({
                 chart: chart,
                 fields: [].concat(me.yField)
             });
@@ -647,7 +633,7 @@ Ext.define('Ext.chart.series.Area', {
                 to.opacity = Math.max(area.__prevOpacity - 0.3, 0);
             }
             if (this.chart.animate) {
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', Ext.apply({
+                area.__highlightAnim = new Ext.fx.Anim(Ext.apply({
                     target: area,
                     to: to
                 }, this.chart.animate));
@@ -671,7 +657,7 @@ Ext.define('Ext.chart.series.Area', {
             }
             if (area.__highlighted) {
                 area.__highlighted = false;
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', {
+                area.__highlightAnim = new Ext.fx.Anim({
                     target: area,
                     to: {
                         fill: area.__prevFill,
@@ -926,7 +912,7 @@ Ext.define('Ext.chart.series.Area', {
             math = Math,
             mmin = math.min,
             mmax = math.max,
-            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem;
+            bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem, axis, out;
 
         me.setBBox();
         bbox = me.bbox;
@@ -942,7 +928,7 @@ Ext.define('Ext.chart.series.Area', {
         }
 
         if (me.yField && !Ext.isNumber(minY)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
+            axis = new Ext.chart.axis.Axis({
                 chart: chart,
                 fields: [].concat(me.yField)
             });
@@ -1379,7 +1365,7 @@ Ext.define('Ext.chart.series.Area', {
                 to.opacity = Math.max(area.__prevOpacity - 0.3, 0);
             }
             if (this.chart.animate) {
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', Ext.apply({
+                area.__highlightAnim = new Ext.fx.Anim(Ext.apply({
                     target: area,
                     to: to
                 }, this.chart.animate));
@@ -1403,7 +1389,7 @@ Ext.define('Ext.chart.series.Area', {
             }
             if (area.__highlighted) {
                 area.__highlighted = false;
-                area.__highlightAnim = Ext.create('Ext.fx.Anim', {
+                area.__highlightAnim = new Ext.fx.Anim({
                     target: area,
                     to: {
                         fill: area.__prevFill,
@@ -1476,4 +1462,3 @@ Ext.define('Ext.chart.series.Area', {
         return me.colorArrayStyle[index % me.colorArrayStyle.length];
     }
 });
-

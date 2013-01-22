@@ -51,9 +51,8 @@ Ext.define('Ext.form.field.Picker', {
      */
 
 <span id='Ext-form-field-Picker-cfg-openCls'>    /**
-</span>     * @cfg {String} openCls
+</span>     * @cfg {String} [openCls='x-pickerfield-open']
      * A class to be added to the field's {@link #bodyEl} element when the picker is opened.
-     * Defaults to 'x-pickerfield-open'.
      */
     openCls: Ext.baseCSSPrefix + 'pickerfield-open',
 
@@ -105,7 +104,7 @@ Ext.define('Ext.form.field.Picker', {
         me.callParent();
 
         // Add handlers for keys to expand/collapse the picker
-        me.keyNav = Ext.create('Ext.util.KeyNav', me.inputEl, {
+        me.keyNav = new Ext.util.KeyNav(me.inputEl, {
             down: function() {
                 if (!me.isExpanded) {
                     // Don't call expand() directly as there may be additional processing involved before
@@ -168,13 +167,12 @@ Ext.define('Ext.form.field.Picker', {
      */
     alignPicker: function() {
         var me = this,
-            picker;
+            picker = me.getPicker();
 
         if (me.isExpanded) {
-            picker = me.getPicker();
             if (me.matchFieldWidth) {
                 // Auto the height (it will be constrained by min and max width) unless there are no records to display.
-                picker.setSize(me.bodyEl.getWidth(), picker.store &amp;&amp; picker.store.getCount() ? null : 0);
+                picker.setSize(me.bodyEl.getWidth(), picker.getHeight());
             }
             if (picker.isFloating()) {
                 me.doAlign();

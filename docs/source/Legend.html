@@ -22,7 +22,7 @@
  * The 'chart' member must be set prior to rendering.
  * The legend class displays a list of legend items each of them related with a
  * series being rendered. In order to render the legend item of the proper series
- * the series configuration object must have `showInSeries` set to true.
+ * the series configuration object must have `showInLegend` set to true.
  *
  * The legend configuration object accepts a `position` as parameter.
  * The `position` parameter can be `left`, `right`
@@ -269,7 +269,7 @@ Ext.define('Ext.chart.Legend', {
         chart.series.each(function(series, i) {
             if (series.showInLegend) {
                 Ext.each([].concat(series.yField), function(field, j) {
-                    item = Ext.create('Ext.chart.LegendItem', {
+                    item = new Ext.chart.LegendItem({
                         legend: this,
                         series: series,
                         surface: chart.surface,

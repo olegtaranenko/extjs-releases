@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * The Ext.grid.plugin.CellEditing plugin injects editing at a cell level for a Grid. Only a single
  * cell will be editable at a time. The field that will be used for the editor is defined at the
@@ -144,10 +130,10 @@ Ext.define('Ext.grid.plugin.CellEditing', {
          * - cancel - Set this to true to cancel the edit or return false from your handler.
          */
         this.callParent(arguments);
-        this.editors = Ext.create('Ext.util.MixedCollection', false, function(editor) {
+        this.editors = new Ext.util.MixedCollection(false, function(editor) {
             return editor.editorId;
         });
-        this.editTask = Ext.create('Ext.util.DelayedTask');
+        this.editTask = new Ext.util.DelayedTask();
     },
     
     onReconfigure: function(){
@@ -213,7 +199,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         me.completeEdit();
 
         context.originalValue = context.value = value;
-        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', context) === false || context.cancel) {
+        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel) {
             return false;
         }
         
@@ -288,9 +274,10 @@ Ext.define('Ext.grid.plugin.CellEditing', {
 
             // Allow them to specify a CellEditor in the Column
             if (!(editor instanceof Ext.grid.CellEditor)) {
-                editor = Ext.create('Ext.grid.CellEditor', {
+                editor = new Ext.grid.CellEditor({
                     editorId: editorId,
-                    field: editor
+                    field: editor,
+                    editingPlugin: me
                 });
             }
             editor.parentEl = me.grid.getEditorParent();
@@ -339,25 +326,24 @@ Ext.define('Ext.grid.plugin.CellEditing', {
     onEditComplete : function(ed, value, startValue) {
         var me = this,
             grid = me.grid,
-            sm = grid.getSelectionModel(),
             activeColumn = me.getActiveColumn(),
-            dataIndex;
+            record;
 
         if (activeColumn) {
-            dataIndex = activeColumn.dataIndex;
+            record = me.context.record
 
             me.setActiveEditor(null);
             me.setActiveColumn(null);
             me.setActiveRecord(null);
-            delete sm.wasEditing;
+            delete grid.getSelectionModel().wasEditing;
     
             if (!me.validateEdit()) {
                 return;
             }
             // Only update the record if the new value is different than the
-            // startValue, when the view refreshes its el will gain focus
-            if (value !== startValue) {
-                me.context.record.set(dataIndex, value);
+            // startValue. When the view refreshes its el will gain focus
+            if (!record.isEqual(value, startValue)) {
+                record.set(activeColumn.dataIndex, value);
             // Restore focus back to the view's element.
             } else {
                 grid.getView().getEl(activeColumn).focus();
@@ -390,10 +376,22 @@ Ext.define('Ext.grid.plugin.CellEditing', {
      */
     startEditByPosition: function(position) {
         var me = this,
+            rowIndex = position.row,
             grid = me.grid,
+            store = grid.store,
+            view = grid.getView(),
             sm = grid.getSelectionModel(),
-            editRecord = grid.store.getAt(position.row),
-            editColumnHeader = grid.headerCt.getHeaderAtIndex(position.column);
+            editColumnHeader = grid.headerCt.getHeaderAtIndex(position.column),
+            editRecord, tableView;
+
+        if(store.getAt) {
+            // for regular stores we can use the getAt method to get the record at the specified row index
+            editRecord = store.getAt(rowIndex)
+        } else {
+            // TreeStores don't have the getAt method, so we have to use the view to find the record
+            tableView = editColumnHeader.ownerCt.lockableInjected ? (editColumnHeader.locked ? view.lockedView : view.normalView) : view;
+            editRecord = tableView.getRecord(tableView.getNode(rowIndex));
+        }
 
         if (sm.selectByPosition) {
             sm.selectByPosition(position);

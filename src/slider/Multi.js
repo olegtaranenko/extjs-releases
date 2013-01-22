@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-GNU General Public License Usage
-This file may be used under the terms of the GNU General Public License version 3.0 as published by the Free Software Foundation and appearing in the file LICENSE included in the packaging of this file.  Please review the following information to ensure the GNU General Public License version 3.0 requirements will be met: http://www.gnu.org/copyleft/gpl.html.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * Slider which supports vertical or horizontal orientation, keyboard adjustments, configurable snapping, axis clicking
  * and animation. Can be added as an item to any container.
@@ -45,18 +31,36 @@ Ext.define('Ext.slider.Multi', {
         'Ext.layout.component.field.Slider'
     ],
 
+    childEls: [
+        'endEl', 'innerEl'
+    ],
+
     // note: {id} here is really {inputId}, but {cmpId} is available
     fieldSubTpl: [
         '<div id="{id}" class="' + Ext.baseCSSPrefix + 'slider {fieldCls} {vertical}" aria-valuemin="{minValue}" aria-valuemax="{maxValue}" aria-valuenow="{value}" aria-valuetext="{value}">',
             '<div id="{cmpId}-endEl" class="' + Ext.baseCSSPrefix + 'slider-end" role="presentation">',
                 '<div id="{cmpId}-innerEl" class="' + Ext.baseCSSPrefix + 'slider-inner" role="presentation">',
-                    '<a id="{cmpId}-focusEl" class="' + Ext.baseCSSPrefix + 'slider-focus" href="#" tabIndex="-1" hidefocus="on" role="presentation"></a>',
+                    '{%this.renderThumbs(out, values)%}',
                 '</div>',
             '</div>',
         '</div>',
         {
-            disableFormats: true,
-            compiled: true
+            renderThumbs: function(out, values) {
+                var me = values.$comp,
+                    i = 0,
+                    thumbs = me.thumbs,
+                    len = thumbs.length,
+                    thumb,
+                    thumbConfig;
+
+                for (; i < len; i++) {
+                    thumb = thumbs[i];
+                    thumbConfig = thumb.getElConfig();
+                    thumbConfig.id = me.id + '-thumb-' + i,
+                    Ext.DomHelper.generateMarkup(thumbConfig, out);
+                }
+            },
+            disableFormats: true
         }
     ],
 
@@ -263,7 +267,7 @@ Ext.define('Ext.slider.Multi', {
                 }
             });
             if (!hasTip) {
-                me.plugins.push(Ext.create('Ext.slider.Tip', tipPlug));
+                me.plugins.push(new Ext.slider.Tip(tipPlug));
             }
         }
     },
@@ -275,12 +279,15 @@ Ext.define('Ext.slider.Multi', {
      */
     addThumb: function(value) {
         var me = this,
-            thumb = Ext.create('Ext.slider.Thumb', {
-            value    : value,
-            slider   : me,
-            index    : me.thumbs.length,
-            constrain: me.constrainThumbs
-        });
+            thumb = new Ext.slider.Thumb({
+                ownerCt     : me,
+                ownerLayout : me.getComponentLayout(),
+                value       : value,
+                slider      : me,
+                index       : me.thumbs.length,
+                constrain   : me.constrainThumbs
+            });
+
         me.thumbs.push(thumb);
 
         //render the thumb now if needed
@@ -316,33 +323,68 @@ Ext.define('Ext.slider.Multi', {
     },
 
     // private override
-    onRender : function() {
-        var me = this,
-            i = 0,
-            thumbs = me.thumbs,
-            len = thumbs.length,
-            thumb;
+    getSubTplData : function() {
+        var me = this;
 
-        Ext.applyIf(me.subTplData, {
+        return Ext.apply(me.callParent(), {
+            $comp: me,
             vertical: me.vertical ? Ext.baseCSSPrefix + 'slider-vert' : Ext.baseCSSPrefix + 'slider-horz',
             minValue: me.minValue,
             maxValue: me.maxValue,
             value: me.value
         });
+    },
 
-        me.addChildEls('endEl', 'innerEl', 'focusEl');
+    onRender : function() {
+        var me = this,
+            thumbs = me.thumbs,
+            len = thumbs.length,
+            i = 0,
+            thumb;
 
         me.callParent(arguments);
 
-        //render each thumb
-        for (; i < len; i++) {
-            thumbs[i].render();
+        for (i = 0; i < len; i++) {
+            thumb = thumbs[i];
+            thumb.el = me.el.getById(me.id + '-thumb-' + i);
+            thumb.onRender();
         }
 
-        //calculate the size of half a thumb
-        thumb = me.innerEl.down('.' + Ext.baseCSSPrefix + 'slider-thumb');
-        me.halfThumb = (me.vertical ? thumb.getHeight() : thumb.getWidth()) / 2;
+    },
 
+    afterComponentLayout: function() {
+        var me = this,
+            i = 0,
+            thumbs = me.thumbs,
+            len = thumbs.length,
+            thumb,
+            v;
+
+        me.callParent(arguments);
+
+        if (!me.halfThumb) {
+            for (; i < len; i++) {
+                thumb = thumbs[i];
+                if (thumb.value !== undefined) {
+                    v = me.normalizeValue(thumb.value);
+                    if (v !== thumb.value) {
+                        // delete this.value;
+                        me.setValue(i, v, false);
+                    } else {
+                        thumb.move(me.translateValue(v), false);
+                    }
+                }
+            }
+        }
+    },
+
+    // A Once-only method to calculate how to offset the thumb el position from its calculated center position.
+    getHalfThumbSize: function() {
+        var me = this;
+        if (!me.halfThumb) {
+            me.halfThumb = (me.vertical ? me.thumbs[0].el.getHeight() : me.thumbs[0].el.getWidth()) / 2;
+        }
+        return me.halfThumb;
     },
 
     /**
@@ -368,8 +410,6 @@ Ext.define('Ext.slider.Multi', {
             keydown  : me.onKeyDown,
             change : me.onChange
         });
-
-        me.focusEl.swallowEvent("click", true);
     },
 
     /**
@@ -497,32 +537,6 @@ Ext.define('Ext.slider.Multi', {
         }
     },
 
-    // private
-    afterRender : function() {
-        var me = this,
-            i = 0,
-            thumbs = me.thumbs,
-            len = thumbs.length,
-            thumb,
-            v;
-
-        me.callParent(arguments);
-
-        for (; i < len; i++) {
-            thumb = thumbs[i];
-
-            if (thumb.value !== undefined) {
-                v = me.normalizeValue(thumb.value);
-                if (v !== thumb.value) {
-                    // delete this.value;
-                    me.setValue(i, v, false);
-                } else {
-                    thumb.move(me.translateValue(v), false);
-                }
-            }
-        }
-    },
-
     /**
      * @private
      * Returns the ratio of pixels to mapped values. e.g. if the slider is 200px wide and maxValue - minValue is 100,
@@ -637,7 +651,7 @@ Ext.define('Ext.slider.Multi', {
      */
     translateValue : function(v) {
         var ratio = this.getRatio();
-        return (v * ratio) - (this.minValue * ratio) - this.halfThumb;
+        return (v * ratio) - (this.minValue * ratio) - this.getHalfThumbSize();
     },
 
     /**
@@ -651,11 +665,6 @@ Ext.define('Ext.slider.Multi', {
     reverseValue : function(pos) {
         var ratio = this.getRatio();
         return (pos + (this.minValue * ratio)) / ratio;
-    },
-
-    // private
-    focus : function() {
-        this.focusEl.focus(10);
     },
 
     //private
@@ -821,4 +830,3 @@ Ext.define('Ext.slider.Multi', {
         }
     }
 });
-

@@ -21,7 +21,8 @@
  */
 Ext.define('Ext.app.EventBus', {
     requires: [
-        'Ext.util.Event'
+        'Ext.util.Event',
+        'Ext.Component'
     ],
     mixins: {
         observable: 'Ext.util.Observable'
@@ -63,7 +64,7 @@ Ext.define('Ext.app.EventBus', {
                             // Fire the event!
                             if (event.fire.apply(event, Array.prototype.slice.call(args, 1)) === false) {
                                 return false;
-                            };
+                            }
                         }
                     }
                 }
@@ -87,7 +88,7 @@ Ext.define('Ext.app.EventBus', {
             Ext.Object.each(listeners, function(ev, listener) {
                 var options = {},
                     scope = controller,
-                    event = Ext.create('Ext.util.Event', controller, ev);
+                    event = new Ext.util.Event(controller, ev);
 
                 // Normalize the listener
                 if (Ext.isObject(listener)) {
@@ -110,6 +111,7 @@ Ext.define('Ext.app.EventBus', {
             });
         });
     }
-});</pre>
+});
+</pre>
 </body>
 </html>
