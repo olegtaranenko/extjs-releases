@@ -1,14 +1,32 @@
 /**
- * Base class for all Ext components. All subclasses of Component may participate in the automated Ext component
+ * Base class for all Ext components.
+ *
+ * The Component base class has built-in support for basic hide/show and enable/disable and size control behavior.
+ *
+ * ## xtypes
+ *
+ * Every component has a specific xtype, which is its Ext-specific type name, along with methods for checking the xtype
+ * like {@link #getXType} and {@link #isXType}. See the [Component Guide][1] for more information on xtypes and the
+ * Component hierarchy.
+ *
+ * ## Finding components
+ *
+ * All Components are registered with the {@link Ext.ComponentManager} on construction so that they can be referenced at
+ * any time via {@link Ext#getCmp Ext.getCmp}, passing the {@link #id}.
+ *
+ * Additionally the {@link Ext.ComponentQuery} provides a CSS-selectors-like way to look up components by their xtype
+ * and many other attributes.  For example the following code will find all textfield components inside component with
+ * `id: 'myform'`:
+ *
+ *     Ext.ComponentQuery.query('#myform textfield');
+ *
+ * ## Extending Ext.Component
+ *
+ * All subclasses of Component may participate in the automated Ext component
  * lifecycle of creation, rendering and destruction which is provided by the {@link Ext.container.Container Container}
  * class. Components may be added to a Container through the {@link Ext.container.Container#cfg-items items} config option
  * at the time the Container is created, or they may be added dynamically via the
  * {@link Ext.container.Container#method-add add} method.
- *
- * The Component base class has built-in support for basic hide/show and enable/disable and size control behavior.
- *
- * All Components are registered with the {@link Ext.ComponentManager} on construction so that they can be referenced at
- * any time via {@link Ext#getCmp Ext.getCmp}, passing the {@link #id}.
  *
  * All user-developed visual widgets that are required to participate in automated lifecycle and size management should
  * subclass Component.
@@ -16,84 +34,11 @@
  * See the Creating new UI controls chapter in [Component Guide][1] for details on how and to either extend
  * or augment Ext JS base classes to create custom Components.
  *
- * Every component has a specific xtype, which is its Ext-specific type name, along with methods for checking the xtype
- * like {@link #getXType} and {@link #isXType}. See the [Component Guide][1] for more information on xtypes and the
- * Component hierarchy.
+ * ## The Ext.Component class by itself
  *
- * This is the list of all valid xtypes:
- *
- *     xtype            Class
- *     -------------    ------------------
- *     button           {@link Ext.button.Button}
- *     buttongroup      {@link Ext.container.ButtonGroup}
- *     colorpalette     {@link Ext.picker.Color}
- *     component        {@link Ext.Component}
- *     container        {@link Ext.container.Container}
- *     cycle            {@link Ext.button.Cycle}
- *     dataview         {@link Ext.view.View}
- *     datepicker       {@link Ext.picker.Date}
- *     editor           {@link Ext.Editor}
- *     editorgrid       {@link Ext.grid.plugin.Editing}
- *     grid             {@link Ext.grid.Panel}
- *     multislider      {@link Ext.slider.Multi}
- *     panel            {@link Ext.panel.Panel}
- *     progressbar      {@link Ext.ProgressBar}
- *     slider           {@link Ext.slider.Single}
- *     splitbutton      {@link Ext.button.Split}
- *     tabpanel         {@link Ext.tab.Panel}
- *     treepanel        {@link Ext.tree.Panel}
- *     viewport         {@link Ext.container.Viewport}
- *     window           {@link Ext.window.Window}
- *
- *     Toolbar components
- *     ---------------------------------------
- *     pagingtoolbar    {@link Ext.toolbar.Paging}
- *     toolbar          {@link Ext.toolbar.Toolbar}
- *     tbfill           {@link Ext.toolbar.Fill}
- *     tbitem           {@link Ext.toolbar.Item}
- *     tbseparator      {@link Ext.toolbar.Separator}
- *     tbspacer         {@link Ext.toolbar.Spacer}
- *     tbtext           {@link Ext.toolbar.TextItem}
- *
- *     Menu components
- *     ---------------------------------------
- *     menu             {@link Ext.menu.Menu}
- *     menucheckitem    {@link Ext.menu.CheckItem}
- *     menuitem         {@link Ext.menu.Item}
- *     menuseparator    {@link Ext.menu.Separator}
- *     menutextitem     {@link Ext.menu.Item}
- *
- *     Form components
- *     ---------------------------------------
- *     form             {@link Ext.form.Panel}
- *     checkbox         {@link Ext.form.field.Checkbox}
- *     combo            {@link Ext.form.field.ComboBox}
- *     datefield        {@link Ext.form.field.Date}
- *     displayfield     {@link Ext.form.field.Display}
- *     field            {@link Ext.form.field.Base}
- *     fieldset         {@link Ext.form.FieldSet}
- *     hidden           {@link Ext.form.field.Hidden}
- *     htmleditor       {@link Ext.form.field.HtmlEditor}
- *     label            {@link Ext.form.Label}
- *     numberfield      {@link Ext.form.field.Number}
- *     radio            {@link Ext.form.field.Radio}
- *     radiogroup       {@link Ext.form.RadioGroup}
- *     textarea         {@link Ext.form.field.TextArea}
- *     textfield        {@link Ext.form.field.Text}
- *     timefield        {@link Ext.form.field.Time}
- *     trigger          {@link Ext.form.field.Trigger}
- *
- *     Chart components
- *     ---------------------------------------
- *     chart            {@link Ext.chart.Chart}
- *     barchart         {@link Ext.chart.series.Bar}
- *     columnchart      {@link Ext.chart.series.Column}
- *     linechart        {@link Ext.chart.series.Line}
- *     piechart         {@link Ext.chart.series.Pie}
- *
- * It should not usually be necessary to instantiate a Component because there are provided subclasses which implement
- * specialized Component use cases which cover most application needs. However it is possible to instantiate a base
- * Component, and it will be renderable, or will particpate in layouts as the child item of a Container:
+ * Usually one doesn't need to instantiate the Ext.Component class. There are subclasses which implement
+ * specialized use cases, covering most application needs. However it is possible to instantiate a base
+ * Component, and it can be rendered to document, or handled by layouts as the child item of a Container:
  *
  *     @example
  *     Ext.create('Ext.Component', {
@@ -110,10 +55,10 @@
  *
  * The Component above creates its encapsulating `div` upon render, and use the configured HTML as content. More complex
  * internal structure may be created using the {@link #renderTpl} configuration, although to display database-derived
- * mass data, it is recommended that an ExtJS data-backed Component such as a {@link Ext.view.View View}, or {@link
- * Ext.grid.Panel GridPanel}, or {@link Ext.tree.Panel TreePanel} be used.
+ * mass data, it is recommended that an ExtJS data-backed Component such as a {@link Ext.view.View View},
+ * {@link Ext.grid.Panel GridPanel}, or {@link Ext.tree.Panel TreePanel} be used.
  *
- * [2]: #!/guide/components
+ * [1]: #!/guide/components
  */
 Ext.define('Ext.Component', {
 
@@ -325,6 +270,13 @@ Ext.define('Ext.Component', {
      */
 
     /**
+     * @cfg {Number/String} [columnWidth=undefined]
+     * Defines the column width inside {@link Ext.layout.container.Column column layout}.
+     *
+     * Can be specified as a number or as a percentage.
+     */
+
+    /**
      * @cfg {String} [region=undefined]
      * Defines the region inside {@link Ext.layout.container.Border border layout}.
      *
@@ -338,12 +290,9 @@ Ext.define('Ext.Component', {
      */
 
     hideMode: 'display',
-    // Deprecate 5.0
-    hideParent: false,
 
     bubbleEvents: [],
 
-    actionMode: 'el',
     monPropRe: /^(?:scope|delay|buffer|single|stopEvent|preventDefault|stopPropagation|normalized|args|delegate)$/,
 
     //renderTpl: new Ext.XTemplate(
@@ -688,6 +637,8 @@ Ext.define('Ext.Component', {
 
         if (!me.rendered && (me.autoRender || me.floating)) {
             me.doAutoRender();
+            // forcibly set hidden here, since we still want the initial beforeshow/show event to fire
+            me.hidden = true;
         }
         if (me.floating) {
             me.setPosition(x, y, animate);
@@ -699,7 +650,7 @@ Ext.define('Ext.Component', {
 
     /**
      * Sets the page XY position of the component. To set the left and top instead, use {@link #setPosition}.
-     * This method fires the {@link #move} event.
+     * This method fires the {@link #event-move} event.
      * @param {Number} x The new x position
      * @param {Number} y The new y position
      * @param {Boolean/Object} [animate] True to animate the Component into its new position. You may also pass an
@@ -814,15 +765,15 @@ Ext.define('Ext.Component', {
             isContainedFloater = me.isContainedFloater(),
             floatParentBox;
 
-        // Floating Components which were just rendered with no ownerCt return local position.
-        if ((local === true) || !isContainedFloater) {
-            return [el.getLeft(true), el.getTop(true)];
+        // Local position for non-floaters means element's local position
+        if ((local === true) && !isContainedFloater) {
+            return [el.getLocalX(), el.getLocalY()];
         }
 
         xy = me.el.getXY();
 
-        // Floating Components in an ownerCt have to have their positions made relative
-        if (isContainedFloater) {
+        // Local position for floaters means position relative to the container's target element
+        if ((local === true) && isContainedFloater) {
             floatParentBox = me.floatParent.getTargetEl().getViewRegion();
             xy[0] -= floatParentBox.left;
             xy[1] -= floatParentBox.top;
@@ -869,22 +820,28 @@ Ext.define('Ext.Component', {
             if (me.toFrontOnShow && me.floating) {
                 me.toFront();
             }
-        } else if (me.fireEvent('beforeshow', me) !== false) {
-            // Render on first show if there is an autoRender config, or if this is a floater (Window, Menu, BoundList etc).
-            me.hidden = false;
-            if (!rendered && (me.autoRender || me.floating)) {
-                me.doAutoRender();
-                rendered = me.rendered;
-            }
+        } else {
+            if (me.fireEvent('beforeshow', me) !== false) {
+                // Render on first show if there is an autoRender config, or if this is a floater (Window, Menu, BoundList etc).
+                me.hidden = false;
+                if (!rendered && (me.autoRender || me.floating)) {
+                    me.doAutoRender();
+                    rendered = me.rendered;
+                }
             
-            if (rendered) {
-                me.beforeShow();
-                me.onShow.apply(me, arguments);
-                me.afterShow.apply(me, arguments);
+                if (rendered) {
+                    me.beforeShow();
+                    me.onShow.apply(me, arguments);
+                    me.afterShow.apply(me, arguments);
+                }
+            } else {
+                me.onShowVeto();
             }
         }
         return me;
     },
+    
+    onShowVeto: Ext.emptyFn,
 
     /**
      * Invoked before the Component is shown.
@@ -915,8 +872,15 @@ Ext.define('Ext.Component', {
 
         me.el.show();
         me.callParent(arguments);
-        if (me.floating && me.constrain) {
-            me.doConstrain();
+
+        // Constraining/containing element may have changed size while this Component was hidden
+        if (me.floating) {
+            if (me.maximized) {
+                me.fitContainer();
+            }
+            else if (me.constrain) {
+                me.doConstrain();
+            }
         }
     },
 
@@ -1116,10 +1080,6 @@ Ext.define('Ext.Component', {
                 me.resizer,
                 me.resizerComponent
             );
-            // Different from AbstractComponent
-            if (me.actionMode == 'container' || me.removeMode == 'container') {
-                me.container.remove();
-            }
         }
         delete me.focusTask;
         me.callParent();
@@ -1145,7 +1105,17 @@ Ext.define('Ext.Component', {
     focus: function(selectText, delay) {
         var me = this,
             focusEl,
-            focusElDom;
+            focusElDom,
+            containerScrollTop;
+
+        // If delay is wanted, queue a call to this function.
+        if (delay) {
+            if (!me.focusTask) {
+                me.focusTask = new Ext.util.DelayedTask(me.focus);
+            }
+            me.focusTask.delay(Ext.isNumber(delay) ? delay : 10, null, me, [selectText, false]);
+            return me;
+        }
 
         if (me.rendered && !me.isDestroyed && me.isVisible(true) && (focusEl = me.getFocusEl())) {
 
@@ -1155,21 +1125,16 @@ Ext.define('Ext.Component', {
                 return focusEl.focus(selectText, delay);
             }
 
-            // If delay is wanted, queue a call to this function.
-            if (delay) {
-                if (!me.focusTask) {
-                    me.focusTask = new Ext.util.DelayedTask(me.focus);
-                }
-                me.focusTask.delay(Ext.isNumber(delay) ? delay : 10, null, me, [selectText, false]);
-                return me;
-            }
-
             // If it was an Element with a dom property
             if ((focusElDom = focusEl.dom)) {
 
                 // Not a natural focus holding element, add a tab index to make it programatically focusable.
                 if (focusEl.needsTabIndex()) {
                     focusElDom.tabIndex = -1;
+                }
+
+                if (me.floating) {
+                    containerScrollTop = me.container.dom.scrollTop;
                 }
 
                 // Focus the element.
@@ -1185,16 +1150,19 @@ Ext.define('Ext.Component', {
             // this is performed by its zIndexManager. Pass preventFocus true to avoid recursion.
             if (me.floating) {
                 me.toFront(true);
+                if (containerScrollTop !== undefined) {
+                    me.container.dom.scrollTop = containerScrollTop;
+                }
             }
         }
         return me;
     },
-    
+
     /**
      * Cancel any deferred focus on this component
      * @protected
      */
-    cancelFocus: function(){
+    cancelFocus: function() {
         var task = this.focusTask;
         if (task) {
             task.cancel();

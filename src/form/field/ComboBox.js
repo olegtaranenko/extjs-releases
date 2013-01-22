@@ -208,12 +208,12 @@ Ext.define('Ext.form.field.ComboBox', {
      */
     multiSelect: false,
 
+    //<locale>
     /**
      * @cfg {String} delimiter
      * The character(s) used to separate the {@link #displayField display values} of multiple selected items when
      * `{@link #multiSelect} = true`.
      */
-    //<locale>
     delimiter: ', ',
     //</locale>
 
@@ -670,8 +670,11 @@ Ext.define('Ext.form.field.ComboBox', {
 
     // invoked when a different store is bound to this combo
     // than the original
-    resetToDefault: function() {
-
+    resetToDefault: Ext.emptyFn,
+    
+    beforeReset: function() {
+        this.callParent();
+        this.clearFilter();    
     },
     
     onUnbindStore: function(store) {
@@ -679,6 +682,7 @@ Ext.define('Ext.form.field.ComboBox', {
         if (!store && picker) {
             picker.bindStore(null);
         }
+        this.clearFilter();
     },
     
     onBindStore: function(store, initial) {
@@ -890,8 +894,8 @@ Ext.define('Ext.form.field.ComboBox', {
      */
     clearFilter: function() {
         var store = this.store,
-            filters = store.filters,
             filter = this.activeFilter,
+            filters = store.filters,
             remaining;
             
         if (filter) {
@@ -1034,7 +1038,6 @@ Ext.define('Ext.form.field.ComboBox', {
     createPicker: function() {
         var me = this,
             picker,
-            menuCls = Ext.baseCSSPrefix + 'menu',
             pickerCfg = Ext.apply({
                 xtype: 'boundlist',
                 pickerField: me,
@@ -1043,11 +1046,6 @@ Ext.define('Ext.form.field.ComboBox', {
                 },
                 floating: true,
                 hidden: true,
-
-                // The picker (the dropdown) must have its zIndex managed by the same ZIndexManager which is
-                // providing the zIndex of our Container.
-                ownerCt: me.up('[floating]'),
-                cls: me.el && me.el.up('.' + menuCls) ? menuCls : '',
                 store: me.store,
                 displayField: me.displayField,
                 focusOnToFront: false,

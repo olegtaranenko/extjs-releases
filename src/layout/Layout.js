@@ -430,10 +430,11 @@ Ext.define('Ext.layout.Layout', {
      * @private
      */
     renderItem : function(item, target, position) {
+        var me = this;
         if (!item.rendered) {
-            this.configureItem(item);
+            me.configureItem(item);
             item.render(target, position);
-            this.afterRenderItem(item);
+            me.afterRenderItem(item);
         }
     },
 
@@ -492,7 +493,7 @@ Ext.define('Ext.layout.Layout', {
 
     /**
      * Removes layout's itemCls and owning Container's itemCls.
-     * Clears the managed dimensinos flags
+     * Clears the managed dimensions flags
      * @protected
      */
     afterRemove : function(item) {
