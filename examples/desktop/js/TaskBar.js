@@ -150,8 +150,15 @@ Ext.define('Ext.ux.desktop.TaskBar', {
         var win = btn.win;
 
         if (win.minimized || win.hidden) {
-            win.show();
+            btn.disable();
+            win.show(null, function() {
+                btn.enable();
+            });
         } else if (win.active) {
+            btn.disable();
+            win.on('hide', function() {
+                btn.enable();
+            }, null, {sinfgle: true});
             win.minimize();
         } else {
             win.toFront();

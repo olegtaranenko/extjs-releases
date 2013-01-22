@@ -29,17 +29,21 @@ Ext.define('Ext.ux.PreviewPlugin', {
         var bodyField   = this.bodyField,
             hideBodyCls = this.hideBodyCls,
             section     = this.getCmp(),
-            features = [{
+            features    = [{
                 ftype: 'rowbody',
                 getAdditionalData: function(data, idx, record, orig, view) {
-                    var o = Ext.grid.feature.RowBody.prototype.getAdditionalData.apply(this, arguments);
-                    Ext.apply(o, {
-                        rowBody: data[bodyField],
-                        rowBodyCls: section.previewExpanded ? '' : hideBodyCls
-                    });
-                    return o;
+                    var getAdditionalData = Ext.grid.feature.RowBody.prototype.getAdditionalData,
+                        additionalData = {
+                            rowBody: data[bodyField],
+                            rowBodyCls: section.previewExpanded ? '' : hideBodyCls
+                        };
+                        
+                    if (getAdditionalData) {
+                        Ext.apply(additionalData, getAdditionalData.apply(this, arguments));
+                    }
+                    return additionalData;
                 }
-            },{
+            }, {
                 ftype: 'rowwrap'
             }];
         

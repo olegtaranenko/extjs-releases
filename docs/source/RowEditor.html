@@ -54,9 +54,9 @@ Ext.define('Ext.grid.RowEditor', {
     lastScrollLeft: 0,
 <span id='Ext-grid-RowEditor-property-lastScrollTop'>    lastScrollTop: 0,
 </span>
-<span id='Ext-grid-RowEditor-property-border'>    border: false,
+<span id='Ext-grid-RowEditor-cfg-border'>    border: false,
 </span>    
-<span id='Ext-grid-RowEditor-property-hideMode'>    // Change the hideMode to offsets so that we get accurate measurements when
+<span id='Ext-grid-RowEditor-cfg-hideMode'>    // Change the hideMode to offsets so that we get accurate measurements when
 </span>    // the roweditor is hidden for laying out things like a TriggerField.
     hideMode: 'offsets',
 
@@ -98,7 +98,7 @@ Ext.define('Ext.grid.RowEditor', {
             delete me.fields;
         }
         
-        me.mon(Ext.container.Container.hierarchyEventSource, {
+        me.mon(me.hierarchyEventSource, {
             scope: me,
             show: me.repositionIfVisible
         });
@@ -417,7 +417,7 @@ Ext.define('Ext.grid.RowEditor', {
             // Set editor height to match the row height
             if (me.getHeight() != newHeight) {
                 me.setHeight(newHeight);
-                me.el.setLeft(0);
+                me.el.setLocalX(0);
             }
 
             if (animateConfig) {
@@ -442,7 +442,7 @@ Ext.define('Ext.grid.RowEditor', {
         if (me.getWidth() != mainBodyWidth) {
             me.setWidth(mainBodyWidth);
         }
-        btnEl.setLeft(left);
+        btnEl.setLocalX(left);
     },
 
 <span id='Ext-grid-RowEditor-method-getEditor'>    getEditor: function(fieldInfo) {

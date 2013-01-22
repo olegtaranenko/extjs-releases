@@ -187,7 +187,8 @@ Ext.define('Ext.resizer.Resizer', {
             pos, 
             handleEls = [],
             eastWestStyle, style,
-            box;
+            box,
+            unselectableCls = Ext.dom.Element.unselectableCls;
 
         me.addEvents(
 <span id='Ext-resizer-Resizer-event-beforeresize'>            /**
@@ -344,19 +345,26 @@ Ext.define('Ext.resizer.Resizer', {
                 } else {
                     style = '';
                 }
-                handleEls.push('&lt;div id=&quot;' + me.el.id + '-' + pos + '-handle&quot; class=&quot;' + handleCls + pos + ' ' + Ext.baseCSSPrefix + 'unselectable&quot;' + style + '&gt;&lt;/div&gt;');
+
+                handleEls.push(
+                    '&lt;div id=&quot;', me.el.id, '-', pos, '-handle&quot;',
+                        ' class=&quot;', handleCls, pos, ' ', unselectableCls, '&quot;',
+                        ' unselectable=&quot;on&quot;',
+                        style,
+                    '&gt;&lt;/div&gt;'
+                );
             }
         }
         Ext.DomHelper.append(me.el, handleEls.join(''));
 
-        // store a reference to each handle elelemtn in this.east, this.west, etc
+        // store a reference to each handle element in this.east, this.west, etc
         for (i = 0; i &lt; len; i++){
             // if specified and possible, create
             if (handles[i] &amp;&amp; possibles[handles[i]]) {
                 pos = possibles[handles[i]];
                 me[pos] = me.el.getById(me.el.id + '-' + pos + '-handle');
                 me[pos].region = pos;
-                me[pos].unselectable();
+
                 if (me.transparent) {
                     me[pos].setOpacity(0);
                 }

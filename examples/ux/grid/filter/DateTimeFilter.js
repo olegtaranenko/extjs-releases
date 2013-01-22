@@ -36,7 +36,7 @@
  *     }
  *
  * Or, give a value of `true` to accept dock defaults:
- * 
+ *
  *     dock: true
  *
  * But, it must be one or the other.
@@ -49,48 +49,88 @@
  *             // required configs
  *             type: 'datetime',
  *             dataIndex: 'date',
- *      
+ *
  *             // optional configs
- *             //positionDatepickerFirst: true,
- *             //selectDateToFilter: false,
+ *             positionDatepickerFirst: false,
+ *             //selectDateToFilter: false, // this is overridden b/c of the presence of the dock cfg object
+ *
  *             date: {
- *                 
- *             },  
+ *                 format: 'm/d/Y',
+ *             },
+ *
  *             time: {
  *                 format: 'H:i:s A',
  *                 increment: 1
- *             },  
+ *             },
+ *
  *             dock: {
  *                 buttonText: 'Click to Filter',
  *                 dock: 'left'
- *      
+ *
  *                 // allows for custom dockedItems cfg
- *                 //dockedItems: {} 
+ *                 //dockedItems: {}
  *             }
  *         }]
  *     });
+ *
+ * In the above example, note that the filter is being passed a {@link #date} config object,
+ * a {@link #time} config object and a {@link #dock} config. These are all optional.
+ *
+ * As for positioning, the datepicker will be on the right, the timepicker on the left
+ * and the docked items will be docked on the left. In addition, since there's a {@link #dock}
+ * config, clicking the button in the dock will trigger the filtering.
  */
 Ext.define('Ext.ux.grid.filter.DateTimeFilter', {
     extend: 'Ext.ux.grid.filter.DateFilter',
     alias: 'gridfilter.datetime',
 
+    /**
+     * @private
+     */
     dateDefaults: {
-        xtype: 'datepicker'
+        xtype: 'datepicker',
+        format: 'm/d/Y'
     },
 
+    /**
+     * @private
+     */
     timeDefaults: {
         xtype: 'timepicker',
         width: 100,
-        height: 200
+        height: 200,
+        format: 'g:i A'
     },
 
+    /**
+     * @private
+     */
     dockDefaults: {
         dock: 'top',
         buttonText: 'Filter'
     },
 
     /**
-     * @private
+     * @cfg {Object} date
+     * A {@link Ext.picker.Date} can be configured here.
+     * Uses {@link #dateDefaults} by default.
+     */
+
+    /**
+     * @cfg {Object} time
+     * A {@link Ext.picker.Time} can be configured here.
+     * Uses {@link #timeDefaults} by default.
+     */
+
+    /**
+     * @cfg {Boolean/Object} dock
+     * A {@link Ext.panel.AbstractPanel#cfg-dockedItems} can be configured here.
+     * A `true` value will use the {@link #dockDefaults} default configuration.
+     * If present, the button in the docked items will initiate the filtering.
+     */
+
+    /**
+     * @cfg {Boolean} [selectDateToFilter=true]
      * By default, the datepicker has the default event listener bound to it.
      * Setting to `false` will bind it to the timepicker.
      *
@@ -99,8 +139,10 @@ Ext.define('Ext.ux.grid.filter.DateTimeFilter', {
     selectDateToFilter: true,
 
     /**
-     * @private
+     * @cfg {Boolean} [positionDatepickerFirst=true]
      * Positions the datepicker within its container.
+     * A `true` value will place it on the left in the container.
+     * Set to `false` if the timepicker should be placed on the left.
      * Defaults to `true`.
      */
     positionDatepickerFirst: true,
@@ -240,6 +282,9 @@ Ext.define('Ext.ux.grid.filter.DateTimeFilter', {
         me.values = {};
     },
 
+    /**
+     * @private
+     */
     onCheckChange: function (item, checked) {
         var me = this,
             menu = item.menu,
@@ -293,6 +338,63 @@ Ext.define('Ext.ux.grid.filter.DateTimeFilter', {
         // This can be fixed by just walking up the ownerCt chain
         // (same thing, but confusing without comment).
         picker.ownerCt.ownerCt.hide();
+    },
+
+    /**
+     * @private
+     * Template method that is to get and return serialized filter data for
+     * transmission to the server.
+     * @return {Object/Array} An object or collection of objects containing
+     * key value pairs representing the current configuration of the filter.
+     */
+    getSerialArgs: function () {
+        var me = this,
+            key,
+            fields = me.fields,
+            args = [];
+
+        for (key in fields) {
+            if (fields[key].checked) {
+                args.push({
+                    type: 'datetime',
+                    comparison: me.compareMap[key],
+                    value: Ext.Date.format(me.getFieldValue(key), (me.date.format || me.dateDefaults.format) + ' ' + (me.time.format || me.timeDefaults.format))
+                });
+            }
+        }
+        return args;
+    },
+
+    /**
+     * @private
+     * Template method that is to set the value of the filter.
+     * @param {Object} value The value to set the filter
+     * @param {Boolean} preserve true to preserve the checked status
+     * of the other fields.  Defaults to false, unchecking the
+     * other fields
+     */
+    setValue: function (value, preserve) {
+        var me = this,
+            fields = me.fields,
+            key,
+            val,
+            datepicker;
+
+        for (key in fields) {
+            val = value[key];
+            if (val) {
+                datepicker = me.menu.down('datepicker[itemId="' + key + '"]');
+                // Note that calling the Ext.picker.Date:setValue() calls Ext.Date.clearTime(),
+                // which we don't want, so just call update() instead and set the value on the component.
+                datepicker.update(val);
+                datepicker.value = val;
+
+                fields[key].setChecked(true);
+            } else if (!preserve) {
+                fields[key].setChecked(false);
+            }
+        }
+        me.fireEvent('update', me);
     },
 
     /**

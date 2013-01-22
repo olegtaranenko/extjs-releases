@@ -163,7 +163,7 @@
  *
  * - {@link Ext.toolbar.Paging Paging toolbar} - paging through large sets of data.
  *
- * - {@link Ext.grid.PagingScroller Infinite scrolling} - another way to handle large sets of data.
+ * - {@link Ext.grid.plugin.BufferedRenderer Infinite scrolling} - another way to handle large sets of data.
  *
  * - {@link Ext.grid.RowNumberer RowNumberer} - automatically numbered rows.
  *
@@ -181,26 +181,6 @@ Ext.define('Ext.grid.Panel', {
     viewType: 'gridview',
 
     lockable: false,
-
-    // Required for the Lockable Mixin. These are the configurations which will be copied to the
-    // normal and locked sub tablepanels
-    bothCfgCopy: [
-        'invalidateScrollerOnRefresh',
-        'hideHeaders',
-        'enableColumnHide',
-        'enableColumnMove',
-        'enableColumnResize',
-        'sortableColumns',
-        'columnLines',
-        'rowLines'
-    ],
-    normalCfgCopy: [ 
-        'verticalScroller', 
-        'verticalScrollDock', 
-        'verticalScrollerType', 
-        'scroll'
-    ],
-    lockedCfgCopy: [],
 
     /**
      * @cfg {Boolean} rowLines False to remove row line styling

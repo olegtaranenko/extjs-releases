@@ -215,9 +215,15 @@
  *     }
  */
 Ext.define('Ext.util.Animate', {
-    requires: ['Ext.Element', 'Ext.CompositeElementLite'],
-    uses: ['Ext.fx.Manager', 'Ext.fx.Anim'],
-
+    requires: [
+        'Ext.Element', 
+        'Ext.CompositeElementLite',
+        'Ext.fx.Manager', 
+        'Ext.fx.Anim'
+    ],
+    
+<span id='Ext-util-Animate-property-isAnimate'>    isAnimate: true,
+</span>
 <span id='Ext-util-Animate-method-animate'>    /**
 </span>     * Performs custom animation on this object.
      *

@@ -374,7 +374,9 @@ Ext.define('Ext.calendar.view.Month', {
     onInitDrag: function() {
         this.callParent(arguments);
         
-        Ext.select(this.daySelector).removeCls(this.dayOverClass);
+        if (this.dayOverClass) {
+            Ext.select(this.daySelector).removeCls(this.dayOverClass);
+        }
         if (this.detailPanel) {
             this.detailPanel.hide();
         }
@@ -474,7 +476,7 @@ Ext.define('Ext.calendar.view.Month', {
     // private
     handleDayMouseEvent: function(e, t, type) {
         var el = e.getTarget(this.weekLinkSelector, 3, true);
-        if (el) {
+        if (el && this.weekLinkOverClass) {
             el[type == 'over' ? 'addCls': 'removeCls'](this.weekLinkOverClass);
             return;
         }

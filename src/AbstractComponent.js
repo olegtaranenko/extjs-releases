@@ -16,6 +16,7 @@ Ext.define('Ext.AbstractComponent', {
     ],
 
     mixins: {
+        positionable: 'Ext.util.Positionable',
         observable: 'Ext.util.Observable',
         animate: 'Ext.util.Animate',
         elementCt: 'Ext.util.ElementContainer',
@@ -77,8 +78,12 @@ Ext.define('Ext.AbstractComponent', {
                         // finishedLayout calls because they call afterComponentLayout
                         // which can re-enter by calling doLayout/doComponentLayout.
                         me.runningLayoutContext = null;
-
-                        return this.callParent(); // not "me" here!
+                         
+                        var result = this.callParent(); // not "me" here!
+                        if (Ext.globalEvents.hasListeners.afterlayout) {                            
+                            Ext.globalEvents.fireEvent('afterlayout');
+                        }
+                        return result;
                     }
                 });
 
@@ -99,6 +104,9 @@ Ext.define('Ext.AbstractComponent', {
             if (this.layoutSuspendCount && ! --this.layoutSuspendCount) {
                 if (flush) {
                     this.flushLayouts();
+                }
+                if (Ext.globalEvents.hasListeners.resumelayouts) {
+                    Ext.globalEvents.fireEvent('resumelayouts');
                 }
             }
         },
@@ -954,6 +962,13 @@ Ext.define('Ext.AbstractComponent', {
     _isLayoutRoot: false,
 
     /**
+     * @property {String} [contentPaddingProperty='padding']
+     * The name of the padding property that is used by the layout to manage
+     * padding.  See {@link Ext.layout.container.Auto#managePadding managePadding}
+     */ 
+    contentPaddingProperty: 'padding',
+
+    /**
      * Creates new Component.
      * @param {Object} config  (optional) Config object.
      */
@@ -1164,7 +1179,6 @@ Ext.define('Ext.AbstractComponent', {
             me.protoEl.setStyle(me.style);
         }
 
-        me.mons = [];
         me.renderData = me.renderData || {};
         me.renderSelectors = me.renderSelectors || {};
 
@@ -1344,11 +1358,16 @@ Ext.define('Ext.AbstractComponent', {
             // of the Component, but then clip it by sizing its encapsulating element back to original dimensions.
             // The animation will then progressively reveal the larger content.
             if (needsResize) {
+                wasConstrained = me.constrain;
+                wasConstrainedHeader = me.constrainHeader;
+                me.constrain = me.constrainHeader = false;
                 clearWidth = !Ext.isNumber(me.width);
                 clearHeight = !Ext.isNumber(me.height);
 
                 me.setSize(w, h);
                 me.el.setSize(curWidth, curHeight);
+                me.constrainwasConstrained;
+                me.constrainHeaderwasConstrainedHeader;
                 if (clearWidth) {
                     delete me.width;
                 }
@@ -1413,6 +1432,7 @@ Ext.define('Ext.AbstractComponent', {
             }
             return result;
         }
+        me.pluginsInitialized = true;
     },
 
     // @private
@@ -1420,6 +1440,40 @@ Ext.define('Ext.AbstractComponent', {
         plugin.init(this);
 
         return plugin;
+    },
+
+    // @private
+    // Adds a plugin. May be called at any time in the component's lifecycle.
+    addPlugin: function(plugin) {
+        var me = this;
+
+        plugin = me.constructPlugin(plugin);
+        if (me.plugins) {
+            me.plugins.push(plugin);
+        } else {
+            me.plugins = [ plugin ];
+        }
+        if (me.pluginsInitialized) {
+            me.initPlugin(plugin);
+        }
+        return plugin;
+    },
+
+    removePlugin: function(plugin) {
+        Ext.Array.remove(this.plugins, plugin);
+        plugin.destroy();
+    },
+
+    // @private
+    // Finds a plugin by ptype in the plugins array
+    findPlugin: function(ptype) {
+        if (this.plugins) {
+            return Ext.Array.findBy(this.plugins, function(plugin) {
+                if (plugin.ptype === ptype) {
+                    return true;
+                }
+            });
+        }
     },
 
     /**
@@ -1477,6 +1531,14 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     setupProtoEl: function() {
+        var cls = this.initCls();
+
+        this.protoEl = new Ext.util.ProtoElement({
+            cls: cls.join(' ') // in case any of the parts have multiple classes
+        });
+    },
+
+    initCls: function() {
         var me = this,
             cls = [ me.baseCls, me.getComponentLayout().targetCls ];
 
@@ -1496,9 +1558,7 @@ Ext.define('Ext.AbstractComponent', {
             me.componentCls = me.baseCls;
         }
 
-        me.protoEl = new Ext.util.ProtoElement({
-            cls: cls.join(' ') // in case any of the parts have multiple classes
-        });
+        return cls;
     },
 
     /**
@@ -1508,39 +1568,42 @@ Ext.define('Ext.AbstractComponent', {
      */
     setUI: function(ui) {
         var me = this,
-            oldUICls = Ext.Array.clone(me.uiCls),
-            newUICls = [],
-            classes = [],
-            cls,
-            i;
+            uiCls = me.uiCls,
+            activeUI = me.activeUI,
+            classes;
 
-        //loop through all existing uiCls and update the ui in them
-        for (i = 0; i < oldUICls.length; i++) {
-            cls = oldUICls[i];
-
-            classes = classes.concat(me.removeClsWithUI(cls, true));
-            newUICls.push(cls);
+        if (ui === activeUI) {
+            // The ui hasn't changed
+            return;
         }
 
-        if (classes.length) {
-            me.removeCls(classes);
+        // activeUI will only be set if setUI has been called before. If it hasn't there's no need to remove anything
+        if (activeUI) {
+            classes = me.removeClsWithUI(uiCls, true);
+
+            if (classes.length) {
+                me.removeCls(classes);
+            }
+
+            // Remove the UI from the element
+            me.removeUIFromElement();
+        }
+        else {
+            // We need uiCls to be empty otherwise our call to addClsWithUI won't do anything
+            me.uiCls = [];
         }
 
-        //remove the UI from the element
-        me.removeUIFromElement();
-
-        //set the UI
+        // Set the UI
         me.ui = ui;
 
-        //add the new UI to the element
+        // After the first call to setUI the values ui and activeUI should track each other but initially we need some
+        // way to tell whether the ui has really been set.
+        me.activeUI = ui;
+
+        // Add the new UI to the element
         me.addUIToElement();
 
-        //loop through all existing uiCls and update the ui in them
-        classes = [];
-        for (i = 0; i < newUICls.length; i++) {
-            cls = newUICls[i];
-            classes = classes.concat(me.addClsWithUI(cls, true));
-        }
+        classes = me.addClsWithUI(uiCls, true);
 
         if (classes.length) {
             me.addCls(classes);
@@ -1563,8 +1626,10 @@ Ext.define('Ext.AbstractComponent', {
     addClsWithUI: function(classes, skip) {
         var me = this,
             clsArray = [],
-            length,
             i = 0,
+            uiCls = me.uiCls = Ext.Array.clone(me.uiCls),
+            activeUI = me.activeUI,
+            length,
             cls;
 
         if (typeof classes === "string") {
@@ -1573,17 +1638,20 @@ Ext.define('Ext.AbstractComponent', {
 
         length = classes.length;
 
-        me.uiCls = Ext.Array.clone(me.uiCls);
-
         for (; i < length; i++) {
             cls = classes[i];
+
             if (cls && !me.hasUICls(cls)) {
-                me.uiCls.push(cls);
-                clsArray = clsArray.concat(me.addUIClsToElement(cls));
+                uiCls.push(cls);
+
+                // We can skip this bit if there isn't an activeUI because we'll be called again from setUI
+                if (activeUI) {
+                    clsArray = clsArray.concat(me.addUIClsToElement(cls));
+                }
             }
         }
 
-        if (skip !== true) {
+        if (skip !== true && activeUI) {
             me.addCls(clsArray);
         }
 
@@ -1599,6 +1667,10 @@ Ext.define('Ext.AbstractComponent', {
         var me = this,
             clsArray = [],
             i = 0,
+            extArray = Ext.Array,
+            remove = extArray.remove,
+            uiCls = me.uiCls = extArray.clone(me.uiCls),
+            activeUI = me.activeUI,
             length, cls;
 
         if (typeof classes === "string") {
@@ -1609,13 +1681,18 @@ Ext.define('Ext.AbstractComponent', {
 
         for (i = 0; i < length; i++) {
             cls = classes[i];
+
             if (cls && me.hasUICls(cls)) {
-                me.uiCls = Ext.Array.remove(me.uiCls, cls);
-                clsArray = clsArray.concat(me.removeUIClsFromElement(cls));
+                remove(uiCls, cls);
+
+                //If there's no activeUI then there's nothing to remove
+                if (activeUI) {
+                    clsArray = clsArray.concat(me.removeUIClsFromElement(cls));
+                }
             }
         }
 
-        if (skip !== true) {
+        if (skip !== true && activeUI) {
             me.removeCls(clsArray);
         }
 
@@ -1644,29 +1721,23 @@ Ext.define('Ext.AbstractComponent', {
         var me = this,
             baseClsUi = me.baseCls + '-' + me.ui + '-' + cls,
             result = [Ext.baseCSSPrefix + cls, me.baseCls + '-' + cls, baseClsUi],
-            frameElementCls = me.frameElementCls,
-            frameElementsArray, frameElementsLength, i, el, frameElement, c;
+            frameElementsArray, frameElementsLength, i, el, frameElement;
 
-        if (me.frame && !Ext.supports.CSS3BorderRadius) {
+        if (me.rendered && me.frame && !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
             frameElementsArray = me.frameElementsArray;
             frameElementsLength = frameElementsArray.length;
-            i = 0;
 
             // loop through each of them, and if they are defined add the ui
-            for (; i < frameElementsLength; i++) {
+            for (i = 0; i < frameElementsLength; i++) {
                 frameElement = frameElementsArray[i];
                 el = me['frame' + frameElement.toUpperCase()];
-                c = baseClsUi + '-' + frameElement;
-                if (el && el.dom) {
-                    el.addCls(c);
-                } else if (Ext.Array.indexOf(frameElementCls[frameElement], c) == -1) {
-                    frameElementCls[frameElement].push(c);
+
+                if (el) {
+                    el.addCls(baseClsUi + '-' + frameElement);
                 }
             }
         }
-
-        me.frameElementCls = frameElementCls;
 
         return result;
     },
@@ -1680,29 +1751,23 @@ Ext.define('Ext.AbstractComponent', {
         var me = this,
             baseClsUi = me.baseCls + '-' + me.ui + '-' + cls,
             result = [Ext.baseCSSPrefix + cls, me.baseCls + '-' + cls, baseClsUi],
-            frameElementCls = me.frameElementCls,
-            frameElementsArray, frameElementsLength, i, el, frameElement, c;
+            frameElementsArray, frameElementsLength, i, el, frameElement;
 
-        if (me.frame && !Ext.supports.CSS3BorderRadius) {
+        if (me.rendered && me.frame && !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
             frameElementsArray = me.frameElementsArray;
             frameElementsLength = frameElementsArray.length;
-            i = 0;
 
             // loop through each of them, and if they are defined add the ui
-            for (; i < frameElementsLength; i++) {
+            for (i = 0; i < frameElementsLength; i++) {
                 frameElement = frameElementsArray[i];
                 el = me['frame' + frameElement.toUpperCase()];
-                c = baseClsUi + '-' + frameElement;
-                if (el && el.dom) {
-                    el.addCls(c);
-                } else {
-                    Ext.Array.remove(frameElementCls[frameElement], c);
+
+                if (el) {
+                    el.addCls(baseClsUi + '-' + frameElement);
                 }
             }
         }
-
-        me.frameElementCls = frameElementCls;
 
         return result;
     },
@@ -1714,28 +1779,22 @@ Ext.define('Ext.AbstractComponent', {
     addUIToElement: function() {
         var me = this,
             baseClsUI = me.baseCls + '-' + me.ui,
-            frameElementCls = me.frameElementCls,
-            frameElementsArray, frameElementsLength, i, el, frameElement, c;
+            frameElementsArray, frameElementsLength, i, el, frameElement;
 
         me.addCls(baseClsUI);
 
-        if (me.frame && !Ext.supports.CSS3BorderRadius) {
+        if (me.rendered && me.frame && !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
             frameElementsArray = me.frameElementsArray;
             frameElementsLength = frameElementsArray.length;
-            i = 0;
 
             // loop through each of them, and if they are defined add the ui
-            for (; i < frameElementsLength; i++) {
+            for (i = 0; i < frameElementsLength; i++) {
                 frameElement = frameElementsArray[i];
                 el = me['frame' + frameElement.toUpperCase()];
-                c = baseClsUI + '-' + frameElement;
+
                 if (el) {
-                    el.addCls(c);
-                } else {
-                    if (!Ext.Array.contains(frameElementCls[frameElement], c)) {
-                        frameElementCls[frameElement].push(c);
-                    }
+                    el.addCls(baseClsUI + '-' + frameElement);
                 }
             }
         }
@@ -1748,25 +1807,21 @@ Ext.define('Ext.AbstractComponent', {
     removeUIFromElement: function() {
         var me = this,
             baseClsUI = me.baseCls + '-' + me.ui,
-            frameElementCls = me.frameElementCls,
-            frameElementsArray, frameElementsLength, i, el, frameElement, c;
+            frameElementsArray, frameElementsLength, i, el, frameElement;
 
         me.removeCls(baseClsUI);
 
-        if (me.frame && !Ext.supports.CSS3BorderRadius) {
+        if (me.rendered && me.frame && !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
             frameElementsArray = me.frameElementsArray;
             frameElementsLength = frameElementsArray.length;
-            i = 0;
 
-            for (; i < frameElementsLength; i++) {
+            for (i = 0; i < frameElementsLength; i++) {
                 frameElement = frameElementsArray[i];
                 el = me['frame' + frameElement.toUpperCase()];
-                c = baseClsUI + '-' + frameElement;
+
                 if (el) {
-                    el.removeCls(c);
-                } else {
-                    Ext.Array.remove(frameElementCls[frameElement], c);
+                    el.removeCls(baseClsUI + '-' + frameElement);
                 }
             }
         }
@@ -1780,50 +1835,46 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * Converts style definitions to String.
-     * @return {String} A CSS style string with style, padding, margin and border.
+     * Applies padding, margin, border, top, left, height, and width configs to the
+     * appropriate elements.
      * @private
      */
     initStyles: function(targetEl) {
         var me = this,
             Element = Ext.Element,
-            padding = me.padding,
             margin = me.margin,
+            border = me.border,
+            cls = me.cls,
+            style = me.style,
             x = me.x,
             y = me.y,
             width, height;
 
-        // Convert the padding, margin and border properties from a space separated string
-        // into a proper style string
-        if (padding !== undefined) {
-            targetEl.setStyle('padding', Element.unitizeBox((padding === true) ? 5 : padding));
-        }
+        me.initPadding(targetEl);
 
-        if (margin !== undefined) {
+        if (margin != null) {
             targetEl.setStyle('margin', Element.unitizeBox((margin === true) ? 5 : margin));
         }
 
-        if (me.border !== undefined) {
-            me.setBorder(me.border, targetEl);
+        if (border != null) {
+            me.setBorder(border, targetEl);
         }
 
-        // initComponent, beforeRender, or event handlers may have set the style or `cls` property since the protoEl was set up
+        // initComponent, beforeRender, or event handlers may have set the style or cls property since the protoEl was set up
         // so we must apply styles and classes here too.
-        if (me.cls && me.cls != me.initialCls) {
-            targetEl.addCls(me.cls);
-            delete me.cls;
-            delete me.initialCls;
+        if (cls && cls != me.initialCls) {
+            targetEl.addCls(cls);
+            me.cls = me.initialCls = null;
         }
-        if (me.style && me.style != me.initialStyle) {
-            targetEl.setStyle(me.style);
-            delete me.style;
-            delete me.initialStyle;
+        if (style && style != me.initialStyle) {
+            targetEl.setStyle(style);
+            me.style = me.initialStyle = null;
         }
 
-        if (x !== undefined) {
+        if (x != null) {
             targetEl.setStyle('left', (typeof x == 'number') ? (x + 'px') : x);
         }
-        if (y !== undefined) {
+        if (y != null) {
             targetEl.setStyle('top', (typeof y == 'number') ? (y + 'px') : y);
         }
 
@@ -1834,7 +1885,7 @@ Ext.define('Ext.AbstractComponent', {
             height = me.height;
 
             // If we're using the content box model, we also cannot assign numeric initial sizes since we do not know the border widths to subtract
-            if (width !== undefined) {
+            if (width != null) {
                 if (typeof width === 'number') {
                     if (Ext.isBorderBox) {
                         targetEl.setStyle('width', width + 'px');
@@ -1843,7 +1894,7 @@ Ext.define('Ext.AbstractComponent', {
                     targetEl.setStyle('width', width);
                 }
             }
-            if (height !== undefined) {
+            if (height != null) {
                 if (typeof height === 'number') {
                     if (Ext.isBorderBox) {
                         targetEl.setStyle('height', height + 'px');
@@ -1856,26 +1907,50 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
+     * Initializes padding by applying it to the target element, or if the layout manages
+     * padding ensures that the padding on the target element is "0".
+     * @private
+     */
+    initPadding: function(targetEl) {
+        var me = this,
+            padding = me.padding;
+
+        if (padding != null) {
+            if (me.layout && me.layout.managePadding && me.contentPaddingProperty === 'padding') {
+                // If the container layout manages padding, the layout will apply the 
+                // padding to an inner element rather than the target element.  The
+                // assumed intent is for the configured padding to override any padding
+                // that is applied to the target element via stylesheet rules.  It is
+                // therefore necessary to set the target element's padding to "0".
+                targetEl.setStyle('padding', 0);
+            } else {
+                // Convert the padding, margin and border properties from a space seperated string
+                // into a proper style string
+                targetEl.setStyle('padding', Ext.Element.unitizeBox((padding === true) ? 5 : padding));
+            }
+        }
+    },
+
+    /**
      * Initialize any events on this component
      * @protected
      */
     initEvents : function() {
         var me = this,
             afterRenderEvents = me.afterRenderEvents,
-            el,
-            property,
-            fn = function(listeners){
-                me.mon(el, listeners);
-            };
+            afterRenderEvent, el, property, index, len;
 
         if (afterRenderEvents) {
             for (property in afterRenderEvents) {
-                if (afterRenderEvents.hasOwnProperty(property)) {
-                    el = me[property];
-                    if (el && el.on) {
-                        Ext.each(afterRenderEvents[property], fn);
-                    }
-                }
+                el = me[property];
+
+                if (el && el.on) {
+                    afterRenderEvent = afterRenderEvents[property];
+
+                    for (index = 0, len = afterRenderEvent.length ; index < len ; ++index) {
+                        me.mon(el, afterRenderEvent[index]);
+                     }
+                 }
             }
         }
 
@@ -2251,22 +2326,70 @@ Ext.define('Ext.AbstractComponent', {
      */
     getOverflowStyle: function() {
         var me = this,
-            result = null;
+            result = null,
+            ox, oy,
+            overflowStyle;
 
-        if (typeof me.autoScroll == 'boolean') {
+        // Note to maintainer. To save on waves of testing, setting and defaulting, the code below
+        // rolls assignent statements into conditional test value expressiona and property object initializers.
+        // This avoids sprawling code. Maintain with care.
+        if (typeof me.autoScroll === 'boolean') {
             result = {
-                overflow: me.autoScroll ? 'auto' : ''
+                overflow: overflowStyle = me.autoScroll ? 'auto' : ''
             };
-        } else if (me.overflowX !== undefined || me.overflowY !== undefined) {
-            result = {
-                'overflow-x':  (me.overflowX||''),
-                'overflow-y':  (me.overflowY||'')
+            me.scrollFlags = {
+                overflowX: overflowStyle,
+                overflowY: overflowStyle,
+                x: true,
+                y: true,
+                both: true
             };
+        } else {
+            ox = me.overflowX;
+            oy = me.overflowY;
+            if (ox !== undefined || oy !== undefined) {
+                result = {
+                    'overflowX':  ox = ox || '',
+                    'overflowY':  oy = oy || ''
+                };
+
+                /**
+                * @property {Object} scrollFlags
+                * An object property which provides unified information as to which dimensions are scrollable based upon
+                * the {@link #autoScroll}, {@link #overflowX} and {@link #overflowY} settings (And for *views* of trees and grids, the owning panel's {@link Ext.panel.Table#scroll scroll} setting).
+                * 
+                * Note that if you set overflow styles using the {@link #style} config or {@link Ext.panel.Panel.bodyStyle bodyStyle} config, this object does not include that information;
+                * it is best to use {@link #autoScroll}, {@link #overflowX} and {@link #overflowY} if you need to access these flags.
+                * 
+                * This object has the following properties:
+                * @property {Boolean} scrollFlags.x `true` if this Component is scrollable horizontally - style setting may be `'auto'` or `'scroll'`.
+                * @property {Boolean} scrollFlags.y `true` if this Component is scrollable vertically - style setting may be `'auto'` or `'scroll'`.
+                * @property {Boolean} scrollFlags.both `true` if this Component is scrollable both horizontally and vertically.
+                * @property {String} scrollFlags.overflowX The `overflow-x` style setting, `'auto'` or `'scroll'` or `''`.
+                * @property {String} scrollFlags.overflowY The `overflow-y` style setting, `'auto'` or `'scroll'` or `''`.
+                * @readonly
+                */
+                me.scrollFlags = {
+                    overflowX: ox,
+                    overflowY: oy,
+                    x: ox = (ox === 'auto' || ox === 'scroll'),
+                    y: oy = (oy === 'auto' || oy === 'scroll'),
+                    both: ox && oy
+                };
+            } else {
+                me.scrollFlags = {
+                    overflowX: '',
+                    overflowY: '',
+                    x: false,
+                    y: false,
+                    both: false
+                };
+            }
         }
 
         // The scrollable container element must be non-statically positioned or IE6/7 will make
         // positioned children stay in place rather than scrolling with the rest of the content
-        if (result && (Ext.isIE6 || Ext.isIE7)) {
+        if (result && Ext.isIE7m) {
             result.position = 'relative';
         }
 
@@ -2360,23 +2483,26 @@ Ext.define('Ext.AbstractComponent', {
      * @since Ext 3
      */
     update : function(htmlOrData, loadScripts, cb) {
-        var me = this;
+        var me = this,
+            isData = (me.tpl && !Ext.isString(htmlOrData)),
+            el;
 
-        if (me.tpl && !Ext.isString(htmlOrData)) {
+        if (isData) {
             me.data = htmlOrData;
-            if (me.rendered) {
-                me.tpl[me.tplWriteMode](me.getTargetEl(), htmlOrData || {});
-            }
         } else {
             me.html = Ext.isObject(htmlOrData) ? Ext.DomHelper.markup(htmlOrData) : htmlOrData;
-            if (me.rendered) {
-                me.getTargetEl().update(me.html, loadScripts, cb);
-            }
         }
 
         if (me.rendered) {
+            el = me.isContainer ? me.layout.getRenderTarget() : me.getTargetEl();
+            if (isData) {
+                me.tpl[me.tplWriteMode](el, htmlOrData || {});
+            } else {
+                el.update(me.html, loadScripts, cb);
+            }
             me.updateLayout();
         }
+
     },
 
     /**
@@ -2404,34 +2530,51 @@ Ext.define('Ext.AbstractComponent', {
      */
     isVisible: function(deep) {
         var me = this,
-            child = me,
-            visible = me.rendered && !me.hidden,
-            ancestor = me.ownerCt;
+            hidden;
 
-        // Clear hiddenOwnerCt property
-        me.hiddenAncestor = false;
-        if (me.destroyed) {
-            return false;
+        if (me.hidden || !me.rendered || me.isDestroyed) {
+            hidden = true;
+        } else if (deep) {
+            hidden = me.isHierarchicallyHidden();
         }
 
-        if (deep && visible && ancestor) {
-            while (ancestor) {
-                // If any ancestor is hidden, then this is hidden.
-                // If an ancestor Panel (only Panels have a collapse method) is collapsed,
-                // then its layoutTarget (body) is hidden, so this is hidden unless its within a
-                // docked item; they are still visible when collapsed (Unless they themselves are hidden)
-                if (ancestor.hidden || (ancestor.collapsed &&
-                        !(ancestor.getDockedItems && Ext.Array.contains(ancestor.getDockedItems(), child)))) {
-                    // Store hiddenOwnerCt property if needed
-                    me.hiddenAncestor = ancestor;
-                    visible = false;
+        return !hidden;
+    },
+
+    isHierarchicallyHidden: function() {
+        var child = this,
+            hidden = false,
+            parent, parentHierarchyState;
+
+        // It is possible for some components to be immune to collapse meaning the immune
+        // component remains visible when its direct parent is collapsed, e.g. panel header.
+        // Because of this, we must walk up the component hierarchy to determine the true
+        // visible state of the component.
+        for (; (parent = child.ownerCt || child.floatParent); child = parent) {
+            parentHierarchyState = parent.getHierarchyState();
+            if (parentHierarchyState.hidden) {
+                hidden = true;
+                break;
+            }
+            if (child.getHierarchyState().collapseImmune) {
+                // The child or one of its ancestors is immune to collapse.
+                if (parent.collapsed && !child.collapseImmune) {
+                    // If the child's direct parent is collapsed, and the child
+                    // itself does not have collapse immunity we know that
+                    // the child is not visible.
+                    hidden = true;
                     break;
                 }
-                child = ancestor;
-                ancestor = ancestor.ownerCt;
+            } else {
+                // We have ascended the tree to a point where collapse immunity
+                // is not in play.  This means if any anscestor above this point
+                // is collapsed, then the component is not visible.
+                hidden = !!parentHierarchyState.collapsed;
+                break;
             }
         }
-        return visible;
+
+        return hidden;
     },
 
     onBoxReady: function(){
@@ -2769,7 +2912,22 @@ Ext.define('Ext.AbstractComponent', {
      */
     onAdded : function(container, pos) {
         var me = this;
+
         me.ownerCt = container;
+
+        if (me.hierarchyState) {
+            // if component has a hierarchyState at this point we set an invalid flag in the
+            // hierarchy state so that descendants of this component know to re-initialize
+            // their hierarchyState the next time it is requested (see getHierarchyState())
+            me.hierarchyState.invalid = true;
+            // We can now delete the old hierarchyState since it is invalid.  IMPORTANT:
+            // the descendants are still linked to the old hierarchy state via the
+            // prototype chain, and their heirarchyState property will be synced up 
+            // the next time their getHierarchyState() method is called.  For this reason
+            // hierarchyState should always be accessed using getHierarchyState()
+            delete me.hierarchyState;
+        }
+
         if (me.hasListeners.added) {
             me.fireEvent('added', me, container, pos);
         }
@@ -2822,7 +2980,15 @@ Ext.define('Ext.AbstractComponent', {
      * @template
      * @protected
      */
-    onResize : Ext.emptyFn,
+    onResize: function(width, height, oldWidth, oldHeight) {
+        var me = this;
+        if (me.constrain) {
+            me.doConstrain();
+        }
+        if (me.hasListeners.resize) {
+            me.fireEvent('resize', me, width, height, oldWidth, oldHeight);
+        }
+    },
 
     /**
      * Sets the width and height of this Component. This method fires the {@link #resize} event. This method can accept
@@ -3153,26 +3319,14 @@ Ext.define('Ext.AbstractComponent', {
      * @protected
      */
     afterComponentLayout: function(width, height, oldWidth, oldHeight) {
-        var me = this,
-            floaters, len, i, floater;
+        var me = this;
 
         if (++me.componentLayoutCounter === 1) {
             me.afterFirstLayout(width, height);
         }
 
-        // Contained autoShow items must be shown upon next layout of the Container
-        if (me.floatingItems) {
-            floaters = me.floatingItems.items;
-            len = floaters.length;
-            for (i = 0; i < len; i++) {
-                floater = floaters[i];
-                if (!floater.rendered && floater.autoShow) {
-                    floater.show();
-                }
-            }
-        }
-        if (me.hasListeners.resize && (width !== oldWidth || height !== oldHeight)) {
-            me.fireEvent('resize', me, width, height, oldWidth, oldHeight);
+        if (width !== oldWidth || height !== oldHeight) {
+            me.onResize(width, height, oldWidth, oldHeight);
         }
     },
 
@@ -3199,37 +3353,34 @@ Ext.define('Ext.AbstractComponent', {
      * animation configuration.
      * @return {Ext.Component} this
      */
-    setPosition : function(x, y, animate) {
+    setPosition: function(x, y, animate) {
         var me = this,
             pos = me.beforeSetPosition.apply(me, arguments);
 
         if (pos && me.rendered) {
-            // Convert position WRT RTL
-            pos = me.convertPosition(pos);
+            x = pos.x;
+            y = pos.y;
 
-            // Proceed only if the new position is different from the current one.
-            if (pos.left !== me.el.getLeft() || pos.top !== me.el.getTop()) {
-                if (animate) {
+            if (animate) {
+                // Proceed only if the new position is different from the current
+                // one. We only do these DOM reads in the animate case as we don't
+                // want to incur the penalty of read/write on every call to setPosition
+                if (x !== me.getLocalX() || y !== me.getLocalY()) {
                     me.stopAnimation();
                     me.animate(Ext.apply({
                         duration: 1000,
                         listeners: {
-                            afteranimate: Ext.Function.bind(me.afterSetPosition, me, [pos.left, pos.top])
+                            afteranimate: Ext.Function.bind(me.afterSetPosition, me, [x, y])
                         },
-                        to: pos
+                        to: {
+                            x: x,
+                            y: y
+                        }
                     }, animate));
-                } else {
-                    // Must use Element's methods to set element position because, if it is a Layer (floater), it may need to sync a shadow
-                    // We must also only set the properties which are defined because Element.setLeftTop autos any undefined coordinates
-                    if (pos.left !== undefined && pos.top !== undefined) {
-                        me.el.setLeftTop(pos.left, pos.top);
-                    } else if (pos.left !== undefined) {
-                        me.el.setLeft(pos.left);
-                    } else if (pos.top !==undefined) {
-                        me.el.setTop(pos.top);
-                    }
-                    me.afterSetPosition(pos.left, pos.top);
                 }
+            } else {
+                me.setLocalXY(x, y);
+                me.afterSetPosition(x, y);
             }
         }
         return me;
@@ -3237,25 +3388,45 @@ Ext.define('Ext.AbstractComponent', {
 
     /**
      * @private Template method called before a Component is positioned.
+     *
+     * Ensures that the position is adjusted so that the Component is constrained if so configured.
      */
     beforeSetPosition: function (x, y, animate) {
         var pos, x0;
 
-        // decode the position arguments:
-        if (!x || Ext.isNumber(x)) {
-            pos = { x: x, y : y, anim: animate };
-        } else if (Ext.isNumber(x0 = x[0])) { // an array of [x, y]
-            pos = { x : x0, y : x[1], anim: y };
-        } else {
-            pos = { x: x.x, y: x.y, anim: y }; // already an object w/ x & y properties
+        // Decode members of x if x is an array or an object.
+        // If it is numeric (including zero), we need do nothing.
+        if (x) {
+            // Position in first argument as an array of [x, y]
+            if (Ext.isNumber(x0 = x[0])) {
+                animate = y;
+                y = x[1];
+                x = x0;
+            }
+            // Position in first argument as object w/ x & y properties
+            else if ((x0 = x.x) !== undefined) {
+                animate = y;
+                y = x.y;
+                x = x0;
+            }
         }
 
-        pos.hasX = Ext.isNumber(pos.x);
-        pos.hasY = Ext.isNumber(pos.y);
+        if (this.constrain || this.constrainHeader) {
+            pos = this.calculateConstrainedPosition(null, [x, y], true);
+            if (pos) {
+                x = pos[0];
+                y = pos[1];
+            }
+        }
 
-        // store the position as specified:
-        this.x = pos.x;
-        this.y = pos.y;
+        // Set up the return info and store the position in this object
+        pos = {
+            x : this.x = x,
+            y : this.y = y,
+            anim: animate,
+            hasX: x !== undefined,
+            hasY: y !== undefined
+        };
 
         return (pos.hasX || pos.hasY) ? pos : null;
     },
@@ -3275,26 +3446,6 @@ Ext.define('Ext.AbstractComponent', {
         if (me.hasListeners.move) {
             me.fireEvent('move', me, x, y);
         }
-    },
-
-    /**
-     * This method converts an `{x: x, y: y}` object to a `{left: x+'px', top: y+'px'}` object.
-     * The returned object contains the styles to set to effect the position. This is
-     * overridden in RTL mode to be `{right: x, top: y}`.
-     * @private
-     */
-    convertPosition: function (pos, withUnits) {
-        var ret = {},
-            El = Ext.Element;
-
-        if (pos.hasX) {
-            ret.left = withUnits ? El.addUnits(pos.x) : pos.x;
-        }
-        if (pos.hasY) {
-            ret.top = withUnits ? El.addUnits(pos.y) : pos.y;
-        }
-
-        return ret;
     },
 
     /**
@@ -3419,8 +3570,10 @@ Ext.define('Ext.AbstractComponent', {
 
             if (!border) {
                 border = 0;
+            } else if (border === true) {
+                border = '1px';
             } else {
-                border = Ext.Element.unitizeBox((border === true) ? 1 : border);
+                border = Ext.Element.unitizeBox(border);
             }
             targetEl.setStyle('border-width', border);
             if (!initial) {
@@ -3539,7 +3692,145 @@ Ext.define('Ext.AbstractComponent', {
         return !!this.findParentBy(function(p){
             return p === container;
         });
+    },
+
+    /**
+     * A component's hierarchyState is used to keep track of aspects of a component's
+     * state that affect its descendants hierarchically like "collapsed" and "hidden".
+     * For example, if this.hierarchyState.hidden == true, it means that either this
+     * component, or one of its ancestors is hidden. 
+     * 
+     * Hierarchical state management is implemented by chaining each component's
+     * hierarchyState property to its parent container's hierarchyState property via the
+     * prototype. The result is such that if a component's hierarchyState does not have
+     * it's own property, it inherits the property from the nearest ancestor that does.
+     * 
+     * To set a hierarchical "hidden" value:
+     * 
+     *     this.getHierarchyState().hidden = true;
+     *     
+     * It is important to remember when unsetting hierarchyState properties to delete
+     * them instead of just setting them to a falsy value.  This ensures that the
+     * hierarchyState returns to a state of inheriting the value instead of overriding it
+     * To unset the hierarchical "hidden" value:
+     * 
+     *     delete this.getHierarchyState().hidden;
+     * 
+     * IMPORTANT! ALWAYS access hierarchyState using this method, not by accessing
+     * this.hierarchyState directly.  The hierarchyState property does not exist until
+     * the first time getHierarchyState() is called.  At that point getHierarchyState()
+     * walks up the component tree to establish the hierarchyState prototype chain.
+     * Additionally the hierarchyState property should NOT be relied upon even after
+     * the initial call to getHierarchyState() because  it is possible for the
+     * hierarchyState to be invalidated. Invalidation typically happens when a component
+     * is moved to a new container. In such a case the hierarchy state remains invalid
+     * until the next time getHierarchyState() is called on the component or one of its
+     * descendants.
+     * 
+     * @private
+     */
+    getHierarchyState: function() {
+        var me = this,
+            parent,
+            hierarchyState = me.hierarchyState;
+ 
+        if (!hierarchyState || hierarchyState.invalid) {
+            parent = me.ownerCt || me.floatParent;
+            hierarchyState = me.hierarchyState =
+                // chain this component's hierarchyState to that of its parent.  If it
+                // doesn't have a parent, then chain to the rootHierarchyState.  This is
+                // done so that when there is a viewport, all component's will inherit
+                // from its hierarchyState, even components that are not descendants of
+                // the viewport.
+                (Ext.Object.chain(parent ? parent.getHierarchyState() : Ext.rootHierarchyState));
+             me.initHierarchyState(hierarchyState);
+        }
+
+        return hierarchyState;
+    },
+
+    /**
+     * Called by {@link #getHierarchyState} to initialize the hierarchyState the first
+     * time it is requested.
+     * @private
+     */
+    initHierarchyState: function(hierarchyState) {
+        var me = this;
+
+        if (me.collapsed) {
+            hierarchyState.collapsed = true;
+        }
+        if (me.hidden) {
+            hierarchyState.hidden = true;
+        }
+        if (me.collapseImmune) {
+            hierarchyState.collapseImmune = true;
+        }
+    },
+
+    // **********************************************************************************
+    // Begin Positionable methods
+    // **********************************************************************************
+
+    getAnchorToXY: function(el, anchor, local, mySize) {
+        return el.getAnchorXY(anchor, local, mySize);
+    },
+
+    getBorderPadding: function() {
+        return this.el.getBorderPadding();
+    },
+
+    getLocalX: function() {
+        return this.el.getLocalX();
+    },
+
+    getLocalXY: function() {
+        return this.el.getLocalXY();
+    },
+
+    getLocalY: function() {
+        return this.el.getLocalY();
+    },
+
+    getX: function() {
+        return this.el.getX();
+    },
+
+    getXY: function() {
+        return this.el.getXY();
+    },
+
+    getY: function() {
+        return this.el.getY();
+    },
+
+    setLocalX: function(x) {
+        this.el.setLocalX(x);
+    },
+
+    setLocalXY: function(x, y) {
+        this.el.setLocalXY(x, y);
+    },
+
+    setLocalY: function(y) {
+        this.el.setLocalY(y);
+    },
+
+    setX: function(x, animate) {
+        this.el.setX(x, animate);
+    },
+
+    setXY: function(xy, animate) {
+        this.el.setXY(xy, animate);
+    },
+
+    setY: function(y, animate) {
+        this.el.setY(y, animate);
     }
+
+    // **********************************************************************************
+    // End Positionable methods
+    // **********************************************************************************
 }, function() {
     var AbstractComponent = this;
 

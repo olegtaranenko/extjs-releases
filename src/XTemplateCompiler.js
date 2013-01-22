@@ -1,3 +1,4 @@
+//@tag core
 /**
  * This class compiles the XTemplate syntax into a function object. The function is used
  * like so:
@@ -21,7 +22,7 @@ Ext.define('Ext.XTemplateCompiler', {
     // See http://jsperf.com/nige-array-append for quickest way to append to an array of unknown length
     // (Due to arbitrary code execution inside a template, we cannot easily track the length in  var)
     // On IE6 and 7 myArray[myArray.length]='foo' is better. On other browsers myArray.push('foo') is better.
-    useIndex: Ext.isIE6 || Ext.isIE7,
+    useIndex: Ext.isIE7m,
 
     useFormat: true,
     
@@ -323,6 +324,10 @@ Ext.define('Ext.XTemplateCompiler', {
         }
         me.body.push('\n',
             'xindex=i',L,'+1\n');
+        
+        if (actions.between) {
+            me.body.push('if(xindex>1){ out.push("',actions.between,'"); } \n');
+        }
     },
 
     doForEach: function (action, actions) {
@@ -391,6 +396,10 @@ Ext.define('Ext.XTemplateCompiler', {
                 'values=c',L,'[k',L,'];');
         if (actions.propName) {
             me.body.push('.', actions.propName);
+        }
+        
+        if (actions.between) {
+            me.body.push('if(xindex>1){ out.push("',actions.between,'"); } \n');
         }
     },
 

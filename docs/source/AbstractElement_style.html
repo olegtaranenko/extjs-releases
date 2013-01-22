@@ -28,6 +28,10 @@ Ext.define('Ext.dom.AbstractElement_style', {
         wordsRe = /\w/g,
         spacesRe = /\s+/,
         transparentRe = /^(?:transparent|(?:rgba[(](?:\s*\d+\s*[,]){3}\s*0\s*[)]))$/i,
+        // In some browsers, currently IE10 and older chrome versions, when ClassList is 
+        // supported most elements will have the classList attribute, but some svg elements
+        // will still not have it present, so in a small amount of cases we'll still need
+        // to check at run time whether we can use it.
         hasClassList = Ext.supports.ClassList,
         PADDING = 'padding',
         MARGIN = 'margin',
@@ -40,7 +44,8 @@ Ext.define('Ext.dom.AbstractElement_style', {
         // special markup used throughout Ext when box wrapping elements
         borders = {l: BORDER + LEFT_SUFFIX + WIDTH, r: BORDER + RIGHT_SUFFIX + WIDTH, t: BORDER + TOP_SUFFIX + WIDTH, b: BORDER + BOTTOM_SUFFIX + WIDTH},
         paddings = {l: PADDING + LEFT_SUFFIX, r: PADDING + RIGHT_SUFFIX, t: PADDING + TOP_SUFFIX, b: PADDING + BOTTOM_SUFFIX},
-        margins = {l: MARGIN + LEFT_SUFFIX, r: MARGIN + RIGHT_SUFFIX, t: MARGIN + TOP_SUFFIX, b: MARGIN + BOTTOM_SUFFIX};
+        margins = {l: MARGIN + LEFT_SUFFIX, r: MARGIN + RIGHT_SUFFIX, t: MARGIN + TOP_SUFFIX, b: MARGIN + BOTTOM_SUFFIX},
+        internalFly = new Element.Fly();
 
 
     Ext.override(Element, {
@@ -99,8 +104,8 @@ Ext.define('Ext.dom.AbstractElement_style', {
          * @return {Ext.dom.Element} this
          * @method
          */
-        addCls: hasClassList ?
-            function (className) {
+        addCls: (function(){
+            var addWithClassList = function(className) {
                 //&lt;debug warn&gt;
                 if (String(className).indexOf('undefined') &gt; -1) {
                     Ext.Logger.warn(&quot;called with an undefined className: &quot; + className);
@@ -109,6 +114,7 @@ Ext.define('Ext.dom.AbstractElement_style', {
                 var me = this,
                     dom = me.dom,
                     trimRe = me.trimRe,
+                    origClassName = className,
                     classList,
                     newCls,
                     i,
@@ -127,28 +133,31 @@ Ext.define('Ext.dom.AbstractElement_style', {
                         dom.className = className.join(' ');
                     } else {
                         classList = dom.classList;
-                        for (i = 0; i &lt; len; ++i) {
-                            cls = className[i];
-                            if (cls) {
-                                if (!classList.contains(cls)) {
-                                    if (newCls) {
-                                        newCls.push(cls);
-                                    } else {
-                                        newCls = dom.className.replace(trimRe, '');
-                                        newCls = newCls ? [newCls, cls] : [cls];
+                        if (classList) {
+                            for (i = 0; i &lt; len; ++i) {
+                                cls = className[i];
+                                if (cls) {
+                                    if (!classList.contains(cls)) {
+                                        if (newCls) {
+                                            newCls.push(cls);
+                                        } else {
+                                            newCls = dom.className.replace(trimRe, '');
+                                            newCls = newCls ? [newCls, cls] : [cls];
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        if (newCls) {
-                            dom.className = newCls.join(' '); // write to DOM once
+                            if (newCls) {
+                                dom.className = newCls.join(' '); // write to DOM once
+                            }
+                        } else {
+                            addWithoutClassList(origClassName);
                         }
                     }
                 }
                 return me;
-            } :
-            function(className) {
+            }, addWithoutClassList = function(className) {
                 //&lt;debug warn&gt;
                 if (String(className).indexOf('undefined') &gt; -1) {
                     Ext.Logger.warn(&quot;called with an undefined className: '&quot; + className + &quot;'&quot;);
@@ -156,7 +165,6 @@ Ext.define('Ext.dom.AbstractElement_style', {
                 //&lt;/debug&gt;
                 var me = this,
                     dom = me.dom,
-                    changed,
                     elClasses;
 
                 if (dom &amp;&amp; className &amp;&amp; className.length) {
@@ -166,7 +174,10 @@ Ext.define('Ext.dom.AbstractElement_style', {
                     }
                 }
                 return me;
-            },
+            };
+            
+            return hasClassList ? addWithClassList : addWithoutClassList;
+        })(),
 
 
 <span id='Ext-dom-AbstractElement-method-removeCls'>        /**
@@ -177,6 +188,7 @@ Ext.define('Ext.dom.AbstractElement_style', {
         removeCls: function(className) {
             var me = this,
                 dom = me.dom,
+                classList,
                 len,
                 elClasses;
 
@@ -186,9 +198,10 @@ Ext.define('Ext.dom.AbstractElement_style', {
             }
 
             if (dom &amp;&amp; dom.className &amp;&amp; className &amp;&amp; !!(len = className.length)) {
-                if (len == 1 &amp;&amp; hasClassList) {
+                classList = dom.classList;
+                if (len === 1 &amp;&amp; classList) {
                     if (className[0]) {
-                        dom.classList.remove(className[0]); // one DOM write
+                        classList.remove(className[0]); // one DOM write
                     }
                 } else {
                     elClasses = Ext.Element.removeCls(dom.className, className);
@@ -213,7 +226,7 @@ Ext.define('Ext.dom.AbstractElement_style', {
             for (i = 0, len = cn.length; i &lt; len; i++) {
                 v = cn[i];
                 if (v &amp;&amp; v.nodeType == 1) {
-                    Ext.fly(v, '_internal').removeCls(className);
+                    internalFly.attach(v).removeCls(className);
                 }
             }
             return this.addCls(className);
@@ -225,24 +238,31 @@ Ext.define('Ext.dom.AbstractElement_style', {
          * @return {Ext.dom.Element} this
          * @method
          */
-        toggleCls: hasClassList ?
-            function (className) {
+        toggleCls: (function(){
+            var toggleWithClassList = function(className){
                 var me = this,
-                    dom = me.dom;
+                    dom = me.dom,
+                    classList;
 
                 if (dom) {
                     className = className.replace(me.trimRe, '');
                     if (className) {
-                        dom.classList.toggle(className);
+                        classList = dom.classList;
+                        if (classList) {
+                            classList.toggle(className);
+                        } else {
+                            toggleWithoutClassList(className);
+                        }
                     }
                 }
 
                 return me;
-            } :
-            function(className) {
-                var me = this;
-                return me.hasCls(className) ? me.removeCls(className) : me.addCls(className);
-            },
+            }, toggleWithoutClassList = function(className){
+                return this.hasCls(className) ? this.removeCls(className) : this.addCls(className);
+            };
+            
+            return hasClassList ? toggleWithClassList :  toggleWithoutClassList;
+        })(),
 
 <span id='Ext-dom-AbstractElement-method-hasCls'>        /**
 </span>         * Checks if the specified CSS class exists on this element's DOM node.
@@ -250,15 +270,28 @@ Ext.define('Ext.dom.AbstractElement_style', {
          * @return {Boolean} True if the class exists, else false
          * @method
          */
-        hasCls: hasClassList ?
-            function (className) {
+        hasCls: (function(){
+            var hasClsWithClassList = function(className) {
+                var dom = this.dom,
+                    out = false,
+                    classList;
+                    
+                if (dom &amp;&amp; className) {
+                    classList = dom.classList;
+                    if (classList) {
+                        out = classList.contains(className);
+                    } else {
+                        out = hasClsWithoutClassList(className);
+                    }
+                }
+                return out;
+            }, hasClsWithoutClassList = function(className){
                 var dom = this.dom;
-                return (dom &amp;&amp; className) ? dom.classList.contains(className) : false;
-            } :
-            function(className) {
-                var dom = this.dom;
-                return dom ? className &amp;&amp; (' '+dom.className+' ').indexOf(' '+className+' ') != -1 : false;
-            },
+                return dom ? className &amp;&amp; (' '+dom.className+' ').indexOf(' '+className+' ') !== -1 : false;
+            };
+            
+            return hasClassList ? hasClsWithClassList : hasClsWithoutClassList;
+        })(),
 
 <span id='Ext-dom-AbstractElement-method-replaceCls'>        /**
 </span>         * Replaces a CSS class on the element with another.  If the old name does not exist, the new name will simply be added.
@@ -641,11 +674,11 @@ Ext.define('Ext.dom.AbstractElement_style', {
 </span>         * Forces the browser to repaint this element
          * @return {Ext.dom.Element} this
          */
-        repaint: function(){
+        repaint: function() {
             var dom = this.dom;
             this.addCls(Ext.baseCSSPrefix + 'repaint');
             setTimeout(function(){
-                Ext.fly(dom).removeCls(Ext.baseCSSPrefix + 'repaint');
+                internalFly.attach(dom).removeCls(Ext.baseCSSPrefix + 'repaint');
             }, 1);
             return this;
         },
@@ -682,7 +715,7 @@ Ext.define('Ext.dom.AbstractElement_style', {
 
                 return o;
             } else {
-                return me.addStyles.call(me, side, me.margins);
+                return me.addStyles(side, me.margins);
             }
         },
 
@@ -764,29 +797,6 @@ Ext.define('Ext.dom.AbstractElement_style', {
                 Ext.EventManager.unOrientationChange(me.orientationHandler, me);
                 delete me.orientationHandler;
             }
-        },
-
-        statics: {
-<span id='Ext-dom-AbstractElement-method-populateStyleMap'>            /**
-</span>            * Creates mappings for 'margin-before' to 'marginLeft' (etc.) given the output
-            * map and an ordering pair (e.g., ['left', 'right']). The ordering pair is in
-            * before/after order.
-            */
-            populateStyleMap: function (map, order) {
-                var baseStyles = ['margin-', 'padding-', 'border-width-'],
-                    beforeAfter = ['before', 'after'],
-                    index, style, name, i;
-
-                for (index = baseStyles.length; index--; ) {
-                    for (i = 2; i--; ) {
-                        style = baseStyles[index] + beforeAfter[i]; // margin-before
-                        // ex: maps margin-before and marginBefore to marginLeft
-                        map[Element.normalize(style)] = map[style] = {
-                            name: Element.normalize(baseStyles[index] + order[i])
-                        };
-                    }
-                }
-            }            
         }
     });
 
@@ -836,9 +846,6 @@ Ext.define('Ext.dom.AbstractElement_style', {
         }
 
         styleHooks = Element.prototype.styleHooks;
-
-        // Populate the LTR flavors of margin-before et.al. (see Ext.rtl.AbstractElement):
-        Element.populateStyleMap(styleHooks, ['left', 'right']);
 
         // Ext.supports needs to be initialized (we run very early in the onready sequence),
         // but it is OK to call Ext.supports.init() more times than necessary...

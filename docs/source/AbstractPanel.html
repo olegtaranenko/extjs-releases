@@ -91,25 +91,34 @@ bodyCls: ['foo', 'bar']
     isPanel: true,
     
 <span id='Ext-panel-AbstractPanel-property-body'>    /**
-</span>     * The Panel's body {@link Ext.dom.Element Element} which may be used to contain HTML content.
+</span>     * @property {Ext.dom.Element} body
+     * The Panel's body {@link Ext.dom.Element Element} which may be used to contain HTML content.
      * The content may be specified in the {@link #html} config, or it may be loaded using the
-     * {@link loader} config. Read-only.
-     * &lt;p&gt;If this is used to load visible HTML elements in either way, then
-     * the Panel may not be used as a Layout for hosting nested Panels.&lt;/p&gt;
-     * &lt;p&gt;If this Panel is intended to be used as the host of a Layout (See {@link #layout}
+     * {@link #loader} config. Read-only.
+     *
+     * If this is used to load visible HTML elements in either way, then
+     * the Panel may not be used as a Layout for hosting nested Panels.
+     *
+     * If this Panel is intended to be used as the host of a Layout (See {@link #layout}
      * then the body Element must not be loaded or changed - it is under the control
      * of the Panel's Layout.
-     * &lt;br&gt;&lt;p&gt;&lt;b&gt;Note&lt;/b&gt;: see the Note for &lt;code&gt;{@link Ext.Component#el el}&lt;/code&gt; also.&lt;/p&gt;
-     * @property {Ext.dom.Element} body
+     *
+     * @readonly
      */
 
-    componentLayout: 'dock',
+<span id='Ext-panel-AbstractPanel-property-contentPaddingProperty'>    /**
+</span>     * @property {String} [contentPaddingProperty='bodyPadding']
+     * @inheritdoc
+     */ 
+    contentPaddingProperty: 'bodyPadding',
 
+<span id='Ext-panel-AbstractPanel-cfg-componentLayout'>    componentLayout: 'dock',
+</span>
 <span id='Ext-panel-AbstractPanel-property-childEls'>    childEls: [
 </span>        'body'
     ],
 
-<span id='Ext-panel-AbstractPanel-property-renderTpl'>    renderTpl: [
+<span id='Ext-panel-AbstractPanel-cfg-renderTpl'>    renderTpl: [
 </span>        // If this Panel is framed, the framing template renders the docked items round the frame
         '{% this.renderDockedItems(out,values,0); %}',
         // This empty div solves an IE6/7/Quirks problem where the margin-top on the bodyEl
@@ -119,11 +128,12 @@ bodyCls: ['foo', 'bar']
         // panel and the body. This in turn allows CSS height to expand or contract the
         // panel during things like portlet dragging where we want to avoid running a ton
         // of layouts during the drag operation.
-        (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) ? '&lt;div&gt;&lt;/div&gt;' : '',
+        (Ext.isIE7m || Ext.isIEQuirks) ? '&lt;div&gt;&lt;/div&gt;' : '',
         '&lt;div id=&quot;{id}-body&quot; class=&quot;{baseCls}-body&lt;tpl if=&quot;bodyCls&quot;&gt; {bodyCls}&lt;/tpl&gt;',
             ' {baseCls}-body-{ui}&lt;tpl if=&quot;uiCls&quot;&gt;',
                 '&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&lt;/tpl&gt;',
-            '&lt;/tpl&gt;&quot;&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;',
+            '&lt;/tpl&gt;&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot;',
+            '&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;',
             '{%this.renderContainer(out,values);%}',
         '&lt;/div&gt;',
         '{% this.renderDockedItems(out,values,1); %}'
@@ -153,7 +163,7 @@ var panel = new Ext.panel.Panel({
 });&lt;/code&gt;&lt;/pre&gt;
      */
 
-<span id='Ext-panel-AbstractPanel-property-border'>    // @since Ext 2
+<span id='Ext-panel-AbstractPanel-cfg-border'>    // @since Ext 2
 </span>    border: true,
 
 <span id='Ext-panel-AbstractPanel-property-emptyArray'>    /**
@@ -250,7 +260,16 @@ var panel = new Ext.panel.Panel({
             Element = Ext.Element;
 
         if (me.bodyPadding !== undefined) {
-            body.setStyle('padding', Element.unitizeBox((me.bodyPadding === true) ? 5 : me.bodyPadding));
+            if (me.layout.managePadding) {
+                // If the container layout manages padding, the layout will apply the 
+                // padding to an inner element rather than the body element.  The
+                // assumed intent is for the configured padding to override any padding
+                // that is applied to the body element via stylesheet rules.  It is
+                // therefore necessary to set the body element's padding to &quot;0&quot;.
+                body.setStyle('padding', 0);
+            } else {
+                body.setStyle('padding', Element.unitizeBox((me.bodyPadding === true) ? 5 : me.bodyPadding));
+            }
         }
         if (me.frame &amp;&amp; me.bodyBorder) {
             if (!Ext.isNumber(me.bodyBorder)) {
@@ -353,6 +372,10 @@ var panel = new Ext.panel.Panel({
 <span id='Ext-panel-AbstractPanel-method-getTargetEl'>    // @private
 </span>    getTargetEl : function() {
         return this.body;
+    },
+
+<span id='Ext-panel-AbstractPanel-method-applyTargetCls'>    applyTargetCls: function(targetCls) {
+</span>        this.protoBody.addCls(targetCls);
     },
 
 <span id='Ext-panel-AbstractPanel-method-getRefItems'>    getRefItems: function(deep) {

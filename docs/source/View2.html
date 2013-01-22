@@ -26,7 +26,7 @@ Ext.define('Ext.tree.View', {
         'Ext.data.NodeStore'
     ],
 
-<span id='Ext-tree-View-property-loadingCls'>    loadingCls: Ext.baseCSSPrefix + 'grid-tree-loading',
+<span id='Ext-tree-View-cfg-loadingCls'>    loadingCls: Ext.baseCSSPrefix + 'grid-tree-loading',
 </span><span id='Ext-tree-View-property-expandedCls'>    expandedCls: Ext.baseCSSPrefix + 'grid-tree-node-expanded',
 </span><span id='Ext-tree-View-property-leafCls'>    leafCls: Ext.baseCSSPrefix + 'grid-tree-node-leaf',
 </span>
@@ -39,15 +39,15 @@ Ext.define('Ext.tree.View', {
     // for an ancestor node with this class.
     nodeAnimWrapCls: Ext.baseCSSPrefix + 'tree-animator-wrap',
 
-<span id='Ext-tree-View-property-blockRefresh'>    blockRefresh: true,
-</span>    
+<span id='Ext-tree-View-cfg-blockRefresh'>    blockRefresh: true,
+</span>
 <span id='Ext-tree-View-cfg-loadMask'>    /**
-</span>     * @cfg
+</span>     * @cfg {Boolean}
      * @inheritdoc
      */
     loadMask: false,
 
-<span id='Ext-tree-View-cfg-rootVisible'>    /** 
+<span id='Ext-tree-View-cfg-rootVisible'>    /**
 </span>     * @cfg {Boolean} rootVisible
      * False to hide the root node.
      */
@@ -59,7 +59,7 @@ Ext.define('Ext.tree.View', {
      */
     deferInitialRefresh: false,
 
-<span id='Ext-tree-View-cfg-animate'>    /** 
+<span id='Ext-tree-View-cfg-animate'>    /**
 </span>     * @cfg {Boolean} animate
      * True to enable animated expand/collapse (defaults to the value of {@link Ext#enableFx Ext.enableFx})
      */
@@ -69,10 +69,43 @@ Ext.define('Ext.tree.View', {
 </span>
 <span id='Ext-tree-View-property-toggleOnDblClick'>    toggleOnDblClick: true,
 </span>
-<span id='Ext-tree-View-property-stripeRows'>    stripeRows: false,
+<span id='Ext-tree-View-cfg-stripeRows'>    stripeRows: false,
 </span>
 <span id='Ext-tree-View-property-uiFields'>    // fields that will trigger a change in the ui that aren't likely to be bound to a column
 </span>    uiFields: ['expanded', 'loaded', 'checked', 'expandable', 'leaf', 'icon', 'iconCls', 'loading', 'qtip', 'qtitle'],
+
+<span id='Ext-tree-View-property-treeRowTpl'>    // treeRowTpl which is inserted into thwe rowTpl chain before the base rowTpl. Sets tree-specific classes and attributes
+</span>    treeRowTpl: [
+        '{%',
+            'this.processRowValues(values);',
+            'this.nextTpl.applyOut(values, out, parent);',
+        '%}', {
+            priority: 10,
+            processRowValues: function(rowValues) {
+                var record = rowValues.record,
+                    view = rowValues.view,
+                    qtip = record.get('qtip'),
+                    qtitle = record.get('qttle');
+
+                rowValues.rowAttr = {};
+                if (qtip) {
+                    rowValues.rowAttr['data-qtip'] = qtip;
+                }
+                if (qtitle) {
+                    rowValues.rowAttr['data-qtitle'] = qtitle;
+                }
+                if (record.isExpanded()) {
+                    rowValues.rowClasses.push(view.expandedCls);
+                }
+                if (record.isLeaf()) {
+                    rowValues.rowClasses.push(view.leafCls);
+                }
+                if (record.isLoading()) {
+                    rowValues.rowClasses.push(view.loadingCls);
+                }
+            }
+        }
+    ],
 
 <span id='Ext-tree-View-method-initComponent'>    initComponent: function() {
 </span>        var me = this,
@@ -110,7 +143,7 @@ Ext.define('Ext.tree.View', {
             beforebulkremove: me.beginBulkUpdate,
             bulkremovecomplete: me.endBulkUpdate
         });
-        
+
         if (!treeStore.remoteSort) {
             // If we're local sorting, we don't want the view to be
             // continually updated during the sort process
@@ -154,6 +187,7 @@ Ext.define('Ext.tree.View', {
             'nodedragover'
         );
         me.callParent(arguments);
+        me.addRowTpl(Ext.XTemplate.getTpl(me, 'treeRowTpl'));
         me.on({
             element: 'el',
             scope: me,
@@ -168,59 +202,69 @@ Ext.define('Ext.tree.View', {
             click: me.onCheckboxChange
         });
     },
-    
+
 <span id='Ext-tree-View-method-onBeforeFill'>    onBeforeFill: function(treeStore, fillRoot){
 </span>        var store = this.store,
             index = store.indexOf(fillRoot);
-        
+
         // Filling a bunch of nodes, save the index of the root and the next sibling. When
         // the load is finished, the new records will be those that exist between the two.
         this.fillRootIndex = index;
         this.fillSibling = store.getAt(index + 1);
         store.suspendEvents();
-        
+
     },
-    
+
 <span id='Ext-tree-View-method-onFillComplete'>    onFillComplete: function(treeStore, fillRoot, newNodes){
 </span>        var me = this,
             store = me.store,
             start = me.fillRootIndex + 1,
             sibling = me.fillSibling,
             end, records;
-            
+
         store.resumeEvents();
         delete me.fillSibling;
         delete me.fillRootIndex;
-        
+
         // Always update the current node, since the load may be triggered
         // by .load() directly instead of .expand() on the node
         fillRoot.triggerUIUpdate();
-        
+
         // In the cases of expand, the records might not be in the store yet,
         // so jump out early and expand will handle it later
         if (!newNodes.length || store.indexOf(newNodes[0]) === -1) {
             return;
         }
-            
+
         if (sibling) {
             end = store.indexOf(sibling) - 1;
         } 
-        
+
         records = store.getRange(start, end);
         me.onAdd(store, records, start);
+        
+        me.refreshPartner();
     },
-    
-<span id='Ext-tree-View-method-onBeforeSort'>    onBeforeSort: function(){
+
+<span id='Ext-tree-View-method-onBeforeSort'>    onBeforeSort: function() {
 </span>        this.store.suspendEvents(); 
     },
-    
-<span id='Ext-tree-View-method-onSort'>    onSort: function(o){
+
+<span id='Ext-tree-View-method-onSort'>    onSort: function(o) {
 </span>        // The store will fire sort events for the nodes that bubble from the tree.
         // We only want the final one when sorting is completed, fired by the store
         if (o.isStore) {
             this.store.resumeEvents();
             this.refresh();
-        } 
+            this.refreshPartner();
+        }
+    },
+    
+<span id='Ext-tree-View-method-refreshPartner'>    refreshPartner: function(){
+</span>        var partner = this.lockingPartner;
+        if (partner) {
+            partner.refresh();
+        }
     },
 
 <span id='Ext-tree-View-method-getStoreListeners'>    // Overridden from base class
@@ -236,11 +280,11 @@ Ext.define('Ext.tree.View', {
         };
     },
 
-<span id='Ext-tree-View-method-getMaskStore'>    getMaskStore: function(){
-</span>        return this.panel.getStore();    
+<span id='Ext-tree-View-method-getMaskStore'>    getMaskStore: function() {
+</span>        return this.panel.getStore();
     },
 
-<span id='Ext-tree-View-method-afterComponentLayout'>    afterComponentLayout: function(){
+<span id='Ext-tree-View-method-afterComponentLayout'>    afterComponentLayout: function() {
 </span>        this.callParent(arguments);
         var stretcher = this.stretcher;
         if (stretcher) {
@@ -258,12 +302,12 @@ Ext.define('Ext.tree.View', {
         return this.callParent(arguments);
     },
 
-<span id='Ext-tree-View-method-onClear'>    onClear: function(){
-</span>        this.store.removeAll();    
+<span id='Ext-tree-View-method-onClear'>    onClear: function() {
+</span>        this.store.removeAll();
     },
 
 <span id='Ext-tree-View-method-setRootNode'>    setRootNode: function(node) {
-</span>        var me = this;        
+</span>        var me = this;
         me.store.setNode(node);
         me.node = node;
     },
@@ -277,7 +321,7 @@ Ext.define('Ext.tree.View', {
         }
     },
 
-<span id='Ext-tree-View-method-onCheckChange'>    onCheckChange: function(record){
+<span id='Ext-tree-View-method-onCheckChange'>    onCheckChange: function(record) {
 </span>        var checked = record.get('checked');
         if (Ext.isBoolean(checked)) {
             checked = !checked;
@@ -296,7 +340,7 @@ Ext.define('Ext.tree.View', {
         return checked;
     },
 
-<span id='Ext-tree-View-method-isItemChecked'>    isItemChecked: function(rec){
+<span id='Ext-tree-View-method-isItemChecked'>    isItemChecked: function(rec) {
 </span>        return rec.get('checked');
     },
 
@@ -304,27 +348,22 @@ Ext.define('Ext.tree.View', {
 </span>     * @private
      */
     createAnimWrap: function(record, index) {
-        var thHtml = '',
-            headerCt = this.panel.headerCt,
-            headers = headerCt.getGridColumns(),
-            i = 0, len = headers.length, item,
-            node = this.getNode(record),
-            tmpEl, nodeEl;
+        var me = this,
+            node = me.getNode(record),
+            tmpEl, nodeEl,
+            columnSizer = [];
 
-        for (; i &lt; len; i++) {
-            item = headers[i];
-            thHtml += '&lt;th style=&quot;width: ' + (item.hidden ? 0 : item.getDesiredWidth()) + 'px; height: 0px;&quot;&gt;&lt;/th&gt;';
-        }
-
-        nodeEl = Ext.get(node);        
+        me.renderColumnSizer(columnSizer);
+        nodeEl = Ext.get(node);
         tmpEl = nodeEl.insertSibling({
             tag: 'tr',
             html: [
-                '&lt;td colspan=&quot;' + headerCt.getColumnCount() + '&quot;&gt;',
-                    '&lt;div class=&quot;' + this.nodeAnimWrapCls + '&quot;&gt;',
-                        '&lt;table class=&quot;' + Ext.baseCSSPrefix + 'grid-table&quot; style=&quot;width: ' + headerCt.getFullWidth() + 'px;&quot;&gt;&lt;tbody&gt;',
-                            thHtml,
-                        '&lt;/tbody&gt;&lt;/table&gt;',
+                '&lt;td colspan=&quot;' + me.panel.headerCt.getColumnCount() + '&quot;&gt;',
+                    '&lt;div class=&quot;' + me.nodeAnimWrapCls + '&quot;&gt;',
+                        // Table has to have correct classes to get sized by the dynamic CSS rules
+                        '&lt;table class=&quot;' + Ext.baseCSSPrefix + me.id + '-table ' + Ext.baseCSSPrefix + 'grid-table&quot;&gt;',
+                        columnSizer.join(''),
+                        '&lt;tbody&gt;&lt;/tbody&gt;&lt;/table&gt;',
                     '&lt;/div&gt;',
                 '&lt;/td&gt;'
             ].join('')
@@ -346,24 +385,24 @@ Ext.define('Ext.tree.View', {
 </span>     * @private
      * Returns the animation wrapper element for the specified parent node, used to wrap the child nodes as
      * they slide up or down during expand/collapse.
-     * 
+     *
      * @param parent The parent node to be expanded or collapsed
-     * 
+     *
      * @param [bubble=true] If the passed parent node does not already have a wrap element created, by default
-     * this function will bubble up to each parent node looking for a valid wrap element to reuse, returning 
+     * this function will bubble up to each parent node looking for a valid wrap element to reuse, returning
      * the first one it finds. This is the appropriate behavior, e.g., for the collapse direction, so that the
      * entire expanded set of branch nodes can collapse as a single unit.
-     * 
-     * However for expanding each parent node should instead always create its own animation wrap if one 
-     * doesn't exist, so that its children can expand independently of any other nodes -- this is crucial 
+     *
+     * However for expanding each parent node should instead always create its own animation wrap if one
+     * doesn't exist, so that its children can expand independently of any other nodes -- this is crucial
      * when executing the &quot;expand all&quot; behavior. If multiple nodes attempt to reuse the same ancestor wrap
      * element concurrently during expansion it will lead to problems as the first animation to complete will
      * delete the wrap el out from under other running animations. For that reason, when expanding you should
      * always pass `bubble: false` to be on the safe side.
-     * 
-     * If the passed parent has no wrap (or there is no valid ancestor wrap after bubbling), this function 
+     *
+     * If the passed parent has no wrap (or there is no valid ancestor wrap after bubbling), this function
      * will return null and the calling code should then call {@link #createAnimWrap} if needed.
-     * 
+     *
      * @return {Ext.Element} The wrapping element as created in {@link #createAnimWrap}, or null
      */
     getAnimWrap: function(parent, bubble) {
@@ -385,14 +424,15 @@ Ext.define('Ext.tree.View', {
         return wrap;
     },
 
-<span id='Ext-tree-View-method-doAdd'>    doAdd: function(nodes, records, index) {
+<span id='Ext-tree-View-method-doAdd'>    doAdd: function(records, index) {
 </span>        // If we are adding records which have a parent that is currently expanding
         // lets add them to the animation wrap
         var me = this,
+            nodes = me.bufferRender(records, index, true),
             record = records[0],
             parent = record.parentNode,
-            a = me.all.elements,
-            relativeIndex = 0,
+            all = me.all,
+            relativeIndex,
             animWrap = me.getAnimWrap(parent),
             targetEl, children, len;
 
@@ -400,18 +440,16 @@ Ext.define('Ext.tree.View', {
             return me.callParent(arguments);
         }
 
-        // We need the parent that has the animWrap, not the nodes parent
+        // We need the parent that has the animWrap, not the node's parent
         parent = animWrap.record;
 
         // If there is an anim wrap we do our special magic logic
         targetEl = animWrap.targetEl;
         children = targetEl.dom.childNodes;
-
-        // We subtract 1 from the childrens length because we have a tr in there with the th'es
-        len = children.length - 1;
+        len = children.length;
 
         // The relative index is the index in the full flat collection minus the index of the wraps parent
-        relativeIndex = index - me.indexOf(parent) - 1;
+        relativeIndex = index - me.indexInStore(parent) - 1;
 
         // If we are adding records to the wrap that have a higher relative index then there are currently children
         // it means we have to append the nodes to the wrap
@@ -421,12 +459,11 @@ Ext.define('Ext.tree.View', {
         // If there are already more children then the relative index it means we are adding child nodes of
         // some expanded node in the anim wrap. In this case we have to insert the nodes in the right location
         else {
-            // +1 because of the tr with th'es that is already there
-            Ext.fly(children[relativeIndex + 1]).insertSibling(nodes, 'before', true);
+            Ext.fly(children[relativeIndex]).insertSibling(nodes, 'before', true);
         }
 
-        // We also have to update the CompositeElementLite collection of the DataView
-        Ext.Array.insert(a, index, nodes);
+        // We also have to update the node cache of the DataView
+        all.insert(index, nodes);
 
         // If we were in an animation we need to now change the animation
         // because the targetEl just got higher.
@@ -436,7 +473,7 @@ Ext.define('Ext.tree.View', {
     },
 
 <span id='Ext-tree-View-method-beginBulkUpdate'>    beginBulkUpdate: function(){
-</span>        this.bulkUpdate = true;  
+</span>        this.bulkUpdate = true;
     },
 
 <span id='Ext-tree-View-method-endBulkUpdate'>    endBulkUpdate: function(){
@@ -452,7 +489,7 @@ Ext.define('Ext.tree.View', {
 </span>        var me = this,
             bulk = me.bulkUpdate,
             empty;
-            
+
         if (me.viewReady) {
             me.doRemove(record, index);
             if (!bulk) {
@@ -504,7 +541,7 @@ Ext.define('Ext.tree.View', {
                 // If we expand this node while it is still expanding then we
                 // have to remove the nodes from the animWrap.
                 animWrap.targetEl.select(me.itemSelector).remove();
-            } 
+            }
             animWrap.expanding = true;
             animWrap.collapsing = false;
         }
@@ -517,8 +554,8 @@ Ext.define('Ext.tree.View', {
             node = me.getNode(parent),
             index = node ? me.indexOf(node) : -1,
             animWrap,
-            animateEl, 
-            targetEl;        
+            animateEl,
+            targetEl;
 
         if (me.singleExpand) {
             me.ensureSingleExpand(parent);
@@ -544,13 +581,23 @@ Ext.define('Ext.tree.View', {
         animateEl.stopAnimation();
         // @TODO: we are setting it to 1 because quirks mode on IE seems to have issues with 0
         queue[id] = true;
-        animateEl.slideIn('t', {
+        animateEl.animate({
+            from: {
+                height: 0
+            },
+            to: {
+                height: targetEl.getHeight()
+            },
             duration: me.expandDuration,
             listeners: {
-                scope: me,
-                lastframe: function() {
+                afteranimate: function() {
                     // Move all the nodes out of the anim wrap to their proper location
-                    animWrap.el.insertSibling(targetEl.query(me.itemSelector), 'before', true);
+                    // Must do this in afteranimate because lastframe does not fire if the
+                    // animation is stopped.
+                    var items = targetEl.query(me.itemSelector);
+                    if (items.length) {
+                        animWrap.el.insertSibling(items, 'before', true);
+                    }
                     animWrap.el.remove();
                     me.refreshSize();
                     delete me.animWraps[animWrap.record.internalId];
@@ -616,16 +663,19 @@ Ext.define('Ext.tree.View', {
 
         // @TODO: we are setting it to 1 because quirks mode on IE seems to have issues with 0
         animateEl.stopAnimation();
-        animateEl.slideOut('t', {
+        animateEl.animate({
+            to: {
+                height:0
+            },
             duration: me.collapseDuration,
             listeners: {
-                scope: me,
-                lastframe: function() {
+                afteranimate: function() {
+                    // Must do this in afteranimate because lastframe does not fire if the animation is stopped.
                     animWrap.el.remove();
                     me.refreshSize();
                     delete me.animWraps[animWrap.record.internalId];
                     delete queue[id];
-                }             
+                }
             },
             callback: function() {
                 parent.isExpandingOrCollapsing = false;
@@ -642,43 +692,12 @@ Ext.define('Ext.tree.View', {
      * @return {Boolean} True if the node is animating
      */
     isAnimating: function(node) {
-        return !!this.animQueue[node.getId()];    
-    },
-
-<span id='Ext-tree-View-method-collectData'>    collectData: function(records) {
-</span>        var data = this.callParent(arguments),
-            rows = data.rows,
-            len = rows.length,
-            i = 0,
-            Format = Ext.util.Format,
-            row, record;
-
-        for (; i &lt; len; i++) {
-            row = rows[i];
-            record = records[i];
-            if (record.get('qtip')) {
-                row.rowAttr = 'data-qtip=&quot;' + Format.htmlEncode(record.get('qtip')) + '&quot;';
-                if (record.get('qtitle')) {
-                    row.rowAttr += ' ' + 'data-qtitle=&quot;' + Format.htmlEncode(record.get('qtitle')) + '&quot;';
-                }
-            }
-            if (record.isExpanded()) {
-                row.rowCls = (row.rowCls || '') + ' ' + this.expandedCls;
-            }
-            if (record.isLeaf()) {
-                row.rowCls = (row.rowCls || '') + ' ' + this.leafCls;
-            }
-            if (record.isLoading()) {
-                row.rowCls = (row.rowCls || '') + ' ' + this.loadingCls;
-            }
-        }
-
-        return data;
+        return !!this.animQueue[node.getId()];
     },
 
 <span id='Ext-tree-View-method-expand'>    /**
 </span>     * Expands a record that is loaded in the view.
-     * 
+     *
      * If an animated collapse or expand of the record is in progress, this call will be ignored.
      * @param {Ext.data.Model} record The record to expand
      * @param {Boolean} [deep] True to expand nodes all the way down the tree hierarchy.
@@ -700,7 +719,7 @@ Ext.define('Ext.tree.View', {
 
 <span id='Ext-tree-View-method-collapse'>    /**
 </span>     * Collapses a record that is loaded in the view.
-     * 
+     *
      * If an animated collapse or expand of the record is in progress, this call will be ignored.
      * @param {Ext.data.Model} record The record to collapse
      * @param {Boolean} [deep] True to collapse nodes all the way up the tree hierarchy.
@@ -722,7 +741,7 @@ Ext.define('Ext.tree.View', {
 
 <span id='Ext-tree-View-method-toggle'>    /**
 </span>     * Toggles a record between expanded and collapsed.
-     * 
+     *
      * If an animated collapse or expand of the record is in progress, this call will be ignored.
      * @param {Ext.data.Model} record
      * @param {Boolean} [deep] True to collapse nodes all the way up the tree hierarchy.
@@ -775,7 +794,7 @@ Ext.define('Ext.tree.View', {
      */
     getTreeStore: function() {
         return this.panel.store;
-    },    
+    },
 
 <span id='Ext-tree-View-method-ensureSingleExpand'>    ensureSingleExpand: function(node) {
 </span>        var parent = node.parentNode;
@@ -792,7 +811,7 @@ Ext.define('Ext.tree.View', {
 </span>        if (changedFieldNames) {
             var i = 0,
                 len = changedFieldNames.length;
-                
+
             for (; i &lt; len; ++i) {
                 if (Ext.Array.contains(this.uiFields, changedFieldNames[i])) {
                     return true;

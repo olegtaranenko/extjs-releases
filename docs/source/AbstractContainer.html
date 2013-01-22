@@ -34,7 +34,7 @@ Ext.define('Ext.container.AbstractContainer', {
         'Ext.ZIndexManager'
     ],
 
-<span id='Ext-container-AbstractContainer-property-renderTpl'>    /* End Definitions */
+<span id='Ext-container-AbstractContainer-cfg-renderTpl'>    /* End Definitions */
 </span>
     renderTpl: '{%this.renderContainer(out,values)%}',
 
@@ -247,7 +247,7 @@ Ext.define('Ext.container.AbstractContainer', {
      */
     layoutCounter : 0,
 
-<span id='Ext-container-AbstractContainer-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'container',
+<span id='Ext-container-AbstractContainer-cfg-baseCls'>    baseCls: Ext.baseCSSPrefix + 'container',
 </span>
 <span id='Ext-container-AbstractContainer-cfg-bubbleEvents'>    /**
 </span>     * @cfg {String[]} bubbleEvents
@@ -255,10 +255,9 @@ Ext.define('Ext.container.AbstractContainer', {
      * See {@link Ext.util.Observable#enableBubble}.
      * @since Ext 3
      */
-    bubbleEvents: ['add', 'remove'],
 
-<span id='Ext-container-AbstractContainer-property-defaultLayoutType'>    defaultLayoutType: 'auto',
-</span>
+    defaultLayoutType: 'auto',
+
 <span id='Ext-container-AbstractContainer-method-initComponent'>    // @private
 </span>    initComponent : function(){
         var me = this;
@@ -367,21 +366,84 @@ Ext.define('Ext.container.AbstractContainer', {
 
 <span id='Ext-container-AbstractContainer-method-beforeRender'>    beforeRender: function () {
 </span>        var me = this,
-            layout = me.getLayout();
+            layout = me.getLayout(),
+            targetCls;
 
         me.callParent();
 
         if (!layout.initialized) {
             layout.initLayout();
         }
-    },
-    
-<span id='Ext-container-AbstractContainer-method-setupRenderTpl'>    setupRenderTpl: function (renderTpl) {
-</span>        var layout = this.getLayout();
 
+        targetCls = layout.targetCls;
+
+        if (targetCls) {
+            me.applyTargetCls(targetCls);
+        }
+    },
+
+<span id='Ext-container-AbstractContainer-method-applyTargetCls'>    // The targetCls is a CSS class that the layout needs added to the targetEl. The targetEl is where the container's
+</span>    // children are rendered and is usually just the main el. Some containers (e.g. panels) use a body instead.
+    //
+    // In general, if a class overrides getTargetEl it will also need to override this method. This is necessary to
+    // avoid a post-render step to add the targetCls.
+    applyTargetCls: function(targetCls) {
+        this.addCls(targetCls);
+    },
+
+<span id='Ext-container-AbstractContainer-method-afterComponentLayout'>    afterComponentLayout: function() {
+</span>        var floaters = this.floatingItems.items,
+            floaterCount = floaters.length,
+            i, floater
+            
         this.callParent(arguments);
 
-        layout.setupRenderTpl(renderTpl);
+        // Contained, unrendered, autoShow items must be shown upon next layout of the Container
+        for (i = 0; i &lt; floaterCount; i++) {
+            floater = floaters[i];
+            if (!floater.rendered &amp;&amp; floater.autoShow) {
+                floater.show();
+            }
+        }
+    },
+
+<span id='Ext-container-AbstractContainer-method-onPosition'>    onPosition: function() {
+</span>        this.callParent(arguments);
+        this.repositionFloatingItems();
+    },
+
+<span id='Ext-container-AbstractContainer-method-onResize'>    onResize: function() {
+</span>        this.callParent(arguments);
+        this.repositionFloatingItems();
+    },
+
+<span id='Ext-container-AbstractContainer-method-repositionFloatingItems'>    repositionFloatingItems: function() {
+</span>        var floaters = this.floatingItems.items,
+            floaterCount = floaters.length,
+            i, floater;
+
+        // Ensure correct positioning of floated children before calling superclass
+        for (i = 0; i &lt; floaterCount; i++) {
+            floater = floaters[i];
+            if (floater.el &amp;&amp; !floater.hidden) {
+                floater.setPosition(floater.x, floater.y);
+            }
+        }
+    },
+
+<span id='Ext-container-AbstractContainer-method-setupRenderTpl'>    setupRenderTpl: function (renderTpl) {
+</span>        this.callParent(arguments);
+        this.getLayout().setupRenderTpl(renderTpl);
+    },
+    
+<span id='Ext-container-AbstractContainer-method-getDefaultContentTarget'>    // @private
+</span>    getDefaultContentTarget: function() {
+        return this.el;
+    },
+    
+<span id='Ext-container-AbstractContainer-method-getContentTarget'>    // @private
+</span>    getContentTarget: function(){
+        return this.getLayout().getContentTarget();
     },
 
 <span id='Ext-container-AbstractContainer-method-setLayout'>    // @private
@@ -759,14 +821,18 @@ Ext.define('Ext.container.AbstractContainer', {
     },
 
 <span id='Ext-container-AbstractContainer-method-doRemove'>    // @private
-</span>    doRemove : function(component, autoDestroy) {
+</span>    doRemove : function(component, doDestroy) {
+        // Ensure the flag is set correctly
+        doDestroy = doDestroy === true || (doDestroy !== false &amp;&amp; this.autoDestroy);
+
         var me = this,
             layout = me.layout,
             hasLayout = layout &amp;&amp; me.rendered,
-            destroying = autoDestroy === true || (autoDestroy !== false &amp;&amp; me.autoDestroy),
+
+            // isDestroying flag is true if the removal is taking place as part of destruction, OR if removal is intended to *cause* destruction
+            isDestroying = component.destroying || doDestroy,
             floating = component.floating;
 
-        autoDestroy = autoDestroy === true || (autoDestroy !== false &amp;&amp; me.autoDestroy);
         if (floating) {
             me.floatingItems.remove(component);
         } else {
@@ -777,17 +843,17 @@ Ext.define('Ext.container.AbstractContainer', {
         if (hasLayout &amp;&amp; !floating) {
             // Removing a component from a running layout has to cancel the layout
             if (layout.running) {
-                Ext.AbstractComponent.cancelLayout(component, destroying);
+                Ext.AbstractComponent.cancelLayout(component, isDestroying);
             }
-            layout.onRemove(component, destroying);
+            layout.onRemove(component, isDestroying);
         }
 
-        component.onRemoved(destroying);
+        component.onRemoved(isDestroying);
 
-        me.onRemove(component, destroying);
+        me.onRemove(component, isDestroying);
 
         // Destroy if we were explicitly told to, or we're defaulting to our autoDestroy configuration
-        if (destroying) {
+        if (doDestroy) {
             component.destroy();
         }
         // Only have the layout perform remove postprocessing if the Component is not being destroyed

@@ -340,7 +340,6 @@ return {
 
     applyStyles: function(el, styles) {
         if (styles) {
-            el = Ext.fly(el);
             if (typeof styles == &quot;function&quot;) {
                 styles = styles.call();
             }
@@ -348,7 +347,7 @@ return {
                 styles = Ext.dom.Element.parseStyles(styles);
             }
             if (typeof styles == &quot;object&quot;) {
-                el.setStyle(styles);
+                Ext.fly(el, '_applyStyles').setStyle(styles);
             }
         }
     },

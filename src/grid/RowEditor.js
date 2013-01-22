@@ -81,7 +81,7 @@ Ext.define('Ext.grid.RowEditor', {
             delete me.fields;
         }
         
-        me.mon(Ext.container.Container.hierarchyEventSource, {
+        me.mon(me.hierarchyEventSource, {
             scope: me,
             show: me.repositionIfVisible
         });
@@ -400,7 +400,7 @@ Ext.define('Ext.grid.RowEditor', {
             // Set editor height to match the row height
             if (me.getHeight() != newHeight) {
                 me.setHeight(newHeight);
-                me.el.setLeft(0);
+                me.el.setLocalX(0);
             }
 
             if (animateConfig) {
@@ -425,7 +425,7 @@ Ext.define('Ext.grid.RowEditor', {
         if (me.getWidth() != mainBodyWidth) {
             me.setWidth(mainBodyWidth);
         }
-        btnEl.setLeft(left);
+        btnEl.setLocalX(left);
     },
 
     getEditor: function(fieldInfo) {

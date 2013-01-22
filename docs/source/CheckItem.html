@@ -105,25 +105,25 @@ Ext.define('Ext.menu.CheckItem', {
     
 <span id='Ext-menu-CheckItem-property-showCheckbox'>    showCheckbox: true,
 </span>
-<span id='Ext-menu-CheckItem-property-renderTpl'>    renderTpl: [
+<span id='Ext-menu-CheckItem-cfg-renderTpl'>    renderTpl: [
 </span>        '&lt;tpl if=&quot;plain&quot;&gt;',
             '{text}',
         '&lt;tpl else&gt;',
             '{%var showCheckbox = values.showCheckbox,',
             '      rightCheckbox = showCheckbox &amp;&amp; values.hasIcon &amp;&amp; (values.iconAlign !== &quot;left&quot;), textCls = rightCheckbox ? &quot;' + Ext.baseCSSPrefix + 'right-check-item-text&quot; : &quot;&quot;;%}',
-            '&lt;a id=&quot;{id}-itemEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-link&quot; href=&quot;{href}&quot; &lt;tpl if=&quot;hrefTarget&quot;&gt;target=&quot;{hrefTarget}&quot;&lt;/tpl&gt; hidefocus=&quot;true&quot; unselectable=&quot;on&quot;&gt;',
+            '&lt;a id=&quot;{id}-itemEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-link&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot; href=&quot;{href}&quot; &lt;tpl if=&quot;hrefTarget&quot;&gt;target=&quot;{hrefTarget}&quot;&lt;/tpl&gt; hidefocus=&quot;true&quot; unselectable=&quot;on&quot;&gt;',
                 '{%if (values.hasIcon &amp;&amp; (values.iconAlign !== &quot;left&quot;)) {%}',
-                    '&lt;img id=&quot;{id}-iconEl&quot; src=&quot;{icon}&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-icon {iconCls}&quot; /&gt;',
+                    '&lt;img id=&quot;{id}-iconEl&quot; src=&quot;{icon}&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-icon {iconCls}&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot; /&gt;',
                 '{%} else if (showCheckbox){%}',
-                    '&lt;img id=&quot;{id}-checkEl&quot; src=&quot;{blank}&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-icon&quot; /&gt;',
+                    '&lt;img id=&quot;{id}-checkEl&quot; src=&quot;{blank}&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-icon&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot; /&gt;',
                 '{%}%}',
                 '&lt;span id=&quot;{id}-textEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-text {[textCls]}&quot; &lt;tpl if=&quot;arrowCls&quot;&gt;style=&quot;margin-right: 17px;&quot;&lt;/tpl&gt; &gt;{text}&lt;/span&gt;',
 
                 // CheckItem with an icon puts the icon on the right unless iconAlign=='left'
                 '{%if (rightCheckbox) {%}',
-                    '&lt;img id=&quot;{id}-checkEl&quot; src=&quot;{blank}&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-icon-right&quot; /&gt;',
+                    '&lt;img id=&quot;{id}-checkEl&quot; src=&quot;{blank}&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-icon-right&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot; /&gt;',
                 '{%} else if (values.arrowCls) {%}',
-                    '&lt;img id=&quot;{id}-arrowEl&quot; src=&quot;{blank}&quot; class=&quot;{arrowCls}&quot; /&gt;',
+                    '&lt;img id=&quot;{id}-arrowEl&quot; src=&quot;{blank}&quot; class=&quot;{arrowCls}&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot; /&gt;',
                 '{%}%}',
             '&lt;/a&gt;',
         '&lt;/tpl&gt;'
@@ -192,7 +192,7 @@ Ext.define('Ext.menu.CheckItem', {
         }
         // In some cases the checkbox will disappear until repainted
         // Happens in everything except IE9 strict, see: EXTJSIV-6412
-        if (!(Ext.isIE9 &amp;&amp; Ext.isStrict) &amp;&amp; me.rendered) {
+        if (!(Ext.isIE10p || (Ext.isIE9 &amp;&amp; Ext.isStrict)) &amp;&amp; me.rendered) {
             me.el.repaint();
         }
         me.checkChangeDisabled = true;

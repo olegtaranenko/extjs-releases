@@ -384,7 +384,8 @@ Ext.define('Ext.data.proxy.Server', {
             groupDirectionParam = me.groupDirectionParam,
             sortParam = me.sortParam,
             filterParam = me.filterParam,
-            directionParam = me.directionParam;
+            directionParam = me.directionParam,
+            hasGroups, index;
 
         if (pageParam && isDef(page)) {
             params[pageParam] = page;
@@ -398,7 +399,8 @@ Ext.define('Ext.data.proxy.Server', {
             params[limitParam] = limit;
         }
 
-        if (groupParam && groupers && groupers.length > 0) {
+        hasGroups = groupParam && groupers && groupers.length > 0;
+        if (hasGroups) {
             // Grouper is a subclass of sorter, so we can just use the sorter method
             if (simpleGroupMode) {
                 params[groupParam] = groupers[0].property;
@@ -410,8 +412,13 @@ Ext.define('Ext.data.proxy.Server', {
 
         if (sortParam && sorters && sorters.length > 0) {
             if (simpleSortMode) {
-                params[sortParam] = sorters[0].property;
-                params[directionParam] = sorters[0].direction;
+                index = 0;
+                // Group will be included in sorters, so grab the next one
+                if (sorters.length > 1 && hasGroups) {
+                    index = 1;
+                }
+                params[sortParam] = sorters[index].property;
+                params[directionParam] = sorters[index].direction;
             } else {
                 params[sortParam] = me.encodeSorters(sorters);
             }

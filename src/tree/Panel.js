@@ -206,7 +206,7 @@ Ext.define('Ext.tree.Panel', {
             me.columns = [{
                 xtype    : 'treecolumn',
                 text     : 'Name',
-                width    : Ext.isIE6 ? null : 10000,
+                width    : Ext.isIE6 ? '100%' : 10000, // IE6 needs width:100%
                 dataIndex: me.displayField         
             }];
         }

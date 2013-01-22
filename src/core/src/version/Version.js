@@ -32,7 +32,7 @@
 
 // Current core version
 // also fix Ext-more.js
-var version = '4.1.2', Version;
+var version = '4.2.0', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         /**

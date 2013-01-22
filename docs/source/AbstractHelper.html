@@ -26,6 +26,7 @@ Ext.define('Ext.dom.AbstractHelper', {
 <span id='Ext-dom-AbstractHelper-property-emptyTags'>    emptyTags : /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i,
 </span><span id='Ext-dom-AbstractHelper-property-confRe'>    confRe : /^(?:tag|children|cn|html|tpl|tplData)$/i,
 </span><span id='Ext-dom-AbstractHelper-property-endRe'>    endRe : /end/i,
+</span><span id='Ext-dom-AbstractHelper-property-styleSepRe'>    styleSepRe: /\s*(?::|;)\s*/,
 </span>
 <span id='Ext-dom-AbstractHelper-property-attributeTransform'>    // Since cls &amp; for are reserved words, we need to transform them
 </span>    attributeTransform: { cls : 'class', htmlFor : 'for' },
@@ -167,16 +168,15 @@ Ext.define('Ext.dom.AbstractHelper', {
     applyStyles: function(el, styles) {
         if (styles) {
             var i = 0,
-                len,
-                style;
+                len;
 
-            el = Ext.fly(el);
+            el = Ext.fly(el, '_applyStyles');
             if (typeof styles == 'function') {
                 styles = styles.call();
             }
-            if (typeof styles == 'string'){
-                styles = Ext.util.Format.trim(styles).split(/\s*(?::|;)\s*/);
-                for(len = styles.length; i &lt; len;){
+            if (typeof styles == 'string') {
+                styles = Ext.util.Format.trim(styles).split(this.styleSepRe);
+                for (len = styles.length; i &lt; len;) {
                     el.setStyle(styles[i++], styles[i++]);
                 }
             } else if (Ext.isObject(styles)) {
@@ -204,12 +204,10 @@ Ext.define('Ext.dom.AbstractHelper', {
      */
     insertHtml: function(where, el, html) {
         var hash = {},
-            hashVal,
             setStart,
             range,
             frag,
-            rangeEl,
-            rs;
+            rangeEl;
 
         where = where.toLowerCase();
 

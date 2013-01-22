@@ -88,20 +88,27 @@ Ext.define('Ext.LoadMask', {
      */
     useTargetEl: false,
 
-<span id='Ext-LoadMask-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'mask-msg',
+<span id='Ext-LoadMask-cfg-baseCls'>    baseCls: Ext.baseCSSPrefix + 'mask-msg',
 </span>
 <span id='Ext-LoadMask-property-childEls'>    childEls: [
-</span>        'msgEl'
+</span>        'msgEl',
+        'msgTextEl'
     ],
 
-<span id='Ext-LoadMask-property-renderTpl'>    renderTpl: '&lt;div id=&quot;{id}-msgEl&quot; style=&quot;position:relative&quot; class=&quot;{[values.$comp.msgCls]}&quot;&gt;&lt;/div&gt;',
-</span>
-<span id='Ext-LoadMask-property-floating'>    // @private Obviously, it's floating.
+<span id='Ext-LoadMask-cfg-renderTpl'>    renderTpl: [
+</span>        '&lt;div id=&quot;{id}-msgEl&quot; class=&quot;{[values.$comp.msgCls]} ',
+            Ext.baseCSSPrefix, 'mask-msg-inner&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot;&gt;',
+            '&lt;div id=&quot;{id}-msgTextEl&quot; class=&quot;', Ext.baseCSSPrefix ,'mask-msg-text',
+                '&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot;&gt;&lt;/div&gt;',
+        '&lt;/div&gt;'
+    ],
+
+<span id='Ext-LoadMask-cfg-floating'>    // @private Obviously, it's floating.
 </span>    floating: {
         shadow: 'frame'
     },
 
-<span id='Ext-LoadMask-property-focusOnToFront'>    // @private Masks are not focusable
+<span id='Ext-LoadMask-cfg-focusOnToFront'>    // @private Masks are not focusable
 </span>    focusOnToFront: false,
 
 <span id='Ext-LoadMask-property-bringParentToFront'>    // When we put the load mask to the front of it's owner, we generally don't want to also bring the owning
@@ -146,8 +153,7 @@ Ext.define('Ext.LoadMask', {
                 resize: me.sizeMask,
                 added: me.onComponentAdded,
                 removed: me.onComponentRemoved
-            },
-            hierarchyEventSource = Ext.container.Container.hierarchyEventSource;
+            };
             
         if (comp.floating) {
             listeners.move = me.sizeMask;
@@ -162,7 +168,7 @@ Ext.define('Ext.LoadMask', {
         me.mon(comp, listeners);
         
         // subscribe to the observer that manages the hierarchy
-        me.mon(hierarchyEventSource, {
+        me.mon(me.hierarchyEventSource, {
             show: me.onContainerShow,
             hide: me.onContainerHide,
             expand: me.onContainerExpand,
@@ -286,20 +292,21 @@ Ext.define('Ext.LoadMask', {
     },
 
 <span id='Ext-LoadMask-method-getStoreListeners'>    getStoreListeners: function(store) {
-</span>        var result = {
-            exception: this.onLoad,
+</span>        var load = this.onLoad,
+            beforeLoad = this.onBeforeLoad,
+            result = {
+                // Fired when a range is requested for rendering that is not in the cache
+                cachemiss: beforeLoad,
 
-            // Fired when a range is requested for rendering that is not in the cache
-            cachemiss: this.onBeforeLoad,
-
-            // Fired when a range for rendering which was previously missing from the cache is loaded
-            cachefilled: this.onLoad
-        };
+                // Fired when a range for rendering which was previously missing from the cache is loaded
+                cachefilled: load
+            };
 
         // Only need to mask on load if the proxy is asynchronous - ie: Ajax/JsonP
         if (!store.proxy.isSynchronous) {
-            result.beforeLoad = this.onBeforeLoad;
-            result.load = this.onLoad;
+            result.beforeLoad = beforeLoad;
+            result.load = load;
+            result.prefech = load;
         }
         return result;
     },
@@ -374,7 +381,8 @@ Ext.define('Ext.LoadMask', {
         me.loading = true;
 
         if (me.useMsg) {
-            msgEl.show().update(me.msg);
+            msgEl.show();
+            me.msgTextEl.update(me.msg);
         } else {
             msgEl.parent().hide();
         }

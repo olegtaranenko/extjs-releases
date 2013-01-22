@@ -12,13 +12,12 @@ Ext.onReady(function () {
     
     var baseColor = '#eee';
     
-    Ext.define('Ext.ux.chart.theme.Fancy', {
+    Ext.define('Ext.chart.theme.Fancy', {
         extend: 'Ext.chart.theme.Base',
         
         constructor: function(config) {
             this.callParent([Ext.apply({
                 axis: {
-                    fill: baseColor,
                     stroke: baseColor
                 },
                 axisLabelLeft: {
@@ -36,8 +35,6 @@ Ext.onReady(function () {
                 colors: colors
             }, config)]);
         }
-    }, function(){
-        Ext.chart.theme.Fancy = Ext.ux.chart.theme.Fancy;
     });
 
     var chart = Ext.create('Ext.chart.Chart', {

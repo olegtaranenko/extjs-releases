@@ -424,6 +424,8 @@ Ext.define('Ext.picker.Date', {
             nextText: me.nextText,
             days: days
         });
+
+        me.protoEl.unselectable();
     },
 
     // Do the job of a container layout at this point even though we are not a Container.
@@ -444,7 +446,7 @@ Ext.define('Ext.picker.Date', {
         var me = this;
 
         me.callParent(arguments);
-        me.el.unselectable();
+
         me.cells = me.eventEl.select('tbody td');
         me.textNodes = me.eventEl.query('tbody td span');
         

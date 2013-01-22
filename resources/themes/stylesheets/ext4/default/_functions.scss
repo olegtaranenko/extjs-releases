@@ -45,3 +45,6 @@
 @function rotate90($box) {
     @return left($box) top($box) right($box) bottom($box);
 }
+@function rtl($box) {
+    @return top($box) left($box) bottom($box) right($box);
+}

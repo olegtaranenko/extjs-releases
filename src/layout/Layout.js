@@ -193,7 +193,9 @@ Ext.define('Ext.layout.Layout', {
      * @param {Ext.layout.ContextItem} ownerContext The context item for the layout's owner
      * component.
      */
-    finishedLayout: function () {
+    finishedLayout: function (ownerContext) {
+        this.lastWidthModel = ownerContext.widthModel;
+        this.lastHeightModel = ownerContext.heightModel;
         this.ownerContext = null;
     },
     

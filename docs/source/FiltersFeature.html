@@ -199,11 +199,10 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
         me.filterConfigs = config.filters;
     },
 
-<span id='Ext-ux-grid-FiltersFeature-method-attachEvents'>    attachEvents: function() {
+<span id='Ext-ux-grid-FiltersFeature-method-init'>    init: function(grid) {
 </span>        var me = this,
             view = me.view,
-            headerCt = view.headerCt,
-            grid = me.getGridPanel();
+            headerCt = view.headerCt;
 
         me.bindStore(view.getStore(), true);
 

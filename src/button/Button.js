@@ -389,16 +389,21 @@ Ext.define('Ext.button.Button', {
     ],
 
     renderTpl: [
-        '<em id="{id}-btnWrap"<tpl if="splitCls"> class="{splitCls}"</tpl>>',
+        '<em id="{id}-btnWrap" class="<tpl if="splitCls">{splitCls}</tpl>',
+            '<tpl if="childElCls"> {childElCls}</tpl>">',
             '<tpl if="href">',
                 '<a id="{id}-btnEl" href="{href}" class="{btnCls}" target="{hrefTarget}"',
                     '<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl>',
                     '<tpl if="disabled"> disabled="disabled"</tpl>',
                     ' role="link">',
-                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner">',
+                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner',
+                        '<tpl if="childElCls"> {childElCls}</tpl>">',
                         '{text}',
                     '</span>',
-                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}"<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>></span>',
+                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}',
+                        '<tpl if="childElCls"> {childElCls}</tpl>"',
+                        '<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>>',
+                    '</span>',
                 '</a>',
             '<tpl else>',
                 '<button id="{id}-btnEl" type="{type}" class="{btnCls}" hidefocus="true"',
@@ -407,10 +412,14 @@ Ext.define('Ext.button.Button', {
                     '<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl>',
                     '<tpl if="disabled"> disabled="disabled"</tpl>',
                     ' role="button" autocomplete="off">',
-                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner" style="{innerSpanStyle}">',
+                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner',
+                        '<tpl if="childElCls"> {childElCls}</tpl>" style="{innerSpanStyle}">',
                         '{text}',
                     '</span>',
-                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}"<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>></span>',
+                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}',
+                        '<tpl if="childElCls"> {childElCls}</tpl>"',
+                        '<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>>',
+                    '</span>',
                 '</button>',
             '</tpl>',
         '</em>',
@@ -500,6 +509,9 @@ Ext.define('Ext.button.Button', {
     shrinkWrap: 3,
 
     frame: true,
+
+    // A reusable object used by getTriggerRegion to avoid excessive object creation.
+    _triggerRegion: {},
 
     // inherit docs
     initComponent: function() {
@@ -599,6 +611,9 @@ Ext.define('Ext.button.Button', {
 
             // retrieve menu by id or instantiate instance if needed
             me.menu = Ext.menu.Manager.get(me.menu);
+            // button menu needs a floatParent so that it will be aligned correctly in rtl
+            // mode (hierarchical rtl-ness is determined from floatParent)
+            me.menu.ownerCt = me;
             me.menu.ownerButton = me;
         }
 
@@ -704,10 +719,6 @@ Ext.define('Ext.button.Button', {
 
         // Apply the renderData to the template args
         Ext.applyIf(me.renderData, me.getTemplateArgs());
-
-        if (me.scale) {
-            me.setScale(me.scale);
-        }
     },
 
     // @private
@@ -837,15 +848,13 @@ Ext.define('Ext.button.Button', {
     /**
      * @private
      * If there is a configured href for this Button, returns the href with parameters appended.
-     * @return {String/Boolean}The href string with parameters appended.
+     * @return {String/Boolean} The href string with parameters appended.
      */
     getHref: function() {
         var me = this,
-            params = Ext.apply({}, me.baseParams);
+            href = me.href;
 
-        // write baseParams first, then write any params
-        params = Ext.apply(params, me.params);
-        return me.href ? Ext.urlAppend(me.href, Ext.Object.toQueryString(params)) : false;
+        return href ? Ext.urlAppend(href, Ext.Object.toQueryString(Ext.apply({}, me.params, me.baseParams))) : false;
     },
 
     /**
@@ -1126,7 +1135,7 @@ Ext.define('Ext.button.Button', {
             }
 
             if (!fromEvent || me.showEmptyMenu || menu.items.getCount() > 0) {
-                menu.showBy(me.el, me.menuAlign, ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) ? [-2, -2] : undefined);
+                menu.showBy(me.el, me.menuAlign, (Ext.isIEQuirks || Ext.isIE6) ? [-2, -2] : undefined);
             }
         }
         return me;
@@ -1233,18 +1242,14 @@ Ext.define('Ext.button.Button', {
         var me = this,
             el = me.el,
             over = me.overMenuTrigger,
-            overlap, btnSize;
+            overPosition, triggerRegion, btnSize;
 
         if (me.split) {
-            if (me.arrowAlign === 'right') {
-                overlap = e.getX() - el.getX();
-                btnSize = el.getWidth();
-            } else {
-                overlap = e.getY() - el.getY();
-                btnSize = el.getHeight();
-            }
+            overPosition = (me.arrowAlign === 'right') ?
+                e.getX() - me.getX() : e.getY() - el.getY();
+            triggerRegion = me.getTriggerRegion();
 
-            if (overlap > (btnSize - me.getTriggerSize())) {
+            if (overPosition > triggerRegion.begin && overPosition < triggerRegion.end) {
                 if (!over) {
                     me.onMenuTriggerOver(e);
                 }
@@ -1254,6 +1259,23 @@ Ext.define('Ext.button.Button', {
                 }
             }
         }
+    },
+
+    /**
+     * @private
+     * Returns an object containing `begin` and `end` properties that indicate the 
+     * left/right bounds of a right trigger or the top/bottom bounds of a bottom trigger.
+     * @return {Object}
+     */
+    getTriggerRegion: function() {
+        var me = this,
+            region = me._triggerRegion,
+            triggerSize = me.getTriggerSize(),
+            btnSize = me.arrowAlign === 'right' ? me.getWidth() : me.getHeight();
+
+        region.begin = btnSize - triggerSize;
+        region.end = btnSize;
+        return region;
     },
 
     /**
@@ -1269,9 +1291,16 @@ Ext.define('Ext.button.Button', {
         if (size === undef) {
             side = me.arrowAlign;
             sideFirstLetter = side.charAt(0);
-            size = me.triggerSize = me.el.getFrameWidth(sideFirstLetter) + me.btnWrap.getFrameWidth(sideFirstLetter) + me.frameSize[side];
+            size = me.triggerSize = me.el.getFrameWidth(sideFirstLetter) + me.getBtnWrapFrameWidth(sideFirstLetter) + me.frameSize[side];
         }
         return size;
+    },
+
+    /**
+     * @private
+     */
+    getBtnWrapFrameWidth: function(side) {
+        return this.btnWrap.getFrameWidth(side);
     },
 
     /**
@@ -1350,7 +1379,7 @@ Ext.define('Ext.button.Button', {
 
         // IE renders disabled text by layering gray text on top of white text, offset by 1 pixel. Normally this is fine
         // but in some circumstances (such as using formBind) it gets confused and renders them side by side instead.
-        if (me.btnInnerEl && (Ext.isIE6 || Ext.isIE7)) {
+        if (me.btnInnerEl && Ext.isIE7m) {
             me.btnInnerEl.repaint();
         }
 
@@ -1447,7 +1476,6 @@ Ext.define('Ext.button.Button', {
      */
     getPersistentPadding: function() {
         var me = this,
-            reset = Ext.scopeResetCSS,
             padding = me.persistentPadding,
             btn, leftTop, btnEl, btnInnerEl, wrap;
 

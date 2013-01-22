@@ -695,20 +695,25 @@ Element.override({
         return {width: w || me.getWidth(true), height: h || me.getHeight(true)};
     },
 
+    statics: {
+        selectableCls: Ext.baseCSSPrefix + 'selectable',
+        unselectableCls: Ext.baseCSSPrefix + 'unselectable'
+    },
+
 <span id='Ext-dom-Element-method-selectable'>    /**
 </span>     * Enable text selection for this element (normalized across browsers)
      * @return {Ext.Element} this
      */
     selectable : function() {
         var me = this;
-        me.dom.unselectable = &quot;off&quot;;
-        // Prevent it from bubbles up and enables it to be selectable
-        me.on('selectstart', function (e) {
-            e.stopPropagation();
-            return true;
-        });
-        me.applyStyles(&quot;-webkit-user-select: text; -moz-user-select: text; -khtml-user-select: text; -o-user-select: text; user-select: text;&quot;);
-        me.removeCls(Ext.baseCSSPrefix + 'unselectable');
+
+        // We clear this property for all browsers, not just Opera. This is so that rendering templates don't need to
+        // condition on Opera when making elements unselectable.
+        me.dom.unselectable = '';
+
+        me.removeCls(Element.unselectableCls);
+        me.addCls(Element.selectableCls);
+
         return me;
     },
 
@@ -717,12 +722,35 @@ Element.override({
      * @return {Ext.dom.Element} this
      */
     unselectable : function() {
+        // The approach used to disable text selection combines CSS, HTML attributes and DOM events. Importantly the
+        // strategy is designed to be expressible in markup, so that elements can be rendered unselectable without
+        // needing modifications post-render. e.g.:
+        //
+        // &lt;div class=&quot;x-unselectable&quot; unselectable=&quot;on&quot;&gt;&lt;/div&gt;
+        //
+        // Changes to this method may need to be reflected elsewhere, e.g. ProtoElement.
         var me = this;
-        me.dom.unselectable = &quot;on&quot;;
 
-        me.swallowEvent(&quot;selectstart&quot;, true);
-        me.applyStyles(&quot;-webkit-user-select: none; -moz-user-select: -moz-none; -khtml-user-select: none; -o-user-select: none; user-select: none;&quot;);
-        me.addCls(Ext.baseCSSPrefix + 'unselectable');
+        // The unselectable property (or similar) is supported by various browsers but Opera is the only browser that
+        // doesn't support any of the other techniques. The problem with it is that it isn't inherited by child
+        // elements. Theoretically we could add it to all children but the performance would be terrible. In certain
+        // key locations (e.g. panel headers) we add unselectable=&quot;on&quot; to extra elements during rendering just for
+        // Opera's benefit.
+        if (Ext.isOpera) {
+            me.dom.unselectable = 'on';
+        }
+
+        // In Mozilla and WebKit the CSS properties -moz-user-select and -webkit-user-select prevent a selection
+        // originating in an element. These are inherited, which is what we want.
+        //
+        // In IE we rely on a listener for the selectstart event instead. We don't need to register a listener on the
+        // individual element, instead we use a single listener and rely on event propagation to listen for the event at
+        // the document level. That listener will walk up the DOM looking for nodes that have either of the classes
+        // x-selectable or x-unselectable. This simulates the CSS inheritance approach.
+        //
+        // IE 10 is expected to support -ms-user-select so the listener may not be required.
+        me.removeCls(Element.selectableCls);
+        me.addCls(Element.unselectableCls);
 
         return me;
     },
@@ -802,7 +830,7 @@ Element.override({
 
 Element.prototype.styleHooks = styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
 
-if (Ext.isIE6 || Ext.isIE7) {
+if (Ext.isIE7m) {
     styleHooks.fontSize = styleHooks['font-size'] = {
         name: 'fontSize',
         canThrow: true
@@ -842,6 +870,72 @@ if (Ext.isIEQuirks || Ext.isIE &amp;&amp; Ext.ieVersion &lt;= 8) {
         };
     }
 }
+
+// The following hack is needed to support padding on dom elements with display:table.
+// It was added because at one point auto layout's &quot;outerCt&quot; element had padding applied
+// to it. The padding is now appplied to the innerCt which is display:table-cell, so this
+// hack is not currently needed.
+//if (Ext.isIE9 &amp;&amp; Ext.isStrict) {
+//    // In IE9, getComputedStyle always returns 0px for padding if the element has
+//    // &quot;display:table&quot;, so we use currentStyle instead.
+//    var names = {
+//            padding: 'padding',
+//            paddingTop: 'padding-top',
+//            paddingRight: 'padding-right',
+//            paddingBottom: 'padding-bottom',
+//            paddingLeft: 'padding-left'
+//        },
+//        createHook = function(name, camelCaseName) {
+//            styleHooks[name] = styleHooks[camelCaseName] = {
+//                name: name,
+//                get: function(dom) {
+//                    return dom.currentStyle[name];
+//                }
+//            }
+//        },
+//        camelCaseName;
+//
+//    for (camelCaseName in names) {
+//        createHook(names[camelCaseName], camelCaseName);
+//    }
+//}
+
+// Element.unselectable relies on this listener to prevent selection in IE. Some other browsers support the event too
+// but it is only strictly required for IE. In WebKit this listener causes subtle differences to how the browser handles
+// the non-selection, e.g. whether or not the mouse cursor changes when attempting to select text.
+Ext.getDoc().on('selectstart', function(ev, dom) {
+    var doc = document.documentElement,
+        selectableCls = Element.selectableCls,
+        unselectableCls = Element.unselectableCls,
+        tagName = dom &amp;&amp; dom.tagName;
+
+    tagName = tagName &amp;&amp; tagName.toLowerCase();
+
+    // Element.unselectable is not really intended to handle selection within text fields and it is important that
+    // fields inside menus or panel headers don't inherit the unselectability. In most browsers this is automatic but in
+    // IE 9 the selectstart event can bubble up from text fields so we have to explicitly handle that case.
+    if (tagName === 'input' || tagName === 'textarea') {
+        return;
+    }
+
+    // Walk up the DOM checking the nodes. This may be 'slow' but selectstart events don't fire very often
+    while (dom &amp;&amp; dom.nodeType === 1 &amp;&amp; dom !== doc) {
+        var el = Ext.fly(dom);
+
+        // If the node has the class x-selectable then stop looking, the text selection is allowed
+        if (el.hasCls(selectableCls)) {
+            return;
+        }
+
+        // If the node has class x-unselectable then the text selection needs to be stopped
+        if (el.hasCls(unselectableCls)) {
+            ev.stopEvent();
+            return;
+        }
+
+        dom = dom.parentNode;
+    }
+});
 
 });
 

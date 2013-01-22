@@ -226,7 +226,7 @@ Ext.define('Ext.form.field.Base', {
      */
     checkChangeBuffer: 50,
 
-<span id='Ext-form-field-Base-property-componentLayout'>    componentLayout: 'field',
+<span id='Ext-form-field-Base-cfg-componentLayout'>    componentLayout: 'field',
 </span>
 <span id='Ext-form-field-Base-cfg-readOnly'>    /**
 </span>     * @cfg {Boolean} readOnly
@@ -261,7 +261,7 @@ Ext.define('Ext.form.field.Base', {
 <span id='Ext-form-field-Base-property-hasFocus'>    // private
 </span>    hasFocus : false,
 
-<span id='Ext-form-field-Base-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'field',
+<span id='Ext-form-field-Base-cfg-baseCls'>    baseCls: Ext.baseCSSPrefix + 'field',
 </span>
 <span id='Ext-form-field-Base-property-maskOnDisable'>    maskOnDisable: false,
 </span>    
@@ -331,13 +331,7 @@ Ext.define('Ext.form.field.Base', {
         if (!me.name) {
             me.name = me.getInputId();
         }
-    },
-    
-<span id='Ext-form-field-Base-method-beforeRender'>    beforeRender: function(){
-</span>        var me = this;
-            
-        me.callParent(arguments);
-        me.beforeLabelableRender();
+        // Add to protoEl before render
         if (me.readOnly) {
             me.addCls(me.readOnlyCls);
         }
@@ -379,14 +373,6 @@ Ext.define('Ext.form.field.Base', {
         me.getInsertionRenderData(data, me.subTplInsertions);
 
         return data;
-    },
-
-<span id='Ext-form-field-Base-method-afterFirstLayout'>    afterFirstLayout: function() {
-</span>        this.callParent();
-        var el = this.inputEl;
-        if (el) {
-            el.selectable();
-        }
     },
 
 <span id='Ext-form-field-Base-method-applyRenderSelectors'>    applyRenderSelectors: function() {
@@ -440,10 +426,8 @@ Ext.define('Ext.form.field.Base', {
 
 <span id='Ext-form-field-Base-method-onRender'>    // private
 </span>    onRender : function() {
-        var me = this;
-        me.callParent(arguments);
-        me.onLabelableRender();
-        me.renderActiveError();
+        this.callParent(arguments);
+        this.renderActiveError();
     },
 
 <span id='Ext-form-field-Base-method-getFocusEl'>    getFocusEl: function() {

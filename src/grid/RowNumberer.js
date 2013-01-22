@@ -73,11 +73,11 @@ Ext.define('Ext.grid.RowNumberer', {
     // private
     renderer: function(value, metaData, record, rowIdx, colIdx, store) {
         var rowspan = this.rowspan;
-        if (rowspan){
+        if (rowspan) {
             metaData.tdAttr = 'rowspan="' + rowspan + '"';
         }
 
         metaData.tdCls = Ext.baseCSSPrefix + 'grid-cell-special';
-        return store.indexOfTotal(record) + 1;
+        return rowIdx + 1;
     }
 });

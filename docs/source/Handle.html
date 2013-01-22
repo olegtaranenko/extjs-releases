@@ -22,7 +22,7 @@ Ext.define('Ext.resizer.Handle', {
     extend: 'Ext.Component',
 <span id='Ext-resizer-Handle-property-handleCls'>    handleCls: '',
 </span><span id='Ext-resizer-Handle-property-baseHandleCls'>    baseHandleCls: Ext.baseCSSPrefix + 'resizable-handle',
-</span><span id='Ext-resizer-Handle-property-region'>    // Ext.resizer.Resizer.prototype.possiblePositions define the regions
+</span><span id='Ext-resizer-Handle-cfg-region'>    // Ext.resizer.Resizer.prototype.possiblePositions define the regions
 </span>    // which will be passed in as a region configuration.
     region: '',
 
@@ -31,17 +31,13 @@ Ext.define('Ext.resizer.Handle', {
 
         me.callParent();
 
+        me.protoEl.unselectable();
+
         me.addCls(
             me.baseHandleCls,
             me.baseHandleCls + '-' + me.region,
             me.handleCls
         );
-    },
-
-<span id='Ext-resizer-Handle-method-onRender'>    onRender: function() {
-</span>        this.callParent(arguments);
-
-        this.el.unselectable();
     }
 });
 </pre>

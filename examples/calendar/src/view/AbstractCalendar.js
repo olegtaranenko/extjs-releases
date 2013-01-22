@@ -988,7 +988,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
 
             evtId = this.getEventIdFromEl(el);
 
-            if (this.eventOverClass != '') {
+            if (this.eventOverClass) {
                 els = this.getEventEls(evtId);
                 els[type == 'over' ? 'addCls': 'removeCls'](this.eventOverClass);
             }

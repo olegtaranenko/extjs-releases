@@ -75,9 +75,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
          */
         'errorEl',
 
-        'inputRow',
-
-        'bottomPlaceHolder'
+        'inputRow'
     ],
 
 <span id='Ext-form-Labelable-cfg-labelableRenderTpl'>    /**
@@ -136,7 +134,10 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
                 '&lt;td id=&quot;{id}-labelCell&quot; style=&quot;{labelCellStyle}&quot; {labelCellAttrs}&gt;',
                     '{beforeLabelTpl}',
                     '&lt;label id=&quot;{id}-labelEl&quot; {labelAttrTpl}&lt;tpl if=&quot;inputId&quot;&gt; for=&quot;{inputId}&quot;&lt;/tpl&gt; class=&quot;{labelCls}&quot;',
-                        '&lt;tpl if=&quot;labelStyle&quot;&gt; style=&quot;{labelStyle}&quot;&lt;/tpl&gt;&gt;',
+                        '&lt;tpl if=&quot;labelStyle&quot;&gt; style=&quot;{labelStyle}&quot;&lt;/tpl&gt;',
+                        // Required for Opera
+                        ' unselectable=&quot;on&quot;',
+                    '&gt;',
                         '{beforeLabelTextTpl}',
                         '&lt;tpl if=&quot;fieldLabel&quot;&gt;{fieldLabel}{labelSeparator}&lt;/tpl&gt;',
                         '{afterLabelTextTpl}',
@@ -154,7 +155,10 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
                     '{beforeLabelTpl}',
                     '&lt;div id=&quot;{id}-labelCell&quot; style=&quot;{labelCellStyle}&quot;&gt;',
                         '&lt;label id=&quot;{id}-labelEl&quot; {labelAttrTpl}&lt;tpl if=&quot;inputId&quot;&gt; for=&quot;{inputId}&quot;&lt;/tpl&gt; class=&quot;{labelCls}&quot;',
-                            '&lt;tpl if=&quot;labelStyle&quot;&gt; style=&quot;{labelStyle}&quot;&lt;/tpl&gt;&gt;',
+                            '&lt;tpl if=&quot;labelStyle&quot;&gt; style=&quot;{labelStyle}&quot;&lt;/tpl&gt;',
+                            // Required for Opera
+                            ' unselectable=&quot;on&quot;',
+                        '&gt;',
                             '{beforeLabelTextTpl}',
                             '&lt;tpl if=&quot;fieldLabel&quot;&gt;{fieldLabel}{labelSeparator}&lt;/tpl&gt;',
                             '{afterLabelTextTpl}',
@@ -164,7 +168,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
                 '&lt;/tpl&gt;',
 
                 '{beforeSubTpl}',
-                '{[values.$comp.getSubTplMarkup()]}',
+                '{[values.$comp.getSubTplMarkup(values)]}',
                 '{afterSubTpl}',
 
             // Final TD. It's a side error element unless there's a floating external one
@@ -486,6 +490,9 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
              */
             'errorchange'
         );
+
+        // bubbleEvents on the prototype of a mixin won't work, so call enableBubble
+        me.enableBubble('errorchange');
     },
 
 <span id='Ext-form-Labelable-method-trimLabelSeparator'>    /**
@@ -599,28 +606,31 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
 
         return data;
     },
-    
-<span id='Ext-form-Labelable-method-beforeLabelableRender'>    beforeLabelableRender: function() {
-</span>        var me = this;
-        if (me.ownerLayout) {
-            me.addCls(Ext.baseCSSPrefix + me.ownerLayout.type + '-form-item');
-        }
-    },
 
-<span id='Ext-form-Labelable-method-onLabelableRender'>    onLabelableRender: function() {
-</span>        var me = this,
-            margins,
-            side,
-            style = {};
-
-        if (me.extraMargins) {
-            margins = me.el.getMargin();
-            for (side in margins) {
-                if (margins.hasOwnProperty(side)) {
-                    style['margin-' + side] = (margins[side] + me.extraMargins[side]) + 'px';
-                }
+<span id='Ext-form-Labelable-property-xhooks'>    xhooks: {
+</span>        beforeRender: function() {
+            var me = this;
+            me.setFieldDefaults(me.getHierarchyState().fieldDefaults);
+            if (me.ownerLayout) {
+                me.addCls(Ext.baseCSSPrefix + me.ownerLayout.type + '-form-item');
             }
-            me.el.setStyle(style);
+        },
+
+        onRender: function() {
+            var me = this,
+                margins,
+                side,
+                style = {};
+
+            if (me.extraMargins) {
+                margins = me.el.getMargin();
+                for (side in margins) {
+                    if (margins.hasOwnProperty(side)) {
+                        style['margin-' + side] = (margins[side] + me.extraMargins[side]) + 'px';
+                    }
+                }
+                me.el.setStyle(style);
+            }
         }
     },
     
@@ -669,7 +679,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
     },
     
 <span id='Ext-form-Labelable-method-getLabelCls'>    getLabelCls: function() {
-</span>        var labelCls = this.labelCls,
+</span>        var labelCls = this.labelCls + ' ' + Ext.dom.Element.unselectableCls,
             labelClsExtra = this.labelClsExtra;
 
         return labelClsExtra ? labelCls + ' ' + labelClsExtra : labelCls;
@@ -846,16 +856,11 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
      * @param {Object} defaults The defaults to apply to the object.
      */
     setFieldDefaults: function(defaults) {
-        var me = this,
-            val, key;
+        var key;
 
         for (key in defaults) {
-            if (defaults.hasOwnProperty(key)) {
-                val = defaults[key];
-
-                if (!me.hasOwnProperty(key)) {
-                    me[key] = val;
-                }
+            if (!this.hasOwnProperty(key)) {
+                this[key] = defaults[key];
             }
         }
     }

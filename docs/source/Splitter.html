@@ -37,14 +37,16 @@ Ext.define('Ext.resizer.Splitter', {
 </span>        'collapseEl'
     ],
 
-<span id='Ext-resizer-Splitter-property-renderTpl'>    renderTpl: [
+<span id='Ext-resizer-Splitter-cfg-renderTpl'>    renderTpl: [
 </span>        '&lt;tpl if=&quot;collapsible===true&quot;&gt;',
             '&lt;div id=&quot;{id}-collapseEl&quot; class=&quot;', Ext.baseCSSPrefix, 'collapse-el ',
-                Ext.baseCSSPrefix, 'layout-split-{collapseDir}&quot;&gt;&amp;#160;&lt;/div&gt;',
+                Ext.baseCSSPrefix, 'layout-split-{collapseDir}',
+                '&lt;tpl if=&quot;childElCls&quot;&gt; {childElCls}&lt;/tpl&gt;&quot;&gt;&amp;#160;',
+            '&lt;/div&gt;',
         '&lt;/tpl&gt;'
     ],
 
-<span id='Ext-resizer-Splitter-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'splitter',
+<span id='Ext-resizer-Splitter-cfg-baseCls'>    baseCls: Ext.baseCSSPrefix + 'splitter',
 </span><span id='Ext-resizer-Splitter-property-collapsedClsInternal'>    collapsedClsInternal: Ext.baseCSSPrefix + 'splitter-collapsed',
 </span>    
 <span id='Ext-resizer-Splitter-property-canResize'>    // Default to tree, allow internal classes to disable resizing
@@ -155,6 +157,8 @@ Ext.define('Ext.resizer.Splitter', {
             collapseDir: collapseDir,
             collapsible: me.collapsible || target.collapsible
         });
+
+        me.protoEl.unselectable();
     },
 
 <span id='Ext-resizer-Splitter-method-onRender'>    onRender: function() {
@@ -179,7 +183,6 @@ Ext.define('Ext.resizer.Splitter', {
             scope: me
         });
 
-        me.el.unselectable();
         if (me.canResize) {
             me.tracker = Ext.create(me.getTrackerConfig());
             // Relay the most important events to our owner (could open wider later):

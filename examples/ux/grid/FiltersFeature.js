@@ -182,11 +182,10 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
         me.filterConfigs = config.filters;
     },
 
-    attachEvents: function() {
+    init: function(grid) {
         var me = this,
             view = me.view,
-            headerCt = view.headerCt,
-            grid = me.getGridPanel();
+            headerCt = view.headerCt;
 
         me.bindStore(view.getStore(), true);
 

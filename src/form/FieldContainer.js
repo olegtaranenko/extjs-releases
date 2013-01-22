@@ -104,8 +104,12 @@ Ext.define('Ext.form.FieldContainer', {
     alias: 'widget.fieldcontainer',
 
     componentLayout: 'fieldcontainer',
-    
+
     componentCls: Ext.baseCSSPrefix + 'form-fieldcontainer',
+
+    /**
+     * @cfg autoScroll @hide
+     */
 
     /**
      * @cfg {Boolean} combineLabels
@@ -153,16 +157,11 @@ Ext.define('Ext.form.FieldContainer', {
         me.callParent();
     },
 
-    beforeRender: function(){
-        this.callParent(arguments);
-        this.beforeLabelableRender();
-    },
-
     /**
      * @protected Called when a {@link Ext.form.Labelable} instance is added to the container's subtree.
      * @param {Ext.form.Labelable} labelable The instance that was added
      */
-    onLabelableAdded: function(labelable) {
+    onAdd: function(labelable) {
         var me = this;
         
         // Fix for https://sencha.jira.com/browse/EXTJSIV-6424
@@ -171,7 +170,7 @@ Ext.define('Ext.form.FieldContainer', {
         if (Ext.isGecko && me.layout.type === 'absolute' && !me.hideLabel && me.labelAlign !== 'top') {
             labelable.x += (me.labelWidth + me.labelPad);
         }
-        me.mixins.fieldAncestor.onLabelableAdded.call(me, labelable);
+        me.callParent(arguments);
         me.updateLabel();
     },
 
@@ -179,9 +178,9 @@ Ext.define('Ext.form.FieldContainer', {
      * @protected Called when a {@link Ext.form.Labelable} instance is removed from the container's subtree.
      * @param {Ext.form.Labelable} labelable The instance that was removed
      */
-    onLabelableRemoved: function(labelable) {
+    onRemove: function(labelable) {
         var me = this;
-        me.mixins.fieldAncestor.onLabelableRemoved.call(me, labelable);
+        me.callParent(arguments);
         me.updateLabel();
     },
 
@@ -305,5 +304,11 @@ Ext.define('Ext.form.FieldContainer', {
 
     getTargetEl: function() {
         return this.bodyEl || this.callParent();
+    },
+
+    applyTargetCls: function(targetCls) {
+        var fieldBodyCls = this.fieldBodyCls;
+
+        this.fieldBodyCls = fieldBodyCls ? fieldBodyCls + ' ' + targetCls : targetCls;
     }
 });

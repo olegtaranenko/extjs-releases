@@ -877,7 +877,7 @@ Ext.define('Ext.data.AbstractStore', {
                 me.sync();
             }
         }
-
+        this.onUpdate(record, Ext.data.Model.EDIT, modifiedFieldNames);
         me.fireEvent('update', me, record, Ext.data.Model.EDIT, modifiedFieldNames);
     },
 
@@ -893,6 +893,7 @@ Ext.define('Ext.data.AbstractStore', {
         // which may get used as the modified fields array by a handler.
         // This array is used for selective grid cell updating by Grid View.
         // Null will be treated as though all cells need updating.
+        this.onUpdate(record, Ext.data.Model.REJECT, null);
         this.fireEvent('update', this, record, Ext.data.Model.REJECT, null);
     },
 
@@ -908,8 +909,11 @@ Ext.define('Ext.data.AbstractStore', {
         // which may get used as the modified fields array by a handler.
         // This array is used for selective grid cell updating by Grid View.
         // Null will be treated as though all cells need updating.
+        this.onUpdate(record, Ext.data.Model.COMMIT, null);
         this.fireEvent('update', this, record, Ext.data.Model.COMMIT, null);
     },
+    
+    onUpdate: Ext.emptyFn,
 
     // private
     destroyStore: function() {

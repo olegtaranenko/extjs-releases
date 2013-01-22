@@ -1,3 +1,4 @@
+//@tag core
 /**
  * This class parses the XTemplate syntax and calls abstract methods to process the parts.
  * @private
@@ -261,7 +262,7 @@ Ext.define('Ext.XTemplateParser', {
     // Internal regexes
     
     topRe:     /(?:(\{\%)|(\{\[)|\{([^{}]+)\})|(?:<tpl([^>]*)\>)|(?:<\/tpl>)/g,
-    actionsRe: /\s*(elif|elseif|if|for|foreach|exec|switch|case|eval)\s*\=\s*(?:(?:"([^"]*)")|(?:'([^']*)'))\s*/g,
+    actionsRe: /\s*(elif|elseif|if|for|foreach|exec|switch|case|eval|between)\s*\=\s*(?:(?:"([^"]*)")|(?:'([^']*)'))\s*/g,
     propRe:    /prop=(?:(?:"([^"]*)")|(?:'([^']*)'))/,
     defaultRe: /^\s*default\s*$/,
     elseRe:    /^\s*else\s*$/

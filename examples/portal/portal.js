@@ -13,8 +13,7 @@ Ext.define('Ext.app.Portal', {
         return [{
             xtype: 'tool',
             type: 'gear',
-            handler: function(e, target, panelHeader, tool){
-                var portlet = panelHeader.ownerCt;
+            handler: function(e, target, portlet, tool){
                 portlet.setLoading('Loading...');
                 Ext.defer(function() {
                     portlet.setLoading(false);

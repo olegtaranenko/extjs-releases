@@ -1,3 +1,4 @@
+//@tag core
 /**
  * Base class that provides a common interface for publishing events. Subclasses are expected to to have a property
  * "events" with all the events defined, and, optionally, a property "listeners" with configured listeners defined.
@@ -250,7 +251,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
 
         // @private
         // Matches options property names within a listeners specification object  - property names which are never used as event names.
-        eventOptionsRe : /^(?:scope|delay|buffer|single|stopEvent|preventDefault|stopPropagation|normalized|args|delegate|element|destroyable|vertical|horizontal|freezeEvent)$/,
+        eventOptionsRe : /^(?:scope|delay|buffer|single|stopEvent|preventDefault|stopPropagation|normalized|args|delegate|element|destroyable|vertical|horizontal|freezeEvent|priority)$/,
 
         /**
         * Adds listeners to any Observable object (or Ext.Element) which are automatically removed when this Component is
@@ -295,7 +296,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
                         if (!me.eventOptionsRe.test(ename)) {
                             // recurse, but pass the noDestroy parameter as true so that lots of individual Destroyables are not created.
                             // We create a single one at the end if necessary.
-                            me.addManagedListener(item, ename, config.fn || config, config.scope || options.scope, config.fn ? config : options, true);
+                            me.addManagedListener(item, ename, config.fn || config, config.scope || options.scope || scope, config.fn ? config : options, true);
                         }
                     }
                 }
@@ -304,6 +305,15 @@ Ext.define('Ext.util.Observable', function(Observable) {
                 }
             }
             else {
+                if (typeof fn === 'string') {
+                    scope = scope || me;
+                    //<debug>
+                    if (!(scope[fn])) {
+                        Ext.Error.raise('No method named "' + fn + '"');
+                    }
+                    //</debug>
+                    fn = scope[fn];
+                }
                 managedListeners.push({
                     item: item,
                     ename: ename,
@@ -344,16 +354,17 @@ Ext.define('Ext.util.Observable', function(Observable) {
                     if (options.hasOwnProperty(ename)) {
                         config = options[ename];
                         if (!me.eventOptionsRe.test(ename)) {
-                            me.removeManagedListener(item, ename, config.fn || config, config.scope || options.scope);
+                            me.removeManagedListener(item, ename, config.fn || config, config.scope || options.scope || scope);
                         }
                     }
                 }
-            }
+            } else {
 
-            managedListeners = me.managedListeners ? me.managedListeners.slice() : [];
+                managedListeners = me.managedListeners ? me.managedListeners.slice() : [];
 
-            for (i = 0, length = managedListeners.length; i < length; i++) {
-                me.removeManagedListenerItem(false, managedListeners[i], item, ename, fn, scope);
+                for (i = 0, length = managedListeners.length; i < length; i++) {
+                    me.removeManagedListenerItem(false, managedListeners[i], item, ename, fn, scope);
+                }
             }
         },
 
@@ -513,6 +524,16 @@ Ext.define('Ext.util.Observable', function(Observable) {
         *
         * @param {Boolean} [options.destroyable=false]
         *   When specified as `true`, the function returns A `Destroyable` object. An object which implements the `destroy` method which removes all listeners added in this call.
+        *   
+        * @param {Number} [options.priority]
+        *   An optional numeric priority that determines the order in which event handlers
+        *   are run. Event handlers with no priority will be run as if they had a priority
+        *   of 0. Handlers with a higher priority will be prioritized to run sooner than
+        *   those with a lower priority.  Negative numbers can be used to set a priority
+        *   lower than the default. Internally, the framework uses a range of 1000 or
+        *   greater, and -1000 or lesser for handers that are intended to run before or
+        *   after all others, so it is recommended to stay within the range of -999 to 999
+        *   when setting the priority of event handlers in application-level code.
         *
         * **Combining Options**
         *
@@ -589,12 +610,13 @@ Ext.define('Ext.util.Observable', function(Observable) {
 
                 // Allow listeners: { click: 'onClick', scope: myObject }
                 if (typeof fn === 'string') {
+                    scope = scope || me;
                     //<debug>
-                    if (!(scope[fn] || me[fn])) {
+                    if (!(scope[fn])) {
                         Ext.Error.raise('No method named "' + fn + '"');
                     }
                     //</debug>
-                    fn = scope[fn] || me[fn];
+                    fn = scope[fn];
                 }
                 event.addListener(fn, scope, options);
 
@@ -785,6 +807,54 @@ Ext.define('Ext.util.Observable', function(Observable) {
         },
 
         /**
+         * Suspends firing of the named event(s).
+         *
+         * After calling this method to suspend events, the events will no longer fire when requested to fire.
+         *
+         * **Note that if this is called multiple times for a certain event, the converse method
+         * {@link #resumeEvent} will have to be called the same number of times for it to resume firing.**
+         *
+         * @param  {String...} eventName Multiple event names to suspend.
+         */
+        suspendEvent: function(eventName) {
+            var len = arguments.length,
+                i, event;
+
+            for (i = 0; i < len; i++) {
+                event = this.events[arguments[i]];
+
+                // If it exists, and is an Event object (not still a boolean placeholder), suspend it
+                if (event && event.suspend) {
+                    event.suspend();
+                }
+            }
+        },
+
+        /**
+         * Resumes firing of the named event(s).
+         *
+         * After calling this method to resume events, the events will fire when requested to fire.
+         *
+         * **Note that if the {@link #suspendEvent} method is called multiple times for a certain event,
+         * this converse method will have to be called the same number of times for it to resume firing.**
+         *
+         * @param  {String...} eventName Multiple event names to resume.
+         */
+        resumeEvent: function() {
+            var len = arguments.length,
+                i, event;
+
+            for (i = 0; i < len; i++) {
+
+                // If it exists, and is an Event object (not still a boolean placeholder), resume it
+                event = this.events[arguments[i]];
+                if (event && event.resume) {
+                    event.resume();
+                }
+            }
+        },
+
+        /**
         * Resumes firing events (see {@link #suspendEvents}).
         *
         * If events were suspended using the `queueSuspended` parameter, then all events fired
@@ -966,7 +1036,8 @@ Ext.define('Ext.util.Observable', function(Observable) {
                     };
                 }
             }
-        };
+        },
+        globalEvents;
 
     HasListeners.prototype = {
         //$$: 42  // to make sure we have a proper prototype
@@ -1008,9 +1079,9 @@ Ext.define('Ext.util.Observable', function(Observable) {
      * @member Ext
      * @property {Ext.util.Observable} globalEvents
      * An instance of `{@link Ext.util.Observable}` through which Ext fires global events.
-     * 
+     *
      * This Observable instance fires the following events:
-     * 
+     *
      * *  **`idle`**
      *
      *    Fires when an event handler finishes its run, just before returning to browser control.
@@ -1020,12 +1091,49 @@ Ext.define('Ext.util.Observable', function(Observable) {
      *    This can be useful for performing cleanup, or update tasks which need to happen only
      *    after all code in an event handler has been run, but which should not be executed in a timer
      *    due to the intervening browser reflow/repaint which would take place.
+     *
+     * * **`ready`**
+     *    Fires when the DOM is ready, and all required classes have been loaded. Functionally
+     *    the same as {@link Ext.onReady}, but must be called with the `single` option:
+     *
+     *     Ext.on({
+     *         ready: function() {
+     *             console.log('document is ready!');
+     *         },
+     *         single: true
+     *     }); 
+     *
+     * * **`resumelayouts`**
+     *    Fires after global layout processing has been resumed in {@link Ext.AbstractComponent#resumeLayouts}.
      */
-    Ext.globalEvents = new Observable({
+    Ext.globalEvents = globalEvents = new Observable({
         events: {
-            idle: Ext.EventManager.idleEvent
+            idle: Ext.EventManager.idleEvent,
+            ready: Ext.EventManager.readyEvent
         }
     });
+
+    /**
+     * @member Ext
+     * @method on
+     * Shorthand for the {@link Ext.util.Observable#addListener} method of the
+     * {@link Ext.globalEvents} Observable instance.
+     * @inheritdoc Ext.util.Observable#addListener
+     */
+    Ext.on = function() {
+        return globalEvents.addListener.apply(globalEvents, arguments);
+    };
+
+    /**
+     * @member Ext
+     * @method
+     * Shorthand for the {@link Ext.util.Observable#removeListener} method of the
+     * {@link Ext.globalEvents} Observable instance.
+     * @inheritdoc Ext.util.Observable#removeListener
+     */
+    Ext.un = function() {
+        return globalEvents.removeListener.apply(globalEvents, arguments);
+    };
 
     // this is considered experimental (along with beforeMethod, afterMethod, removeMethodListener?)
     // allows for easier interceptor and sequences, including cancelling and overwriting the return value of the call

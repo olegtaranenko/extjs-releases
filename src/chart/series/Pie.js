@@ -197,6 +197,10 @@ Ext.define('Ext.chart.series.Pie', {
         };
         me.__excludes = me.__excludes || [];
     },
+    
+    onRedraw: function(){
+        this.initialize();    
+    },
 
     // @private updates some onbefore render parameters.
     initialize: function() {

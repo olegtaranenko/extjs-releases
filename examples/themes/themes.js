@@ -33,8 +33,7 @@ if (hasOption('diag')) {
 
 if (rtl) {
     Ext.require([
-        'Ext.rtl.Element',
-        'Ext.rtl.AbstractComponent'
+        'Ext.rtl.*'
     ]);
 }
 
@@ -46,7 +45,6 @@ function getBasicPanel () {
 
         width : 150,
         height: 90,
-        rtl: rtl,
 
         title: 'Basic Panel',
         animCollapse: true,
@@ -63,7 +61,6 @@ function getCollapsedPanel () {
 
         width : 150,
         height: 70,
-        rtl: rtl,
 
         title: 'Collapsed Panel',
         animCollapse: true,
@@ -74,7 +71,7 @@ function getCollapsedPanel () {
     };
 }
 
-function getMaskedPanel (rtl) {
+function getMaskedPanel () {
     return Ext.widget({
         xtype: 'panel',
 
@@ -82,7 +79,6 @@ function getMaskedPanel (rtl) {
 
         width : 130,
         height: 170,
-        rtl: rtl,
 
         title: 'Masked Panel',
 
@@ -101,7 +97,6 @@ function getFramedPanel () {
 
         width : 170,
         height: 100,
-        rtl: rtl,
 
         title: 'Framed Panel',
         animCollapse: true,
@@ -139,7 +134,6 @@ function getCollapsedFramedPanel () {
 
         width : 170,
         height: 60,
-        rtl: rtl,
 
         title: 'Collapsed Framed Panel',
         animCollapse: true,
@@ -184,7 +178,6 @@ function getPanelWithToolbars () {
 
         width : 450,
         height: 170,
-        rtl: rtl,
 
         title: 'Basic Panel With Toolbars',
         collapsible: true,
@@ -289,7 +282,6 @@ function getFormWidgets () {
 
         width : 630,
         height: 750,
-        rtl: rtl,
 
         frame: true,
         collapsible: true,
@@ -452,7 +444,6 @@ function getBorderLayout() {
 
         width : 450,
         height: 350,
-        rtl: rtl,
 
         x: 660, y: 200,
 
@@ -555,7 +546,6 @@ function getGrid () {
 
         height: 200,
         width : 450,
-        rtl: rtl,
 
         x: 660, y: 560,
 
@@ -623,7 +613,6 @@ function getAccordion () {
 
         width : 450,
         height: 240,
-        rtl: rtl,
 
         bodyStyle: {
             'background-color': '#eee'
@@ -647,7 +636,6 @@ function getTabs (config) {
 
         width : 310,
         height: 150,
-        rtl: rtl,
 
         activeTab: 0,
 
@@ -726,7 +714,6 @@ function getDatePicker () {
         x: 20, y: 1120,
 
         width : 180,
-        rtl: rtl,
         border: false,
         items: {
             xtype: 'datepicker'
@@ -756,7 +743,6 @@ function getProgressBar () {
 
         width: 450,
         height: 200,
-        rtl: rtl,
 
         bodyPadding: 5,
         layout: 'anchor',
@@ -786,7 +772,6 @@ function getFramedGrid () {
         width: 450,
         height:182,
         x: 660, y: 1230,
-        rtl: rtl,
         xtype: 'grid',
         title: 'Framed Grid',
         collapsible: true,
@@ -814,7 +799,6 @@ function getBasicWindow () {
         minWidth: 150,
         minHeight: 150,
         maxHeight: 170,
-        rtl: rtl,
 
         title: 'Window',
 
@@ -843,17 +827,20 @@ function getBasicWindow () {
     });
 }
 
-function addResizer(containerEl) {
-    var rszEl = containerEl.createChild({
-        style: 'background: transparent;position:absolute;left:210px;top:1120px;width:440px;height:200px;overflow:hidden',
-        html: '<div style="padding:20px;position:absolute">Resizable handles</div>'
-    });
-
-    Ext.create('Ext.resizer.Resizer', {
-        id: 'resizer',
-        el: rszEl,
-        handles: 'all',
-        pinned: true
+function getResizer() {
+    return Ext.widget({
+        xtype: 'component',
+        x: 210,
+        y: 1120,
+        width: 440,
+        height: 220,
+        padding: 20,
+        style: 'background:transparent;overflow:hidden;',
+        html: '<div>Resizable handles</div>',
+        resizable: {
+            handles: 'all',
+            pinned: true
+        }
     });
 }
 
@@ -864,7 +851,6 @@ function addFormWindow () {
         width   : 450,
         // height  : 360,
         minWidth: 450,
-        rtl: rtl,
 
         title: 'Window',
 
@@ -955,10 +941,14 @@ function addFormWindow () {
     }).show();
 }
 
-function doThemes (rtl) {
+function doThemes () {
     var time = Ext.perf.getTimestamp(),
         maskedPanel,
         mainContainer;
+
+    Ext.MessageBox.rtl = true;
+
+    Ext.getCmp('options-toolbar').alignTo('header', 'tr-tr', [0, 25]);
 
     if (hasOption('nocss3')) {
         Ext.supports.CSS3BorderRadius = false;
@@ -966,22 +956,23 @@ function doThemes (rtl) {
     }
 
     var items = [
-        getBasicPanel(rtl),
-        getCollapsedPanel(rtl),
-        maskedPanel = getMaskedPanel(rtl),
-        getFramedPanel(rtl),
-        getCollapsedFramedPanel(rtl),
-        getBasicWindow(rtl),
-        getPanelWithToolbars(rtl),
-        getFormWidgets(rtl),
-        getBorderLayout(rtl),
-        getGrid(rtl),
-        getAccordion(rtl),
-        getScrollingTabs(rtl),
-        getPlainTabs(rtl),
-        getDatePicker(rtl),
-        getProgressBar(rtl),
-        getFramedGrid(rtl),
+        getBasicPanel(),
+        getCollapsedPanel(),
+        maskedPanel = getMaskedPanel(),
+        getFramedPanel(),
+        getCollapsedFramedPanel(),
+        getBasicWindow(),
+        getPanelWithToolbars(),
+        getFormWidgets(),
+        getBorderLayout(),
+        getGrid(),
+        getAccordion(),
+        getScrollingTabs(),
+        getPlainTabs(),
+        getDatePicker(),
+        getProgressBar(),
+        getFramedGrid(),
+        getResizer(),
         0 // end of list (makes commenting out any of the above easy
     ];
     items.pop(); // remove the 0 on the end
@@ -992,43 +983,11 @@ function doThemes (rtl) {
         height: 1460,
         width: 1130,
         layout: 'absolute',
+        rtl: rtl,
         items: items
     });
         
-    addResizer(mainContainer.el);
     //addFormWindow();
-
-    /**
-     * Stylesheet Switcher
-     */
-    var switcher = Ext.get('styleswitcher_select'),
-        dom = switcher.dom,
-        options = dom.options,
-        currentPath = window.location.pathname,
-        page = currentPath.split('/').pop() || options[0].value,
-        getSelected = function(){
-            return dom[dom.selectedIndex].value;    
-        },
-        matcher = function(){
-            return currentPath == getSelected();
-        }, i, len;
-        
-    // current value doesn't match the page, set it before
-    // we bind the change listener
-    if (!matcher()) {
-        for (i = 0, len = options.length; i < len; ++i) {
-            if (options[i].value == page) {
-                dom.selectedIndex = i;
-                break;
-            }
-        } 
-    }
-    
-    switcher.on('change', function() {
-        if (!matcher()) {
-            window.location = getSelected();
-        }
-    });
 
     setTimeout(function() {
         // we may comment out the creation of this for testing

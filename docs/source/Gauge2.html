@@ -73,7 +73,7 @@ Ext.define('Ext.chart.series.Gauge', {
 
     extend: 'Ext.chart.series.Series',
 
-<span id='Ext-chart-series-Gauge-property-type'>    /* End Definitions */
+<span id='Ext-chart-series-Gauge-cfg-type'>    /* End Definitions */
 </span>
     type: &quot;gauge&quot;,
     alias: 'series.gauge',
@@ -286,8 +286,6 @@ Ext.define('Ext.chart.series.Gauge', {
             seriesLabelStyle = me.seriesLabelStyle,
             colorArrayStyle = me.colorArrayStyle,
             colorArrayLength = colorArrayStyle &amp;&amp; colorArrayStyle.length || 0,
-            gutterX = chart.maxGutter[0],
-            gutterY = chart.maxGutter[1],
             cos = Math.cos,
             sin = Math.sin,
             rendererAttributes, centerX, centerY, slice, slices, sprite, value,

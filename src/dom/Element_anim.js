@@ -172,7 +172,8 @@ Ext.define('Ext.dom.Element_anim', {
      */
     slideIn: function(anchor, obj, slideOut) {
         var me = this,
-            elStyle = me.dom.style,
+            dom = me.dom,
+            elStyle = dom.style,
             beforeAnim,
             wrapAnim,
             restoreScroll,
@@ -184,40 +185,41 @@ Ext.define('Ext.dom.Element_anim', {
         beforeAnim = function() {
             var animScope = this,
                 listeners = obj.listeners,
+                el = Ext.fly(dom, '_anim'),
                 box, originalStyles, anim, wrap;
 
             if (!slideOut) {
-                me.fixDisplay();
+                el.fixDisplay();
             }
 
-            box = me.getBox();
+            box = el.getBox();
             if ((anchor == 't' || anchor == 'b') && box.height === 0) {
-                box.height = me.dom.scrollHeight;
+                box.height = dom.scrollHeight;
             }
             else if ((anchor == 'l' || anchor == 'r') && box.width === 0) {
-                box.width = me.dom.scrollWidth;
+                box.width = dom.scrollWidth;
             }
 
-            originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
-            me.setSize(box.width, box.height);
+            originalStyles = el.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
+            el.setSize(box.width, box.height);
 
             // Cache all descendants' scrollTop & scrollLeft values if configured to preserve scroll.
             if (obj.preserveScroll) {
-                restoreScroll = me.cacheScrollValues();
+                restoreScroll = el.cacheScrollValues();
             }
 
-            wrap = me.wrap({
-                id: Ext.id() + '-anim-wrap-for-' + me.id,
+            wrap = el.wrap({
+                id: Ext.id() + '-anim-wrap-for-' + el.dom.id,
                 style: {
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
             });
             wrapDomParentNode = wrap.dom.parentNode;
-            wrap.setPositioning(me.getPositioning());
+            wrap.setPositioning(el.getPositioning(true));
             if (wrap.isStyle('position', 'static')) {
                 wrap.position('relative');
             }
-            me.clearPositioning('auto');
+            el.clearPositioning('auto');
             wrap.clip();
 
             // The wrap will have reset all descendant scrollTops. Restore them if we cached them.
@@ -228,7 +230,7 @@ Ext.define('Ext.dom.Element_anim', {
             // This element is temporarily positioned absolute within its wrapper.
             // Restore to its default, CSS-inherited visibility setting.
             // We cannot explicitly poke visibility:visible into its style because that overrides the visibility of the wrap.
-            me.setStyle({
+            el.setStyle({
                 visibility: '',
                 position: 'absolute'
             });
@@ -261,7 +263,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
-                    elStyle.right = '0px';
+                    me.anchorAnimX(anchor);
                     break;
                 case 'r':
                     anim = {
@@ -276,6 +278,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
+                    me.anchorAnimX(anchor);
                     break;
                 case 'b':
                     anim = {
@@ -305,7 +308,7 @@ Ext.define('Ext.dom.Element_anim', {
                         }
                     };
                     elStyle.bottom = '0px';
-                    elStyle.right = '0px';
+                    me.anchorAnimX('l');
                     break;
                 case 'bl':
                     anim = {
@@ -320,7 +323,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
-                    elStyle.bottom = '0px';
+                    me.anchorAnimX('l');
                     break;
                 case 'br':
                     anim = {
@@ -337,6 +340,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
+                    me.anchorAnimX('r');
                     break;
                 case 'tr':
                     anim = {
@@ -351,7 +355,8 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
-                    elStyle.right = '0px';
+                    elStyle.bottom = '0px';
+                    me.anchorAnimX('r');
                     break;
             }
 
@@ -368,19 +373,21 @@ Ext.define('Ext.dom.Element_anim', {
 
             // In the absence of a callback, this listener MUST be added first
             wrapAnim.on('afteranimate', function() {
-                me.setStyle(originalStyles);
+                var el = Ext.fly(dom, '_anim');
+                
+                el.setStyle(originalStyles);
                 if (slideOut) {
                     if (obj.useDisplay) {
-                        me.setDisplayed(false);
+                        el.setDisplayed(false);
                     } else {
-                        me.hide();
+                        el.hide();
                     }
                 }
                 if (wrap.dom) {
                     if (wrap.dom.parentNode) {
-                        wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
+                        wrap.dom.parentNode.insertBefore(el.dom, wrap.dom);
                     } else {
-                        wrapDomParentNode.appendChild(me.dom);
+                        wrapDomParentNode.appendChild(el.dom);
                     }
                     wrap.remove();
                 }
@@ -456,6 +463,7 @@ Ext.define('Ext.dom.Element_anim', {
      */
     puff: function(obj) {
         var me = this,
+            dom = me.dom,
             beforeAnim,
             box = me.getBox(),
             originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', 'font-size', 'opacity', true);
@@ -467,8 +475,10 @@ Ext.define('Ext.dom.Element_anim', {
         });
 
         beforeAnim = function() {
-            me.clearOpacity();
-            me.show();
+            var el = Ext.fly(dom, '_anim');
+            
+            el.clearOpacity();
+            el.show();
             this.to = {
                 width: box.width * 2,
                 height: box.height * 2,
@@ -478,14 +488,15 @@ Ext.define('Ext.dom.Element_anim', {
                 fontSize: '200%'
             };
             this.on('afteranimate',function() {
-                if (me.dom) {
+                var el = Ext.fly(dom, '_anim');
+                if (el) {
                     if (obj.useDisplay) {
-                        me.setDisplayed(false);
+                        el.setDisplayed(false);
                     } else {
-                        me.hide();
+                        el.hide();
                     }
-                    me.setStyle(originalStyles);
-                    obj.callback.call(obj.scope);
+                    el.setStyle(originalStyles);
+                    Ext.callback(obj.callback, obj.scope);
                 }
             });
         };
@@ -524,6 +535,7 @@ Ext.define('Ext.dom.Element_anim', {
      */
     switchOff: function(obj) {
         var me = this,
+            dom = me.dom,
             beforeAnim;
 
         obj = Ext.applyIf(obj || {}, {
@@ -534,16 +546,18 @@ Ext.define('Ext.dom.Element_anim', {
         });
 
         beforeAnim = function() {
-            var animScope = this,
-                size = me.getSize(),
-                xy = me.getXY(),
+            var el = Ext.fly(dom, '_anim'),
+                animScope = this,
+                size = el.getSize(),
+                xy = el.getXY(),
                 keyframe, position;
-            me.clearOpacity();
-            me.clip();
-            position = me.getPositioning();
+                
+            el.clearOpacity();
+            el.clip();
+            position = el.getPositioning();
 
             keyframe = new Ext.fx.Animator({
-                target: me,
+                target: dom,
                 duration: obj.duration,
                 easing: obj.easing,
                 keyframes: {
@@ -561,14 +575,15 @@ Ext.define('Ext.dom.Element_anim', {
                 }
             });
             keyframe.on('afteranimate', function() {
+                var el = Ext.fly(dom, '_anim');
                 if (obj.useDisplay) {
-                    me.setDisplayed(false);
+                    el.setDisplayed(false);
                 } else {
-                    me.hide();
+                    el.hide();
                 }
-                me.clearOpacity();
-                me.setPositioning(position);
-                me.setSize(size);
+                el.clearOpacity();
+                el.setPositioning(position);
+                el.setSize(size);
                 // kill the no-op element animation created below
                 animScope.end();
             });
@@ -608,6 +623,7 @@ Ext.define('Ext.dom.Element_anim', {
      */
     frame : function(color, count, obj){
         var me = this,
+            dom = me.dom,
             beforeAnim;
 
         color = color || '#C3DAF9';
@@ -615,19 +631,23 @@ Ext.define('Ext.dom.Element_anim', {
         obj = obj || {};
 
         beforeAnim = function() {
-            me.show();
-            var animScope = this,
-                box = me.getBox(),
-                proxy = Ext.getBody().createChild({
-                    id: me.id + '-anim-proxy',
-                    style: {
-                        position : 'absolute',
-                        'pointer-events': 'none',
-                        'z-index': 35000,
-                        border : '0px solid ' + color
-                    }
-                }),
-                proxyAnim;
+            var el = Ext.fly(dom, '_anim'),
+                animScope = this,
+                box,
+                proxy, proxyAnim;
+                
+            el.show();
+            box = el.getBox();
+            proxy = Ext.getBody().createChild({
+                id: el.dom.id + '-anim-proxy',
+                style: {
+                    position : 'absolute',
+                    'pointer-events': 'none',
+                    'z-index': 35000,
+                    border : '0px solid ' + color
+                }
+            });
+            
             proxyAnim = new Ext.fx.Anim({
                 target: proxy,
                 duration: obj.duration || 1000,
@@ -690,14 +710,16 @@ Ext.define('Ext.dom.Element_anim', {
      */
     ghost: function(anchor, obj) {
         var me = this,
+            dom = me.dom,
             beforeAnim;
 
         anchor = anchor || "b";
         beforeAnim = function() {
-            var width = me.getWidth(),
-                height = me.getHeight(),
-                xy = me.getXY(),
-                position = me.getPositioning(),
+            var el = Ext.fly(dom, '_anim'),
+                width = el.getWidth(),
+                height = el.getHeight(),
+                xy = el.getXY(),
+                position = el.getPositioning(),
                 to = {
                     opacity: 0
                 };
@@ -733,10 +755,11 @@ Ext.define('Ext.dom.Element_anim', {
             }
             this.to = to;
             this.on('afteranimate', function () {
-                if (me.dom) {
-                    me.hide();
-                    me.clearOpacity();
-                    me.setPositioning(position);
+                var el = Ext.fly(dom, '_anim');
+                if (el) {
+                    el.hide();
+                    el.clearOpacity();
+                    el.setPositioning(position);
                 }
             });
         };
@@ -745,9 +768,7 @@ Ext.define('Ext.dom.Element_anim', {
             duration: 500,
             easing: 'ease-out',
             listeners: {
-                beforeanimate: {
-                    fn: beforeAnim
-                }
+                beforeanimate: beforeAnim
             }
         }));
         return me;
@@ -783,6 +804,11 @@ Ext.define('Ext.dom.Element_anim', {
             from = {},
             restore, to, attr, lns, event, fn;
 
+        // Cannot set bckground-color on table elements. Find div elements to highlight.
+        if (dom.tagName.match(me.tableTagRe)) {
+            return me.select('div').highlight(color, o);
+        }
+
         o = o || {};
         lns = o.listeners || {};
         attr = o.attr || 'backgroundColor';
@@ -800,8 +826,9 @@ Ext.define('Ext.dom.Element_anim', {
         o.listeners = Ext.apply(Ext.apply({}, lns), {
             beforeanimate: function() {
                 restore = dom.style[attr];
-                me.clearOpacity();
-                me.show();
+                var el = Ext.fly(dom, '_anim');
+                el.clearOpacity();
+                el.show();
 
                 event = lns.beforeanimate;
                 if (event) {
@@ -870,17 +897,20 @@ Ext.define('Ext.dom.Element_anim', {
      * @return {Ext.Element} The Element
      */
     fadeIn: function(o) {
-        var me = this;
+        var me = this,
+            dom = me.dom;
+            
         me.animate(Ext.apply({}, o, {
             opacity: 1,
             internalListeners: {
                 beforeanimate: function(anim){
                     // restore any visibility/display that may have 
                     // been applied by a fadeout animation
-                    if (me.isStyle('display', 'none')) {
-                        me.setDisplayed('');
+                    var el = Ext.fly(dom, '_anim');
+                    if (el.isStyle('display', 'none')) {
+                        el.setDisplayed('');
                     } else {
-                        me.show();
+                        el.show();
                     } 
                 }
             }
@@ -912,17 +942,19 @@ Ext.define('Ext.dom.Element_anim', {
      * @return {Ext.Element} The Element
      */
     fadeOut: function(o) {
-        var me = this;
+        var me = this,
+            dom = me.dom;
+            
         o = Ext.apply({
             opacity: 0,
             internalListeners: {
                 afteranimate: function(anim){
-                    var dom = me.dom;
                     if (dom && anim.to.opacity === 0) {
+                        var el = Ext.fly(dom, '_anim');
                         if (o.useDisplay) {
-                            me.setDisplayed(false);
+                            el.setDisplayed(false);
                         } else {
-                            me.hide();
+                            el.hide();
                         }
                     }         
                 }
@@ -990,5 +1022,13 @@ Ext.define('Ext.dom.Element_anim', {
     shift: function(config) {
         this.animate(config);
         return this;
+    },
+
+    /**
+     * @private
+     */
+    anchorAnimX: function(anchor) {
+        var xName = (anchor === 'l') ? 'right' : 'left';
+        this.dom.style[xName] = '0px';
     }
 });

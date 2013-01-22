@@ -22,16 +22,25 @@ Ext.define('Ext.ux.desktop.Video', {
     controls: true,
     bodyStyle: 'background-color:#000;color:#fff',
     html: '',
+    tpl: [
+        '<video id="{id}-video" autoPlay="{autoplay}" controls="{controls}" poster="{poster}" start="{start}" loopstart="{loopstart}" loopend="{loopend}" autobuffer="{autobuffer}" loop="{loop}" style="width:100%;height:100%">',
+            '<tpl for="src">',
+                '<source src="{src}" type="{type}"/>',
+            '</tpl>',
+            '{html}',
+        '</video>'
+    ],
 
     initComponent: function () {
-        this.callParent();
-    },
 
-    afterRender: function () {
-        var fallback;
+        var me = this,
+            fallback,
+            size,
+            cfg,
+            el;
 
-        if (this.fallbackHTML) {
-            fallback = this.fallbackHTML;
+        if (me.fallbackHTML) {
+            fallback = me.fallbackHTML;
         } else {
             fallback = "Your browser does not support HTML5 Video. ";
 
@@ -51,86 +60,67 @@ Ext.define('Ext.ux.desktop.Video', {
                 }
             }
         }
-        this.fallbackHTML = fallback;
+        me.fallbackHTML = fallback;
 
-        // match the video size to the panel dimensions
-        var size = this.getSize();
-
-        var cfg = Ext.copyTo({
+        cfg = me.data = Ext.copyTo({
             tag   : 'video',
-            width : size.width,
-            height: size.height
+            html: fallback
         },
-        this, 'poster,start,loopstart,loopend,playcount,autobuffer,loop');
+        me, 'id,poster,start,loopstart,loopend,playcount,autobuffer,loop');
 
         // just having the params exist enables them
-        if (this.autoplay) {
+        if (me.autoplay) {
             cfg.autoplay = 1;
         }
-        if (this.controls) {
+        if (me.controls) {
             cfg.controls = 1;
         }
 
         // handle multiple sources
-        if (Ext.isArray(this.src)) {
-            cfg.children = [];
-
-            for (var i = 0, len = this.src.length; i < len; i++) {
-                if (!Ext.isObject(this.src[i])) {
-                    Ext.Error.raise('The src list passed to "video" must be an array of objects');
-                }
-
-                cfg.children.push(
-                    Ext.applyIf({tag: 'source'}, this.src[i])
-                );
-            }
-
-            cfg.children.push(this.getFallback());
-
+        if (Ext.isArray(me.src)) {
+            cfg.src  = me.src;
         } else {
-            cfg.src  = this.src;
-            cfg.html = fallback;
+            cfg.src  = [ {src: me.src} ];
         }
+        me.callParent();
+    },
 
-        this.video = this.body.createChild(cfg);
-        var el = this.video.dom;
-        this.video.on('error', this.onVideoError, this);
-        this.supported = (el && el.tagName.toLowerCase() == 'video');
+    afterRender: function() {
+        var me = this;
+        me.callParent();
+        me.video = me.body.getById(me.id + '-video');
+        el = me.video.dom;
+        me.supported = (el && el.tagName.toLowerCase() == 'video');
+        if (me.supported) {
+            me.video.on('error', me.onVideoError, me);
+        }
     },
     
-    getFallback: function(){
-        return {
-            html: this.fallbackHTML,
-            style: 'padding: 10px;'
-        };
+    getFallback: function() {
+        return '<h1 style="background-color:#ff4f4f;padding: 10px;">' + this.fallbackHTML + '</h1>';
     },
 
-    afterComponentLayout : function() {
+    onVideoError: function() {
         var me = this;
 
-        me.callParent(arguments);
-
-        if (me.video) {
-            me.video.setSize(me.body.getSize());
-        }
-    },
-    
-    onVideoError: function(){
-        this.video.remove();
-        this.body.createChild(this.getFallback());
+        me.video.remove();
+        me.supported = false;
+        me.body.createChild(me.getFallback());
     },
 
     onDestroy: function () {
-        var video = this.video;
-        if (video) {
+        var me = this;
+
+        var video = me.video;
+        if (me.supported && video) {
             var videoDom = video.dom;
             if (videoDom && videoDom.pause) {
                 videoDom.pause();
             }
             video.remove();
-            this.video = null;
+            me.video = null;
         }
 
-        this.callParent();
+        me.callParent();
     }
 });

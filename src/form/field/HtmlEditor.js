@@ -286,11 +286,6 @@ Ext.define('Ext.form.field.HtmlEditor', {
         me.initField();
     },
 
-    beforeRender: function(){
-        this.callParent(arguments);
-        this.beforeLabelableRender();
-    },
-
     /**
      * @private
      * Must define this function to allow the Layout base class to collect all descendant layouts to be run.
@@ -406,6 +401,9 @@ Ext.define('Ext.form.field.HtmlEditor', {
                     tabIndex:-1,
                     menu : Ext.widget('menu', {
                         plain: true,
+
+                        // https://sencha.jira.com/browse/EXTJSIV-7085 focus clears selection in iframe on IE!
+                        focusOnToFront: !!Ext.isIE,
                         items: [{
                             xtype: 'colorpicker',
                             allowReselect: true,
@@ -429,6 +427,9 @@ Ext.define('Ext.form.field.HtmlEditor', {
                     tabIndex:-1,
                     menu : Ext.widget('menu', {
                         plain: true,
+
+                        // https://sencha.jira.com/browse/EXTJSIV-7085 focus clears selection in iframe on IE!
+                        focusOnToFront: !!Ext.isIE,
                         items: [{
                             xtype: 'colorpicker',
                             focus: Ext.emptyFn,
@@ -643,12 +644,15 @@ Ext.define('Ext.form.field.HtmlEditor', {
     },
 
     getSubTplData: function() {
+        var me = this;
+        
         return {
-            $comp       : this,
-            cmpId       : this.id,
-            id          : this.getInputId(),
+            $comp       : me,
+            cmpId       : me.id,
+            id          : me.getInputId(),
+            name        : me.name,
             textareaCls : Ext.baseCSSPrefix + 'hidden',
-            value       : this.value,
+            value       : me.value,
             iframeName  : Ext.id(),
             iframeSrc   : Ext.SSL_SECURE_URL,
             iframeCls   : Ext.baseCSSPrefix + 'htmleditor-iframe',
@@ -994,7 +998,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
             }
 
             // We need to be sure we remove all our events from the iframe on unload or we're going to LEAK!
-            Ext.EventManager.on(window, 'unload', me.beforeDestroy, me);
+            Ext.EventManager.onWindowUnload(me.beforeDestroy, me);
             doc.editorInitialized = true;
 
             me.initialized = true;
@@ -1016,6 +1020,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
             Ext.TaskManager.stop(monitorTask);
         }
         if (me.rendered) {
+            Ext.EventManager.removeUnloadListener(me.beforeDestroy, me);
             try {
                 doc = me.getDoc();
                 if (doc) {
@@ -1034,8 +1039,9 @@ Ext.define('Ext.form.field.HtmlEditor', {
             } catch(e) {
                 // ignore (why?)
             }
-            Ext.destroyMembers(me, 'toolbar', 'iframeEl', 'textareaEl', 'wrapEl');
+            Ext.destroyMembers(me, 'iframeEl', 'textareaEl', 'wrapEl');
         }
+        Ext.destroyMembers(me, 'toolbar');
         me.callParent();
     },
 
@@ -1196,9 +1202,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
     relayCmd: function(cmd, value) {
         Ext.defer(function() {
             var me = this;
-            me.focus();
-            me.execCmd(cmd, value);
-            me.updateToolbar();
+            if (!this.isDestroyed) {
+                me.focus();
+                me.execCmd(cmd, value);
+                me.updateToolbar();
+            }
         }, 10, this);
     },
 

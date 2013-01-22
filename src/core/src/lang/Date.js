@@ -1079,7 +1079,7 @@ Ext.Date = new function() {
         T: {
             g:0,
             c:null,
-            s:"[A-Z]{1,4}" // timezone abbrev. may be between 1 - 4 chars
+            s:"[A-Z]{1,5}" // timezone abbrev. may be between 1 - 5 chars
         },
         Z: {
             g:1,
@@ -1208,7 +1208,7 @@ Ext.Date = new function() {
         // step 1: (?:\((.*)\) -- find timezone in parentheses
         // step 2: ([A-Z]{1,4})(?:[\-+][0-9]{4})?(?: -?\d+)?) -- if nothing was found in step 1, find timezone from timezone offset portion of date string
         // step 3: remove all non uppercase characters found in step 1 and 2
-        return date.toString().replace(/^.* (?:\((.*)\)|([A-Z]{1,4})(?:[\-+][0-9]{4})?(?: -?\d+)?)$/, "$1$2").replace(/[^A-Z]/g, "");
+        return date.toString().replace(/^.* (?:\((.*)\)|([A-Z]{1,5})(?:[\-+][0-9]{4})?(?: -?\d+)?)$/, "$1$2").replace(/[^A-Z]/g, "");
     },
 
     /**
@@ -1483,17 +1483,35 @@ Ext.Date = new function() {
 
         if (value) {
             switch(interval.toLowerCase()) {
+                // See EXTJSIV-7418. We use setTime() here to deal with issues related to
+                // the switchover that occurs when changing to daylight savings and vice
+                // versa. setTime() handles this correctly where setHour/Minute/Second/Millisecond
+                // do not. Let's assume the DST change occurs at 2am and we're incrementing using add
+                // for 15 minutes at time. When entering DST, we should see:
+                // 01:30am
+                // 01:45am
+                // 03:00am // skip 2am because the hour does not exist
+                // ...
+                // Similarly, leaving DST, we should see:
+                // 01:30am
+                // 01:45am
+                // 01:00am // repeat 1am because that's the change over
+                // 01:30am
+                // 01:45am
+                // 02:00am
+                // ....
+                // 
                 case Ext.Date.MILLI:
-                    d.setMilliseconds(d.getMilliseconds() + value);
+                    d.setTime(d.getTime() + value);
                     break;
                 case Ext.Date.SECOND:
-                    d.setSeconds(d.getSeconds() + value);
+                    d.setTime(d.getTime() + value * 1000);
                     break;
                 case Ext.Date.MINUTE:
-                    d.setMinutes(d.getMinutes() + value);
+                    d.setTime(d.getTime() + value * 60 * 1000);
                     break;
                 case Ext.Date.HOUR:
-                    d.setHours(d.getHours() + value);
+                    d.setTime(d.getTime() + value * 60 * 60 * 1000);
                     break;
                 case Ext.Date.DAY:
                     d.setDate(d.getDate() + value);
@@ -1541,6 +1559,34 @@ Ext.Date = new function() {
         }
 
         return d;
+    },
+    
+    /**
+     * Provides a convenient method for performing basic date arithmetic. This method
+     * does not modify the Date instance being called - it creates and returns
+     * a new Date instance containing the resulting date value.
+     * 
+     * Examples:
+     *
+     *     // Basic usage:
+     *     var dt = Ext.Date.subtract(new Date('10/29/2006'), Ext.Date.DAY, 5);
+     *     console.log(dt); // returns 'Tue Oct 24 2006 00:00:00'
+     *
+     *     // Negative values will be added:
+     *     var dt2 = Ext.Date.subtract(new Date('10/1/2006'), Ext.Date.DAY, -5);
+     *     console.log(dt2); // returns 'Fri Oct 6 2006 00:00:00'
+     *
+     *      // Decimal values can be used:
+     *     var dt3 = Ext.Date.subtract(new Date('10/1/2006'), Ext.Date.DAY, 1.25);
+     *     console.log(dt3); // returns 'Fri Sep 29 2006 06:00:00'
+     * 
+     * @param {Date} date The date to modify
+     * @param {String} interval A valid date interval enum value.
+     * @param {Number} value The amount to subtract from the current date.
+     * @return {Date} The new Date instance.
+     */
+    subtract: function(date, interval, value){
+        return utilDate.add(date, interval, -value);
     },
 
     /**

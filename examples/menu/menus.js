@@ -201,7 +201,7 @@ Ext.onReady(function(){
         pressed: true
     });
 
-    menu.add(' ');
+    menu.add('&#160;');
 
     // Menus have a rich api for
     // adding and removing elements dynamically

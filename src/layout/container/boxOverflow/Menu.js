@@ -27,7 +27,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
 
         me.callParent(arguments);
 
-        me.triggerButtonCls = me.triggerButtonCls || Ext.baseCSSPrefix + 'box-menu-' + layout.getNames().right;
+        me.triggerButtonCls = me.triggerButtonCls || Ext.baseCSSPrefix + 'box-menu-' + layout.names.afterX;
         /**
          * @property {Array} menuItems
          * Array of all items that are currently hidden and should go into the dropdown menu
@@ -85,7 +85,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
          */
         me.menuTrigger = new Ext.button.Button({
             id: oid + '-menu-trigger',
-            cls: Ext.layout.container.Box.prototype.innerCls + ' ' + me.triggerButtonCls,
+            cls: Ext.layout.container.Box.prototype.innerCls + ' ' + me.triggerButtonCls + ' ' + Ext.baseCSSPrefix + 'toolbar-item',
             hidden: true,
             ownerCt: layout.owner, // To enable the Menu to ascertain a valid zIndexManager owner in the same tree
             ownerLayout: layout,
@@ -107,7 +107,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
     handleOverflow: function(ownerContext) {
         var me = this,
             layout = me.layout,
-            names = layout.getNames(),
+            names = layout.names,
             plan = ownerContext.state.boxPlan,
             posArgs = [null, null];
 
@@ -119,7 +119,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
         me.menuTrigger.setPosition.apply(me.menuTrigger, posArgs);
 
         return {
-            reservedSpace: me.menuTrigger[names.getWidth]()
+            reservedSpace: me.menuTrigger[names.getWidth]() + me.menuTrigger.el.getMargin(names.parallelMargins)
         };
     },
 
@@ -178,7 +178,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
         var me = this,
             layout = me.layout,
             owner = layout.owner,
-            names = layout.getNames(),
+            names = layout.names,
             startProp = names.x,
             sizeProp = names.width,
             plan = ownerContext.state.boxPlan,

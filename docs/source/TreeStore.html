@@ -310,18 +310,23 @@ Ext.define('Ext.data.TreeStore', {
      * @param {Object} scope The scope in which to run the callback function
      */
     onBeforeNodeExpand: function(node, callback, scope) {
+        var me = this;
+        
         if (node.isLoaded()) {
             Ext.callback(callback, scope || node, [node.childNodes]);
         }
         else if (node.isLoading()) {
-            this.on('load', function() {
+            me.on('load', function() {
                 Ext.callback(callback, scope || node, [node.childNodes]);
-            }, this, {single: true});
+            }, me, {single: true});
         }
         else {
-            this.read({
+            me.read({
                 node: node,
                 callback: function() {
+                    // Clear the callback, since if we're introducing a custom one,
+                    // it may be re-used on reload
+                    delete me.lastOptions.callback;
                     Ext.callback(callback, scope || node, [node.childNodes]);
                 }
             });
@@ -502,11 +507,13 @@ Ext.define('Ext.data.TreeStore', {
             node: node
         });
 
-        if (node) {
+        me.callParent([options]);
+        
+        if (me.loading &amp;&amp; node) {
             node.set('loading', true);
         }
-
-        return me.callParent([options]);
+        
+        return me;
     },
 
 <span id='Ext-data-TreeStore-method-clearRemoved'>    /**

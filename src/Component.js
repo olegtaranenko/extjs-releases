@@ -398,7 +398,6 @@ Ext.define('Ext.Component', {
             me.listeners = null; //change the value to remove any on prototype
         }
         me.enableBubble(me.bubbleEvents);
-        me.mons = [];
     },
 
 
@@ -651,10 +650,12 @@ Ext.define('Ext.Component', {
     showAt: function(x, y, animate) {
         var me = this;
 
+        // Not rendered, then animating to a position is meaningless,
+        // just set the x,y position and allow show's processing to work.
         if (!me.rendered && (me.autoRender || me.floating)) {
-            me.doAutoRender();
-            // forcibly set hidden here, since we still want the initial beforeshow/show event to fire
-            me.hidden = true;
+            me.x = x;
+            me.y = y;
+            return me.show();
         }
         if (me.floating) {
             me.setPosition(x, y, animate);
@@ -688,10 +689,10 @@ Ext.define('Ext.Component', {
 
             // Show may have been vetoed
             if (me.rendered && !me.hidden) {
-                // Align to Component or Element using setPagePosition because normal show
-                // methods are container-relative, and we must align to the requested element
-                // or Component:
-                me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
+                // Align to Component or Element using alignTo because normal show methods
+                // are container-relative, and we must align to the requested element or
+                // Component:
+                me.alignTo(cmp, pos || me.defaultAlign, off);
             }
         }
         return me;
@@ -730,15 +731,15 @@ Ext.define('Ext.Component', {
                     y -= floatParentBox.top;
                 }
             } else {
-                p = me.el.translatePoints(x, y);
-                x = p.left;
-                y = p.top;
+                p = me.el.translateXY(x, y);
+                x = p.x;
+                y = p.y;
             }
 
             me.setPosition(x, y, animate);
         } else {
-            p = me.el.translatePoints(x, y);
-            me.setPosition(p.left, p.top, animate);
+            p = me.el.translateXY(x, y);
+            me.setPosition(p.x, p.y, animate);
         }
 
         return me;
@@ -748,20 +749,6 @@ Ext.define('Ext.Component', {
     // it must be positioned in when using setPosition.
     isContainedFloater: function() {
         return (this.floating && this.floatParent);
-    },
-
-    /**
-     * Gets the current box measurements of the component's underlying element.
-     * @param {Boolean} [local=false] If true the element's left and top are returned instead of page XY.
-     * @return {Object} box An object in the format {x, y, width, height}
-     */
-    getBox : function(local){
-        var pos = local ? this.getPosition(local) : this.el.getXY(),
-            size = this.getSize();
-
-        size.x = pos[0];
-        size.y = pos[1];
-        return size;
     },
 
     /**
@@ -809,17 +796,16 @@ Ext.define('Ext.Component', {
      */
     getPosition: function(local) {
         var me = this,
-            el = me.el,
             xy,
             isContainedFloater = me.isContainedFloater(),
             floatParentBox;
 
         // Local position for non-floaters means element's local position
         if ((local === true) && !isContainedFloater) {
-            return [el.getLocalX(), el.getLocalY()];
+            return [me.getLocalX(), me.getLocalY()];
         }
 
-        xy = me.el.getXY();
+        xy = me.getXY();
 
         // Local position for floaters means position relative to the container's target element
         if ((local === true) && isContainedFloater) {
@@ -865,14 +851,39 @@ Ext.define('Ext.Component', {
         var me = this,
             rendered = me.rendered;
 
-        if (rendered && me.isVisible()) {
+        if (me.hierarchicallyHidden || (me.floating && !rendered && me.isHierarchicallyHidden())) {
+            // If this is a hierarchically hidden floating component, we need to stash
+            // the arguments to this call so that the call can be deferred until the next
+            // time syncHidden() is called.
+            if (!rendered) {
+                // If the component has not yet been rendered it requires special treatment.
+                // Normally, for rendered components we can just set the pendingShow property
+                // and syncHidden() listens to events in the hierarchyEventSource and calls
+                // show() when this component becomes hierarchically visible.  However,
+                // if the component has not yet been rendered the hierarchy event listeners
+                // have not yet been attached (since Floating is initialized during the
+                // render phase.  This means we have to initialize the hierarchy event
+                // listeners right now to ensure that the component will show itself when
+                // it becomes hierarchically visible.  
+                me.initHierarchyEvents();
+            }
+            // defer the show call until next syncHidden(), but ignore animateTarget.
+            if (arguments.length > 1) {
+                arguments[0] = null;
+                me.pendingShow = arguments;
+            } else {
+                me.pendingShow = true;
+            }
+        } else if (rendered && me.isVisible()) {
             if (me.toFrontOnShow && me.floating) {
                 me.toFront();
             }
         } else {
             if (me.fireEvent('beforeshow', me) !== false) {
-                // Render on first show if there is an autoRender config, or if this is a floater (Window, Menu, BoundList etc).
                 me.hidden = false;
+                delete this.getHierarchyState().hidden;
+                // Render on first show if there is an autoRender config, or if this
+                // is a floater (Window, Menu, BoundList etc).
                 if (!rendered && (me.autoRender || me.floating)) {
                     me.doAutoRender();
                     rendered = me.rendered;
@@ -975,7 +986,7 @@ Ext.define('Ext.Component', {
             ghostPanel.el.stopAnimation();
 
             // Shunting it offscreen immediately, *before* the Animation class grabs it ensure no flicker.
-            ghostPanel.el.setX(-10000);
+            ghostPanel.setX(-10000);
 
             me.ghostBox = toBox;
             ghostPanel.el.animate({
@@ -995,6 +1006,7 @@ Ext.define('Ext.Component', {
         else {
             me.onShowComplete(cb, scope);
         }
+        this.fireHierarchyEvent('show');
     },
 
     /**
@@ -1029,17 +1041,22 @@ Ext.define('Ext.Component', {
      * Defaults to this Component.
      * @return {Ext.Component} this
      */
-    hide: function() {
-        var me = this;
+    hide: function(animateTarget, cb, scope) {
+        var me = this,
+            continueHide;
 
-        // Clear the flag which is set if a floatParent was hidden while this is visible.
-        // If a hide operation was subsequently called, that pending show must be hidden.
-        me.showOnParentShow = false;
-
-        if (!(me.rendered && !me.isVisible()) && me.fireEvent('beforehide', me) !== false) {
-            me.hidden = true;
-            if (me.rendered) {
-                me.onHide.apply(me, arguments);
+        if (me.pendingShow) {
+            // If this is a hierarchically hidden floating component with a pending show
+            // hide() simply cancels the pending show.
+            delete me.pendingShow;
+        } if (!(me.rendered && !me.isVisible())) {
+            continueHide = (me.fireEvent('beforehide', me) !== false);
+            if (me.hierarchicallyHidden || continueHide) {
+                me.hidden = true;
+                me.getHierarchyState().hidden = true;
+                if (me.rendered) {
+                    me.onHide.apply(me, arguments);
+                }
             }
         }
         return me;
@@ -1063,6 +1080,7 @@ Ext.define('Ext.Component', {
     onHide: function(animateTarget, cb, scope) {
         var me = this,
             ghostPanel,
+            fromSize,
             toBox,
             activeEl = Ext.Element.getActiveElement();
 
@@ -1080,15 +1098,17 @@ Ext.define('Ext.Component', {
         }
         // If we're animating, kick off an animation of the ghost down to the target
         if (animateTarget) {
+            toBox = animateTarget.getBox();
             ghostPanel = me.ghost();
             ghostPanel.el.stopAnimation();
-            toBox = animateTarget.getBox();
+            fromSize = me.getSize();
             ghostPanel.el.animate({
                 to: toBox,
                 listeners: {
                     afteranimate: function() {
                         delete ghostPanel.componentLayout.lastComponentSize;
                         ghostPanel.el.hide();
+                        ghostPanel.el.setSize(fromSize);
                         me.afterHide(cb, scope);
                     }
                 }
@@ -1121,6 +1141,7 @@ Ext.define('Ext.Component', {
 
         Ext.callback(cb, scope || me);
         me.fireEvent('hide', me);
+        this.fireHierarchyEvent('hide');
     },
 
     /**
@@ -1263,10 +1284,7 @@ Ext.define('Ext.Component', {
         return this.el;
     },
 
-    // Deprecate 5.0
-    onResize: Ext.emptyFn,
-
-    // @private
+    // private
     // Implements an upward event bubbilng policy. By default a Component bubbles events up to its ownerCt
     // Floating Components target the floatParent.
     // Some Component subclasses (such as Menu) might implement a different ownership hierarchy.
@@ -1384,5 +1402,46 @@ Ext.define('Ext.Component', {
             me.proxy = me.el.createProxy(Ext.baseCSSPrefix + 'proxy-el', target, true);
         }
         return me.proxy;
+    },
+
+    /*
+     * For more information on the hierarchy events, see the note for the
+     * hierarchyEventSource observer defined in the onClassCreated callback.
+     * 
+     * This functionality is contained in Component (as opposed to Container)
+     * because a Component can be the ownerCt for a floating component (loadmask),
+     * and the loadmask needs to know when its owner is shown/hidden via the
+     * hierarchyEventSource so that its hidden state can be synchronized.
+     * 
+     * TODO: merge this functionality with Ext.globalEvents
+     */
+    fireHierarchyEvent: function (ename) {
+        this.hierarchyEventSource.fireEvent(ename, this);
+    },
+
+    onAdded: function() {
+        this.callParent(arguments);
+        if (this.hierarchyEventSource.hasListeners.added) {
+            this.fireHierarchyEvent('added');
+        }
     }
+}, function () {
+    /*
+     * The observer below is used to be able to detect showing/hiding at various levels
+     * in the hierarchy. While it's not particularly expensive to bubble an event up,
+     * cascading an event down can be quite costly.
+     * 
+     * The main usage for this is to do with floating components. For example, the load mask
+     * is a floating component. The component it is masking may be inside several containers.
+     * As such, we need to know when component is hidden, either directly, or via a parent
+     * container being hidden. We can subscribe to these events and filter out the appropriate
+     * container.
+     */
+    this.hierarchyEventSource = this.prototype.hierarchyEventSource = new Ext.util.Observable({ events: {
+        hide: true,
+        show: true,
+        collapse: true,
+        expand: true,
+        added: true
+    }});
 });

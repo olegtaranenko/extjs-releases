@@ -221,10 +221,10 @@ Ext.define('Ext.toolbar.Toolbar', {
      * `true` in this class to identify an object as an instantiated Toolbar, or subclass thereof.
      */
     isToolbar: true,
-<span id='Ext-toolbar-Toolbar-property-baseCls'>    baseCls  : Ext.baseCSSPrefix + 'toolbar',
+<span id='Ext-toolbar-Toolbar-cfg-baseCls'>    baseCls  : Ext.baseCSSPrefix + 'toolbar',
 </span><span id='Ext-toolbar-Toolbar-property-ariaRole'>    ariaRole : 'toolbar',
 </span>
-<span id='Ext-toolbar-Toolbar-property-defaultType'>    defaultType: 'button',
+<span id='Ext-toolbar-Toolbar-cfg-defaultType'>    defaultType: 'button',
 </span>
 <span id='Ext-toolbar-Toolbar-cfg-vertical'>    /**
 </span>     * @cfg {Boolean} vertical
@@ -369,6 +369,7 @@ Ext.define('Ext.toolbar.Toolbar', {
 
 <span id='Ext-toolbar-Toolbar-method-lookupComponent'>    // @private
 </span>    lookupComponent: function(c) {
+        var args = arguments;
         if (typeof c == 'string') {
             var T = Ext.toolbar.Toolbar,
                 shortcut = T.shortcutsHV[this.vertical ? 1 : 0][c] || T.shortcuts[c];
@@ -387,9 +388,12 @@ Ext.define('Ext.toolbar.Toolbar', {
             }
 
             this.applyDefaults(c);
+            
+            // See: EXTJSIV-7578
+            args = [c];
         }
 
-        return this.callParent(arguments);
+        return this.callParent(args);
     },
 
 <span id='Ext-toolbar-Toolbar-method-applyDefaults'>    // @private

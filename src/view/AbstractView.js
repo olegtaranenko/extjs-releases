@@ -297,8 +297,17 @@ Ext.define('Ext.view.AbstractView', {
 
         // Look up the configured Store. If none configured, use the fieldless, empty Store defined in Ext.data.Store.
         me.store = Ext.data.StoreManager.lookup(me.store || 'ext-empty-store');
-        me.bindStore(me.store, true);
-        me.all = new Ext.CompositeElementLite();
+
+        // Use the provided store as the data source unless a Feature or plugin has injected a special one
+        if (!me.dataSource) {
+            me.dataSource = me.store;
+        }
+        // Bind to the data  source. Cache it by the property name "dataSource".
+        // The store property is public and must reference the provided store.
+        me.bindStore(me.dataSource, true, 'dataSource');
+        if (!me.all) {
+            me.all = new Ext.CompositeElementLite();
+        }
 
         // We track the scroll position
         me.scrollState = {
@@ -350,7 +359,7 @@ Ext.define('Ext.view.AbstractView', {
         // Kick off the refresh before layouts are resumed after the render 
         // completes, but after afterrender is fired on the view
         if (!me.up('[collapsed],[hidden]')) {
-            me.doFirstRefresh(me.store);
+            me.doFirstRefresh(me.dataSource);
         }
     },
 
@@ -362,7 +371,7 @@ Ext.define('Ext.view.AbstractView', {
         // If the refresh was not kicked off on render due to a collapsed or hidden ancestor,
         // kick it off as soon as we get layed out
         if (!me.firstRefreshDone) {
-            me.doFirstRefresh(me.store);
+            me.doFirstRefresh(me.dataSource);
         }
     },
 
@@ -374,7 +383,6 @@ Ext.define('Ext.view.AbstractView', {
         var me = this,
             loadingHeight = me.loadingHeight;
 
-        me.all.clear();
         if (loadingHeight && loadingHeight > me.getHeight()) {
             me.hasLoadingHeight = true;
             me.oldMinHeight = me.minHeight;
@@ -464,7 +472,7 @@ Ext.define('Ext.view.AbstractView', {
 
         if (!me.hasListeners.beforerefresh || me.fireEvent('beforerefresh', me) !== false) {
             targetEl = me.getTargetEl();
-            records = me.store.getRange();
+            records = me.getViewRange();
             dom = targetEl.dom;
 
             // Updating is much quicker if done when the targetEl is detached from the document, and not displayed.
@@ -488,22 +496,33 @@ Ext.define('Ext.view.AbstractView', {
             // Usually, for an empty record set, this would be blank, but when the Template
             // Creates markup outside of the record loop, this must still be honoured even if there are no
             // records.
-            me.tpl.append(targetEl, me.collectData(records, 0));
+            me.tpl.append(targetEl, me.collectData(records, me.all.startIndex));
 
             // The emptyText is now appended to the View's element
             // after any fixedNodes.
             if (records.length < 1) {
-                if (!me.deferEmptyText || me.hasSkippedEmptyText) {
+                // Process empty text unless the store is being cleared.
+                if (!this.store.loading && (!me.deferEmptyText || me.hasFirstRefresh)) {
                     Ext.core.DomHelper.insertHtml('beforeEnd', targetEl.dom, me.emptyText);
                 }
                 me.all.clear();
             } else {
-                me.all.fill(Ext.query(me.getItemSelector(), targetEl.dom));
+                me.collectNodes(targetEl.dom);
                 me.updateIndexes(0);
             }
 
-            me.selModel.refresh();
-            me.hasSkippedEmptyText = true;
+            // Don't need to do this on the first refresh
+            if (me.hasFirstRefresh) {
+                // Some subclasses do not need to do this. TableView does not need to do this.
+                if (me.refreshSelmodelOnRefresh !== false) {
+                    me.selModel.refresh();
+                } else {
+                    // However, even if that is not needed, pruning if pruneRemoved is true (the default) still needs doing.
+                    me.selModel.pruneIf();
+                }
+            }
+
+            me.hasFirstRefresh = true;
 
             if (!me.preserveScrollOnRefresh) {
                 targetParent.insertBefore(dom, nextSibling);
@@ -524,6 +543,16 @@ Ext.define('Ext.view.AbstractView', {
                 me.fireEvent('viewready', me);
             }
         }
+    },
+
+    // Private
+    // Called by refresh to collect the view item nodes.
+    collectNodes: function(targetEl) {
+        this.all.fill(Ext.query(this.getItemSelector(), Ext.getDom(targetEl)), this.all.startIndex);
+    },
+
+    getViewRange: function() {
+        return this.dataSource.getRange();
     },
 
     /**
@@ -615,7 +644,7 @@ Ext.define('Ext.view.AbstractView', {
                     // so we optimize it by only copying if we must.
                     // We do this so we don't mutate the underlying record.data
                     if (!hasCopied) {
-                        data = Ext.apply({}, data);
+                        data = Ext.Object.chain(data);
                         hasCopied = true;
                     }
                     data[attr] = associatedData[attr];
@@ -626,19 +655,21 @@ Ext.define('Ext.view.AbstractView', {
     },
 
     /**
-     * <p>Function which can be overridden which returns the data object passed to this
-     * DataView's {@link #tpl template} to render the whole DataView.</p>
-     * <p>This is usually an Array of data objects, each element of which is processed by an
-     * {@link Ext.XTemplate XTemplate} which uses <tt>'&lt;tpl for="."&gt;'</tt> to iterate over its supplied
+     * Function which can be overridden which returns the data object passed to this
+     * DataView's {@link #tpl template} to render the whole DataView.
+     * 
+     * This is usually an Array of data objects, each element of which is processed by an
+     * {@link Ext.XTemplate XTemplate} which uses `'&lt;tpl for="."&gt;'` to iterate over its supplied
      * data object as an Array. However, <i>named</i> properties may be placed into the data object to
-     * provide non-repeating data such as headings, totals etc.</p>
+     * provide non-repeating data such as headings, totals etc.
+     * 
      * @param {Ext.data.Model[]} records An Array of {@link Ext.data.Model}s to be rendered into the DataView.
      * @param {Number} startIndex the index number of the Record being prepared for rendering.
      * @return {Object[]} An Array of data objects to be processed by a repeating XTemplate. May also
      * contain <i>named</i> properties.
      * @since Ext 2
      */
-    collectData : function(records, startIndex){
+    collectData: function(records, startIndex){
         var data = [],
             i = 0,
             len = records.length,
@@ -652,12 +683,16 @@ Ext.define('Ext.view.AbstractView', {
     },
 
     // private
-    bufferRender : function(records, index){
+    bufferRender : function(records, index) {
         var me = this,
             div = me.renderBuffer || (me.renderBuffer = document.createElement('div'));
 
         me.tpl.overwrite(div, me.collectData(records, index));
-        return Ext.query(me.getItemSelector(), div);
+        return  Ext.DomQuery.select(me.getItemSelector(), div);
+    },
+    
+    getNodeContainer: function() {
+        return this.getTargetEl();
     },
 
     // private
@@ -667,7 +702,7 @@ Ext.define('Ext.view.AbstractView', {
             node;
 
         if (me.viewReady) {
-            index = me.store.indexOf(record);
+            index = me.dataSource.indexOf(record);
             if (index > -1) {
                 node = me.bufferRender([record], index)[0];
                 // ensure the node actually exists in the DOM
@@ -687,7 +722,7 @@ Ext.define('Ext.view.AbstractView', {
     },
 
     // private
-    onAdd : function(ds, records, index) {
+    onAdd : function(store, records, index) {
         var me = this,
             nodes;
 
@@ -696,11 +731,9 @@ Ext.define('Ext.view.AbstractView', {
             // which might create boilerplate content *around* the record nodes.
             if (me.all.getCount() === 0) {
                 me.refresh();
-                nodes = me.all.elements.slice();
+                nodes = me.all.slice();
             } else {
-                nodes = me.bufferRender(records, index);
-                me.doAdd(nodes, records, index);
-
+                nodes = me.doAdd(records, index);
                 me.selModel.refresh();
                 me.updateIndexes(index);
 
@@ -715,13 +748,17 @@ Ext.define('Ext.view.AbstractView', {
 
     },
 
-    doAdd: function(nodes, records, index) {
-        var all = this.all,
-            count = all.getCount();
+    doAdd: function(records, index) {
+        var me = this,
+            nodes = me.bufferRender(records, index, true),
+            all = me.all,
+            count = all.getCount(),
+            i, l;
 
         if (count === 0) {
-            this.clearViewEl();
-            this.getTargetEl().appendChild(nodes);
+            for (i = 0, l = nodes.length; i < l; i++) {
+                this.getNodeContainer().appendChild(nodes[i]);
+            }
         } else if (index < count) {
             if (index === 0) {
                 all.item(index).insertSibling(nodes, 'before', true);
@@ -732,7 +769,8 @@ Ext.define('Ext.view.AbstractView', {
             all.last().insertSibling(nodes, 'after', true);
         }
 
-        Ext.Array.insert(all.elements, index, nodes);
+        all.insert(index, nodes);
+        return nodes;
     },
 
     // private
@@ -744,7 +782,7 @@ Ext.define('Ext.view.AbstractView', {
             index;
 
         if (me.all.getCount()) {
-            if (me.store.getCount() === 0) {
+            if (me.dataSource.getCount() === 0) {
                 // Refresh so emptyText can be applied if necessary
                 if (fireItemRemove) {
                     for (i = indexes.length - 1; i >= 0; --i) {
@@ -784,23 +822,23 @@ Ext.define('Ext.view.AbstractView', {
      * @param {Number} index The item's data index in the store
      * @since Ext 2
      */
-    refreshNode : function(index){
-        this.onUpdate(this.store, this.store.getAt(index));
+    refreshNode : function(index) {
+        this.onUpdate(this.dataSource, this.dataSource.getAt(index));
     },
 
     // private
     updateIndexes : function(startIndex, endIndex) {
-        var ns = this.all.elements,
-            records = this.store.getRange(),
+        var nodes = this.all.elements,
+            records = this.getViewRange(),
             i;
 
         startIndex = startIndex || 0;
-        endIndex = endIndex || ((endIndex === 0) ? 0 : (ns.length - 1));
+        endIndex = endIndex || ((endIndex === 0) ? 0 : (nodes.length - 1));
         for (i = startIndex; i <= endIndex; i++) {
-            ns[i].viewIndex = i;
-            ns[i].viewRecordId = records[i].internalId;
-            if (!ns[i].boundView) {
-                ns[i].boundView = this.id;
+            nodes[i].viewIndex = i;
+            nodes[i].viewRecordId = records[i].internalId;
+            if (!nodes[i].boundView) {
+                nodes[i].boundView = this.id;
             }
         }
     },
@@ -818,14 +856,14 @@ Ext.define('Ext.view.AbstractView', {
      * @param {Ext.data.Store} store The store to bind to this view
      * @since Ext 3
      */
-    bindStore : function(store, initial) {
+    bindStore : function(store, initial, propName) {
         var me = this;
         me.mixins.bindable.bindStore.apply(me, arguments);
 
         // Bind the store to our selection model unless it's the initial bind.
         // Initial bind takes place afterRender
         if (!initial) {
-            me.getSelectionModel().bindStore(me.store);
+            me.getSelectionModel().bindStore(store);
         }
 
         // If we have already achieved our first layout, refresh immediately.
@@ -891,8 +929,11 @@ Ext.define('Ext.view.AbstractView', {
         this.setMaskBind(null);
     },
 
-    onBindStore: function(store) {
+    onBindStore: function(store, initial, propName) {
         this.setMaskBind(store);
+        if (!initial && propName === 'store') {
+            this.bindStore(store, false, 'dataSource');
+        }
     },
 
     setMaskBind: function(store) {
@@ -983,7 +1024,7 @@ Ext.define('Ext.view.AbstractView', {
         var records = [],
             i = 0,
             len = nodes.length,
-            data = this.store.data;
+            data = this.dataSource.data;
 
         for (; i < len; i++) {
             records[records.length] = data.getByKey(nodes[i].viewRecordId);
@@ -1000,7 +1041,7 @@ Ext.define('Ext.view.AbstractView', {
      * @since Ext 2
      */
     getRecord: function(node){
-        return this.store.data.getByKey(Ext.getDom(node).viewRecordId);
+        return this.dataSource.data.getByKey(Ext.getDom(node).viewRecordId);
     },
 
 
@@ -1087,14 +1128,14 @@ Ext.define('Ext.view.AbstractView', {
      * @since Ext 2
      */
     getNodes: function(start, end) {
-        var ns = this.all.elements;
+        var all = this.all;
 
         if (end === undefined) {
-            end = ns.length;
+            end = all.getCount();
         } else {
             end++;
         }
-        return this.all.elements.slice(start||0, end);
+        return all.slice(start||0, end);
     },
 
     /**

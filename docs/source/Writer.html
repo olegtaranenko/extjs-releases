@@ -86,6 +86,18 @@ Ext.define('Ext.data.writer.Writer', {
      * If the value is not present, the field name will always be used.
      */
     nameProperty: 'name',
+    
+<span id='Ext-data-writer-Writer-cfg-writeRecordId'>    /**
+</span>     * @cfg {Boolean} [writeRecordId]
+     * By default, each record's id is always included in the output for non-phantom records since in most
+     * cases the id will be required on the server to process the record action. This is helpful since the id
+     * will normally not be modified, and so would not be sent to the server unless {@link #writeAllFields}
+     * was explicitly enabled.
+     * 
+     * However, there are cases where it is not desirable for the record id to be passed in the data directly.
+     * For example, when using a RESTful API the record id would typically be appended to the url instead.
+     */
+    writeRecordId: true,
 
 <span id='Ext-data-writer-Writer-property-isWriter'>    /*
 </span>     * @property {Boolean} isWriter
@@ -138,6 +150,7 @@ Ext.define('Ext.data.writer.Writer', {
             field,
             key,
             value,
+            mappedIdProperty,
             f, fLen;
 
         if (writeAll) {
@@ -167,9 +180,10 @@ Ext.define('Ext.data.writer.Writer', {
                 // The server can then return the clientId with each record so the operation can match the server records with the client records
                 data[clientIdProperty] = record.internalId;
             }
-        } else {
-            // always include the id for non phantoms
-            data[record.idProperty] = record.getId();
+        } else if (this.writeRecordId) {
+            // Make sure that if a mapping is in place the mapped id name is used instead of the default field name. 
+            mappedIdProperty = fields.get(record.idProperty)[this.nameProperty] || record.idProperty;
+            data[mappedIdProperty] = record.getId();
         }
 
         return data;

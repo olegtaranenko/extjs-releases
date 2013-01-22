@@ -62,18 +62,12 @@ Ext.define('Ext.layout.container.Anchor', {
     /* Begin Definitions */
 
     alias: 'layout.anchor',
-    extend: 'Ext.layout.container.Container',
+    extend: 'Ext.layout.container.Auto',
     alternateClassName: 'Ext.layout.AnchorLayout',
 
 <span id='Ext-layout-container-Anchor-property-type'>    /* End Definitions */
 </span>
     type: 'anchor',
-
-<span id='Ext-layout-container-Anchor-property-manageOverflow'>    manageOverflow: 2,
-</span>
-<span id='Ext-layout-container-Anchor-property-renderTpl'>    renderTpl: [
-</span>        '{%this.renderBody(out,values);this.renderPadder(out,values)%}'
-    ],
 
 <span id='Ext-layout-container-Anchor-cfg-anchor'>    /**
 </span>     * @cfg {String} anchor
@@ -131,7 +125,9 @@ Ext.define('Ext.layout.container.Anchor', {
 
 <span id='Ext-layout-container-Anchor-property-parseAnchorRE'>    parseAnchorRE: /^(r|right|b|bottom)$/i,
 </span>
-<span id='Ext-layout-container-Anchor-method-beginLayout'>    beginLayout: function (ownerContext) {
+<span id='Ext-layout-container-Anchor-property-manageOverflow'>    manageOverflow: true,
+</span>
+<span id='Ext-layout-container-Anchor-method-beginLayoutCycle'>    beginLayoutCycle: function (ownerContext) {
 </span>        var me = this,
             dimensions = 0,
             anchorSpec, childContext, childItems, i, length, target;
@@ -161,47 +157,12 @@ Ext.define('Ext.layout.container.Anchor', {
 
         ownerContext.anchorDimensions = dimensions;
 
-        // Work around WebKit RightMargin bug. We're going to inline-block all the children
-        // only ONCE and remove it when we're done
-        if (!Ext.supports.RightMargin &amp;&amp; !me.rightMarginCleanerFn) {
-            target = ownerContext.targetContext.el; // targetContext is added by superclass
-
-            me.rightMarginCleanerFn = Ext.Element.getRightMarginFixCleaner(target);
-            target.addCls(Ext.baseCSSPrefix + 'inline-children');
-        }
-
         //&lt;debug&gt;
         me.sanityCheck(ownerContext);
         //&lt;/debug&gt;
     },
 
-<span id='Ext-layout-container-Anchor-method-calculate'>    calculate: function (ownerContext) {
-</span>        var me = this,
-            containerSize = me.getContainerSize(ownerContext);
-
-        if (ownerContext.anchorDimensions !== ownerContext.state.calculatedAnchors) {
-            me.calculateAnchors(ownerContext, containerSize);
-        }
-
-        if (ownerContext.hasDomProp('containerChildrenDone')) {
-            // Once the child layouts are done we can determine the content sizes...
-
-            if (!containerSize.gotAll) {
-                me.done = false;
-            }
-
-            me.calculateContentSize(ownerContext, ownerContext.anchorDimensions);
-
-            if (me.done) {
-                me.calculateOverflow(ownerContext, containerSize, ownerContext.anchorDimensions);
-                return;
-            }
-        }
-
-        me.done = false;
-    },
-
-<span id='Ext-layout-container-Anchor-method-calculateAnchors'>    calculateAnchors: function (ownerContext, containerSize) {
+<span id='Ext-layout-container-Anchor-method-calculateItems'>    calculateItems: function (ownerContext, containerSize) {
 </span>        var me = this,
             childItems = ownerContext.childItems,
             length = childItems.length,
@@ -209,11 +170,13 @@ Ext.define('Ext.layout.container.Anchor', {
             gotWidth = containerSize.gotWidth,
             ownerHeight = containerSize.height,
             ownerWidth = containerSize.width,
-            state = ownerContext.state,
-            calculatedAnchors = (gotWidth ? 1 : 0) | (gotHeight ? 2 : 0),
+            knownDimensions = (gotWidth ? 1 : 0) | (gotHeight ? 2 : 0),
+            anchorDimensions = ownerContext.anchorDimensions,
             anchorSpec, childContext, childMargins, height, i, width;
 
-        state.calculatedAnchors = (state.calculatedAnchors || 0) | calculatedAnchors;
+        if (!anchorDimensions) {
+            return true;
+        }
 
         for (i = 0; i &lt; length; i++) {
             childContext = childItems[i];
@@ -239,16 +202,9 @@ Ext.define('Ext.layout.container.Anchor', {
                 childContext.setHeight(height);
             }
         }
-    },
 
-<span id='Ext-layout-container-Anchor-method-finishedLayout'>    finishedLayout: function (ownerContext) {
-</span>        var cleanerFn = this.rightMarginCleanerFn;
-
-        if (cleanerFn) {
-            delete this.rightMarginCleanerFn;
-            ownerContext.targetContext.el.removeCls(Ext.baseCSSPrefix + 'inline-children');
-            cleanerFn();
-        }
+        // If all required dimensions are known, we're done
+        return (knownDimensions &amp; anchorDimensions) === anchorDimensions;
     },
 
 <span id='Ext-layout-container-Anchor-method-sanityCheck'>    //&lt;debug&gt;

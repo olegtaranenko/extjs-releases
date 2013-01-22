@@ -567,6 +567,10 @@ Ext.define('Ext.data.Model', {
             callback = function(operation) {
                 if (operation.wasSuccessful()) {
                     record = operation.getRecords()[0];
+                    // If the server didn't set the id, do it here
+                    if (!record.hasId()) {
+                        record.setId(id);
+                    }
                     Ext.callback(config.success, scope, [record, operation]);
                 } else {
                     Ext.callback(config.failure, scope, [record, operation]);
@@ -612,7 +616,8 @@ Ext.define('Ext.data.Model', {
 
         /**
          * Generates a sequential id. This method is typically called when a record is {@link Ext#create
-         * create}d and {@link #constructor no id has been specified}. The id will automatically be assigned to the
+         * create}d and {@link #constructor no id has been specified} either as a parameter, or through the {@link #idProperty}
+         * in the passed data. The generated id will automatically be assigned to the
          * record. The returned id takes the form: {PREFIX}-{AUTO_ID}.
          *
          * - **PREFIX** : String - Ext.data.Model.PREFIX (defaults to 'ext-record')
@@ -744,6 +749,12 @@ Ext.define('Ext.data.Model', {
     /**
      * @cfg {String} idProperty
      * The name of the field treated as this Model's unique id. Defaults to 'id'.
+     * 
+     * {@link Ext.view.AbstractView View} {@link Ext.selection.Model selection models} use this identifier
+     * by preference to track which records in a store are selected. So if using {@link Ext.toolbar.Paging paging}
+     * or a {@link Ext.data.Store#buffered buffered (sparsely populated)} store which may prune
+     * unused pages of records from its cache, then when a page is returned to, or a page is returned into the cache,
+     * this unique identifier will allow the selection model to detect the selected state.
      */
     idProperty: 'id',
 
@@ -824,6 +835,11 @@ Ext.define('Ext.data.Model', {
         // and all values of the defined type. It is used directly as this record's data property.
         data = data || {};
 
+        // If no ID passed, use the id property from the passed data
+        if (id === undefined) {
+            id = data[this.idProperty];
+        }
+
         var me = this,
             hasId = (id || id === 0),
             fields,
@@ -835,13 +851,13 @@ Ext.define('Ext.data.Model', {
             persistenceProperty,
             i;
 
-
         /**
          * @property {Number/String} internalId
          * An internal unique ID for each Model instance, used to identify Models that don't have an ID yet
          * @private
          */
         me.internalId = hasId ? id : Ext.data.Model.id(me);
+        // The Ext.data.Model.id call sets the phantom property. So it will be set now if !hasId
 
         /**
          * @property {Object} raw The raw data used to create this model if created via a reader.
@@ -916,11 +932,6 @@ Ext.define('Ext.data.Model', {
                }
             }
         }
-        
-        // If we explicitly pass an id, it should always take precedence
-        if (hasId) {
-            persistenceProperty[me.idProperty] = id;
-        }
 
         /**
          * @property {Ext.data.Store[]} stores
@@ -928,12 +939,18 @@ Ext.define('Ext.data.Model', {
          */
         me.stores = [];
 
-        if (me.getId()) {
-            me.phantom = false;
-        } else if (me.phantom) {
+        // If we explicitly pass an id, it should always take precedence
+        if (hasId) {
+            persistenceProperty[me.idProperty] = id;
+        }
+        // If there's no id, we are a phantom.
+        else {
+            // Generate a key using the supplied idgen function
             newId = me.idgen.generate();
-            if (newId !== null) {
+            if (newId != null) {
                 me.setId(newId);
+                // setID clears the phantom property
+                me.phantom = true;
             }
         }
 
@@ -945,6 +962,7 @@ Ext.define('Ext.data.Model', {
             me.init();
         }
 
+        // Generate an observable ID
         me.id = me.idgen.getRecId(me);
     },
 
@@ -1548,8 +1566,22 @@ Ext.define('Ext.data.Model', {
      * @param {Number/String} id The new id
      */
     setId: function(id) {
-        this.set(this.idProperty, id);
-        this.phantom  = !(id || id === 0);
+        var me = this;
+        me.set(me.idProperty, id);
+        me.phantom  = !me.hasId(id);
+    },
+    
+    /**
+     * @private
+     * Checks if this model has an id assigned
+     * @param {Object} [id] The id, if not passed it will call getId()
+     * @return {Boolean} True if the model has an id
+     */
+    hasId: function(id) {
+        if (arguments.length === 0) {
+            id = this.getId();
+        }
+        return (id || id === 0);
     },
 
     /**

@@ -75,17 +75,7 @@
  *         ...
  *     });
  *
- *     Ext.application({
- *         extend: 'MyApp.app.Application',
- *
- *         name: 'Blog',
- *         models: ['Post', 'Comment'],
- *         controllers: ['Posts', 'Comments'],
- *
- *         launch: function() {
- *             ...
- *         }
- *     });
+ *     Ext.application('MyApp.app.Application');
  *
  * For more information about writing Ext JS 4 applications, please see the [application architecture guide][mvc].
  *
@@ -95,15 +85,6 @@
  */
 Ext.define('Ext.app.Application', {
     extend: 'Ext.app.Controller',
-
-    requires: [
-        'Ext.ModelManager',
-        'Ext.data.Model',
-        'Ext.data.StoreManager',
-        'Ext.tip.QuickTipManager',
-        'Ext.ComponentManager',
-        'Ext.app.EventBus'
-    ],
 
     /**
      * @cfg {String} name
@@ -136,17 +117,17 @@ Ext.define('Ext.app.Application', {
      */
     appFolder: 'app',
     // NOTE - this config has to be processed by Ext.application
-    
+
     /**
      * @cfg {String} appProperty
      * The name of a property to be assigned to the main namespace to gain a reference to
      * this application. Can be set to an empty value to prevent the reference from
      * being created
-     * 
+     *
      *     Ext.application({
      *         name: 'MyApp',
      *         appProperty: 'myProp',
-     * 
+     *
      *         launch: function() {
      *             console.log(MyApp.myProp === this);
      *         }
@@ -155,11 +136,44 @@ Ext.define('Ext.app.Application', {
     appProperty: 'app',
 
     /**
-     * @cfg {Boolean} autoCreateViewport
-     * True to automatically load and instantiate AppName.view.Viewport before firing the launch function.
+     * @cfg {String[]} [namespaces]
+     *
+     * The list of namespace prefixes used in the application to resolve dependencies
+     * like Views and Stores:
+     *
+     *      Ext.application({
+     *          name: 'MyApp',
+     *
+     *          namespaces: ['Common.code'],
+     *
+     *          controllers: [ 'Common.code.controller.Foo', 'Bar' ]
+     *      });
+     *
+     *      Ext.define('Common.code.controller.Foo', {
+     *          extend: 'Ext.app.Controller',
+     *
+     *          models: ['Foo'],    // Loads Common.code.model.Foo
+     *          views:  ['Bar']     // Loads Common.code.view.Bar
+     *      });
+     *
+     *      Ext.define('MyApp.controller.Bar', {
+     *          extend: 'Ext.app.Controller',
+     *
+     *          models: ['Foo'],    // Loads MyApp.model.Foo
+     *          views:  ['Bar']     // Loads MyApp.view.Bar
+     *      });
+     *
+     * You don't need to include main namespace (MyApp), it will be added to the list
+     * automatically.
+     */
+    namespaces: [],
+
+    /**
+     * @cfg {Boolean} [autoCreateViewport=false]
+     * True to automatically load and instantiate AppName.view.Viewport before firing the launch
+     * function.
      */
     autoCreateViewport: false,
-    // NOTE - the "requires" needed for this config has to be processed by Ext.application
 
     /**
      * @cfg {Object} paths
@@ -167,16 +181,31 @@ Ext.define('Ext.app.Application', {
      * See {@link Ext.Loader#paths} config for more details.
      */
     paths: null,
-    // NOTE - this config has to be processed by Ext.application
-
+    
     onClassExtended: function(cls, data, hooks) {
         var Controller = Ext.app.Controller,
             proto = cls.prototype,
             namespace = data.name,
             requires = [],
-            onBeforeClassCreated;
+            onBeforeClassCreated, paths, ns;
+            
+        data.$namespace = data.name;
+        Ext.app.addNamespaces(data.name);
 
-        Controller.processDependencies(proto, requires, namespace, 'controller', data.controllers);
+        if (data.namespaces) {
+            Ext.app.addNamespaces(data.namespaces);
+        }
+
+        Ext.Loader.setPath(data.name, data.appFolder || 'app');
+        paths = data.paths;
+
+        if (paths) {
+            for (ns in paths) {
+                if (paths.hasOwnProperty(ns)) {
+                    Ext.Loader.setPath(ns, paths[ns]);
+                }
+            }
+        }
 
         if (data.autoCreateViewport) {
             Controller.processDependencies(proto, requires, namespace, 'view', ['Viewport']);
@@ -188,7 +217,7 @@ Ext.define('Ext.app.Application', {
 
             hooks.onBeforeCreated = function(cls, data) {
                 var args = Ext.Array.clone(arguments);
-
+                
                 Ext.require(requires, function () {
                     return onBeforeClassCreated.apply(this, args);
                 });
@@ -201,9 +230,7 @@ Ext.define('Ext.app.Application', {
      * @param {Object} [config] Config object.
      */
     constructor: function(config) {
-        var me = this,
-            appProperty = me.appProperty,
-            controllers, ln, i, controller, ns;
+        var me = this;
 
         //<debug>
         if (Ext.isEmpty(me.name)) {
@@ -213,16 +240,25 @@ Ext.define('Ext.app.Application', {
 
         me.callParent(arguments);
 
-        me.eventbus = new Ext.app.EventBus();
+        me.doInit(me);
 
-        controllers = Ext.Array.from(me.controllers);
-        me.controllers = new Ext.util.MixedCollection();
+        me.initNamespace();
+        me.initControllers();
+        me.onBeforeLaunch();
+    },
+
+    initNamespace: function() {
+        var me = this,
+            appProperty = me.appProperty,
+            ns;
 
         ns = Ext.namespace(me.name);
+
         if (ns) {
             ns.getApplication = function() {
                 return me;
             };
+
             if (appProperty) {
                 if (!ns[appProperty]) {
                     ns[appProperty] = me;
@@ -230,26 +266,24 @@ Ext.define('Ext.app.Application', {
                 //<debug>
                 else if (ns[appProperty] !== me) {
                     Ext.log.warn('An existing reference is being overwritten for ' + name + '.' + appProperty +
-                        '. See the appProperty config.' 
+                        '. See the appProperty config.'
                     );
                 }
                 //</debug>
-                
             }
         }
-
-        me.doInit(me);
-        ln = controllers && controllers.length;
-        for (i = 0; i < ln; i++) {
-            controller = me.getController(controllers[i]);
-            controller.doInit(me);
-        }
-
-        me.onBeforeLaunch();
     },
 
-    control: function(selectors, listeners, controller) {
-        this.eventbus.control(selectors, listeners, controller);
+    initControllers: function() {
+        var me = this,
+            controllers;
+
+        controllers    = Ext.Array.from(me.controllers);
+        me.controllers = new Ext.util.MixedCollection();
+
+        for (var i = 0, ln = controllers.length; i < ln; i++) {
+            me.getController(controllers[i]);
+        }
     },
 
     /**
@@ -271,42 +305,59 @@ Ext.define('Ext.app.Application', {
             controllers, c, cLen, controller;
 
         if (me.enableQuickTips) {
-            Ext.tip.QuickTipManager.init();
+            me.initQuickTips();
         }
 
         if (me.autoCreateViewport) {
-            me.getView('Viewport').create();
+            me.initViewport();
         }
 
-        me.launch.call(this.scope || this);
+        me.launch.call(me.scope || me);
         me.launched = true;
-        me.fireEvent('launch', this);
+        me.fireEvent('launch', me);
 
         controllers = me.controllers.items;
         cLen        = controllers.length;
 
         for (c = 0; c < cLen; c++) {
             controller = controllers[c];
-            controller.onLaunch(this);
+            controller.onLaunch(me);
         }
     },
-    
+
     getModuleClassName: function(name, kind) {
-        return Ext.app.Controller.getFullName(name, this.name + '.' + kind + '.').absoluteName; 
+        return Ext.app.Controller.getFullName(name, kind, this.name).absoluteName;
+    },
+
+    initQuickTips: function() {
+        Ext.tip.QuickTipManager.init();
+    },
+
+    initViewport: function() {
+        var viewport = this.getView('Viewport');
+
+        if (viewport) {
+            viewport.create();
+        }
     },
 
     getController: function(name) {
-        var me = this,
+        var me          = this,
             controllers = me.controllers,
-            controller = controllers.get(name);
+            className, controller;
+
+        controller = controllers.get(name);
 
         if (!controller) {
-            controller = Ext.create(me.getModuleClassName(name, 'controller'), {
+            className  = me.getModuleClassName(name, 'controller');
+
+            controller = Ext.create(className, {
                 application: me,
-                id: name
+                id:          name
             });
 
             controllers.add(controller);
+
             if (me._initialized) {
                 controller.doInit(me);
             }
@@ -315,32 +366,7 @@ Ext.define('Ext.app.Application', {
         return controller;
     },
 
-    getStore: function(name) {
-        var storeId = (name.indexOf("@") == -1) ? name : name.split("@")[0],
-            store = Ext.StoreManager.get(storeId);
-
-        if (!store) {
-            store = Ext.create(this.getModuleClassName(name, 'store'), {
-                storeId: storeId
-            });
-        }
-
-        return store;
-    },
-
-    getModel: function(model) {
-        model = this.getModuleClassName(model, 'model');
-
-        return Ext.ModelManager.getModel(model);
-    },
-
-    getView: function(view) {
-        view = this.getModuleClassName(view, 'view');
-
-        return Ext.ClassManager.get(view);
-    },
-
-    getApplication: function(){
+    getApplication: function() {
         return this;
     }
 });

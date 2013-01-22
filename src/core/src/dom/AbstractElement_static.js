@@ -7,7 +7,8 @@ Ext.define('Ext.dom.AbstractElement_static', {
     inheritableStatics: {
         unitRe: /\d+(px|em|%|en|ex|pt|in|cm|mm|pc)$/i,
         camelRe: /(-[a-z])/gi,
-        cssRe: /([a-z0-9\-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*);?/gi,
+        msRe: /^-ms-/,
+        cssRe: /([a-z0-9\-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*)?;?/gi,
         opacityRe: /alpha\(opacity=(.*)\)/i,
         propertyCache: {},
         defaultUnit : "px",
@@ -76,9 +77,17 @@ Ext.define('Ext.dom.AbstractElement_static', {
         * @return {Object} An object with margin sizes for top, right, bottom and left
         */
         parseBox: function(box) {
-            if (typeof box != 'string') {
-                box = box.toString();
-            }
+            box = box || 0;
+
+            if (typeof box === 'number') {
+                return {
+                    top   : box,
+                    right : box,
+                    bottom: box,
+                    left  : box
+                };
+             }
+
             var parts  = box.split(' '),
                 ln = parts.length;
 
@@ -102,21 +111,22 @@ Ext.define('Ext.dom.AbstractElement_static', {
         },
 
         /**
-        * Parses a number or string representing margin sizes into an object. Supports CSS-style margin declarations
-        * (e.g. 10, "10", "10 10", "10 10 10" and "10 10 10 10" are all valid options and would return the same result)
-        * @static
-        * @param {Number/String} box The encoded margins
-        * @param {String} units The type of units to add
-        * @return {String} An string with unitized (px if units is not specified) metrics for top, right, bottom and left
-        */
+         * Parses a number or string representing margin sizes into an object. Supports CSS-style margin declarations
+         * (e.g. 10, "10", "10 10", "10 10 10" and "10 10 10 10" are all valid options and would return the same result)
+         * @static
+         * @param {Number/String/Object} box The encoded margins, or an object with top, right,
+         * bottom, and left properties
+         * @param {String} units The type of units to add
+         * @return {String} An string with unitized (px if units is not specified) metrics for top, right, bottom and left
+         */
         unitizeBox: function(box, units) {
             var a = this.addUnits,
-                b = this.parseBox(box);
+                b = Ext.isObject(box) ? box : this.parseBox(box);
 
             return a(b.top, units) + ' ' +
-                a(b.right, units) + ' ' +
-                a(b.bottom, units) + ' ' +
-                a(b.left, units);
+                   a(b.right, units) + ' ' +
+                   a(b.bottom, units) + ' ' +
+                   a(b.left, units);
 
         },
 
@@ -141,7 +151,8 @@ Ext.define('Ext.dom.AbstractElement_static', {
             if (prop == 'float') {
                 prop = Ext.supports.Float ? 'cssFloat' : 'styleFloat';
             }
-            return this.propertyCache[prop] || (this.propertyCache[prop] = prop.replace(this.camelRe, this.camelReplaceFn));
+            // For '-ms-foo' we need msFoo
+            return this.propertyCache[prop] || (this.propertyCache[prop] = prop.replace(this.msRe, 'ms-').replace(this.camelRe, this.camelReplaceFn));
         },
 
         /**
@@ -242,7 +253,7 @@ Ext.define('Ext.dom.AbstractElement_static', {
                 // http://blog.stevenlevithan.com/archives/fixing-javascript-regexp
                 cssRe.lastIndex = 0;
                 while ((matches = cssRe.exec(styles))) {
-                    out[matches[1]] = matches[2];
+                    out[matches[1]] = matches[2]||'';
                 }
             }
             return out;
@@ -251,17 +262,8 @@ Ext.define('Ext.dom.AbstractElement_static', {
 },
 function () {
     var doc = document,
-        AbstractElement = this,
         activeElement = null,
-        isCSS1 = doc.compatMode == "CSS1Compat",
-        flyInstance,
-        fly = function (el) {
-            if (!flyInstance) {
-                flyInstance = new AbstractElement.Fly();
-            }
-            flyInstance.attach(el);
-            return flyInstance;
-        };
+        isCSS1 = doc.compatMode == "CSS1Compat";
 
     // If the browser does not support document.activeElement we need some assistance.
     // This covers old Safari 3.2 (4.0 added activeElement along with just about all
@@ -285,7 +287,7 @@ function () {
         };
     }
 
-    AbstractElement.addInheritableStatics({
+    this.addInheritableStatics({
         /**
          * Returns the active element in the DOM. If the browser supports activeElement
          * on the document, this is returned. If not, the focus is tracked and the active
@@ -372,78 +374,14 @@ function () {
         },
 
         getViewportHeight: function(){
-            return Ext.isIE ?
+            return Ext.isIE9m ?
                    (Ext.isStrict ? doc.documentElement.clientHeight : doc.body.clientHeight) :
                    self.innerHeight;
         },
 
         getViewportWidth: function() {
             return (!Ext.isStrict && !Ext.isOpera) ? doc.body.clientWidth :
-                   Ext.isIE ? doc.documentElement.clientWidth : self.innerWidth;
-        },
-
-        getY: function(el) {
-            return Ext.dom.Element.getXY(el)[1];
-        },
-
-        getX: function(el) {
-            return Ext.dom.Element.getXY(el)[0];
-        },
-
-        getXY: function(el) {
-            var bd = doc.body,
-                docEl = doc.documentElement,
-                leftBorder = 0,
-                topBorder = 0,
-                ret = [0,0],
-                round = Math.round,
-                box,
-                scroll;
-
-            el = Ext.getDom(el);
-
-            if(el != doc && el != bd){
-                // IE has the potential to throw when getBoundingClientRect called
-                // on element not attached to dom
-                if (Ext.isIE) {
-                    try {
-                        box = el.getBoundingClientRect();
-                        // In some versions of IE, the documentElement (HTML element) will have a 2px border that gets included, so subtract it off
-                        topBorder = docEl.clientTop || bd.clientTop;
-                        leftBorder = docEl.clientLeft || bd.clientLeft;
-                    } catch (ex) {
-                        box = { left: 0, top: 0 };
-                    }
-                } else {
-                    box = el.getBoundingClientRect();
-                }
-
-                scroll = fly(document).getScroll();
-                ret = [round(box.left + scroll.left - leftBorder), round(box.top + scroll.top - topBorder)];
-            }
-            return ret;
-        },
-
-        setXY: function(el, xy) {
-            (el = Ext.fly(el, '_setXY')).position();
-
-            var pts = el.translatePoints(xy),
-                style = el.dom.style,
-                pos;
-
-            for (pos in pts) {
-                if (!isNaN(pts[pos])) {
-                    style[pos] = pts[pos] + "px";
-                }
-            }
-        },
-
-        setX: function(el, x) {
-            Ext.dom.Element.setXY(el, [x, false]);
-        },
-
-        setY: function(el, y) {
-            Ext.dom.Element.setXY(el, [false, y]);
+                   Ext.isIE9m ? doc.documentElement.clientWidth : self.innerWidth;
         },
 
         /**

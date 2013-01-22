@@ -30,9 +30,6 @@
  *         width: 550,
  *         renderTo: Ext.getBody(),
  *         layout: 'column', // arrange fieldsets side by side
- *         defaults: {
- *             bodyPadding: 4
- *         },
  *         items: [{
  *             // Fieldset in Column 1 - collapsible via toggle button
  *             xtype:'fieldset',
@@ -69,6 +66,9 @@
  */
 Ext.define('Ext.form.FieldSet', {
     extend: 'Ext.container.Container',
+    mixins: {
+        fieldAncestor: 'Ext.form.FieldAncestor'
+    },
     alias: 'widget.fieldset',
     uses: ['Ext.form.field.Checkbox', 'Ext.panel.Tool', 'Ext.layout.container.Anchor', 'Ext.layout.component.FieldSet'],
 
@@ -142,7 +142,7 @@ Ext.define('Ext.form.FieldSet', {
 
     renderTpl: [
         '{%this.renderLegend(out,values);%}',
-        '<div id="{id}-body" class="{baseCls}-body">',
+        '<div id="{id}-body" class="{baseCls}-body {bodyTargetCls}"<tpl if="bodyStyle"> style="{bodyStyle}"</tpl>>',
             '{%this.renderContainer(out,values);%}',
         '</div>'
     ],
@@ -169,6 +169,18 @@ Ext.define('Ext.form.FieldSet', {
             baseCls = me.baseCls;
 
         me.callParent();
+
+        // Fieldsets cannot support managePadding because the managePadding config causes
+        // the paddding to be added to the innerCt instead of the fieldset element.  The
+        // padding must be on the fieldset element because the horizontal position of the
+        // legend is determined by the fieldset element's padding
+        // 
+        // As a consequence of the inability to support managePadding, manageOverflow
+        // cannot be supported either because the correct overflow cannot be calculated
+        // without managePadding to adjust for cross-browser differences in the way
+        // padding is handled on overflowing elements.
+        // See Ext.layout.container.Auto for more info.
+        me.layout.managePadding = me.layout.manageOverflow = false;
 
         me.addEvents(
 
@@ -214,15 +226,54 @@ Ext.define('Ext.form.FieldSet', {
         }
     },
 
+    initPadding: function(targetEl) {
+        var me = this,
+            Element = Ext.Element,
+            body = me.getProtoBody(),
+            padding = me.padding,
+            bodyPadding;
+
+        if (padding !== undefined) {
+            if (Ext.isIEQuirks || Ext.isIE8m) {
+                // IE8 and below display fieldset top padding outside the border
+                // so we transfer the top padding to the body element.
+                padding = Element.parseBox(padding);
+                bodyPadding = Element.parseBox(0);
+                bodyPadding.top = padding.top;
+                padding.top = 0;
+                body.setStyle('padding', Element.unitizeBox(bodyPadding));
+            }
+
+            targetEl.setStyle('padding', Element.unitizeBox(padding));
+        }
+    },
+
+    getProtoBody: function () {
+        var me = this,
+            body = me.protoBody;
+
+        if (!body) {
+            me.protoBody = body = new Ext.util.ProtoElement({
+                styleProp: 'bodyStyle',
+                styleIsText: true
+            });
+        }
+
+        return body;
+    },
+
     /**
      * Initialized the renderData to be used when rendering the renderTpl.
      * @return {Object} Object with keys and values that are going to be applied to the renderTpl
      * @private
      */
     initRenderData: function() {
-        var data = this.callParent();
+        var me = this,
+            data = me.callParent();
 
-        data.baseCls = this.baseCls;
+        data.bodyTargetCls = me.bodyTargetCls;
+        me.protoBody.writeTo(data);
+        delete me.protoBody;
 
         return data;
     },
@@ -256,6 +307,7 @@ Ext.define('Ext.form.FieldSet', {
                 autoEl: 'legend',
                 items: items,
                 ownerCt: me,
+                shrinkWrap: true,
                 ownerLayout: me.componentLayout
             };
 
@@ -417,11 +469,15 @@ Ext.define('Ext.form.FieldSet', {
         return me;
     },
 
+    applyTargetCls: function(targetCls) {
+        this.bodyTargetCls = targetCls;
+    },
+
     getTargetEl : function() {
         return this.body || this.frameBody || this.el;
     },
 
-    getContentTarget: function() {
+    getDefaultContentTarget: function() {
         return this.body;
     },
 

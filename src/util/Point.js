@@ -75,6 +75,19 @@ Ext.define('Ext.util.Point', {
     },
 
     /**
+     * Determins whether this Point contained by the passed Region, Component or element.
+     * @param {Ext.util.Region/Ext.Component/Ext.dom.Element/HtmlElement} region The rectangle to checkthat this Point is within.
+     * @param {Object/Number} threshold Can be either an object with x and y properties or a number
+     * @return {Boolean}
+     */
+    isContainedBy: function(region) {
+        if (!(region instanceof Ext.util.Region)) {
+            region = Ext.get(region.el || region).getRegion();
+        }
+        return region.contains(this);
+    },
+
+    /**
      * Compare this point with another point when the x and y values of both points are rounded. E.g:
      * [100.3,199.8] will equals to [100, 200]
      * @param {Ext.util.Point/Object} p The point to compare with, either an instance

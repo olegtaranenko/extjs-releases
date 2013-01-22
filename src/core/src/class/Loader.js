@@ -275,9 +275,17 @@ Ext.Loader = new function() {
         setConfig: function(name, value) {
             if (Ext.isObject(name) && arguments.length === 1) {
                 Ext.merge(Loader.config, name);
+
+                if ('paths' in name) {
+                    Ext.app.collectNamespaces(name.paths);
+                }
             }
             else {
                 Loader.config[name] = (Ext.isObject(value)) ? Ext.merge(Loader.config[name], value) : value;
+
+                if (name === 'paths') {
+                    Ext.app.collectNamespaces(value);
+                }
             }
 
             return Loader;
@@ -309,7 +317,9 @@ Ext.Loader = new function() {
          */
         setPath: flexSetter(function(name, path) {
             Loader.config.paths[name] = path;
+            Ext.app.namespaces[name] = true;
             setPathCount++;
+
             return Loader;
         }),
 
@@ -719,7 +729,7 @@ Ext.Loader = new function() {
                     for (prop in script) {
                         try {
                             if (prop != 'src') {
-                                // If we set the src property to null IE 
+                                // If we set the src property to null IE
                                 // will try and request a script at './null'
                                 script[prop] = null;
                             }

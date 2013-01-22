@@ -120,10 +120,14 @@ Ext.define('Ext.form.FieldContainer', {
 
     alias: 'widget.fieldcontainer',
 
-<span id='Ext-form-FieldContainer-property-componentLayout'>    componentLayout: 'fieldcontainer',
-</span>    
-<span id='Ext-form-FieldContainer-property-componentCls'>    componentCls: Ext.baseCSSPrefix + 'form-fieldcontainer',
+<span id='Ext-form-FieldContainer-cfg-componentLayout'>    componentLayout: 'fieldcontainer',
 </span>
+<span id='Ext-form-FieldContainer-cfg-componentCls'>    componentCls: Ext.baseCSSPrefix + 'form-fieldcontainer',
+</span>
+<span id='Ext-form-FieldContainer-cfg-autoScroll'>    /**
+</span>     * @cfg autoScroll @hide
+     */
+
 <span id='Ext-form-FieldContainer-cfg-combineLabels'>    /**
 </span>     * @cfg {Boolean} combineLabels
      * If set to true, and there is no defined {@link #fieldLabel}, the field container will automatically
@@ -170,16 +174,11 @@ Ext.define('Ext.form.FieldContainer', {
         me.callParent();
     },
 
-<span id='Ext-form-FieldContainer-method-beforeRender'>    beforeRender: function(){
-</span>        this.callParent(arguments);
-        this.beforeLabelableRender();
-    },
-
-<span id='Ext-form-FieldContainer-method-onLabelableAdded'>    /**
+<span id='Ext-form-FieldContainer-method-onAdd'>    /**
 </span>     * @protected Called when a {@link Ext.form.Labelable} instance is added to the container's subtree.
      * @param {Ext.form.Labelable} labelable The instance that was added
      */
-    onLabelableAdded: function(labelable) {
+    onAdd: function(labelable) {
         var me = this;
         
         // Fix for https://sencha.jira.com/browse/EXTJSIV-6424
@@ -188,17 +187,17 @@ Ext.define('Ext.form.FieldContainer', {
         if (Ext.isGecko &amp;&amp; me.layout.type === 'absolute' &amp;&amp; !me.hideLabel &amp;&amp; me.labelAlign !== 'top') {
             labelable.x += (me.labelWidth + me.labelPad);
         }
-        me.mixins.fieldAncestor.onLabelableAdded.call(me, labelable);
+        me.callParent(arguments);
         me.updateLabel();
     },
 
-<span id='Ext-form-FieldContainer-method-onLabelableRemoved'>    /**
+<span id='Ext-form-FieldContainer-method-onRemove'>    /**
 </span>     * @protected Called when a {@link Ext.form.Labelable} instance is removed from the container's subtree.
      * @param {Ext.form.Labelable} labelable The instance that was removed
      */
-    onLabelableRemoved: function(labelable) {
+    onRemove: function(labelable) {
         var me = this;
-        me.mixins.fieldAncestor.onLabelableRemoved.call(me, labelable);
+        me.callParent(arguments);
         me.updateLabel();
     },
 
@@ -322,6 +321,12 @@ Ext.define('Ext.form.FieldContainer', {
 
 <span id='Ext-form-FieldContainer-method-getTargetEl'>    getTargetEl: function() {
 </span>        return this.bodyEl || this.callParent();
+    },
+
+<span id='Ext-form-FieldContainer-method-applyTargetCls'>    applyTargetCls: function(targetCls) {
+</span>        var fieldBodyCls = this.fieldBodyCls;
+
+        this.fieldBodyCls = fieldBodyCls ? fieldBodyCls + ' ' + targetCls : targetCls;
     }
 });
 </pre>

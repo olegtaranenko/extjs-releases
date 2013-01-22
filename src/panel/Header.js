@@ -8,7 +8,7 @@ Ext.define('Ext.panel.Header', {
 
     /**
      * @property {Boolean} isHeader
-     * `true` in this class to identify an objact as an instantiated Header, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Header, or subclass thereof.
      */
     isHeader       : true,
     defaultType    : 'tool',
@@ -17,26 +17,32 @@ Ext.define('Ext.panel.Header', {
     componentLayout: 'body',
 
     /**
-     * @cfg {String} [titleAlign='left']
-     * May be `"left"`, `"right"` or `"center"`.
-     *
-     * The alignment of the title text within the available space between the icon and the tools.
+     * @cfg {String} [titleAlign]
+     * The alignment of the title text within the available space between the
+     * icon and the tools. 
+     * 
+     * May be `"left"`, `"right"` or `"center"`. Defaults to the browser's natural
+     * behavior depending on the css direction property - `"left"` when direction
+     * is ltr  and `"right"` when direction is rtl
+     * (see {@link Ext.AbstractComponent#rtl}).
      */
-    titleAlign: 'left',
 
     childEls: [
         'body'
     ],
 
     renderTpl: [
-        '<div id="{id}-body" class="{baseCls}-body {bodyCls}',
+        '<div id="{id}-body" class="{baseCls}-body {bodyCls} {bodyTargetCls}',
         '<tpl for="uiCls"> {parent.baseCls}-body-{parent.ui}-{.}</tpl>"',
         '<tpl if="bodyStyle"> style="{bodyStyle}"</tpl>>',
             '{%this.renderContainer(out,values)%}',
         '</div>'
     ],
 
-    headingTpl: '<span id="{id}-textEl" class="{cls}-text {cls}-text-{ui}">{title}</span>',
+    headingTpl: [
+        // unselectable="on" is required for Opera, other browsers inherit unselectability from the header
+        '<span id="{id}-textEl" class="{cls}-text {cls}-text-{ui}" unselectable="on">{title}</span>'
+    ],
 
     shrinkWrap: 3,
 
@@ -81,13 +87,11 @@ Ext.define('Ext.panel.Header', {
         me.indicateDragCls = me.baseCls + '-draggable';
         me.title = me.title || '&#160;';
         me.tools = me.tools || [];
-        me.items = me.items || [];
+        me.items = me.items ? Ext.Array.slice(me.items) : [];
         me.orientation = me.orientation || 'horizontal';
         me.dock = (me.dock) ? me.dock : (me.orientation == 'horizontal') ? 'top' : 'left';
 
-        //add the dock as a ui
-        //this is so we support top/right/left/bottom headers
-        me.addClsWithUI([me.orientation, me.dock]);
+        me.addClsWithUI([ me.orientation, me.getDockName() ]);
 
         if (me.indicateDrag) {
             me.addCls(me.indicateDragCls);
@@ -106,7 +110,7 @@ Ext.define('Ext.panel.Header', {
             noWrap    : true,
             flex      : 1,
             id        : me.id + '_hd',
-            style     : 'text-align:' + me.titleAlign,
+            style     : me.titleAlign ? ('text-align:' + me.titleAlign) : '',
             cls       : me.baseCls + '-text-container',
             renderTpl : me.getTpl('headingTpl'),
             renderData: {
@@ -115,6 +119,10 @@ Ext.define('Ext.panel.Header', {
                 ui   : me.ui
             },
             childEls  : ['textEl'],
+            autoEl: {
+                // Required for Opera
+                unselectable: 'on'
+            },
             listeners: {
                 render: me.onTitleRender,
                 scope: me
@@ -130,9 +138,10 @@ Ext.define('Ext.panel.Header', {
         me.items.push(me.titleCmp);
 
         // Add Tools
-        me.items = me.items.concat(me.tools);
-        // clear the tools so we can have only the instances
-        me.tools = [];
+        Ext.Array.push(me.items, me.tools);
+        // Clear the tools so we can have only the instances. Intentional mutation of passed in array
+        // Owning code in Panel uses this array as its pubic tools property.
+        me.tools.length = 0;
         me.callParent();
         
         me.on({
@@ -161,30 +170,30 @@ Ext.define('Ext.panel.Header', {
         me.iconCmp = new Ext.Img(cfg);
     },
 
+    beforeRender: function() {
+        this.protoEl.unselectable();
+        this.callParent();
+    },
+
     afterLayout: function() {
         var me = this,
-            titleEl;
+            frameBR, frameTR, frameTL, xPos;
 
         if (me.orientation === 'vertical') {
-            if (!Ext.isIE9m) {
-                // In IE9 and below we use a BasicImage filter to rotate the title
-                // element 90 degrees.  The result is that what was the bottom left
-                // corner is positioned exactly where the top left corner was
-                // originally.  Since this is the desired result, no additional
-                // positioning is needed in IE9 and below.  In modern browsers,
-                // however, we use transform: rotate(90deg) to rotate the element.
-                // CSS3 also provides a way to specify the position the rotated element
-                // by changing the axis on which it is rotated using the transform-origin
-                // property, but the required transform origin varies based on the
-                // elements size, and would require some complex math to calculate.
-                // To achieve the desired rotated position in modern browsers we use
-                // a transform-origin of "0, 0" which means the top left corner of
-                // the element is the rotation axis. After rotating 90 degrees we
-                // simply move the element to the right by the same number of pixels
-                // as its width.
-                titleEl = me.titleCmp.el;
-                titleEl.setStyle('left', titleEl.getWidth() + 'px');
-            } else if (Ext.isIE7 && Ext.isStrict && me.frame) {
+            me.adjustTitlePosition();
+            frameTR = me.frameTR;
+            if (frameTR) {
+                // The corners sprite currently requires knowledge of the vertical header's
+                // width to correctly set the background position of the bottom right corner.
+                // TODO: rearrange the sprite so that this can be done with pure css.
+                frameBR = me.frameBR;
+                frameTL = me.frameTL;
+                xPos = (me.getWidth() - frameTR.getPadding('r') -
+                    ((frameTL) ? frameTL.getPadding('l') : me.el.getBorderWidth('l'))) + 'px';
+                frameBR.setStyle('background-position-x', xPos);
+                frameTR.setStyle('background-position-x', xPos);
+            }
+            if (Ext.isIE7 && Ext.isStrict && me.frame) {
                 // EXTJSIV-7283: framed header background is initally off in IE7 strict
                 // unless we repaint
                 me.el.repaint();
@@ -192,15 +201,33 @@ Ext.define('Ext.panel.Header', {
         }
     },
 
+    adjustTitlePosition: function() {
+        var titleEl = this.titleCmp.el;
+
+        if (!Ext.isIE9m) {
+            // In IE9 and below we use a BasicImage filter to rotate the title
+            // element 90 degrees.  The result is that what was the bottom left
+            // corner is positioned exactly where the top left corner was
+            // originally.  Since this is the desired result, no additional
+            // positioning is needed in IE9 and below.  In modern browsers,
+            // however, we use transform: rotate(90deg) to rotate the element.
+            // CSS3 also provides a way to specify the position the rotated element
+            // by changing the axis on which it is rotated using the transform-origin
+            // property, but the required transform origin varies based on the
+            // elements size, and would require some complex math to calculate.
+            // To achieve the desired rotated position in modern browsers we use
+            // a transform-origin of "0, 0" which means the top left corner of
+            // the element is the rotation axis. After rotating 90 degrees we
+            // simply move the element to the right by the same number of pixels
+            // as its width.
+            titleEl.setStyle('left', titleEl.getWidth() + 'px');
+        }
+    },
+
     onTitleRender: function() {
         if (this.orientation === 'vertical') {
             this.titleCmp.el.setVertical();
         }
-    },
-
-    afterRender: function() {
-        this.el.unselectable();
-        this.callParent();
     },
 
     // inherit docs
@@ -332,6 +359,10 @@ Ext.define('Ext.panel.Header', {
         return this.body || this.frameBody || this.el;
     },
 
+    applyTargetCls: function(targetCls) {
+        this.bodyTargetCls = targetCls;
+    },
+
     /**
      * Sets the title of the header.
      * @param {String} title The title to be set
@@ -461,15 +492,13 @@ Ext.define('Ext.panel.Header', {
     /**
      * @protected
      * Set up the `tools.<tool type>` link in the owning Panel.
-     * Bind the tool to its owning Panel.
      * @param component
      * @param index
      */
     onAdd: function(component, index) {
         var tools = this.tools;
         this.callParent(arguments);
-        if (component instanceof Ext.panel.Tool) {
-            component.bindTo(this.ownerCt);
+        if (component.isTool) {
             tools.push(component);
             tools[component.type] = component;
         }
@@ -482,7 +511,12 @@ Ext.define('Ext.panel.Header', {
      */
     initRenderData: function() {
         return Ext.applyIf(this.callParent(), {
-            bodyCls: this.bodyCls
+            bodyCls: this.bodyCls,
+            bodyTargetCls: this.bodyTargetCls
         });
+    },
+
+    getDockName: function() {
+        return this.dock;
     }
 });

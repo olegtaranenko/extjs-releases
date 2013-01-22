@@ -352,6 +352,7 @@ Ext.define('Ext.toolbar.Toolbar', {
 
     // @private
     lookupComponent: function(c) {
+        var args = arguments;
         if (typeof c == 'string') {
             var T = Ext.toolbar.Toolbar,
                 shortcut = T.shortcutsHV[this.vertical ? 1 : 0][c] || T.shortcuts[c];
@@ -370,9 +371,12 @@ Ext.define('Ext.toolbar.Toolbar', {
             }
 
             this.applyDefaults(c);
+            
+            // See: EXTJSIV-7578
+            args = [c];
         }
 
-        return this.callParent(arguments);
+        return this.callParent(args);
     },
 
     // @private

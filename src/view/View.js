@@ -52,7 +52,7 @@ Ext.define('Ext.view.View', {
     alternateClassName: 'Ext.DataView',
     alias: 'widget.dataview',
 
-    deferHighlight: (Ext.isIE6 || Ext.isIE7) ? 100 : 0,
+    deferHighlight: Ext.isIE7m ? 100 : 0,
 
     inputTagRe: /^textarea$|^input$/i,
 
@@ -420,9 +420,16 @@ Ext.define('Ext.view.View', {
             mouseup: me.handleEvent,
             dblclick: me.handleEvent,
             contextmenu: me.handleEvent,
-            mouseover: me.handleEvent,
-            mouseout: me.handleEvent,
-            keydown: me.handleEvent
+            keydown: me.handleEvent,
+            // Buffer expensive events so that fast scrolling doesn't trigger them.
+            mouseover: {
+                fn: me.handleEvent,
+                buffer: 50
+            },
+            mouseout: {
+                fn: me.handleEvent,
+                buffer: 50
+            }
         });
     },
 
@@ -489,26 +496,27 @@ Ext.define('Ext.view.View', {
             if (type == 'keydown') {
                 record = me.getSelectionModel().getLastSelected();
                 if (record) {
-                    item = me.getNode(record);
+                    item = me.getNode(record, true);
                 }
             }
         }
 
         if (item) {
-            index = me.indexOf(item);
+            // Convert mouseover/mouseout to mouseenter and mouseleave if we changed items
+            newType = me.isNewItemEvent(item, e);
+            if (newType === false) {
+                return false;
+            }
+
             if (!record) {
                 record = me.getRecord(item);
             }
+            index = me.indexInStore ? me.indexInStore(record) : me.indexOf(item);
 
             // It is possible for an event to arrive for which there is no record... this
             // can happen with dblclick where the clicks are on removal actions (think a
             // grid w/"delete row" action column)
             if (!record || me.processItemEvent(record, item, index, e) === false) {
-                return false;
-            }
-
-            newType = me.isNewItemEvent(item, e);
-            if (newType === false) {
                 return false;
             }
 
@@ -548,7 +556,7 @@ Ext.define('Ext.view.View', {
                 if (item === overItem) {
                     return false;
                 }
-                me.mouseOverItem = item;
+                me.mouseOverItem = me.getNode(item, true);
                 return 'mouseenter';
 
             case 'mouseout':
@@ -680,7 +688,7 @@ Ext.define('Ext.view.View', {
      */
     focusNode: function(rec){
         var me          = this,
-            node        = me.getNode(rec),
+            node        = me.getNode(rec, true),
             el          = me.el,
             adjustmentY = 0,
             adjustmentX = 0,

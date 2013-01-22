@@ -124,7 +124,7 @@ Ext.define('Ext.menu.Menu', {
      */
     hidden: true,
 
-<span id='Ext-menu-Menu-property-hideMode'>    hideMode: 'visibility',
+<span id='Ext-menu-Menu-cfg-hideMode'>    hideMode: 'visibility',
 </span>
 <span id='Ext-menu-Menu-cfg-ignoreParentClicks'>    /**
 </span>     * @cfg {Boolean} [ignoreParentClicks=false]
@@ -215,7 +215,7 @@ Ext.define('Ext.menu.Menu', {
         me.cls = cls.join(' ');
 
         // Menu body classes
-        bodyCls.unshift(prefix + 'menu-body');
+        bodyCls.push(prefix + 'menu-body', Ext.dom.Element.unselectableCls);
         me.bodyCls = bodyCls.join(' ');
 
         // Internal vbox layout, with scrolling overflow
@@ -243,6 +243,10 @@ Ext.define('Ext.menu.Menu', {
         me.callParent(arguments);
     },
 
+<span id='Ext-menu-Menu-method-initHierarchyEvents'>    // Menus do not have owning containers on which they depend for visibility. They stand outside
+</span>    // any container hierarchy.
+    initHierarchyEvents: Ext.emptyFn,
+
 <span id='Ext-menu-Menu-method-beforeRender'>    beforeRender: function() {
 </span>        this.callParent(arguments);
 
@@ -254,21 +258,16 @@ Ext.define('Ext.menu.Menu', {
     },
 
 <span id='Ext-menu-Menu-method-onBoxReady'>    onBoxReady: function() {
-</span>        var me = this,
-            separatorSpec;
+</span>        var me = this;
 
         me.callParent(arguments);
 
         // TODO: Move this to a subTemplate When we support them in the future
         if (me.showSeparator) {
-            separatorSpec = {
+            me.iconSepEl = me.layout.getElementTarget().insertFirst({
                 cls: Ext.baseCSSPrefix + 'menu-icon-separator',
                 html: '&amp;#160;'
-            };
-            if ((!Ext.isStrict &amp;&amp; Ext.isIE) || Ext.isIE6) {
-                separatorSpec.style = 'height:' + me.el.getHeight() + 'px';
-            }
-            me.iconSepEl = me.layout.getElementTarget().insertFirst(separatorSpec);
+            });
         }
 
         me.mon(me.el, {
@@ -504,6 +503,7 @@ Ext.define('Ext.menu.Menu', {
 
 <span id='Ext-menu-Menu-method-showBy'>    showBy: function(cmp, pos, off) {
 </span>        var me = this;
+
         me.callParent(arguments);
         if (!me.hidden) {
             // show may have been vetoed
@@ -535,22 +535,13 @@ Ext.define('Ext.menu.Menu', {
         return me;
     },
 
-<span id='Ext-menu-Menu-method-afterComponentLayout'>    afterComponentLayout: function(width, height, oldWidth, oldHeight){
-</span>        var me = this;
-        me.callParent(arguments);
-        // fixup the separator
-        if (me.showSeparator){
-            me.iconSepEl.setHeight(me.componentLayout.lastComponentSize.contentHeight);
-        }
-    },
-
 <span id='Ext-menu-Menu-method-setVerticalPosition'>    // @private
 </span>    // adjust the vertical position of the menu if the height of the
     // menu is equal (or greater than) the viewport size
-    setVerticalPosition: function(){
+    setVerticalPosition: function() {
         var me = this,
             max,
-            y = me.el.getY(),
+            y = me.getY(),
             returnY = y,
             height = me.getHeight(),
             viewportHeight = Ext.Element.getViewportHeight().height,
@@ -570,7 +561,7 @@ Ext.define('Ext.menu.Menu', {
                 returnY = viewportHeight - height;
             }
         }
-        me.el.setY(returnY);
+        me.setY(returnY);
     }
 });</pre>
 </body>

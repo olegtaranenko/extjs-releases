@@ -392,7 +392,7 @@ Ext.define('Ext.chart.Chart', {
                 y: 0
             }
         });
-        me.maxGutter = [0, 0];
+        me.maxGutters = { left: 0, right: 0, bottom: 0, top: 0 };
         me.store = Ext.data.StoreManager.lookup(me.store);
         axes = me.axes;
         me.axes = new Ext.util.MixedCollection(false, function(a) { return a.position; });
@@ -454,14 +454,21 @@ Ext.define('Ext.chart.Chart', {
                 height: me.curHeight,
                 width: me.curWidth
             },
-            legend = me.legend;
+            legend = me.legend, 
+            series;
+            
         me.surface.setSize(chartBBox.width, chartBBox.height);
         // Instantiate Series and Axes
         for (i = 0; i < seriesLen; i++) {
             item = seriesItems[i];
             if (!item.initialized) {
-                me.initializeSeries(item, i, themeIndex);
+                series = me.initializeSeries(item, i, themeIndex);
+            } else {
+                series = item;
             }
+            // Allow the series to react to a redraw, for example, a pie series
+            // backed by a remote data set needs to build legend labels correctly
+            series.onRedraw();
             // For things like stacked bar charts, a single series can consume
             // multiple colors from the index, so we compensate for it here
             if (Ext.isArray(item.yField)) {
@@ -488,7 +495,7 @@ Ext.define('Ext.chart.Chart', {
         // Create legend if not already created
         if (legend !== false && legend.visible) {
             if (legend.update || !legend.created) {
-              legend.create();
+                legend.create();
             }
         }
 
@@ -500,8 +507,8 @@ Ext.define('Ext.chart.Chart', {
             legend.updatePosition();
         }
 
-        // Find the max gutter
-        me.getMaxGutter();
+        // Find the max gutters
+        me.getMaxGutters();
 
         // Draw axes and series
         me.resizing = !!resize;
@@ -530,7 +537,7 @@ Ext.define('Ext.chart.Chart', {
 
         if (me.surface.engine === 'Vml') {
             me.on('added', me.onAddedVml, me);
-            me.mon(Ext.container.Container.hierarchyEventSource, 'added', me.onContainerAddedVml, me);
+            me.mon(me.hierarchyEventSource, 'added', me.onContainerAddedVml, me);
         }
     },
 
@@ -748,7 +755,7 @@ Ext.define('Ext.chart.Chart', {
     
     setShowListeners: function(method){
         var me = this;
-        me[method](Ext.container.Container.hierarchyEventSource, {
+        me[method](me.hierarchyEventSource, {
             scope: me,
             single: true,
             show: me.forceRefresh,
@@ -984,22 +991,35 @@ Ext.define('Ext.chart.Chart', {
             series.initialize();
         }
         series.initialized = true;
+        return series;
     },
 
     // @private
-    getMaxGutter: function() {
+    getMaxGutters: function() {
         var me = this,
             seriesItems = me.series.items,
-            i, ln, series,
-            maxGutter = [0, 0],
-            gutter;
+            i, ln, series, gutters,
+            lowerH = 0, upperH = 0, lowerV = 0, upperV = 0;
+
         for (i = 0, ln = seriesItems.length; i < ln; i++) {
-            series = seriesItems[i];
-            gutter = series.getGutters && series.getGutters() || [0, 0];
-            maxGutter[0] = Math.max(maxGutter[0], gutter[0]);
-            maxGutter[1] = Math.max(maxGutter[1], gutter[1]);
+            gutters = seriesItems[i].getGutters();
+            if (gutters) {
+                if (gutters.verticalAxis) {
+                    lowerV = Math.max(lowerV, gutters.lower);
+                    upperV = Math.max(upperV, gutters.upper);
+                }
+                else {
+                    lowerH = Math.max(lowerH, gutters.lower);
+                    upperH = Math.max(upperH, gutters.upper);
+                }
+            }
         }
-        me.maxGutter = maxGutter;
+        me.maxGutters = {
+            left: lowerH,
+            right: upperH,
+            bottom: lowerV,
+            top: upperV
+        };
     },
 
     // @private draw axis.

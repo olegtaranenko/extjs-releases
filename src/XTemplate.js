@@ -1,3 +1,4 @@
+//@tag core
 /**
  * A template class that supports advanced functionality like:
  *
@@ -38,6 +39,8 @@
  * - If the value specified in for is an array, it will auto-fill, repeating the template block inside the tpl
  *   tag for each item in the array.
  * - If for="." is specified, the data object provided is examined.
+ * - If between="..." is specified, the provided value will be inserted between the items.
+ *   This is also supported in the "foreach" looping template.
  * - While processing an array, the special variable {#} will provide the current array index + 1 (starts at 1, not 0).
  *
  * Examples:
@@ -45,6 +48,7 @@
  *     <tpl for=".">...</tpl>       // loop through array at root node
  *     <tpl for="foo">...</tpl>     // loop through array at foo node
  *     <tpl for="foo.bar">...</tpl> // loop through array at foo.bar node
+ *     <tpl for="." between=",">...</tpl> // loop through array at root node and insert ',' between each item
  *
  * Using the sample data above:
  *
@@ -314,7 +318,7 @@ Ext.define('Ext.XTemplate', {
         }
 
         try {
-            me.fn.call(me, out, values, parent || me.emptyObj, 1, 1);
+            me.fn(out, values, parent || me.emptyObj, 1, 1);
         } catch (e) {
             //<debug>
             Ext.log('Error: ' + e.message);
@@ -339,17 +343,29 @@ Ext.define('Ext.XTemplate', {
          * shared by all classes that derive from that base. To further complicate matters,
          * these templates are seldom actual instances but are rather configurations. For
          * example:
-         * 
+         *
          *      Ext.define('MyApp.Class', {
+         *          extraCls: 'extra-class',
+         *
          *          someTpl: [
-         *              'tpl text here'
-         *          ]
+         *              '<div class="{%this.emitClass(out)%}"></div>',
+         *          {
+         *              // Member fn - outputs the owing class's extra CSS class
+         *              emitClass: function(out) {
+         *                  out.push(this.owner.extraCls);
+         *              }
+         *          }]
          *      });
-         * 
+         *
          * The goal being to share that template definition with all instances and even
          * instances of derived classes, until `someTpl` is overridden. This method will
          * "upgrade" these configurations to be real `XTemplate` instances *in place* (to
          * avoid creating one instance per object).
+         *
+         * The resulting XTemplate will have an `owner` reference injected which refers back
+         * to the owning object whether that is an object which has an *own instance*, or a
+         * class prototype. Through this link, XTemplate member functions will be able to access
+         * prototype properties of its owning class.
          *
          * @param {Object} instance The object from which to get the `XTemplate` (must be
          * an instance of an {@link Ext#define}'d class).
@@ -360,7 +376,7 @@ Ext.define('Ext.XTemplate', {
          */
         getTpl: function (instance, name) {
             var tpl = instance[name], // go for it! 99% of the time we will get it!
-                proto;
+                owner;
 
             if (tpl && !tpl.isTemplate) { // tpl is just a configuration (not an instance)
                 // create the template instance from the configuration:
@@ -368,15 +384,13 @@ Ext.define('Ext.XTemplate', {
 
                 // and replace the reference with the new instance:
                 if (instance.hasOwnProperty(name)) { // the tpl is on the instance
-                    instance[name] = tpl;
+                    owner = instance;
                 } else { // must be somewhere in the prototype chain
-                    for (proto = instance.self.prototype; proto; proto = proto.superclass) {
-                        if (proto.hasOwnProperty(name)) {
-                            proto[name] = tpl;
-                            break;
-                        }
+                    for (owner = instance.self.prototype; owner && !owner.hasOwnProperty(name); owner = owner.superclass) {
                     }
                 }
+                owner[name] = tpl;
+                tpl.owner = owner;
             }
             // else !tpl (no such tpl) or the tpl is an instance already... either way, tpl
             // is ready to return

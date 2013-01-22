@@ -46,13 +46,20 @@ Ext.define('Ext.grid.ViewDropZone', {
             data.view.store.remove(data.records, data.view === view);
         }
 
-        index = store.indexOf(record);
+        if (record &amp;&amp; position) {
+            index = store.indexOf(record);
 
-        // 'after', or undefined (meaning a drop at index -1 on an empty View)...
-        if (position !== 'before') {
-            index++;
+            // 'after', or undefined (meaning a drop at index -1 on an empty View)...
+            if (position !== 'before') {
+                index++;
+            }
+            store.insert(index, data.records);
         }
-        store.insert(index, data.records);
+        // No position specified - append.
+        else {
+            store.add(data.records);
+        }
+
         view.getSelectionModel().select(data.records);
     }
 });</pre>

@@ -8,9 +8,7 @@ Ext.define('Ext.dom.AbstractElement', {
     requires: [
         'Ext.EventManager',
         'Ext.dom.AbstractElement_static',
-        'Ext.dom.AbstractElement_alignment',
         'Ext.dom.AbstractElement_insertion',
-        'Ext.dom.AbstractElement_position',
         'Ext.dom.AbstractElement_style',
         'Ext.dom.AbstractElement_traversal'
     ],
@@ -41,12 +39,18 @@ Ext.define('Ext.dom.AbstractElement', {
                 document = window.document,
                 El = Ext.dom.Element,
                 cacheItem,
+                docEl,
                 extEl,
                 dom,
                 id;
 
             if (!el) {
                 return null;
+            }
+
+            // Ext.get(flyweight) must return an Element instance, not the flyweight
+            if (el.isFly) {
+                el = el.dom;
             }
 
             if (typeof el == "string") { // element id
@@ -107,10 +111,14 @@ Ext.define('Ext.dom.AbstractElement', {
             } else if (el === document) {
                 // create a bogus element object representing the document object
                 if (!me.docEl) {
-                    me.docEl = Ext.Object.chain(El.prototype);
-                    me.docEl.dom = document;
-                    me.docEl.id = Ext.id(document);
-                    me.addToCache(me.docEl);
+                    docEl = me.docEl = Ext.Object.chain(El.prototype);
+                    docEl.dom = document;
+                    // set an "el" property on the element that references itself.
+                    // This allows Ext.util.Positionable methods to operate on
+                    // this.el.dom since it gets mixed into both Element and Component
+                    docEl.el = docEl;
+                    docEl.id = Ext.id(document);
+                    me.addToCache(docEl);
                 }
                 return me.docEl;
             } else if (el === window) {
@@ -228,7 +236,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         },
 
         /**
-         * @property
+         * @property {Number}
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
          * Use the CSS 'visibility' property to hide the element.
          *
@@ -241,7 +249,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         VISIBILITY: 1,
 
         /**
-         * @property
+         * @property {Number}
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
          * Use the CSS 'display' property to hide the element.
          * @static
@@ -250,7 +258,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         DISPLAY: 2,
 
         /**
-         * @property
+         * @property {Number}
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
          * Use CSS absolute positioning and top/left offsets to hide the element.
          * @static
@@ -259,7 +267,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         OFFSETS: 3,
 
         /**
-         * @property
+         * @property {Number}
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
          * Add or remove the {@link Ext.Layer#visibilityCls} class to hide the element.
          * @static
@@ -274,6 +282,11 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
                 ? document.getElementById(element)
                 : element,
             id;
+
+        // set an "el" property that references "this".  This allows
+        // Ext.util.Positionable methods to operate on this.el.dom since it
+        // gets mixed into both Element and Component
+        me.el = me;
 
         if (!dom) {
             return null;
@@ -366,7 +379,11 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
      */
     remove: function() {
         var me = this,
-        dom = me.dom;
+            dom = me.dom;
+            
+        if (me.isAnimate) {
+            me.stopAnimation();
+        }
 
         if (dom) {
             Ext.removeNode(dom);
@@ -595,6 +612,10 @@ function() {
 
             constructor: function(dom) {
                 this.dom = dom;
+                // set an "el" property that references "this".  This allows
+                // Ext.util.Positionable methods to operate on this.el.dom since it
+                // gets mixed into both Element and Component
+                this.el = this;
             },
 
             /**

@@ -431,7 +431,7 @@ Ext.define('Ext.grid.property.Grid', {
             direction = 'down';
         }
         pos = Ext.view.Table.prototype.walkCells.call(this, pos, direction, e, preventWrap, verifierFn, scope);
-        if (!pos.column) {
+        if (pos && !pos.column) {
             pos.column = 1;
         }
         return pos;

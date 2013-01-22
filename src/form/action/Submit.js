@@ -73,13 +73,15 @@ Ext.define('Ext.form.action.Submit', {
 
     // inherit docs
     run : function(){
-        var form = this.form;
-        if (this.clientValidation === false || form.isValid()) {
-            this.doSubmit();
+        var me = this,
+            form = me.form;
+            
+        if (me.clientValidation === false || form.isValid()) {
+            me.doSubmit();
         } else {
             // client validation failed
-            this.failureType = Ext.form.action.Action.CLIENT_INVALID;
-            form.afterAction(this, false);
+            me.failureType = Ext.form.action.Action.CLIENT_INVALID;
+            form.afterAction(me, false);
         }
     },
 
@@ -119,9 +121,9 @@ Ext.define('Ext.form.action.Submit', {
      * Builds the full set of parameters from the field values plus any additional configured params.
      */
     getParams: function() {
-        var nope = false,
+        var falseVal = false,
             configParams = this.callParent(),
-            fieldParams = this.form.getValues(nope, nope, this.submitEmptyText !== nope);
+            fieldParams = this.form.getValues(falseVal, falseVal, this.submitEmptyText !== falseVal);
         return Ext.apply({}, fieldParams, configParams);
     },
 

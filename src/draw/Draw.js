@@ -985,7 +985,7 @@ Ext.define('Ext.draw.Draw', {
             cur,
             floor,
             modulo = Math.round((step % m) * Math.pow(10, 2 - level)),
-            interval = [[0, 15], [20, 4], [25, 2], [50, 9], [100, 15]],
+            interval = [[0, 15], [10, 1], [20, 4], [25, 2], [50, 9], [100, 15]],
             stepCount = 0,
             value,
             weight,
@@ -998,9 +998,8 @@ Ext.define('Ext.draw.Draw', {
         if (from == floor && floor > 0) {
             floor = Math.floor((from - (m/10)) / m) * m;
         }
-        cur = from = floor;
         
-        if(prettyNumbers){
+        if (prettyNumbers) {
             for (i = 0; i < ln; i++) {
                 value = interval[i][0];
                 weight = (value - modulo) < 0 ? 1e6 : (value - modulo) / interval[i][1];
@@ -1010,12 +1009,31 @@ Ext.define('Ext.draw.Draw', {
                 }
             }
             step = Math.floor(step * Math.pow(10, -level)) * Math.pow(10, level) + topValue * Math.pow(10, level - 2);
-            while (cur < to) {
-                cur += step;
-                stepCount++;
+
+            if (from < 0 && to >= 0) {
+                cur = 0;
+                while (cur > from) {
+                    cur -= step;
+                    stepCount++;
+                }
+                from = +cur.toFixed(10);
+
+                cur = 0;
+                while (cur < to) {
+                    cur += step;
+                    stepCount++;
+                }
+                to = +cur.toFixed(10);
+            } else {
+                cur = from = floor;
+                while (cur < to) {
+                    cur += step;
+                    stepCount++;
+                }
             }
             to = +cur.toFixed(10);
-        }else{
+        } else {
+            from = floor;
             stepCount = stepsMax;
         }
         

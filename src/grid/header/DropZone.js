@@ -70,8 +70,8 @@ Ext.define('Ext.grid.header.DropZone', {
             topXY, bottomXY, headerCtEl, minX, maxX,
             allDropZones, ln, i, dropZone;
 
-        // Cannot drag beyond non-draggable start column
-        if (!targetHeader.draggable && targetHeader.getIndex() === 0) {
+        // Cannot drag to before non-draggable start column
+        if (!targetHeader.draggable && pos === 'before' && targetHeader.getIndex() === 0) {
             return false;
         }
 
@@ -126,8 +126,8 @@ Ext.define('Ext.grid.header.DropZone', {
 
             // constrain the indicators to the viewable section
             headerCtEl = this.headerCt.el;
-            minX = headerCtEl.getLeft();
-            maxX = headerCtEl.getRight();
+            minX = headerCtEl.getX();
+            maxX = headerCtEl.getX() + headerCtEl.getWidth();
 
             topXY[0] = Ext.Number.constrain(topXY[0], minX, maxX);
             bottomXY[0] = Ext.Number.constrain(bottomXY[0], minX, maxX);
@@ -230,9 +230,13 @@ Ext.define('Ext.grid.header.DropZone', {
                 this.invalidateDrop();
 
                 // Dragging within the same container.
-                if ((fromCt === toCt) && (localToIdx > localFromIdx)) {
+                if ((fromCt === toCt)) {
                     // A no-op. This can happen when cross lockable drag operations recurse (see above).
+                    // If a drop was a lock/unlock, and the lock/unlock call placed the column in the
+                    // desired position (lock places at end, unlock places at beginning) then we're done.
                     if (localToIdx === localFromIdx) {
+                        // We still need to inform the rest of the components so that events can be fired.
+                        headerCt.onHeaderMoved(dragHeader, colsToMove, fromIdx, toIdx);
                         return;
                     }
                     // If dragging rightwards, then after removal, the insertion index will be less.
@@ -247,15 +251,6 @@ Ext.define('Ext.grid.header.DropZone', {
                 // Remove dragged header from where it was.
                 if (fromCt !== toCt) {
                     fromCt.remove(dragHeader, false);
-
-                    // Dragged the last header out of the fromCt group... The fromCt group must die
-                    if (fromCt.isGroupHeader) {
-                        if (!fromCt.items.getCount()) {
-                            groupCt = fromCt.ownerCt;
-                            groupCt.remove(fromCt, false);
-                            fromCt.el.dom.parentNode.removeChild(fromCt.el.dom);
-                        }
-                    }
                 }
 
                 // Move dragged header into its drop position

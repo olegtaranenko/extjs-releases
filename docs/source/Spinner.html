@@ -199,13 +199,14 @@ Ext.define('Ext.form.field.Spinner', {
         }
     },
 
-<span id='Ext-form-field-Spinner-method-getSubTplMarkup'>    getSubTplMarkup: function() {
+<span id='Ext-form-field-Spinner-method-getSubTplMarkup'>    getSubTplMarkup: function(values) {
 </span>        var me = this,
+            childElCls = values.childElCls ? (' ' + values.childElCls) : '', 
             field = Ext.form.field.Base.prototype.getSubTplMarkup.apply(me, arguments);
 
-        return '&lt;table id=&quot;' + me.id + '-triggerWrap&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-wrap&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot;&gt;' +
+        return '&lt;table id=&quot;' + me.id + '-triggerWrap&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-wrap' + childElCls + '&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot;&gt;' +
             '&lt;tbody&gt;' +
-                '&lt;tr&gt;&lt;td id=&quot;' + me.id + '-inputCell&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-input-cell&quot;&gt;' + field + '&lt;/td&gt;' +
+                '&lt;tr&gt;&lt;td id=&quot;' + me.id + '-inputCell&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-input-cell' + childElCls + '&quot;&gt;' + field + '&lt;/td&gt;' +
                 me.getTriggerMarkup() +
             '&lt;/tbody&gt;&lt;/table&gt;';
     },

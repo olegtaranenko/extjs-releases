@@ -38,8 +38,17 @@ Ext.define('Ext.chart.Label', {
      *
      * - **display** : String
      *
-     *   Specifies the presence and position of labels for each pie slice. Either "rotate", "middle", "insideStart",
-     *   "insideEnd", "outside", "over", "under", or "none" to prevent label rendering.
+     *   Specifies the presence and position of labels for each pie slice.
+     *   Either "insideStart", "insideEnd", "outside", "middle" (reserved for future use), or "none".
+     *   On stacked charts, "over" or "under" can be passed to onCreateLabel() and onPlaceLabel() if 'stackedDisplay' is used. 
+     *   Default value: 'none'.
+     *
+     * - **stackedDisplay* : String
+     *
+     *   The type of label we want to display as a summary on a stacked bar or a stacked column.
+     *   If set to 'total', the total amount of all the stacked values is displayed on top of the column.
+     *   If set to 'balances', the total amount of the positive values is displayed on top of the column
+     *   and the total amount of the negative values is displayed at the bottom.
      *   Default value: 'none'.
      *
      * - **color** : String
@@ -88,6 +97,7 @@ Ext.define('Ext.chart.Label', {
         me.label = Ext.applyIf(me.label || {},
         {
             display: "none",
+            stackedDisplay: "none",
             color: "#000",
             field: "name",
             minMargin: 50,
@@ -110,6 +120,8 @@ Ext.define('Ext.chart.Label', {
             animate = chart.animate,
             config = me.label,
             display = config.display,
+            stackedDisplay = config.stackedDisplay,
+            format = config.renderer,
             color = config.color,
             field = [].concat(config.field),
             group = me.labelsGroup,
@@ -122,7 +134,8 @@ Ext.define('Ext.chart.Label', {
             Color = Ext.draw.Color,
             hides = [],
             gradient, i, count, groupIndex, index, j, k, colorStopTotal, colorStopIndex, colorStop, item, label,
-            storeItem, sprite, spriteColor, spriteBrightness, labelColor, colorString;
+            storeItem, sprite, spriteColor, spriteBrightness, labelColor, colorString,
+            total, totalPositive, totalNegative, topText, bottomText;
 
         if (display == 'none') {
             return;
@@ -201,6 +214,53 @@ Ext.define('Ext.chart.Label', {
                             }, true);
                         }
 
+                        // display totals on stacked charts
+                        if (me.stacked && stackedDisplay && (item.totalPositiveValues || item.totalNegativeValues)) {
+                            totalPositive = (item.totalPositiveValues || 0);
+                            totalNegative = (item.totalNegativeValues || 0);
+                            total = totalPositive + totalNegative;
+
+                            if (stackedDisplay == 'total') {
+                                topText = format(total);
+                            } else if (stackedDisplay == 'balances') {
+                                if (totalPositive == 0 && totalNegative == 0) {
+                                    topText = format(0);
+                                } else {
+                                    topText = format(totalPositive);
+                                    bottomText = format(totalNegative);
+                                }
+                            }
+
+                            if (topText) {
+                                label = group.getAt(groupIndex);
+                                if (!label) {
+                                    label = me.onCreateLabel(storeItem, item, i, 'over', j, index);
+                                }
+                                label.setAttributes({text: topText});
+                                me.onPlaceLabel(label, storeItem, item, i, 'over', animate, j, index);
+                                groupIndex ++;
+
+                                labelColor = Color.fromString(label.attr.color || label.attr.fill).getHSL();
+                                label.setAttributes({
+                                    fill: String(Color.fromHSL.apply({}, labelColor))
+                                }, true);
+                            }
+
+                            if (bottomText) {
+                                label = group.getAt(groupIndex);
+                                if (!label) {
+                                    label = me.onCreateLabel(storeItem, item, i, 'under', j, index);
+                                }
+                                label.setAttributes({text: bottomText});
+                                me.onPlaceLabel(label, storeItem, item, i, 'under', animate, j, index);
+                                groupIndex ++;
+
+                                labelColor = Color.fromString(label.attr.color || label.attr.fill).getHSL();
+                                label.setAttributes({
+                                    fill: String(Color.fromHSL.apply({}, labelColor))
+                                }, true);
+                            }
+                        }
                     }
                     count++;
                     index++;

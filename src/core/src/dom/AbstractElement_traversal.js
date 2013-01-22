@@ -49,16 +49,17 @@ Ext.define('Ext.dom.AbstractElement_traversal', {
     },
 
     /**
-     * Walks up the dom looking for a parent node that matches the passed simple selector (e.g. div.some-class or span:first-child).
+     * Walks up the DOM looking for a parent node that matches the passed simple selector (e.g. div.some-class or span:first-child).
      * This is a shortcut for findParentNode() that always returns an Ext.dom.Element.
      * @param {String} selector The simple selector to test
      * @param {Number/String/HTMLElement/Ext.Element} [limit]
      * The max depth to search as a number or an element which causes the upward traversal to stop
      * and is <b>not</b> considered for inclusion as the result. (defaults to 50 || document.documentElement)
+     * @param {Boolean} [returnDom=false] True to return the DOM node instead of Ext.dom.Element
      * @return {Ext.Element} The matching DOM node (or null if no match was found)
      */
-    up: function(simpleSelector, limit) {
-        return this.findParentNode(simpleSelector, limit, true);
+    up: function(simpleSelector, limit, returnDom) {
+        return this.findParentNode(simpleSelector, limit, !returnDom);
     },
 
     /**

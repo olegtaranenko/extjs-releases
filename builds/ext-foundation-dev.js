@@ -1,19 +1,19 @@
 /*
-This file is part of Ext JS 4.1
+This file is part of Ext JS 4.2
 
 Copyright (c) 2011-2012 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial
-Software License Agreement provided with the Software or, alternatively, in accordance with the
-terms contained in a written agreement between you and Sencha.
+Pre-release code in the Ext repository is intended for development purposes only and will
+not always be stable. 
 
-If you are unsure which license is appropriate for your use, please contact the sales department
-at http://www.sencha.com/contact.
+Use of pre-release code is permitted with your application at your own risk under standard
+Ext license terms. Public redistribution is prohibited.
 
-Build date: 2012-10-25 15:13:53 (240477695016a85fb9ed1098fd5f8e116327fcc3)
+For early licensing, please contact us at licensing@sencha.com
+
+Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
 */
 //@tag foundation,core
 /**
@@ -35,7 +35,10 @@ Ext._startTime = new Date().getTime();
             var method = callOverrideParent.caller.caller; // skip callParent (our caller)
             return method.$owner.prototype[method.$name].apply(this, arguments);
         },
-        i;
+        i,
+        nonWhitespaceRe = /\S/;
+
+    Function.prototype.$extIsFunction = true;
 
     Ext.global = global;
 
@@ -389,7 +392,7 @@ Ext._startTime = new Date().getTime();
             if (type === 'object') {
                 if (value.nodeType !== undefined) {
                     if (value.nodeType === 3) {
-                        return (/\S/).test(value.nodeValue) ? 'textnode' : 'whitespace';
+                        return (nonWhitespaceRe).test(value.nodeValue) ? 'textnode' : 'whitespace';
                     }
                     else {
                         return 'element';
@@ -404,6 +407,49 @@ Ext._startTime = new Date().getTime();
                 sourceMethod: 'typeOf',
                 msg: 'Failed to determine the type of the specified value "' + value + '". This is most likely a bug.'
             });
+        },
+
+        /**
+         * Coerces the first value if possible so that it is comparable to the second value.
+         *
+         * Coercion only works between the basic atomic data types String, Boolean, Number, Date, null and undefined.
+         *
+         * Numbers and numeric strings are coerced to Dates using the value as the millisecond era value.
+         *
+         * Strings are coerced to Dates by parsing using the {@link Ext.Date.defaultFormat defaultFormat}.
+         * 
+         * For example
+         *
+         *     Ext.coerce('false', true);
+         *     
+         * returns the boolean value `false` because the second parameter is of type `Boolean`.
+         * 
+         * @param {Mixed} from The value to coerce
+         * @param {Mixed} to The value it must be compared against
+         * @return The coerced value.
+         */
+        coerce: function(from, to) {
+            var fromType = Ext.typeOf(from),
+                toType = Ext.typeOf(to),
+                isString = typeof from === 'string';
+
+            if (fromType !== toType) {
+                switch (toType) {
+                    case 'string':
+                        return String(from);
+                    case 'number':
+                        return Number(from);
+                    case 'boolean':
+                        return isString && (!from || from === 'false') ? false : Boolean(from);
+                    case 'null':
+                        return isString && (!from || from === 'null') ? null : from;
+                    case 'undefined':
+                        return isString && (!from || from === 'undefined') ? undefined : from;
+                    case 'date':
+                        return isString && isNaN(from) ? Ext.Date.parse(from, Ext.Date.defaultFormat) : Date(Number(from));
+                }
+            }
+            return from;
         },
 
         /**
@@ -481,13 +527,8 @@ Ext._startTime = new Date().getTime();
          * @return {Boolean}
          * @method
          */
-        isFunction:
-        // Safari 3.x and 4.x returns 'function' for typeof <NodeList>, hence we need to fall back to using
-        // Object.prototype.toString (slower)
-        (typeof document !== 'undefined' && typeof document.getElementsByTagName('body') === 'function') ? function(value) {
-            return toString.call(value) === '[object Function]';
-        } : function(value) {
-            return typeof value === 'function';
+        isFunction: function(value) {
+            return !!(value && value.$extIsFunction);
         },
 
         /**
@@ -736,6 +777,75 @@ Ext._startTime = new Date().getTime();
 
 }());
 
+Ext.apply(Ext, {
+    app: {
+        namespaces: {},
+        
+        /**
+         * @private
+         */
+        collectNamespaces: function(paths) {
+            var namespaces = Ext.app.namespaces,
+                path;
+            
+            for (path in paths) {
+                if (paths.hasOwnProperty(path)) {
+                    namespaces[path] = true;
+                }
+            }
+        },
+
+        /**
+         * Adds namespace(s) to known list.
+         *
+         * @param {String/String[]} namespace
+         */
+        addNamespaces: function(ns) {
+            var namespaces = Ext.app.namespaces,
+                i, l;
+
+            if (!Ext.isArray(ns)) {
+                ns = [ns];
+            }
+
+            for (i = 0, l = ns.length; i < l; i++) {
+                namespaces[ns[i]] = true;
+            }
+        },
+
+        /**
+         * @private Clear all namespaces from known list.
+         */
+        clearNamespaces: function() {
+            Ext.app.namespaces = {};
+        },
+
+        /**
+         * Get namespace prefix for a class name.
+         *
+         * @param {String} className
+         *
+         * @return {String} Namespace prefix if it's known, otherwise undefined
+         */
+        getNamespace: function(className) {
+            var namespaces    = Ext.app.namespaces,
+                deepestPrefix = '',
+                prefix;
+
+            for (prefix in namespaces) {
+                if (namespaces.hasOwnProperty(prefix)    &&
+                    prefix.length > deepestPrefix.length &&
+                    (prefix + '.' === className.substring(0, prefix.length + 1))) {
+                    deepestPrefix = prefix;
+                }
+
+            }
+
+            return deepestPrefix === '' ? undefined : deepestPrefix;
+        }
+    }
+});
+
 /*
  * This method evaluates the given code free of any local variable. In some browsers this
  * will be at global scope, in others it will be in a function.
@@ -793,7 +903,7 @@ Ext.globalEval = Ext.global.execScript
 
 // Current core version
 // also fix Ext-more.js
-var version = '4.1.3.548', Version;
+var version = '4.2.0.179', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         /**
@@ -1164,6 +1274,13 @@ Ext.String = (function() {
         },
         htmlDecodeReplaceFn = function(match, capture) {
             return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
+        },
+        boundsCheck = function(s, other){
+            if (s === null || s === undefined || other === null || other === undefined) {
+                return false;
+            }
+            
+            return other.length <= s.length; 
         };
 
     return {
@@ -1212,6 +1329,44 @@ Ext.String = (function() {
                 s = s.substr(0, index) + value + s.substr(index);
             }
             return s;
+        },
+        
+        /**
+         * Checks if a string starts with a substring
+         * @param {String} s The original string
+         * @param {String} start The substring to check
+         * @param {Boolean} [ignoreCase=false] True to ignore the case in the comparison
+         */
+        startsWith: function(s, start, ignoreCase){
+            var result = boundsCheck(s, start);
+            
+            if (result) {
+                if (ignoreCase) {
+                    s = s.toLowerCase();
+                    start = start.toLowerCase();
+                }
+                result = s.lastIndexOf(start, 0) === 0;
+            }
+            return result;
+        },
+        
+        /**
+         * Checks if a string ends with a substring
+         * @param {String} s The original string
+         * @param {String} start The substring to check
+         * @param {Boolean} [ignoreCase=false] True to ignore the case in the comparison
+         */
+        endsWith: function(s, end, ignoreCase){
+            var result = boundsCheck(s, end);
+            
+            if (result) {
+                if (ignoreCase) {
+                    s = s.toLowerCase();
+                    end = end.toLowerCase();
+                }
+                result = s.indexOf(end, s.length - end.length) !== -1;
+            }
+            return result;
         },
 
         /**
@@ -1851,9 +2006,16 @@ Ext.Number = new function() {
 
     function replaceNative (array, index, removeCount, insert) {
         if (insert && insert.length) {
-            if (index < array.length) {
+            // Inserting at index zero with no removing: use unshift
+            if (index === 0 && !removeCount) {
+                array.unshift.apply(array, insert);
+            }
+            // Inserting/replacing in middle of array
+            else if (index < array.length) {
                 array.splice.apply(array, [index, removeCount].concat(insert));
-            } else {
+            }
+            // Appending to array
+            else {
                 array.push.apply(array, insert);
             }
         } else {
@@ -1977,7 +2139,7 @@ Ext.Number = new function() {
          * @param {Object} scope (Optional) The execution scope (`this`) in which the specified function is executed.
          */
         forEach: supportsForEach ? function(array, fn, scope) {
-            return array.forEach(fn, scope);
+            array.forEach(fn, scope);
         } : function(array, fn, scope) {
             var i = 0,
                 ln = array.length;
@@ -1997,7 +2159,7 @@ Ext.Number = new function() {
          * @return {Number} The index of item in the array (or -1 if it is not found)
          */
         indexOf: supportsIndexOf ? function(array, item, from) {
-            return array.indexOf(item, from);
+            return arrayPrototype.indexOf.call(array, item, from);
          } : function(array, item, from) {
             var i, length = array.length;
 
@@ -2018,7 +2180,7 @@ Ext.Number = new function() {
          * @return {Boolean} True if the array contains the item, false otherwise
          */
         contains: supportsIndexOf ? function(array, item) {
-            return array.indexOf(item) !== -1;
+            return arrayPrototype.indexOf.call(array, item) !== -1;
         } : function(array, item) {
             var i, ln;
 
@@ -2193,6 +2355,35 @@ Ext.Number = new function() {
 
             return false;
         },
+        
+        /**
+         * Shallow compares the contents of 2 arrays using strict equality.
+         * @param {Array} array1
+         * @param {Array} array2
+         * @return {Boolean} `true` if the arrays are equal.
+         */
+        equals: function(array1, array2) {
+            var len1 = array1.length,
+                len2 = array2.length,
+                i;
+                
+            // Short circuit if the same array is passed twice
+            if (array1 === array2) {
+                return true;
+            }
+                
+            if (len1 !== len2) {
+                return false;
+            }
+            
+            for (i = 0; i < len1; ++i) {
+                if (array1[i] !== array2[i]) {
+                    return false;
+                }
+            }
+            
+            return true;
+        },
 
         /**
          * Filter through an array and remove empty item as defined in {@link Ext#isEmpty Ext.isEmpty}
@@ -2253,12 +2444,12 @@ Ext.Number = new function() {
          */
         filter: supportsFilter ? function(array, fn, scope) {
             if (!fn) {
-                Ext.Error.raise('Ext.Array.filter must have a callback function passed as second argument.');
+                Ext.Error.raise('Ext.Array.filter must have a filter function passed as second argument.');
             }
             return array.filter(fn, scope);
         } : function(array, fn, scope) {
             if (!fn) {
-                Ext.Error.raise('Ext.Array.filter must have a callback function passed as second argument.');
+                Ext.Error.raise('Ext.Array.filter must have a filter function passed as second argument.');
             }
             var results = [],
                 i = 0,
@@ -2271,6 +2462,30 @@ Ext.Number = new function() {
             }
 
             return results;
+        },
+
+        /**
+        * Returns the first item in the array which elicits a true return value from the
+        * passed selection function.
+        * @param {Array} array The array to search
+        * @param {Function} fn The selection function to execute for each item.
+        * @param {Mixed} fn.item The array item.
+        * @param {String} fn.index The index of the array item.
+        * @param {Object} scope (optional) The scope (<code>this</code> reference) in which the
+        * function is executed. Defaults to the array
+        * @return {Object} The first item in the array which returned true from the selection
+        * function, or null if none was found.
+        */
+        findBy : function(array, fn, scope) {
+            var i = 0,
+                len = array.length;
+
+            for (; i < len; i++) {
+                if (fn.call(scope || array, array[i], i)) {
+                    return array[i];
+                }
+            }
+            return null;
         },
 
         /**
@@ -2788,7 +3003,7 @@ Ext.Number = new function() {
             }
             for (; i < len; i++) {
                 newItem = arguments[i];
-                Array.prototype.push[Ext.isArray(newItem) ? 'apply' : 'call'](array, newItem);
+                Array.prototype.push[Ext.isIterable(newItem) ? 'apply' : 'call'](array, newItem);
             }
             return array;
         }
@@ -3543,7 +3758,8 @@ var TemplateClass = function(){},
                 value = Ext.Date.toString(value);
             }
 
-            params.push(encodeURIComponent(paramObject.name) + '=' + encodeURIComponent(String(value)));
+            params.push(encodeURIComponent(paramObject.name) +
+                (value !== '' ? ('=' + encodeURIComponent(String(value))) : ''));
         }
 
         return params.join('&');
@@ -3903,6 +4119,55 @@ var TemplateClass = function(){},
 
         return size;
     },
+    
+    /**
+     * Shallow compares the contents of 2 objects using strict equality. Objects are
+     * considered equal if they both have the same set of properties and the
+     * value for those properties equals the other in the corresponding object.
+     * 
+     *     // Returns true
+     *     Ext.Object.equals({
+     *         foo: 1,
+     *         bar: 2
+     *     }, {
+     *         foo: 1,
+     *         bar: 2
+     *     });
+     * 
+     * @param {Object} object1
+     * @param {Object} object2
+     * @return {Boolean} `true` if the objects are equal.
+     */
+    equals: (function() {
+        var check = function(o1, o2) {
+            var key;
+        
+            for (key in o1) {
+                if (o1.hasOwnProperty(key)) {
+                    if (o1[key] !== o2[key]) {
+                        return false;
+                    }    
+                }
+            }    
+            return true;
+        };
+        
+        return function(object1, object2) {
+            
+            // Short circuit if the same object is passed twice
+            if (object1 === object2) {
+                return true;
+            } if (object1 && object2) {
+                // Do the second check because we could have extra keys in
+                // object2 that don't exist in object1.
+                return check(object1, object2) && check(object2, object1);  
+            } else if (!object1 && !object2) {
+                return object1 === object2;
+            } else {
+                return false;
+            }
+        };
+    })(),
 
     /**
      * @private
@@ -5070,7 +5335,7 @@ Ext.Date = new function() {
         T: {
             g:0,
             c:null,
-            s:"[A-Z]{1,4}" // timezone abbrev. may be between 1 - 4 chars
+            s:"[A-Z]{1,5}" // timezone abbrev. may be between 1 - 5 chars
         },
         Z: {
             g:1,
@@ -5199,7 +5464,7 @@ Ext.Date = new function() {
         // step 1: (?:\((.*)\) -- find timezone in parentheses
         // step 2: ([A-Z]{1,4})(?:[\-+][0-9]{4})?(?: -?\d+)?) -- if nothing was found in step 1, find timezone from timezone offset portion of date string
         // step 3: remove all non uppercase characters found in step 1 and 2
-        return date.toString().replace(/^.* (?:\((.*)\)|([A-Z]{1,4})(?:[\-+][0-9]{4})?(?: -?\d+)?)$/, "$1$2").replace(/[^A-Z]/g, "");
+        return date.toString().replace(/^.* (?:\((.*)\)|([A-Z]{1,5})(?:[\-+][0-9]{4})?(?: -?\d+)?)$/, "$1$2").replace(/[^A-Z]/g, "");
     },
 
     /**
@@ -5474,17 +5739,35 @@ Ext.Date = new function() {
 
         if (value) {
             switch(interval.toLowerCase()) {
+                // See EXTJSIV-7418. We use setTime() here to deal with issues related to
+                // the switchover that occurs when changing to daylight savings and vice
+                // versa. setTime() handles this correctly where setHour/Minute/Second/Millisecond
+                // do not. Let's assume the DST change occurs at 2am and we're incrementing using add
+                // for 15 minutes at time. When entering DST, we should see:
+                // 01:30am
+                // 01:45am
+                // 03:00am // skip 2am because the hour does not exist
+                // ...
+                // Similarly, leaving DST, we should see:
+                // 01:30am
+                // 01:45am
+                // 01:00am // repeat 1am because that's the change over
+                // 01:30am
+                // 01:45am
+                // 02:00am
+                // ....
+                // 
                 case Ext.Date.MILLI:
-                    d.setMilliseconds(d.getMilliseconds() + value);
+                    d.setTime(d.getTime() + value);
                     break;
                 case Ext.Date.SECOND:
-                    d.setSeconds(d.getSeconds() + value);
+                    d.setTime(d.getTime() + value * 1000);
                     break;
                 case Ext.Date.MINUTE:
-                    d.setMinutes(d.getMinutes() + value);
+                    d.setTime(d.getTime() + value * 60 * 1000);
                     break;
                 case Ext.Date.HOUR:
-                    d.setHours(d.getHours() + value);
+                    d.setTime(d.getTime() + value * 60 * 60 * 1000);
                     break;
                 case Ext.Date.DAY:
                     d.setDate(d.getDate() + value);
@@ -5532,6 +5815,34 @@ Ext.Date = new function() {
         }
 
         return d;
+    },
+    
+    /**
+     * Provides a convenient method for performing basic date arithmetic. This method
+     * does not modify the Date instance being called - it creates and returns
+     * a new Date instance containing the resulting date value.
+     * 
+     * Examples:
+     *
+     *     // Basic usage:
+     *     var dt = Ext.Date.subtract(new Date('10/29/2006'), Ext.Date.DAY, 5);
+     *     console.log(dt); // returns 'Tue Oct 24 2006 00:00:00'
+     *
+     *     // Negative values will be added:
+     *     var dt2 = Ext.Date.subtract(new Date('10/1/2006'), Ext.Date.DAY, -5);
+     *     console.log(dt2); // returns 'Fri Oct 6 2006 00:00:00'
+     *
+     *      // Decimal values can be used:
+     *     var dt3 = Ext.Date.subtract(new Date('10/1/2006'), Ext.Date.DAY, 1.25);
+     *     console.log(dt3); // returns 'Fri Sep 29 2006 06:00:00'
+     * 
+     * @param {Date} date The date to modify
+     * @param {String} interval A valid date interval enum value.
+     * @param {Number} value The amount to subtract from the current date.
+     * @return {Date} The new Date instance.
+     */
+    subtract: function(date, interval, value){
+        return utilDate.add(date, interval, -value);
     },
 
     /**
@@ -5591,7 +5902,21 @@ Ext.Date = new function() {
 (function(flexSetter) {
 
 var noArgs = [],
-    Base = function(){};
+    Base = function(){},
+    hookFunctionFactory = function(hookFunction, underriddenFunction, methodName, owningClass) {
+        var result = function() {
+            var result = this.callParent(arguments);
+            hookFunction.apply(this, arguments);
+            return result;
+        };
+        result.$name = methodName;
+        result.$owner = owningClass;
+        if (underriddenFunction) {
+            result.$previous = underriddenFunction.$previous;
+            underriddenFunction.$previous = result;
+        }
+        return result;
+    };
 
     // These static properties will be copied to every newly created class with {@link Ext#define}
     Ext.apply(Base, {
@@ -5885,7 +6210,7 @@ var noArgs = [],
          * @param name
          * @param member
          */
-        addMember: function(name, member) {
+        addMember: function(name, member) {            
             if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                 member.$owner = this;
                 member.$name = name;
@@ -5893,7 +6218,6 @@ var noArgs = [],
             }
 
             this.prototype[name] = member;
-
             return this;
         },
 
@@ -6115,12 +6439,14 @@ var noArgs = [],
          * @inheritable
          */
         mixin: function(name, mixinClass) {
-            var mixin = mixinClass.prototype,
-                prototype = this.prototype,
-                key;
+            var me = this,
+                mixin = mixinClass.prototype,
+                prototype = me.prototype,
+                key, statics, i, ln, staticName,
+                mixinValue, hookKey, hookFunction;
 
             if (typeof mixin.onClassMixedIn != 'undefined') {
-                mixin.onClassMixedIn.call(mixinClass, this);
+                mixin.onClassMixedIn.call(mixinClass, me);
             }
 
             if (!prototype.hasOwnProperty('mixins')) {
@@ -6133,20 +6459,54 @@ var noArgs = [],
             }
 
             for (key in mixin) {
+                mixinValue = mixin[key];
                 if (key === 'mixins') {
-                    Ext.merge(prototype.mixins, mixin[key]);
+                    Ext.merge(prototype.mixins, mixinValue);
                 }
-                else if (typeof prototype[key] == 'undefined' && key != 'mixinId' && key != 'config') {
-                    prototype[key] = mixin[key];
+                else if (key === 'xhooks') {
+                    for (hookKey in mixinValue) {
+                        hookFunction = mixinValue[hookKey];
+
+                        // Mixed in xhook methods cannot call a parent.
+                        hookFunction.$previous = Ext.emptyFn;
+
+                        if (prototype.hasOwnProperty(hookKey)) {
+
+                            // Pass the hook function, and the existing function which it is to underride.
+                            // The existing function has its $previous pointer replaced by a closure
+                            // which calls the hookFunction and then the existing function's original $previous
+                            hookFunctionFactory(hookFunction, prototype[hookKey], hookKey, me);
+                        } else {
+                            // There's no original function, so generate an implementation which calls
+                            // the hook function. It will not get any $previous pointer.
+                            prototype[hookKey] = hookFunctionFactory(hookFunction, null, hookKey, me);
+                        }
+                    }
+                }
+                else if (!(key === 'mixinId' || key === 'config') && (prototype[key] === undefined)) {
+                    prototype[key] = mixinValue;
+                }
+            }
+
+            // Mixin statics inheritance
+            statics = mixin.$inheritableStatics;
+
+            if (statics) {
+                for (i = 0, ln = statics.length; i < ln; i++) {
+                    staticName = statics[i];
+
+                    if (!me.hasOwnProperty(staticName)) {
+                        me[staticName] = mixinClass[staticName];
+                    }
                 }
             }
 
             if ('config' in mixin) {
-                this.addConfig(mixin.config, false);
+                me.addConfig(mixin.config, false);
             }
 
             prototype.mixins[name] = mixin;
-            return this;
+            return me;
         },
 
         /**
@@ -6889,7 +7249,7 @@ var noArgs = [],
                 },
                 preprocessors = [],
                 preprocessor, preprocessorsProperties,
-                i, ln, j, subLn, preprocessorProperty, process;
+                i, ln, j, subLn, preprocessorProperty;
 
             delete data.preprocessors;
 
@@ -6925,18 +7285,19 @@ var noArgs = [],
             this.doProcess(Class, data, hooks);
         },
         
-        doProcess: function(Class, data, hooks){
+        doProcess: function(Class, data, hooks) {
             var me = this,
-                preprocessor = hooks.preprocessors.shift();
+                preprocessors = hooks.preprocessors,
+                preprocessor = preprocessors.shift(),
+                doProcess = me.doProcess;
 
-            if (!preprocessor) {
-                hooks.onBeforeCreated.apply(me, arguments);
-                return;
+            for ( ; preprocessor ; preprocessor = preprocessors.shift()) {
+                // Returning false signifies an asynchronous preprocessor - it will call doProcess when we can continue
+                if (preprocessor.call(me, Class, data, hooks, doProcess) === false) {
+                    return;
+                }
             }
-
-            if (preprocessor.call(me, Class, data, hooks, me.doProcess) !== false) {
-                me.doProcess(Class, data, hooks);
-            }
+            hooks.onBeforeCreated.apply(me, arguments);
         },
 
         /** @private */
@@ -8808,6 +9169,23 @@ var noArgs = [],
          *              }
          *          };
          *      });
+         * 
+         * _Note_ that when using override, the above syntax will not override successfully, because
+         * the passed function would need to be executed first to determine whether or not the result 
+         * is an override or defining a new object. As such, an alternative syntax that immediately 
+         * invokes the function can be used:
+         * 
+         *      Ext.define('MyApp.override.BaseOverride', function () {
+         *          var counter = 0;
+         *
+         *          return {
+         *              override: 'Ext.Component',
+         *              logId: function () {
+         *                  console.log(++counter, this.id);
+         *              }
+         *          };
+         *      }());
+         * 
          *
          * When using this form of `Ext.define`, the function is passed a reference to its
          * class. This can be used as an efficient way to access any static properties you
@@ -8989,7 +9367,13 @@ var noArgs = [],
                 }
             }
 
-            delete namespace[parts[partCount]];
+            // Old IE blows up on attempt to delete window property
+            try {
+                delete namespace[parts[partCount]];
+            }
+            catch (e) {
+                namespace[parts[partCount]] = undefined;
+            }
         },
 
         /**
@@ -9435,9 +9819,17 @@ Ext.Loader = new function() {
         setConfig: function(name, value) {
             if (Ext.isObject(name) && arguments.length === 1) {
                 Ext.merge(Loader.config, name);
+
+                if ('paths' in name) {
+                    Ext.app.collectNamespaces(name.paths);
+                }
             }
             else {
                 Loader.config[name] = (Ext.isObject(value)) ? Ext.merge(Loader.config[name], value) : value;
+
+                if (name === 'paths') {
+                    Ext.app.collectNamespaces(value);
+                }
             }
 
             return Loader;
@@ -9469,7 +9861,9 @@ Ext.Loader = new function() {
          */
         setPath: flexSetter(function(name, path) {
             Loader.config.paths[name] = path;
+            Ext.app.namespaces[name] = true;
             setPathCount++;
+
             return Loader;
         }),
 
@@ -9878,7 +10272,7 @@ Ext.Loader = new function() {
                     for (prop in script) {
                         try {
                             if (prop != 'src') {
-                                // If we set the src property to null IE 
+                                // If we set the src property to null IE
                                 // will try and request a script at './null'
                                 script[prop] = null;
                             }

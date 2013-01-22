@@ -329,9 +329,11 @@ Ext.define('Ext.data.reader.Json', {
      *
      * - 'someProperty'
      * - 'some.property'
-     * - 'some["property"]'
+     * - '["someProperty"]'
+     * - 'values[0]'
      * 
-     * This is used by buildExtractors to create optimized extractor functions when casting raw data into model instances.
+     * This is used by {@link #buildExtractors} to create optimized extractor functions for properties that are looked
+     * up directly on the source object (e.g. {@link #successProperty}, {@link #messageProperty}, etc.).
      */
     createAccessor: (function() {
         var re = /[\[\.]/;
@@ -362,9 +364,11 @@ Ext.define('Ext.data.reader.Json', {
      * 
      * - 'someProperty'
      * - 'some.property'
-     * - 'some["property"]'
+     * - '["someProperty"]'
+     * - 'values[0]'
      * 
-     * This is used by buildExtractors to create optimized on extractor function which converts raw data into model instances.
+     * This is used by {@link #buildRecordDataExtractor} to create optimized extractor expressions when converting raw
+     * data into model instances. This method is used at the field level to dynamically map values to model fields.
      */
     createFieldAccessExpression: (function() {
         var re = /[\[\.]/;
@@ -375,18 +379,38 @@ Ext.define('Ext.data.reader.Json', {
                 hasMap = mapping || mapping === 0,
                 map    = hasMap ? mapping : field.name,
                 result,
-                operatorSearch;
+                operatorIndex;
 
             if (typeof map === 'function') {
                 result = fieldVarName + '.mapping(' + dataName + ', this)';
-            } else if (this.useSimpleAccessors === true || ((operatorSearch = String(map).search(re)) < 0)) {
+            } else if (this.useSimpleAccessors === true || ((operatorIndex = String(map).search(re)) < 0)) {
                 if (!hasMap || isNaN(map)) {
                     // If we don't provide a mapping, we may have a field name that is numeric
                     map = '"' + map + '"';
                 }
                 result = dataName + "[" + map + "]";
+            } else if (operatorIndex === 0) {
+                // If it matched at index 0 then it must be bracket syntax (e.g. ["foo"]). In this case simply
+                // join the two, e.g. 'field["foo"]':
+                result = dataName + map;
             } else {
-                result = dataName + (operatorSearch > 0 ? '.' : '') + map;
+                // If it matched at index > 0 it must be either dot syntax (e.g. field.foo) or a values array
+                // item (e.g. values[0]). For the latter, we can simply concatenate the values reference to
+                // the source directly like 'field.values[0]'. For dot notation we have to support arbitrary
+                // levels (field.foo.bar), any of which could be null or undefined, so we have to create the
+                // returned value such that the references will be assigned defensively in the calling code.
+                // The output should look like 'field.foo && field.foo.bar' in that case.
+                var parts = map.split('.'),
+                    len = parts.length,
+                    i = 1,
+                    tempResult = dataName + '.' + parts[0],
+                    buffer = [tempResult]; // for 'field.values[0]' this will be the returned result
+                
+                for (; i < len; i++) {
+                    tempResult += '.' + parts[i];
+                    buffer.push(tempResult);
+                }
+                result = buffer.join(' && ');
             }
             return result;
         };

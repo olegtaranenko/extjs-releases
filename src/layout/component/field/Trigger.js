@@ -52,9 +52,7 @@ Ext.define('Ext.layout.component.field.Trigger', {
 
         owner.inputCell.setStyle('width', '100%');
         if(ieInputWidthAdjustment) {
-            // adjust for IE 6/7 strict content-box model
-            // RTL: This might have to be padding-left unless the senses of the padding styles switch when in RTL mode.
-            owner.inputCell.setStyle('padding-right', ieInputWidthAdjustment + 'px');
+            me.adjustIEInputPadding(ownerContext);
             if(suffix === 'px') {
                 if (owner.inputWidth) {
                     inputWidth = owner.inputWidth - owner.getTriggerWidth();
@@ -74,12 +72,16 @@ Ext.define('Ext.layout.component.field.Trigger', {
         triggerWrap.setStyle('table-layout', 'fixed');
     },
 
+    adjustIEInputPadding: function(ownerContext) {
+        // adjust for IE 6/7 strict content-box model
+        this.owner.inputCell.setStyle('padding-right', this.ieInputWidthAdjustment + 'px');
+    },
+
     beginLayoutShrinkWrap: function (ownerContext) {
         var owner = ownerContext.target,
             emptyString = '',
             inputWidth = owner.inputWidth,
-            triggerWrap = owner.triggerWrap,
-            ieInputWidthAdjustment = this.ieInputWidthAdjustment || 0;
+            triggerWrap = owner.triggerWrap;
 
         this.callParent(arguments);
 

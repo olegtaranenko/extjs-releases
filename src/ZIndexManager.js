@@ -172,10 +172,6 @@ Ext.define('Ext.ZIndexManager', {
             maskTarget = comp.floatParent ? comp.floatParent.getTargetEl() : comp.container,
             viewSize = maskTarget.getBox();
 
-        if (maskTarget.dom === document.body) {
-            viewSize.height = Math.max(document.body.scrollHeight, Ext.dom.Element.getDocumentHeight());
-            viewSize.width = Math.max(document.body.scrollWidth, Ext.dom.Element.getDocumentWidth());
-        }
         if (!me.mask) {
             if (Ext.isIE6) {
                 me.maskShim = Ext.getBody().createChild({
@@ -407,6 +403,7 @@ Ext.define('Ext.ZIndexManager', {
             if (comp.isVisible()) {
                 this.tempHidden.push(comp);
                 comp.el.hide();
+                comp.hidden = true;
             }
         }
     },
@@ -424,6 +421,7 @@ Ext.define('Ext.ZIndexManager', {
         for (; i < len; i++) {
             comp = tempHidden[i];
             comp.el.show();
+            comp.hidden = false;
             comp.setPosition(comp.x, comp.y);
         }
         delete this.tempHidden;

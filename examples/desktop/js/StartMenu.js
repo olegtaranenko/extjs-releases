@@ -74,28 +74,5 @@ Ext.define('Ext.ux.desktop.StartMenu', {
     addToolItem: function() {
         var cmp = this.toolbar;
         cmp.add.apply(cmp, arguments);
-    },
-
-    showBy: function(cmp, pos, off) {
-        var me = this;
-
-        if (me.floating && cmp) {
-            me.layout.autoSize = true;
-            me.show();
-
-            // Component or Element
-            cmp = cmp.el || cmp;
-
-            // Convert absolute to floatParent-relative coordinates if necessary.
-            var xy = me.el.getAlignToXY(cmp, pos || me.defaultAlign, off);
-            if (me.floatParent) {
-                var r = me.floatParent.getTargetEl().getViewRegion();
-                xy[0] -= r.x;
-                xy[1] -= r.y;
-            }
-            me.showAt(xy);
-            me.doConstrain();
-        }
-        return me;
     }
 }); // StartMenu

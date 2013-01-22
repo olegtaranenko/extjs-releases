@@ -1,6 +1,9 @@
-Ext.require('Ext.chart.*');
-Ext.require('Ext.layout.container.Fit');
-Ext.require('Ext.window.MessageBox');
+Ext.require([
+    'Ext.chart.*',
+    'Ext.layout.container.Fit',
+    'Ext.window.MessageBox',
+    'Ext.grid.Panel'
+]);
 
 Ext.onReady(function () {
     

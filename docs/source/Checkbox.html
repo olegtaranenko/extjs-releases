@@ -111,7 +111,7 @@ Ext.define('Ext.form.field.Checkbox', {
     alternateClassName: 'Ext.form.Checkbox',
     requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager' ],
 
-<span id='Ext-form-field-Checkbox-property-componentLayout'>    componentLayout: 'field',
+<span id='Ext-form-field-Checkbox-cfg-componentLayout'>    componentLayout: 'field',
 </span>    
 <span id='Ext-form-field-Checkbox-property-stretchInputElFixed'>    // inputEl should always retain the same size, never stretch
 </span>    stretchInputElFixed: false,
@@ -125,7 +125,7 @@ Ext.define('Ext.form.field.Checkbox', {
         'boxLabelEl'
     ],
 
-<span id='Ext-form-field-Checkbox-property-fieldSubTpl'>    // note: {id} here is really {inputId}, but {cmpId} is available
+<span id='Ext-form-field-Checkbox-cfg-fieldSubTpl'>    // note: {id} here is really {inputId}, but {cmpId} is available
 </span>    fieldSubTpl: [
         '&lt;tpl if=&quot;boxLabel &amp;&amp; boxLabelAlign == \'before\'&quot;&gt;',
             '{beforeBoxLabelTpl}',
@@ -290,9 +290,9 @@ Ext.define('Ext.form.field.Checkbox', {
      * Defaults to this Checkbox.
      */
 
-<span id='Ext-form-field-Checkbox-property-checkChangeEvents'>    // private overrides
+<span id='Ext-form-field-Checkbox-cfg-checkChangeEvents'>    // private overrides
 </span>    checkChangeEvents: [],
-<span id='Ext-form-field-Checkbox-property-inputType'>    inputType: 'checkbox',
+<span id='Ext-form-field-Checkbox-cfg-inputType'>    inputType: 'checkbox',
 </span>
 <span id='Ext-form-field-Checkbox-property-onRe'>    // private
 </span>    onRe: /^on$/i,

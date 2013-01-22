@@ -92,12 +92,24 @@
             text-align: left;
         }
 
+        @if $include-rtl {
+            .#{$prefix}btn-left .#{$prefix}rtl.#{$prefix}btn-inner {
+                text-align: right;
+            }
+        }
+
         .#{$prefix}btn-center .#{$prefix}btn-inner {
             text-align: center;
         }
 
         .#{$prefix}btn-right .#{$prefix}btn-inner {
             text-align: right;
+        }
+
+        @if $include-rtl {
+            .#{$prefix}btn-right .#{$prefix}rtl.#{$prefix}btn-inner {
+                text-align: left;
+            }
         }
     }
 
@@ -167,12 +179,28 @@
         }
     }
 
-    .#{$prefix}btn-icon-text-left .#{$prefix}btn-icon {
-        background-position: left center;
+    .#{$prefix}btn-icon-text-left {
+        .#{$prefix}btn-icon {
+            background-position: left center;
+        }
+
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-icon {
+                background-position: right center;
+            }
+        }
     }
 
-    .#{$prefix}btn-icon-text-right .#{$prefix}btn-icon {
-        background-position: right center;
+    .#{$prefix}btn-icon-text-right {
+        .#{$prefix}btn-icon {
+            background-position: right center;
+        }
+
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-icon {
+                background-position: left center;
+            }
+        }
     }
 
     .#{$prefix}btn-icon-text-top .#{$prefix}btn-icon {
@@ -197,14 +225,14 @@
     .#{$prefix}btn-arrow-right {
         background: transparent no-repeat right center;
         padding-right: $button-arrow-size;
-
-        .#{$prefix}btn-inner {
-            padding-right: 0 !important;
-        }
     }
 
-    .#{$prefix}toolbar .#{$prefix}btn-arrow-right {
-        padding-right: $button-toolbar-arrow-size;
+    @if $include-rtl {
+        .#{$prefix}rtl.#{$prefix}btn-arrow-right {
+            background-position: left center;
+            padding-right: 0;
+            padding-left: $button-arrow-size; 
+        }
     }
 
     .#{$prefix}btn-arrow-bottom {
@@ -226,6 +254,16 @@
         padding-right: $button-split-size !important;
     }
 
+    @if $include-rtl {
+        .#{$prefix}rtl.#{$prefix}btn-split-right,
+        .#{$prefix}btn-over .#{$prefix}rtl.#{$prefix}btn-split-right {
+            background-image: theme-background-image($theme-name, 'button/s-arrow-rtl.gif');
+            background-position: 0 center;
+            padding-right: 0 !important;
+            padding-left: $button-split-size !important;
+        }
+    }
+
     .#{$prefix}btn-split-bottom,
     .#{$prefix}btn-over .#{$prefix}btn-split-bottom {
         background: transparent no-repeat center bottom;
@@ -236,6 +274,14 @@
     .#{$prefix}toolbar .#{$prefix}btn-split-right {
         background-image: theme-background-image($theme-name, 'button/s-arrow-noline.gif');
         padding-right: $button-toolbar-split-size !important;
+    }
+
+    @if $include-rtl {
+        .#{$prefix}toolbar .#{$prefix}rtl.#{$prefix}btn-split-right {
+            background-image: theme-background-image($theme-name, 'button/s-arrow-noline-rtl.gif');
+            padding-right: 0 !important;
+            padding-left: $button-toolbar-split-size !important;
+        }
     }
 
     .#{$prefix}toolbar .#{$prefix}btn-split-bottom {
@@ -255,8 +301,19 @@
         text-align: inherit;
     }
 
-    .#{$prefix}btn-over .#{$prefix}btn-split-right { background-image: theme-background-image($theme-name, 'button/s-arrow-o.gif'); }
-    .#{$prefix}btn-over .#{$prefix}btn-split-bottom { background-image: theme-background-image($theme-name, 'button/s-arrow-bo.gif'); }
+    .#{$prefix}btn-over {
+        .#{$prefix}btn-split-right {
+            background-image: theme-background-image($theme-name, 'button/s-arrow-o.gif');
+        }
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-split-right {
+                background-image: theme-background-image($theme-name, 'button/s-arrow-o-rtl.gif');
+            }
+        }
+        .#{$prefix}btn-split-bottom {
+            background-image: theme-background-image($theme-name, 'button/s-arrow-bo.gif');
+        }
+    }
 
     @include extjs-button-ui(
         /* UI + Scale */
@@ -666,6 +723,19 @@
         padding: 0 $text-padding;
     }
 
+    .#{$prefix}btn-#{$ui} .#{$prefix}btn-arrow-right {
+        .#{$prefix}btn-inner {
+            padding-right: 0;
+        }
+
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-inner {
+                padding-right: $text-padding;
+                padding-left: 0;
+            }
+        }
+    }
+
     .#{$prefix}btn-#{$ui}-icon,
     .#{$prefix}btn-#{$ui}-noicon {
         button,
@@ -710,6 +780,17 @@
             padding-left: $icon-size + 4px;
         }
 
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-inner {
+                padding-left: $text-padding;
+                padding-right: $icon-size + 4px;
+            }
+
+            .#{$prefix}btn-arrow-right .#{$prefix}rtl.#{$prefix}btn-inner {
+                padding-right: $icon-size + 4px;
+            }
+        }
+
         .#{$prefix}btn-icon {
             width: $icon-size;
             height: auto;
@@ -721,6 +802,13 @@
             .#{$prefix}ie6 &amp;,
             .#{$prefix}quirks &amp; {
                 height: $icon-size;
+            }
+        }
+
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-icon {
+                left: auto;
+                right: 0;
             }
         }
     }
@@ -736,6 +824,13 @@
             padding-right: $icon-size + 4px !important;
         }
 
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-inner {
+                padding-right: $text-padding !important;
+                padding-left: $icon-size + 4px;
+            }
+        }
+
         .#{$prefix}btn-icon {
             width: $icon-size;
             height: auto;
@@ -747,6 +842,13 @@
             .#{$prefix}ie6 &amp;,
             .#{$prefix}quirks &amp; {
                 height: $icon-size;
+            }
+        }
+
+        @if $include-rtl {
+            .#{$prefix}rtl.#{$prefix}btn-icon {
+                left: 0;
+                right: auto;
             }
         }
     }

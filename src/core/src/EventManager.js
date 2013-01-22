@@ -14,11 +14,12 @@ Ext.EventManager = new function() {
     var EventManager = this,
         doc = document,
         win = window,
+        prefix = Ext.baseCSSPrefix,
         readyEvent,
         initExtCss = function() {
             // find the body element
             var bd = doc.body || doc.getElementsByTagName('body')[0],
-                cls = [Ext.baseCSSPrefix + 'body'],
+                cls = [prefix + 'body'],
                 htmlCls = [],
                 supportsLG = Ext.supports.CSS3LinearGradient,
                 supportsBR = Ext.supports.CSS3BorderRadius,
@@ -33,11 +34,11 @@ Ext.EventManager = new function() {
             html = bd.parentNode;
 
             function add (c) {
-                cls.push(Ext.baseCSSPrefix + c);
+                cls.push(prefix + c);
             }
 
             //Let's keep this human readable!
-            if (Ext.isIE) {
+            if (Ext.isIE && Ext.isIE9m) {
                 add('ie');
 
                 // very often CSS needs to do checks like "IE7+" or "IE6 or 7". To help
@@ -86,6 +87,11 @@ Ext.EventManager = new function() {
                     add('ie78');
                 }
             }
+            
+            if (Ext.isIE10) {
+                add('ie10');
+            }
+            
             if (Ext.isGecko) {
                 add('gecko');
                 if (Ext.isGecko3) {
@@ -145,15 +151,15 @@ Ext.EventManager = new function() {
 
                 // Create Ext.resetElementSpec for use in Renderable when wrapping top level Components.
                 resetElementSpec = Ext.resetElementSpec = {
-                    cls: Ext.baseCSSPrefix + 'reset'
+                    cls: prefix + 'reset'
                 };
                 
                 if (!supportsLG) {
-                    resetCls.push(Ext.baseCSSPrefix + 'nlg');
+                    resetCls.push(prefix + 'nlg');
                 }
                 
                 if (!supportsBR) {
-                    resetCls.push(Ext.baseCSSPrefix + 'nbr');
+                    resetCls.push(prefix + 'nbr');
                 }
                 
                 if (resetCls.length) {                    
@@ -183,12 +189,12 @@ Ext.EventManager = new function() {
                 }
 
                 if(Ext.isBorderBox) {
-                    htmlCls.push(Ext.baseCSSPrefix + 'border-box');
+                    htmlCls.push(prefix + 'border-box');
                 }
                 if (Ext.isStrict) {
-                    htmlCls.push(Ext.baseCSSPrefix + 'strict');
+                    htmlCls.push(prefix + 'strict');
                 } else {
-                    htmlCls.push(Ext.baseCSSPrefix + 'quirks');
+                    htmlCls.push(prefix + 'quirks');
                 }
                 Ext.fly(html, '_internal').addCls(htmlCls);
             }
@@ -218,7 +224,7 @@ Ext.EventManager = new function() {
          */
         deferReadyEvent : 1,
 
-        /**
+        /*
          * diags: a list of event names passed to onReadyEvent (in chron order)
          * @private
          */
@@ -666,11 +672,11 @@ Ext.EventManager = new function() {
             }
 
             var dom = Ext.getDom(element),
-                el = element.dom ? element : Ext.get(dom),
+                id, el = element.dom ? element : Ext.get(dom),
                 cache = EventManager.getEventListenerCache(el, eventName),
                 bindName = EventManager.normalizeEvent(eventName).eventName,
-                i = cache.length, j, cacheItem, needsClone,
-                listener, wrap, tasks, id;
+                i = cache.length, j, cacheItem,
+                listener, wrap;
 
 
             while (i--) {
@@ -858,7 +864,7 @@ Ext.EventManager = new function() {
                     if(options.buffer) {
                         f.push('}, ' + options.buffer + ');');
                     }
-                    f.push('return result;')
+                    f.push('return result;');
 
                     gen = Ext.cacheableFunctionFactory('e', 'options', 'fn', 'scope', 'ename', 'dom', 'wrap', 'args', 'X', 'evtMgr', f.join('\n'));
                 }
@@ -1053,18 +1059,18 @@ Ext.EventManager = new function() {
          */
         resolveTextNode: Ext.isGecko ?
             function(node) {
-                if (!node) {
-                    return;
+                if (node) {
+                    // work around firefox bug, https://bugzilla.mozilla.org/show_bug.cgi?id=101197
+                    var s = HTMLElement.prototype.toString.call(node);
+                    if (s !== '[xpconnect wrapped native prototype]' && s !== '[object XULElement]') {
+                        return node.nodeType == 3 ? node.parentNode: node;
+                    }
                 }
-                // work around firefox bug, https://bugzilla.mozilla.org/show_bug.cgi?id=101197
-                var s = HTMLElement.prototype.toString.call(node);
-                if (s == '[xpconnect wrapped native prototype]' || s == '[object XULElement]') {
-                    return;
-                }
-                    return node.nodeType == 3 ? node.parentNode: node;
-                }: function(node) {
-                    return node && node.nodeType == 3 ? node.parentNode: node;
-                },
+            }
+            :
+            function(node) {
+                return node && node.nodeType == 3 ? node.parentNode: node;
+            },
 
         // --------------------- custom event binding ---------------------
 

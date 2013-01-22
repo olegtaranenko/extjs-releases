@@ -35,7 +35,8 @@
     $background-color: null,
     $background-gradient: null,
     $table: false,
-    $background-direction: top
+    $background-direction: top,
+    $include-frame-rtl: false
 ) {
     $cls-ui: $cls;
     @if $ui != null {
@@ -124,6 +125,11 @@
                     background-color: $background-color;
                 }
             }
+            @if $include-frame-rtl and $background-gradient != null {
+                .#{$prefix}rtl.#{$prefix}#{$cls-ui}-mc {
+                    background-image: theme-background-image($theme-name, '#{$cls}/#{$cls-ui}-bg-rtl.gif', false, $relative-image-path-for-uis);
+                }
+            }
         }
     }
 
@@ -169,6 +175,21 @@
                 }
             }
 
+            @if $background-color != transparent {
+                @if $include-frame-rtl {
+                    .#{$prefix}rtl {
+                        &amp;.#{$prefix}#{$cls-ui}-tl,
+                        &amp;.#{$prefix}#{$cls-ui}-ml,
+                        &amp;.#{$prefix}#{$cls-ui}-bl,
+                        &amp;.#{$prefix}#{$cls-ui}-tr,
+                        &amp;.#{$prefix}#{$cls-ui}-mr,
+                        &amp;.#{$prefix}#{$cls-ui}-br {
+                            background-image: theme-background-image($theme-name, '#{$cls}/#{$cls-ui}-corners-rtl.gif', false, $relative-image-path-for-uis);
+                        }
+                    }
+                }
+            }
+
             @if $vertical == true {
                 .#{$prefix}#{$cls-ui}-tc,
                 .#{$prefix}#{$cls-ui}-bc {
@@ -178,6 +199,15 @@
                         background-image: theme-background-image($theme-name, '#{$cls}/#{$cls-ui}-sides.gif', false, $relative-image-path-for-uis);
                         background-position: 0 0;
                         background-repeat: repeat-x;
+                    }
+                }
+
+                @if $include-frame-rtl and $background-color != transparent {
+                    .#{$prefix}rtl {
+                        &amp;.#{$prefix}#{$cls-ui}-tc,
+                        &amp;.#{$prefix}#{$cls-ui}-bc {
+                            background-image: theme-background-image($theme-name, '#{$cls}/#{$cls-ui}-sides-rtl.gif', false, $relative-image-path-for-uis);
+                        }
                     }
                 }
             } @else {

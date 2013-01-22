@@ -270,8 +270,8 @@ Ext.define('Ext.data.Field', {
      * JavaScript Date object's `parse` function if not specified, rather than {@link Ext.Date#parse Ext.Date.parse}.
      * This can cause unexpected issues, especially when converting between timezones, or when converting dates that
      * do not have a timezone specified. The behavior of the native `Date.parse` is implementation-specific, and
-     * depending on the value of the date string, it might return the UTC date or the local date. For this reason
-     * it is strongly recommended that you always specify an explicit date format when parsing dates.
+     * depending on the value of the date string, it might return the UTC date or the local date. __For this reason
+     * it is strongly recommended that you always specify an explicit date format when parsing dates.__
      */
     dateFormat: null,
     

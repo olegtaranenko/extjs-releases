@@ -182,13 +182,14 @@ Ext.define('Ext.form.field.Spinner', {
         }
     },
 
-    getSubTplMarkup: function() {
+    getSubTplMarkup: function(values) {
         var me = this,
+            childElCls = values.childElCls ? (' ' + values.childElCls) : '', 
             field = Ext.form.field.Base.prototype.getSubTplMarkup.apply(me, arguments);
 
-        return '<table id="' + me.id + '-triggerWrap" class="' + Ext.baseCSSPrefix + 'form-trigger-wrap" cellpadding="0" cellspacing="0">' +
+        return '<table id="' + me.id + '-triggerWrap" class="' + Ext.baseCSSPrefix + 'form-trigger-wrap' + childElCls + '" cellpadding="0" cellspacing="0">' +
             '<tbody>' +
-                '<tr><td id="' + me.id + '-inputCell" class="' + Ext.baseCSSPrefix + 'form-trigger-input-cell">' + field + '</td>' +
+                '<tr><td id="' + me.id + '-inputCell" class="' + Ext.baseCSSPrefix + 'form-trigger-input-cell' + childElCls + '">' + field + '</td>' +
                 me.getTriggerMarkup() +
             '</tbody></table>';
     },

@@ -720,7 +720,7 @@ Ext.define('Ext.form.Basic', {
      */
     loadRecord: function(record) {
         this._record = record;
-        return this.setValues(record.data);
+        return this.setValues(record.getData());
     },
 
     /**
@@ -906,6 +906,9 @@ Ext.define('Ext.form.Basic', {
             }
         }
 
+        // Suspend here because setting the value on a field could trigger
+        // a layout, for example if an error gets set, or it's a display field
+        Ext.suspendLayouts();
         if (Ext.isArray(values)) {
             // array of objects
             vLen = values.length;
@@ -919,6 +922,7 @@ Ext.define('Ext.form.Basic', {
             // object hash
             Ext.iterate(values, setVal);
         }
+        Ext.resumeLayouts(true);
         return this;
     },
 

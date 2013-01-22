@@ -36,7 +36,7 @@
  *     });
  *
  * We've updated the init function to use this.control to set up listeners on views in our application. The control
- * function uses the new ComponentQuery engine to quickly and easily get references to components on the page. If you
+ * function uses the ComponentQuery engine to quickly and easily get references to components on the page. If you
  * are not familiar with ComponentQuery yet, be sure to check out the {@link Ext.ComponentQuery documentation}. In brief though,
  * it allows us to pass a CSS-like selector that will find every matching component on the page.
  *
@@ -130,6 +130,15 @@
  * @docauthor Ed Spencer
  */
 Ext.define('Ext.app.Controller', {
+    requires: [
+        'Ext.app.EventBus'
+    ],
+
+    uses: [
+        'Ext.ModelManager',
+        'Ext.data.StoreManager',
+        'Ext.ComponentManager'
+    ],
 
     mixins: {
         observable: 'Ext.util.Observable'
@@ -145,38 +154,44 @@ Ext.define('Ext.app.Controller', {
                 getter: 'getModel',
                 upper: 'Model'
             },
+
             view: {
                 getter: 'getView',
                 upper: 'View'
             },
+
             controller: {
                 getter: 'getController',
                 upper: 'Controller'
             },
+
             store: {
                 getter: 'getStore',
                 upper: 'Store'
             }
         },
 
-        createGetter: function (baseGetter, name) {
+        controllerRegex: /^(.*)\.controller\./,
+
+        createGetter: function(baseGetter, name) {
             return function () {
                 return this[baseGetter](name);
             };
         },
 
-        getGetterName: function (name, kindUpper) {
+        getGetterName: function(name, kindUpper) {
             var fn       = 'get',
                 parts    = name.split('.'),
                 numParts = parts.length,
                 index;
 
             // Handle namespaced class names. E.g. feed.Add becomes getFeedAddView etc.
-            for (index = 0 ; index < numParts; index++) {
+            for (index = 0; index < numParts; index++) {
                 fn += Ext.String.capitalize(parts[index]);
             }
 
             fn += kindUpper;
+            
             return fn;
         },
 
@@ -186,27 +201,26 @@ Ext.define('Ext.app.Controller', {
          *      Ext.app.Controller.processDependencies(proto, requiresArray, 'MyApp', 'model', [
          *          'User',
          *          'Item',
-         *          'Foo@Common.models',
-         *          'models.Bar@Common'
+         *          'Foo@Common.model',
+         *          'Bar.Baz@Common.model'
          *      ]);
          *
          * Required dependencies are added to requiresArray.
          *
          * @private
          */
-        processDependencies: function (cls, requires, namespace, kind, names) {
-            if (!names) {
+        processDependencies: function(cls, requires, namespace, kind, names) {
+            if (!names || !names.length) {
                 return;
             }
 
             var me = this,
-                namespaceAndModule = namespace + '.' + kind + '.',
                 strings = me.strings[kind],
                 o, absoluteName, shortName, name, j, subLn, getterName;
 
             for (j = 0, subLn = names.length; j < subLn; j++) {
                 name = names[j];
-                o = me.getFullName(name, namespaceAndModule);
+                o = me.getFullName(name, kind, namespace);
                 absoluteName = o.absoluteName;
                 shortName = o.shortName;
 
@@ -214,50 +228,64 @@ Ext.define('Ext.app.Controller', {
                 getterName = me.getGetterName(shortName, strings.upper);
                 cls[getterName] = me.createGetter(strings.getter, name);
 
-                // Application class will init the controllers
+                // Application class will init the controller getters
                 if (kind !== 'controller') {
                     cls[getterName].$ext_getter = true;
                 }
             }
         },
-        
-        getFullName: function(name, namespaceAndModule){
+
+        getFullName: function(name, kind, namespace) {
             var shortName = name,
                 sep, absoluteName;
-                
+
             if ((sep = name.indexOf('@')) > 0) {
                 // The unambiguous syntax is Model@Name.space (or "space.Model@Name")
                 // which contains both the short name ("Model" or "space.Model") and
                 // the full name (Name.space.Model).
                 //
-                shortName = name.substring(0, sep); // "Model"
+                shortName    = name.substring(0, sep); // "Model"
                 absoluteName = name.substring(sep + 1) + '.' + shortName; //  ex: "Name.space.Model"
             }
             // Deciding if a class name must be qualified:
-            // 
+            //
             // 1 - if the name doesn't contain a dot, we must qualify it
-            // 
+            //
             // 2 - the name may be a qualified name of a known class, but:
-            // 
+            //
             // 2.1 - in runtime, the loader may not know the class - specially in
             //       production - so we must check the class manager
-            //       
+            //
             // 2.2 - in build time, the class manager may not know the class, but
             //       the loader does, so we check the second one (the loader check
             //       assures it's really a class, and not a namespace, so we can
             //       have 'Books.controller.Books', and requesting a controller
             //       called Books will not be underqualified)
             //
-            else if (name.indexOf('.') > 0 && (Ext.ClassManager.isCreated(name) || 
-                                Ext.Loader.isAClassNameWithAKnownPrefix(name))) {
+            else if (name.indexOf('.') > 0 && (Ext.ClassManager.isCreated(name) ||
+                     Ext.Loader.isAClassNameWithAKnownPrefix(name))) {
                 absoluteName = name;
-            } else {
-                absoluteName = namespaceAndModule + name;
             }
-            
+            else {
+                //<debug>
+                if (!namespace) {
+                    Ext.log.warn("Cannot find namespace for " + kind + " " + name + ", " +
+                                 "assuming it is fully qualified class name");
+                }
+                //</debug>
+
+                if (namespace) {
+                    absoluteName = namespace + '.' + kind + '.' + name;
+                    shortName    = name;
+                }
+                else {
+                    absoluteName = name;
+                }
+            }
+
             return {
                 absoluteName: absoluteName,
-                shortName: shortName    
+                shortName:    shortName
             };
         }
     },
@@ -265,14 +293,14 @@ Ext.define('Ext.app.Controller', {
     /**
      * @cfg {String[]} models
      * Array of models to require from AppName.model namespace. For example:
-     * 
+     *
      *     Ext.define("MyApp.controller.Foo", {
      *         extend: "Ext.app.Controller",
      *         models: ['User', 'Vehicle']
      *     });
-     * 
+     *
      * This is equivalent of:
-     * 
+     *
      *     Ext.define("MyApp.controller.Foo", {
      *         extend: "Ext.app.Controller",
      *         requires: ['MyApp.model.User', 'MyApp.model.Vehicle'],
@@ -283,21 +311,21 @@ Ext.define('Ext.app.Controller', {
      *             return this.getModel("Vehicle");
      *         }
      *     });
-     * 
+     *
      */
 
     /**
      * @cfg {String[]} views
      * Array of views to require from AppName.view namespace and to generate getter methods for.
      * For example:
-     * 
+     *
      *     Ext.define("MyApp.controller.Foo", {
      *         extend: "Ext.app.Controller",
      *         views: ['List', 'Detail']
      *     });
-     * 
+     *
      * This is equivalent of:
-     * 
+     *
      *     Ext.define("MyApp.controller.Foo", {
      *         extend: "Ext.app.Controller",
      *         requires: ['MyApp.view.List', 'MyApp.view.Detail'],
@@ -315,14 +343,14 @@ Ext.define('Ext.app.Controller', {
      * @cfg {String[]} stores
      * Array of stores to require from AppName.store namespace and to generate getter methods for.
      * For example:
-     * 
+     *
      *     Ext.define("MyApp.controller.Foo", {
      *         extend: "Ext.app.Controller",
      *         stores: ['Users', 'Vehicles']
      *     });
-     * 
+     *
      * This is equivalent of:
-     * 
+     *
      *     Ext.define("MyApp.controller.Foo", {
      *         extend: "Ext.app.Controller",
      *         requires: ['MyApp.store.Users', 'MyApp.store.Vehicles']
@@ -339,7 +367,7 @@ Ext.define('Ext.app.Controller', {
     /**
      * @cfg {Object[]} refs
      * Array of configs to build up references to views on page. For example:
-     * 
+     *
      *     Ext.define("MyApp.controller.Foo", {
      *         extend: "Ext.app.Controller",
      *         refs: [
@@ -349,7 +377,7 @@ Ext.define('Ext.app.Controller', {
      *             }
      *         ],
      *     });
-     * 
+     *
      * This will add method `getList` to the controller which will internally use
      * Ext.ComponentQuery to reference the grid component on page.
      *
@@ -360,31 +388,55 @@ Ext.define('Ext.app.Controller', {
      * - `autoCreate` - True to create the component automatically if not found on page.
      * - `forceCreate` - Forces the creation of the component every time reference is accessed
      *   (when `get<REFNAME>` is called).
+     * - `xtype` - Used to create component by its xtype with autoCreate or forceCreate. If
+     *   you don't provide xtype, an Ext.Component instance will be created.
      */
 
     onClassExtended: function(cls, data, hooks) {
-        var Controller = Ext.app.Controller,
-            className, namespace, onBeforeClassCreated, requires, proto, match;
+        var onBeforeClassCreated = hooks.onBeforeCreated;
 
-        className  = Ext.getClassName(cls);
-        namespace  = Ext.Loader.getPrefix(className) ||
-                     ((match = className.match(/^(.*)\.controller\./)) && match[1]);
+        hooks.onBeforeCreated = function(cls, data) {
+            var Controller = Ext.app.Controller,
+                ctrlRegex  = Controller.controllerRegex,
+                requires   = [],
+                className, namespace, requires, proto, match;
 
-        if (namespace && namespace !== className) {
-            onBeforeClassCreated = hooks.onBeforeCreated;
-            requires = [];
+            proto = cls.prototype;
+            
+            /*
+             * Namespace resolution is tricky business: we should know what namespace
+             * this Controller descendant belongs to, or model/store/view dependency
+             * resolution will be either ambiguous or plainly not possible. To avoid
+             * guessing games we try to look for a forward hint ($namespace) that
+             * Application class sets when its onClassExtended gets processed; if that
+             * fails we try to deduce namespace from class name.
+             *
+             * Note that for Ext.app.Application, Controller.onClassExtended gets executed
+             * *before* Application.onClassExtended so we have to delay namespace handling
+             * until after Application.onClassExtended kicks in, hence it is done in this hook.
+             */
+            className = Ext.getClassName(cls);
+            namespace = data.$namespace                 ||
+                        Ext.app.getNamespace(className) ||
+                        ((match = ctrlRegex.exec(className)) && match[1]);
 
-            hooks.onBeforeCreated = function(cls, data) {
-                proto = cls.prototype;
+            if (namespace) {
+                proto.$namespace = namespace;
+            }
+            //<debug>
+            else {
+                Ext.log.warn("Missing namespace for " + className + ", please define it "+
+                             "in namespaces property of your Application class.");
+            }
+            //</debug>
 
-                Controller.processDependencies(proto, requires, namespace, 'model', data.models);
-                Controller.processDependencies(proto, requires, namespace, 'view', data.views);
-                Controller.processDependencies(proto, requires, namespace, 'store', data.stores);
-                Controller.processDependencies(proto, requires, namespace, 'controller', data.controllers);
+            Controller.processDependencies(proto, requires, namespace, 'model',      data.models);
+            Controller.processDependencies(proto, requires, namespace, 'view',       data.views);
+            Controller.processDependencies(proto, requires, namespace, 'store',      data.stores);
+            Controller.processDependencies(proto, requires, namespace, 'controller', data.controllers);
 
-                Ext.require(requires, Ext.Function.pass(onBeforeClassCreated, arguments, this));
-            };
-        }
+            Ext.require(requires, Ext.Function.pass(onBeforeClassCreated, arguments, this));
+        };
     },
 
     /**
@@ -403,7 +455,16 @@ Ext.define('Ext.app.Controller', {
             me.ref(me.refs);
         }
 
+        me.initEventBus();
         me.initAutoGetters();
+    },
+
+    /**
+     * Initializes EventBus reference for this Controller. By default it uses global
+     * EventBus instance but can be overridden in your application to do something else.
+     */
+    initEventBus: function() {
+        this.eventbus = Ext.app.EventBus.instance;
     },
 
     initAutoGetters: function() {
@@ -418,12 +479,14 @@ Ext.define('Ext.app.Controller', {
             }
         }
     },
-    
+
     doInit: function(app) {
-        if (!this._initialized) {
-            this.init(app);
-            this._initialized = true;
-        }    
+        var me = this;
+
+        if (!me._initialized) {
+            me.init(app);
+            me._initialized = true;
+        }
     },
 
     /**
@@ -446,13 +509,13 @@ Ext.define('Ext.app.Controller', {
     onLaunch: Ext.emptyFn,
 
     ref: function(refs) {
-        refs = Ext.Array.from(refs);
-        
         var me = this,
             i = 0,
             length = refs.length,
             info, ref, fn;
-        
+
+        refs = Ext.Array.from(refs);
+
         me.references = me.references || [];
 
         for (; i < length; i++) {
@@ -533,9 +596,9 @@ Ext.define('Ext.app.Controller', {
      *             console.log('clicked the Save button');
      *         }
      *     });
-     * 
+     *
      * Or alternatively one call `control` with two arguments:
-     * 
+     *
      *     this.control('useredit button[action=save]', {
      *         click: this.updateUser
      *     });
@@ -546,38 +609,71 @@ Ext.define('Ext.app.Controller', {
      * listeners, otherwise an object of selectors -> listeners is assumed
      * @param {Object} [listeners] Config for listeners.
      */
-    control: function(selectors, listeners) {
-        this.application.control(selectors, listeners, this);
+    control: function(selectors, listeners, controller) {
+        this.eventbus.control(selectors, listeners, controller || this);
     },
 
     /**
-     * Returns instance of a {@link Ext.app.Controller controller} with the given name.
-     * When controller doesn't exist yet, it's created.
-     * @param {String} name
-     * @return {Ext.app.Controller} a controller instance.
+     * Returns instance of a {@link Ext.app.Controller Controller} with the given id.
+     * When controller doesn't exist yet, it's created. Note that this method depends
+     * on Application instance and will return undefined when Application is not
+     * accessible. The only exception is when this Controller instance's id is requested;
+     * in that case we always return the instance even if Application is no available.
+     *
+     * @param {String} id
+     * @return {Ext.app.Controller} controller instance or undefined.
      */
-    getController: function(name) {
-        return this.application.getController(name);
+    getController: function(id) {
+        var me = this;
+        
+        if (id === me.id) {
+            return me;
+        }
+        else if (me.application) {
+            return me.application.getController(id);
+        }
+        else {
+            return;
+        }
     },
 
     /**
      * Returns instance of a {@link Ext.data.Store Store} with the given name.
      * When store doesn't exist yet, it's created.
+     *
      * @param {String} name
      * @return {Ext.data.Store} a store instance.
      */
     getStore: function(name) {
-        return this.application.getStore(name);
+        var storeId, store;
+
+        storeId = (name.indexOf("@") == -1) ? name : name.split("@")[0];
+        store   = Ext.StoreManager.get(storeId);
+
+        if (!store) {
+            name = Ext.app.Controller.getFullName(name, 'store', this.$namespace);
+
+            if (name) {
+                store = Ext.create(name.absoluteName, {
+                    storeId: storeId
+                });
+            }
+        }
+
+        return store;
     },
 
     /**
      * Returns a {@link Ext.data.Model Model} class with the given name.
      * A shorthand for using {@link Ext.ModelManager#getModel}.
+     *
      * @param {String} name
      * @return {Ext.data.Model} a model class.
      */
     getModel: function(model) {
-        return this.application.getModel(model);
+        var name = Ext.app.Controller.getFullName(model, 'model', this.$namespace);
+
+        return name && Ext.ModelManager.getModel(name.absoluteName);
     },
 
     /**
@@ -590,14 +686,17 @@ Ext.define('Ext.app.Controller', {
      * @return {Ext.Base} a view class.
      */
     getView: function(view) {
-        return this.application.getView(view);
+        var name = Ext.app.Controller.getFullName(view, 'view', this.$namespace);
+
+        return name && Ext.ClassManager.get(name.absoluteName);
     },
-    
+
     /**
      * Returns the base {@link Ext.app.Application} for this controller.
+     *
      * @return {Ext.app.Application} the application
      */
-    getApplication: function(){
+    getApplication: function() {
         return this.application;
     }
 });

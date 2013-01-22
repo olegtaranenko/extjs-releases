@@ -528,8 +528,26 @@ Ext.define('Ext.form.field.Text', {
             me.inputEl.removeCls(me.emptyCls);
         }
         if (me.selectOnFocus || isEmpty) {
-            inputEl.dom.select();
+            // see: http://code.google.com/p/chromium/issues/detail?id=4505
+            if (Ext.isWebKit) {
+                if (!me.inputFocusTask) {
+                    me.inputFocusTask = new Ext.util.DelayedTask(me.focusInput, me);
+                }
+                me.inputFocusTask.delay(1);
+            } else {
+                inputEl.dom.select();
+            }
         }
+    },
+    
+<span id='Ext-form-field-Text-method-focusInput'>    focusInput: function(){
+</span>        var input = this.inputEl;
+        if (input) {
+            input = input.dom;
+            if (input) {
+                input.select();
+            }
+        }    
     },
 
 <span id='Ext-form-field-Text-method-onFocus'>    onFocus: function() {
@@ -780,6 +798,16 @@ Ext.define('Ext.form.field.Text', {
                 me.lastInputWidth = width;
                 delete me.autoSizing;
             }
+        }
+    },
+    
+<span id='Ext-form-field-Text-method-onDestroy'>    onDestroy: function(){
+</span>        var me = this;
+        me.callParent();
+        
+        if (me.inputFocusTask) {
+            me.inputFocusTask.cancel();
+            me.inputFocusTask = null;
         }
     }
 });

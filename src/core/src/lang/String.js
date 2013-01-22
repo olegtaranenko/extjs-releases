@@ -25,6 +25,13 @@ Ext.String = (function() {
         },
         htmlDecodeReplaceFn = function(match, capture) {
             return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
+        },
+        boundsCheck = function(s, other){
+            if (s === null || s === undefined || other === null || other === undefined) {
+                return false;
+            }
+            
+            return other.length <= s.length; 
         };
 
     return {
@@ -73,6 +80,44 @@ Ext.String = (function() {
                 s = s.substr(0, index) + value + s.substr(index);
             }
             return s;
+        },
+        
+        /**
+         * Checks if a string starts with a substring
+         * @param {String} s The original string
+         * @param {String} start The substring to check
+         * @param {Boolean} [ignoreCase=false] True to ignore the case in the comparison
+         */
+        startsWith: function(s, start, ignoreCase){
+            var result = boundsCheck(s, start);
+            
+            if (result) {
+                if (ignoreCase) {
+                    s = s.toLowerCase();
+                    start = start.toLowerCase();
+                }
+                result = s.lastIndexOf(start, 0) === 0;
+            }
+            return result;
+        },
+        
+        /**
+         * Checks if a string ends with a substring
+         * @param {String} s The original string
+         * @param {String} start The substring to check
+         * @param {Boolean} [ignoreCase=false] True to ignore the case in the comparison
+         */
+        endsWith: function(s, end, ignoreCase){
+            var result = boundsCheck(s, end);
+            
+            if (result) {
+                if (ignoreCase) {
+                    s = s.toLowerCase();
+                    end = end.toLowerCase();
+                }
+                result = s.indexOf(end, s.length - end.length) !== -1;
+            }
+            return result;
         },
 
         /**

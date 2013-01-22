@@ -47,7 +47,7 @@ Ext.onReady(function(){
         ['McDonald\'s Corporation',36.76,0.86,2.40,'9/1 12:00am', 'Food'],
         ['Merck & Co., Inc.',40.96,0.41,1.01,'9/1 12:00am', 'Medical'],
         ['Microsoft Corporation',25.84,0.14,0.54,'9/1 12:00am', 'Computer'],
-        ['Pfizer Inc',27.96,0.4,1.45,'9/1 12:00am', 'Services', 'Medical'],
+        ['Pfizer Inc',27.96,0.4,1.45,'9/1 12:00am', 'Medical'],
         ['The Coca-Cola Company',45.07,0.26,0.58,'9/1 12:00am', 'Food'],
         ['The Home Depot, Inc.',34.64,0.35,1.02,'9/1 12:00am', 'Retail'],
         ['The Procter & Gamble Company',61.91,0.01,0.02,'9/1 12:00am', 'Manufacturing'],

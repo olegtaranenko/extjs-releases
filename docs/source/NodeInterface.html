@@ -133,6 +133,11 @@ Ext.define('Ext.data.NodeInterface', {
      * Tooltip title.
      */
 
+<span id='Ext-data-NodeInterface-cfg-qshowDelay'>    /**
+</span>     * @cfg {Number} qshowDelay
+     * Tooltip showDelay.
+     */
+
 <span id='Ext-data-NodeInterface-cfg-text'>    /**
 </span>     * @cfg {String} text
      * The text for to show on node label.
@@ -224,6 +229,7 @@ Ext.define('Ext.data.NodeInterface', {
                 { name : 'hrefTarget', type : 'string',  defaultValue : null,  persist : false           },
                 { name : 'qtip',       type : 'string',  defaultValue : null,  persist : false           },
                 { name : 'qtitle',     type : 'string',  defaultValue : null,  persist : false           },
+                { name : 'qshowDelay', type : 'int',     defaultValue : null,  persist : false           },
                 { name : 'children',   type : 'auto',    defaultValue : null,  persist : false           }
             ]);
         },

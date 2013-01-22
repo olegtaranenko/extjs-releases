@@ -90,7 +90,7 @@ Ext.define('Ext.layout.container.Border', {
 
 <span id='Ext-layout-container-Border-property-targetCls'>    targetCls: Ext.baseCSSPrefix + 'border-layout-ct',
 </span>
-<span id='Ext-layout-container-Border-property-itemCls'>    itemCls: [Ext.baseCSSPrefix + 'border-item', Ext.baseCSSPrefix + 'box-item'],
+<span id='Ext-layout-container-Border-cfg-itemCls'>    itemCls: [Ext.baseCSSPrefix + 'border-item', Ext.baseCSSPrefix + 'box-item'],
 </span>
 <span id='Ext-layout-container-Border-property-type'>    type: 'border',
 </span>
@@ -599,8 +599,10 @@ Ext.define('Ext.layout.container.Border', {
             // the first panel has finished it's expand animation. If this is the
             // case we do not want the placeholder to be included in the layout
             // items because it will not be once the panel has finished expanding.
-            if ((!ownerItem.floated || ownerItem.isCollapsingOrExpanding === 2) &amp;&amp;
-                !(placeholderFor &amp;&amp; placeholderFor.isCollapsingOrExpanding === 2)) {
+            //
+            // If the component is hidden, we need none of these shenanigans
+            if (ownerItem.hidden || ((!ownerItem.floated || ownerItem.isCollapsingOrExpanding === 2) &amp;&amp;
+                !(placeholderFor &amp;&amp; placeholderFor.isCollapsingOrExpanding === 2))) {
                 items.push(ownerItem);
             } 
         }

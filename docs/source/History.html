@@ -52,7 +52,7 @@ Ext.define('Ext.util.History', {
 
 <span id='Ext-util-History-method-constructor'>    constructor: function() {
 </span>        var me = this;
-        me.oldIEMode = Ext.isIE6 || Ext.isIE7 || !Ext.isStrict &amp;&amp; Ext.isIE8;
+        me.oldIEMode = Ext.isIE7m || !Ext.isStrict &amp;&amp; Ext.isIE8;
         me.iframe = null;
         me.hiddenField = null;
         me.ready = false;

@@ -198,7 +198,7 @@ Ext.define('Ext.menu.Menu', {
         me.cls = cls.join(' ');
 
         // Menu body classes
-        bodyCls.unshift(prefix + 'menu-body');
+        bodyCls.push(prefix + 'menu-body', Ext.dom.Element.unselectableCls);
         me.bodyCls = bodyCls.join(' ');
 
         // Internal vbox layout, with scrolling overflow
@@ -226,6 +226,10 @@ Ext.define('Ext.menu.Menu', {
         me.callParent(arguments);
     },
 
+    // Menus do not have owning containers on which they depend for visibility. They stand outside
+    // any container hierarchy.
+    initHierarchyEvents: Ext.emptyFn,
+
     beforeRender: function() {
         this.callParent(arguments);
 
@@ -237,21 +241,16 @@ Ext.define('Ext.menu.Menu', {
     },
 
     onBoxReady: function() {
-        var me = this,
-            separatorSpec;
+        var me = this;
 
         me.callParent(arguments);
 
         // TODO: Move this to a subTemplate When we support them in the future
         if (me.showSeparator) {
-            separatorSpec = {
+            me.iconSepEl = me.layout.getElementTarget().insertFirst({
                 cls: Ext.baseCSSPrefix + 'menu-icon-separator',
                 html: '&#160;'
-            };
-            if ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) {
-                separatorSpec.style = 'height:' + me.el.getHeight() + 'px';
-            }
-            me.iconSepEl = me.layout.getElementTarget().insertFirst(separatorSpec);
+            });
         }
 
         me.mon(me.el, {
@@ -487,6 +486,7 @@ Ext.define('Ext.menu.Menu', {
 
     showBy: function(cmp, pos, off) {
         var me = this;
+
         me.callParent(arguments);
         if (!me.hidden) {
             // show may have been vetoed
@@ -518,22 +518,13 @@ Ext.define('Ext.menu.Menu', {
         return me;
     },
 
-    afterComponentLayout: function(width, height, oldWidth, oldHeight){
-        var me = this;
-        me.callParent(arguments);
-        // fixup the separator
-        if (me.showSeparator){
-            me.iconSepEl.setHeight(me.componentLayout.lastComponentSize.contentHeight);
-        }
-    },
-
     // @private
     // adjust the vertical position of the menu if the height of the
     // menu is equal (or greater than) the viewport size
-    setVerticalPosition: function(){
+    setVerticalPosition: function() {
         var me = this,
             max,
-            y = me.el.getY(),
+            y = me.getY(),
             returnY = y,
             height = me.getHeight(),
             viewportHeight = Ext.Element.getViewportHeight().height,
@@ -553,6 +544,6 @@ Ext.define('Ext.menu.Menu', {
                 returnY = viewportHeight - height;
             }
         }
-        me.el.setY(returnY);
+        me.setY(returnY);
     }
 });

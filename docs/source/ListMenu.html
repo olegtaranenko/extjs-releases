@@ -50,7 +50,9 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
      * radio button group. Defaults to false.
      */
     single : false,
-
+    
+<span id='Ext-ux-grid-menu-ListMenu-cfg-showSeparator'>    showSeparator: false,
+</span>
 <span id='Ext-ux-grid-menu-ListMenu-method-constructor'>    constructor : function (cfg) {
 </span>        var me = this,
             options,
@@ -138,9 +140,8 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
                 scope: me
             };
 
-        Ext.suspendLayouts();
+        this.suspendLayouts();
         me.removeAll(true);
-
         gid = me.single ? Ext.id() : null;
         for (i = 0, len = records.length; i &lt; len; i++) {
             itemValue = records[i].get(me.idField);
@@ -155,7 +156,7 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
         }
 
         me.loaded = true;
-        Ext.resumeLayouts(true);
+        this.resumeLayouts(true);
         me.fireEvent('load', me, records);
     },
 

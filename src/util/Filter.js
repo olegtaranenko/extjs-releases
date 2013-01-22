@@ -132,7 +132,7 @@ Ext.define('Ext.util.Filter', {
             property = me.property;
         
         return function(item) {
-            var value = me.getRoot.call(me, item)[property];
+            var value = me.getRoot(item)[property];
             return matcher === null ? value === null : matcher.test(value);
         };
     },

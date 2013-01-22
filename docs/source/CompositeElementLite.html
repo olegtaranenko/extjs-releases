@@ -189,6 +189,16 @@ Ext.define('Ext.dom.CompositeElementLite', {
         return out;
     },
 
+<span id='Ext-dom-CompositeElementLite-method-slice'>    /**
+</span>     * Gets a range nodes.
+     * @param {Number} start (optional) The index of the first node in the range
+     * @param {Number} end (optional) The index of the last node in the range
+     * @return {HTMLElement[]} An array of nodes
+     */
+    slice: function() {
+        return this.elements.slice.apply(this.elements, arguments);
+    },
+
 <span id='Ext-dom-CompositeElementLite-method-addListener'>    // fixes scope with flyweight
 </span>    addListener: function(eventName, handler, scope, opt) {
         var els = this.elements,
@@ -243,6 +253,10 @@ Ext.define('Ext.dom.CompositeElementLite', {
         me.elements = [];
         me.add(els);
         return me;
+    },
+
+<span id='Ext-dom-CompositeElementLite-method-insert'>    insert: function(index, nodes) {
+</span>        Ext.Array.insert(this.elements, index, nodes);
     },
 
 <span id='Ext-dom-CompositeElementLite-method-filter'>    /**
@@ -319,9 +333,19 @@ Ext.define('Ext.dom.CompositeElementLite', {
     },
 
 <span id='Ext-dom-CompositeElementLite-method-clear'>    /**
-</span>     * Removes all elements.
+</span>     * Removes all elements from this Composite.
+     * @param {Boolean} [removeDom] True to also remove the elements from the document.
      */
-    clear: function() {
+    clear: function(removeDom) {
+        var me  = this,
+            els = me.elements,
+            i = els.length - 1;
+        
+        if (removeDom) {
+            for (; i &gt;= 0; i--) {
+                Ext.removeNode(els[i]);
+            }
+        }
         this.elements = [];
     },
 
@@ -362,7 +386,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
     },
 
 <span id='Ext-dom-CompositeElementLite-method-contains'>    /**
-</span>     * Returns true if this composite contains the passed element
+</span>     * Returns true if this composite contains the passed element.
      * @param {String/HTMLElement/Ext.Element/Number} el The id of an element, or an Ext.Element, or an HtmlElement to
      * find within the composite collection.
      * @return {Boolean}
@@ -375,7 +399,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
 </span>     * Removes the specified element(s).
      * @param {String/HTMLElement/Ext.Element/Number} el The id of an element, the Element itself, the index of the
      * element in this composite or an array of any of those.
-     * @param {Boolean} [removeDom] True to also remove the element from the document
+     * @param {Boolean} [removeDom] True to also remove the element from the document.
      * @return {Ext.dom.CompositeElement} this
      */
     removeElement: function(keys, removeDom) {

@@ -26,7 +26,9 @@ Ext.onReady(function(){
         viewConfig: {
             plugins: {
                 ptype: 'treeviewdragdrop',
-                appendOnly: true
+                appendOnly: true,
+                sortOnDrop: true,
+                containerScroll: true
             }
         },
         renderTo: document.body
@@ -58,7 +60,9 @@ Ext.onReady(function(){
         viewConfig: {
             plugins: {
                 ptype: 'treeviewdragdrop',
-                appendOnly: true
+                appendOnly: true,
+                sortOnDrop: true,
+                containerScroll: true
             }
         },
         renderTo: document.body

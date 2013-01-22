@@ -48,10 +48,10 @@ Ext.define('Ext.calendar.App', {
             layout: 'border',
             renderTo: 'calendar-ct',
             items: [{
+                xtype: 'component',
                 id: 'app-header',
                 region: 'north',
                 height: 35,
-                border: false,
                 contentEl: 'app-header-content'
             },{
                 id: 'app-center',
@@ -64,10 +64,10 @@ Ext.define('Ext.calendar.App', {
                     }
                 },
                 items: [{
+                    xtype: 'container',
                     id:'app-west',
                     region: 'west',
                     width: 179,
-                    border: false,
                     items: [{
                         xtype: 'datepicker',
                         id: 'app-nav-picker',

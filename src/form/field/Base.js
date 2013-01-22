@@ -314,13 +314,7 @@ Ext.define('Ext.form.field.Base', {
         if (!me.name) {
             me.name = me.getInputId();
         }
-    },
-    
-    beforeRender: function(){
-        var me = this;
-            
-        me.callParent(arguments);
-        me.beforeLabelableRender();
+        // Add to protoEl before render
         if (me.readOnly) {
             me.addCls(me.readOnlyCls);
         }
@@ -362,14 +356,6 @@ Ext.define('Ext.form.field.Base', {
         me.getInsertionRenderData(data, me.subTplInsertions);
 
         return data;
-    },
-
-    afterFirstLayout: function() {
-        this.callParent();
-        var el = this.inputEl;
-        if (el) {
-            el.selectable();
-        }
     },
 
     applyRenderSelectors: function() {
@@ -423,10 +409,8 @@ Ext.define('Ext.form.field.Base', {
 
     // private
     onRender : function() {
-        var me = this;
-        me.callParent(arguments);
-        me.onLabelableRender();
-        me.renderActiveError();
+        this.callParent(arguments);
+        this.renderActiveError();
     },
 
     getFocusEl: function() {

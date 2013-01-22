@@ -33,6 +33,8 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
      * radio button group. Defaults to false.
      */
     single : false,
+    
+    showSeparator: false,
 
     constructor : function (cfg) {
         var me = this,
@@ -121,9 +123,8 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
                 scope: me
             };
 
-        Ext.suspendLayouts();
+        this.suspendLayouts();
         me.removeAll(true);
-
         gid = me.single ? Ext.id() : null;
         for (i = 0, len = records.length; i < len; i++) {
             itemValue = records[i].get(me.idField);
@@ -138,7 +139,7 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
         }
 
         me.loaded = true;
-        Ext.resumeLayouts(true);
+        this.resumeLayouts(true);
         me.fireEvent('load', me, records);
     },
 

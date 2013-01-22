@@ -120,24 +120,24 @@ Ext.define('Ext.window.MessageBox', {
      */
     ERROR : Ext.baseCSSPrefix + 'message-box-error',
 
-<span id='Ext-window-MessageBox-property-hideMode'>    // hide it by offsets. Windows are hidden on render by default.
+<span id='Ext-window-MessageBox-cfg-hideMode'>    // hide it by offsets. Windows are hidden on render by default.
 </span>    hideMode: 'offsets',
-<span id='Ext-window-MessageBox-property-closeAction'>    closeAction: 'hide',
-</span><span id='Ext-window-MessageBox-property-resizable'>    resizable: false,
-</span><span id='Ext-window-MessageBox-property-title'>    title: '&amp;#160;',
+<span id='Ext-window-MessageBox-cfg-closeAction'>    closeAction: 'hide',
+</span><span id='Ext-window-MessageBox-cfg-resizable'>    resizable: false,
+</span><span id='Ext-window-MessageBox-cfg-title'>    title: '&amp;#160;',
 </span>
-<span id='Ext-window-MessageBox-property-width'>    width: 600,
-</span><span id='Ext-window-MessageBox-property-height'>    height: 500,
+<span id='Ext-window-MessageBox-cfg-width'>    width: 600,
+</span><span id='Ext-window-MessageBox-cfg-height'>    height: 500,
 </span>    
 <span id='Ext-window-MessageBox-property-defaultMinWidth'>    defaultMinWidth: 250,
 </span><span id='Ext-window-MessageBox-property-defaultMaxWidth'>    defaultMaxWidth: 600,
 </span><span id='Ext-window-MessageBox-property-defaultMinHeight'>    defaultMinHeight: 110,
 </span><span id='Ext-window-MessageBox-property-defaultMaxHeight'>    defaultMaxHeight: 500,
-</span><span id='Ext-window-MessageBox-property-constrain'>    constrain: true,
+</span><span id='Ext-window-MessageBox-cfg-constrain'>    constrain: true,
 </span>
-<span id='Ext-window-MessageBox-property-cls'>    cls: [Ext.baseCSSPrefix + 'message-box', Ext.baseCSSPrefix + 'hide-offsets'],
+<span id='Ext-window-MessageBox-cfg-cls'>    cls: [Ext.baseCSSPrefix + 'message-box', Ext.baseCSSPrefix + 'hide-offsets'],
 </span>
-<span id='Ext-window-MessageBox-property-layout'>    layout: {
+<span id='Ext-window-MessageBox-cfg-layout'>    layout: {
 </span>        type: 'vbox',
         align: 'stretch'
     },
@@ -685,6 +685,17 @@ Ext.define('Ext.window.MessageBox', {
     show: function(cfg) {
         var me = this,
             visibleFocusables;
+
+        // If called during global layout suspension, make the call after layout resumption
+        if (Ext.AbstractComponent.layoutSuspendCount) {
+            Ext.on({
+                resumelayouts: function() {
+                    me.show(cfg);
+                },
+                single: true
+            });
+            return me;
+        }
 
         me.reconfigure(cfg);
         me.addCls(cfg.cls);

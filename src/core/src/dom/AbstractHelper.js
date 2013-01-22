@@ -9,6 +9,7 @@ Ext.define('Ext.dom.AbstractHelper', {
     emptyTags : /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i,
     confRe : /^(?:tag|children|cn|html|tpl|tplData)$/i,
     endRe : /end/i,
+    styleSepRe: /\s*(?::|;)\s*/,
 
     // Since cls & for are reserved words, we need to transform them
     attributeTransform: { cls : 'class', htmlFor : 'for' },
@@ -150,16 +151,15 @@ Ext.define('Ext.dom.AbstractHelper', {
     applyStyles: function(el, styles) {
         if (styles) {
             var i = 0,
-                len,
-                style;
+                len;
 
-            el = Ext.fly(el);
+            el = Ext.fly(el, '_applyStyles');
             if (typeof styles == 'function') {
                 styles = styles.call();
             }
-            if (typeof styles == 'string'){
-                styles = Ext.util.Format.trim(styles).split(/\s*(?::|;)\s*/);
-                for(len = styles.length; i < len;){
+            if (typeof styles == 'string') {
+                styles = Ext.util.Format.trim(styles).split(this.styleSepRe);
+                for (len = styles.length; i < len;) {
                     el.setStyle(styles[i++], styles[i++]);
                 }
             } else if (Ext.isObject(styles)) {
@@ -187,12 +187,10 @@ Ext.define('Ext.dom.AbstractHelper', {
      */
     insertHtml: function(where, el, html) {
         var hash = {},
-            hashVal,
             setStart,
             range,
             frag,
-            rangeEl,
-            rs;
+            rangeEl;
 
         where = where.toLowerCase();
 

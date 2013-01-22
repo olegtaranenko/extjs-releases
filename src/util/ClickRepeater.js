@@ -109,7 +109,7 @@ Ext.define('Ext.util.ClickRepeater', {
             this.el.on('mousedown', this.handleMouseDown, this);
             // IE versions will detect clicks as in sequence as dblclicks
             // if they happen in quick succession
-            if (Ext.isIE && !(Ext.isStrict && Ext.isIE9)){
+            if (Ext.isIE && !(Ext.isIE10p || (Ext.isStrict && Ext.isIE9))){
                 this.el.on('dblclick', this.handleDblClick, this);
             }
             if(this.preventDefault || this.stopDefault){

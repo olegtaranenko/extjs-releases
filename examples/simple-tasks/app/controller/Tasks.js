@@ -745,7 +745,7 @@ Ext.define('SimpleTasks.controller.Tasks', {
             time, reminderDate;
 
         if(date && timeDate) {
-            time = timeDate - Ext.Date.clearTime(timeDate, true),
+            time = timeDate - Ext.Date.clearTime(timeDate, true);
             reminderDate = new Date(date.getTime() + time);
             reminderField.setValue(reminderDate); 
         }
@@ -886,7 +886,12 @@ Ext.define('SimpleTasks.controller.Tasks', {
         var me = this,
             defaultTimeWindow = me.getDefaultTimeWindow(),
             windowEl = defaultTimeWindow.getEl(),
-            time = defaultTimeWindow.down('form').getForm().findField('default_time').getRawValue();
+            field = defaultTimeWindow.down('form').getForm().findField('default_time'),
+            time = field.getRawValue();
+            
+        if (!field.isValid()) {
+            return;
+        }
 
         if (SimpleTasksSettings.useLocalStorage) {
             localStorage.setItem('SimpleTasks-defaultReminderTime', time);

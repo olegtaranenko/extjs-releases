@@ -8,6 +8,12 @@ Ext.define('Ext.data.NodeStore', {
     requires: ['Ext.data.NodeInterface'],
 
     /**
+     * @property {Boolean} isNodeStore
+     * `true` in this class to identify an object as an instantiated NodeStore, or subclass thereof.
+     */
+    isNodeStore: true,
+
+    /**
      * @cfg {Ext.data.Model} node
      * The Record you want to bind this Store to. Note that
      * this record will be decorated with the Ext.data.NodeInterface if this is not the
@@ -25,18 +31,18 @@ Ext.define('Ext.data.NodeStore', {
      * updated in this Store's internal flat data structure.
      */
     recursive: false,
-    
-    /** 
+
+    /**
      * @cfg {Boolean} rootVisible
      * False to not include the root node in this Stores collection.
-     */    
+     */
     rootVisible: false,
 
     /**
      * @cfg {Ext.data.TreeStore} treeStore
      * The TreeStore that is used by this NodeStore's Ext.tree.View.
      */
-    
+
     collapseCount: 0,
 
     constructor: function(config) {

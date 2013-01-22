@@ -250,7 +250,7 @@ Ext.define('Ext.layout.container.Table', {
     },
 
     calculate: function (ownerContext) {
-        if (!ownerContext.hasDomProp('containerChildrenDone')) {
+        if (!ownerContext.hasDomProp('containerChildrenSizeDone')) {
             this.done = false;
         } else {
             var targetContext = ownerContext.targetContext,
@@ -284,7 +284,7 @@ Ext.define('Ext.layout.container.Table', {
                 Ext.fly(item.el.dom.parentNode).setWidth(item.getWidth());
             }
         }
-        if (Ext.isIE6 || (Ext.isIEQuirks)) {
+        if (Ext.isIE6 || Ext.isIEQuirks) {
             // Fixes an issue where the table won't paint
             this.owner.getTargetEl().child('table').repaint();
         }

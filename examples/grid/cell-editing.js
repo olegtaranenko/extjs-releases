@@ -19,7 +19,12 @@ if (window.location.search.indexOf('scopecss') !== -1) {
     Ext.scopeResetCSS = true;
 }
 
-Ext.onReady(function(){
+Ext.onReady(function() {
+    // Hide the blurb about reset if we are not using it
+    if (!Ext.scopeResetCSS) {
+        Ext.get('reset1').hide();
+        Ext.get('reset2').hide();
+    }
     Ext.QuickTips.init();
  
     function formatDate(value){
@@ -173,7 +178,7 @@ Ext.onReady(function(){
             Ext.Msg.show({
                 title: 'Store Load Callback',
                 msg: 'store was loaded, data available for processing',
-                modal: false,
+                modal: true,
                 icon: Ext.Msg.INFO,
                 buttons: Ext.Msg.OK
             });

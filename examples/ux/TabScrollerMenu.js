@@ -41,23 +41,31 @@ Ext.define('Ext.ux.TabScrollerMenu', {
                 me.layout.overflowHandler.handleOverflow = Ext.Function.bind(me.showButton, me);
                 me.layout.overflowHandler.clearOverflow = Ext.Function.createSequence(me.layout.overflowHandler.clearOverflow, me.hideButton, me);
             },
+            destroy: me.destroy,
+            scope: me,
             single: true
         });
     },
 
     showButton: function() {
         var me = this,
-            result = Ext.getClass(me.layout.overflowHandler).prototype.handleOverflow.apply(me.layout.overflowHandler, arguments);
+            result = Ext.getClass(me.layout.overflowHandler).prototype.handleOverflow.apply(me.layout.overflowHandler, arguments),
+            button = me.menuButton;
 
-        if (!me.menuButton) {
-            me.menuButton = me.tabBar.body.createChild({
-                cls: Ext.baseCSSPrefix + 'tab-tabmenu-right'
-            }, me.tabBar.body.child('.' + Ext.baseCSSPrefix + 'box-scroller-right'));
-            me.menuButton.addClsOnOver(Ext.baseCSSPrefix + 'tab-tabmenu-over');
-            me.menuButton.on('click', me.showTabsMenu, me);
+        if (me.tabPanel.items.getCount() > 1) {
+            if (!button) {
+                button = me.menuButton = me.tabBar.body.createChild({
+                    cls: Ext.baseCSSPrefix + 'tab-tabmenu-right'
+                }, me.tabBar.body.child('.' + Ext.baseCSSPrefix + 'box-scroller-right'));
+                button.addClsOnOver(Ext.baseCSSPrefix + 'tab-tabmenu-over');
+                button.on('click', me.showTabsMenu, me);
+            }
+            button.setVisibilityMode(Ext.dom.Element.DISPLAY);
+            button.show();
+            result.reservedSpace += button.getWidth();
+        } else {
+            me.hideButton();
         }
-        me.menuButton.show();
-        result.reservedSpace += me.menuButton.getWidth();
         return result;
     },
 
@@ -118,7 +126,6 @@ Ext.define('Ext.ux.TabScrollerMenu', {
             me.tabsMenu.removeAll();
         } else {
             me.tabsMenu = new Ext.menu.Menu();
-            me.tabPanel.on('destroy', me.tabsMenu.destroy, me.tabsMenu);
         }
 
         me.generateTabMenuItems();
@@ -213,5 +220,9 @@ Ext.define('Ext.ux.TabScrollerMenu', {
     // private
     showTabFromMenu: function(menuItem) {
         this.tabPanel.setActiveTab(menuItem.tabToShow);
+    },
+    
+    destroy: function(){
+        Ext.destroy(this.tabsMenu, this.menuButton);       
     }
 });

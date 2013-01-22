@@ -103,7 +103,7 @@ Ext.define('Ext.grid.LockingView', {
             if (view !== locked) {
                 other = locked;
             }
-            item = other.getNode(record);
+            item = other.getNode(record, false);
             other.highlightItem(item);
         }
     },
@@ -138,14 +138,14 @@ Ext.define('Ext.grid.LockingView', {
 </span>        return this.panel.store;
     },
 
-<span id='Ext-grid-LockingView-method-getNode'>    getNode: function(nodeInfo){
+<span id='Ext-grid-LockingView-method-getNode'>    getNode: function(nodeInfo, dataRow) {
 </span>        // default to the normal view
-        return this.normalView.getNode(nodeInfo);
+        return this.normalView.getNode(nodeInfo, dataRow);
     },
 
-<span id='Ext-grid-LockingView-method-getCell'>    getCell: function(record, column){
+<span id='Ext-grid-LockingView-method-getCell'>    getCell: function(record, column) {
 </span>        var view = this.getViewForColumn(column),
-            row = view.getNode(record);
+            row = view.getNode(record, true);
             
         return Ext.fly(row).down(column.getCellSelector());
     },

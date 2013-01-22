@@ -18,7 +18,10 @@ Ext._startTime = new Date().getTime();
             var method = callOverrideParent.caller.caller; // skip callParent (our caller)
             return method.$owner.prototype[method.$name].apply(this, arguments);
         },
-        i;
+        i,
+        nonWhitespaceRe = /\S/;
+
+    Function.prototype.$extIsFunction = true;
 
     Ext.global = global;
 
@@ -376,7 +379,7 @@ Ext._startTime = new Date().getTime();
             if (type === 'object') {
                 if (value.nodeType !== undefined) {
                     if (value.nodeType === 3) {
-                        return (/\S/).test(value.nodeValue) ? 'textnode' : 'whitespace';
+                        return (nonWhitespaceRe).test(value.nodeValue) ? 'textnode' : 'whitespace';
                     }
                     else {
                         return 'element';
@@ -393,6 +396,49 @@ Ext._startTime = new Date().getTime();
                 msg: 'Failed to determine the type of the specified value "' + value + '". This is most likely a bug.'
             });
             //</debug>
+        },
+
+        /**
+         * Coerces the first value if possible so that it is comparable to the second value.
+         *
+         * Coercion only works between the basic atomic data types String, Boolean, Number, Date, null and undefined.
+         *
+         * Numbers and numeric strings are coerced to Dates using the value as the millisecond era value.
+         *
+         * Strings are coerced to Dates by parsing using the {@link Ext.Date.defaultFormat defaultFormat}.
+         * 
+         * For example
+         *
+         *     Ext.coerce('false', true);
+         *     
+         * returns the boolean value `false` because the second parameter is of type `Boolean`.
+         * 
+         * @param {Mixed} from The value to coerce
+         * @param {Mixed} to The value it must be compared against
+         * @return The coerced value.
+         */
+        coerce: function(from, to) {
+            var fromType = Ext.typeOf(from),
+                toType = Ext.typeOf(to),
+                isString = typeof from === 'string';
+
+            if (fromType !== toType) {
+                switch (toType) {
+                    case 'string':
+                        return String(from);
+                    case 'number':
+                        return Number(from);
+                    case 'boolean':
+                        return isString && (!from || from === 'false') ? false : Boolean(from);
+                    case 'null':
+                        return isString && (!from || from === 'null') ? null : from;
+                    case 'undefined':
+                        return isString && (!from || from === 'undefined') ? undefined : from;
+                    case 'date':
+                        return isString && isNaN(from) ? Ext.Date.parse(from, Ext.Date.defaultFormat) : Date(Number(from));
+                }
+            }
+            return from;
         },
 
         /**
@@ -470,13 +516,8 @@ Ext._startTime = new Date().getTime();
          * @return {Boolean}
          * @method
          */
-        isFunction:
-        // Safari 3.x and 4.x returns 'function' for typeof <NodeList>, hence we need to fall back to using
-        // Object.prototype.toString (slower)
-        (typeof document !== 'undefined' && typeof document.getElementsByTagName('body') === 'function') ? function(value) {
-            return toString.call(value) === '[object Function]';
-        } : function(value) {
-            return typeof value === 'function';
+        isFunction: function(value) {
+            return !!(value && value.$extIsFunction);
         },
 
         /**
@@ -724,6 +765,75 @@ Ext._startTime = new Date().getTime();
     Ext.type = Ext.typeOf;
 
 }());
+
+Ext.apply(Ext, {
+    app: {
+        namespaces: {},
+        
+        /**
+         * @private
+         */
+        collectNamespaces: function(paths) {
+            var namespaces = Ext.app.namespaces,
+                path;
+            
+            for (path in paths) {
+                if (paths.hasOwnProperty(path)) {
+                    namespaces[path] = true;
+                }
+            }
+        },
+
+        /**
+         * Adds namespace(s) to known list.
+         *
+         * @param {String/String[]} namespace
+         */
+        addNamespaces: function(ns) {
+            var namespaces = Ext.app.namespaces,
+                i, l;
+
+            if (!Ext.isArray(ns)) {
+                ns = [ns];
+            }
+
+            for (i = 0, l = ns.length; i < l; i++) {
+                namespaces[ns[i]] = true;
+            }
+        },
+
+        /**
+         * @private Clear all namespaces from known list.
+         */
+        clearNamespaces: function() {
+            Ext.app.namespaces = {};
+        },
+
+        /**
+         * Get namespace prefix for a class name.
+         *
+         * @param {String} className
+         *
+         * @return {String} Namespace prefix if it's known, otherwise undefined
+         */
+        getNamespace: function(className) {
+            var namespaces    = Ext.app.namespaces,
+                deepestPrefix = '',
+                prefix;
+
+            for (prefix in namespaces) {
+                if (namespaces.hasOwnProperty(prefix)    &&
+                    prefix.length > deepestPrefix.length &&
+                    (prefix + '.' === className.substring(0, prefix.length + 1))) {
+                    deepestPrefix = prefix;
+                }
+
+            }
+
+            return deepestPrefix === '' ? undefined : deepestPrefix;
+        }
+    }
+});
 
 /*
  * This method evaluates the given code free of any local variable. In some browsers this

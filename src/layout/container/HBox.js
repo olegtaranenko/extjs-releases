@@ -67,11 +67,9 @@ Ext.define('Ext.layout.container.HBox', {
 
     names: {
         // parallel
-        lr: 'lr',
-        left: 'left',// 'before',
+        beforeX: 'left',
         leftCap: 'Left',
-        right: 'right',// 'after',
-        position: 'left',
+        afterX: 'right',
         width: 'width',
         contentWidth: 'contentWidth',
         minWidth: 'minWidth',
@@ -84,12 +82,12 @@ Ext.define('Ext.layout.container.HBox', {
         overflowX: 'overflowX',
         hasOverflowX: 'hasOverflowX',
         invalidateScrollX: 'invalidateScrollX',
+        parallelMargins: 'lr',
 
         // perpendicular
         center: 'middle',
-        top: 'top',
-        topPosition: 'top',
-        bottom: 'bottom',
+        beforeY: 'top',
+        afterY: 'bottom',
         height: 'height',
         contentHeight: 'contentHeight',
         minHeight: 'minHeight',
@@ -102,6 +100,7 @@ Ext.define('Ext.layout.container.HBox', {
         overflowY: 'overflowY',
         hasOverflowY: 'hasOverflowY',
         invalidateScrollY: 'invalidateScrollY',
+        perpendicularMargins: 'tb',
 
         // Methods
         getWidth: 'getWidth',

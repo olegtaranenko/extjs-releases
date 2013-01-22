@@ -117,10 +117,10 @@ Ext.onReady(function() {
             name: 'Mango Caribbean Cafe',
             cuisine: 'Caribbean'
         },{
-            name: 'Coconuts Caribbean Restaurant &amp; Bar',
+            name: 'Coconuts Caribbean Restaurant & Bar',
             cuisine: 'Caribbean'
         },{
-            name: 'Rose &amp; Crown',
+            name: 'Rose & Crown',
             cuisine: 'English'
         },{
             name: 'Baklava',

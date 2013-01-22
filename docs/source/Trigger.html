@@ -146,19 +146,20 @@ Ext.define('Ext.form.field.Trigger', {
 <span id='Ext-form-field-Trigger-property-triggerIndexRe'>    // @private
 </span>    triggerIndexRe: /trigger-index-(\d+)/,
 
-<span id='Ext-form-field-Trigger-property-componentLayout'>    componentLayout: 'triggerfield',
+<span id='Ext-form-field-Trigger-cfg-componentLayout'>    componentLayout: 'triggerfield',
 </span>
 <span id='Ext-form-field-Trigger-method-initComponent'>    initComponent: function() {
 </span>        this.wrapFocusCls = this.triggerWrapCls + '-focus';
         this.callParent(arguments);
     },
 
-<span id='Ext-form-field-Trigger-method-getSubTplMarkup'>    getSubTplMarkup: function() {
+<span id='Ext-form-field-Trigger-method-getSubTplMarkup'>    getSubTplMarkup: function(values) {
 </span>        var me = this,
+            childElCls = values.childElCls ? (' ' + values.childElCls) : '', 
             field = me.callParent(arguments);
 
-        return '&lt;table id=&quot;' + me.id + '-triggerWrap&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-wrap&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;' +
-            '&lt;td id=&quot;' + me.id + '-inputCell&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-input-cell&quot;&gt;' + field + '&lt;/td&gt;' +
+        return '&lt;table id=&quot;' + me.id + '-triggerWrap&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-wrap' + childElCls + '&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;' +
+            '&lt;td id=&quot;' + me.id + '-inputCell&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-input-cell' + childElCls + '&quot;&gt;' + field + '&lt;/td&gt;' +
             me.getTriggerMarkup() +
             '&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;';
     },
@@ -192,7 +193,8 @@ Ext.define('Ext.form.field.Trigger', {
             hideTrigger = (me.readOnly || me.hideTrigger),
             triggerCls,
             triggerBaseCls = me.triggerBaseCls,
-            triggerConfigs = [];
+            triggerConfigs = [],
+            unselectableCls = Ext.dom.Element.unselectableCls;
 
         // TODO this trigger&lt;n&gt;Cls API design doesn't feel clean, especially where it butts up against the
         // single triggerCls config. Should rethink this, perhaps something more structured like a list of
@@ -207,7 +209,7 @@ Ext.define('Ext.form.field.Trigger', {
             triggerConfigs.push({
                 tag: 'td',
                 valign: 'top',
-                cls: Ext.baseCSSPrefix + 'trigger-cell',
+                cls: Ext.baseCSSPrefix + 'trigger-cell ' + unselectableCls,
                 style: 'width:' + me.triggerWidth + (hideTrigger ? 'px;display:none' : 'px'),
                 cn: {
                     cls: [Ext.baseCSSPrefix + 'trigger-index-' + i, triggerBaseCls, triggerCls].join(' '),
@@ -265,7 +267,6 @@ Ext.define('Ext.form.field.Trigger', {
 
         me.doc = Ext.getDoc();
         me.initTrigger();
-        me.triggerEl.unselectable();
     },
 
 <span id='Ext-form-field-Trigger-method-getTriggerWidth'>    /**

@@ -244,9 +244,25 @@ pick up. To do this, the compiler recognizes special line comments as directives
 
 The list of directives is:
 
+ * `//@charset`
  * `//@tag`
  * `//@define`
  * `//@require`
+
+### Character Encoding
+
+There is no standard way to specify the character encoding of a particular JS file. The
+Sencha Cmd compiler, therefore, understands the following directive:
+
+    //@charset ISO-9959-1
+
+This must be the first line of the JS file. The value to the right of `charset` can be any
+valid [Java charset](http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html)
+name. The default is "UTF-8".
+
+The `charset` directive is used to describe the encoding of an input file to the compiler.
+This does not effect the encoding of the output file. The content of the input file is
+converted to Unicode internally.
 
 ### Tagging
 

@@ -55,7 +55,7 @@ Ext.define('Ext.layout.component.field.Field', {
 
         // width:100% on an element inside a table in IE6/7 &quot;strict&quot; sizes the content box.
         // store the input element's border and padding info so that subclasses can take it into consideration if needed
-        if ((Ext.isIE6 || Ext.isIE7) &amp;&amp; Ext.isStrict &amp;&amp; ownerContext.inputContext) {
+        if (Ext.isIE7m &amp;&amp; Ext.isStrict &amp;&amp; ownerContext.inputContext) {
             me.ieInputWidthAdjustment = ownerContext.inputContext.getPaddingInfo().width + ownerContext.inputContext.getBorderInfo().width;
         }
 

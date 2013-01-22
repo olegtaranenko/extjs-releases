@@ -232,7 +232,7 @@ mc.add(otherEl);
      * @since Ext 1
      */
     each : function(fn, scope){
-        var items = [].concat(this.items), // each safe for removal
+        var items = Ext.Array.push([], this.items), // each safe for removal
             i = 0,
             len = items.length,
             item;
@@ -311,12 +311,27 @@ mc.add(otherEl);
     /**
      * Inserts an item at the specified index in the collection. Fires the {@link #event-add} event when complete.
      * @param {Number} index The index to insert the item at.
-     * @param {String} key The key to associate with the new item, or the item itself.
-     * @param {Object} o (optional) If the second parameter was a key, the new item.
-     * @return {Object} The item inserted.
+     * @param {String/Object/String[]/Object[]} key The key to associate with the new item, or the item itself.
+     * May also be an array of either to insert multiple items at once.
+     * @param {Object/Object[]} o (optional) If the second parameter was a key, the new item.
+     * May also be an array to insert multiple items at once.
+     * @return {Object} The item inserted or an array of items inserted.
      * @since Ext 1
      */
-    insert : function(index, key, obj){
+    insert : function(index, key, obj) {
+        if (Ext.isIterable(key)) {
+            var i, len = key.length, result = [];
+            for (i = 0; i < len; i++) {
+                result.push(obj ? this.doInsert(index + i, key[i], obj[i]) : this.doInsert(index + i, key[i]));
+            }
+            return result;
+        } else {
+            return this.doInsert.apply(this, arguments);
+        }
+    },
+
+    // private implementation
+    doInsert: function(index, key, obj) {
         var me = this,
             myKey = key,
             myObj = obj;
@@ -353,23 +368,39 @@ mc.add(otherEl);
      * @since Ext 1
      */
     remove : function(o) {
-        this.generation++;
-        return this.removeAt(this.indexOf(o));
+        var result = this.removeAt(this.indexOf(o));
+        if (result) {
+            this.generation++;
+        }
+        return result;
     },
 
     /**
-     * Remove all items in the passed array from the collection.
-     * @param {Array} items An array of items to be removed.
+     * Remove all items in the collection. Can also be used
+     * to remove only the items in the passed array.
+     * @param {Array} [items] An array of items to be removed.
      * @return {Ext.util.MixedCollection} this object
      */
     removeAll : function(items) {
-        items = [].concat(items);
-        var i, iLen = items.length;
-        for (i = 0; i < iLen; i++) {
-            this.remove(items[i]);
-        }
+        var me = this, 
+            i;
 
-        return this;
+        if (items || me.hasListeners.remove) {
+            // Only perform expensive item-by-item removal if there's a listener or specific items
+            if (items) {
+                for (i = items.length - 1; i >= 0; --i) {
+                    me.remove(items[i]);
+                }
+            } else {
+                while (me.length) {
+                    me.removeAt(0);
+                }
+            }
+        } else {
+            me.length = me.items.length = me.keys.length = 0;
+            me.map = {};
+            me.generation++;
+        }
     },
 
     /**
@@ -601,6 +632,16 @@ mc.add(otherEl);
     },
 
     /**
+     * @private
+     * For API parity with Store's PageMap class. Buffered rendering checks if the Store has the range
+     * required to render. The Store delegates this question to its backing data object which may be an instance
+     * of its private PageMap class, or a MixedCollection.
+     */
+    hasRange: function(start, end) {
+        return (end < this.length);
+    },
+
+    /**
      * Returns a range of items in this collection
      * @param {Number} startIndex (optional) The starting index. Defaults to 0.
      * @param {Number} endIndex (optional) The ending index. Defaults to the last item.
@@ -620,9 +661,7 @@ mc.add(otherEl);
         start = start || 0;
         end = Math.min(typeof end == 'undefined' ? me.length - 1 : end, me.length - 1);
         if (start <= end) {
-            for (i = start; i <= end; i++) {
-                range[range.length] = items[i];
-            }
+            return items.slice(start, end + 1);
         } else {
             for (i = start; i >= end; i--) {
                 range[range.length] = items[i];

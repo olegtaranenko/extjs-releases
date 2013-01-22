@@ -45,7 +45,6 @@ Ext.onReady(function() {
         store: store,
         multiSelect: true,
         singleExpand: true,
-        //the 'columns' property is now 'headers'
         columns: [{
             xtype: 'treecolumn', //this is so we know which column will show the tree
             text: 'Task',

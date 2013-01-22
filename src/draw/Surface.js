@@ -70,7 +70,7 @@ Ext.define('Ext.draw.Surface', {
                 surfaceClass;
 
             for (; i < len; i++) {
-                if (Ext.supports[enginePriority[i]] !== false) {
+                if (Ext.supports[enginePriority[i]]) {
                     return Ext.create('Ext.draw.engine.' + enginePriority[i], config);
                 }
             }

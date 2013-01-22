@@ -178,6 +178,11 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
      */
 
     /**
+     * @cfg {Boolean} [sortOnDrop=false]
+     * Configure as `true` to sort the target node into the current tree sort order after the dropped node is added.
+     */
+
+    /**
      * @cfg {String} expandDelay
      * The delay in milliseconds to wait before expanding a target tree node while dragging a droppable node over the
      * target.
@@ -246,7 +251,6 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
                 dragText: me.dragText,
                 repairHighlightColor: me.nodeHighlightColor,
                 repairHighlight: me.nodeHighlightOnRepair,
-                containerScroll: me.containerScroll,
                 scrollEl: scrollEl
             });
         }
@@ -260,7 +264,9 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
                 allowParentInserts: me.allowParentInserts,
                 expandDelay: me.expandDelay,
                 dropHighlightColor: me.nodeHighlightColor,
-                dropHighlight: me.nodeHighlightOnDrop
+                dropHighlight: me.nodeHighlightOnDrop,
+                sortOnDrop: me.sortOnDrop,
+                containerScroll: me.containerScroll
             });
         }
     }

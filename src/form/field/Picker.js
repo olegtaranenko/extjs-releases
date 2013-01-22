@@ -111,9 +111,16 @@ Ext.define('Ext.form.field.Picker', {
 
     // private
     onEsc: function(e) {
-        var me = this;
-        if (me.isExpanded) {
-            me.collapse();
+        if (Ext.isIE) {
+            // Stop the esc key from "restoring" the previous value in IE
+            // For example, type "foo". Highlight all the text, hit backspace.
+            // Hit esc, "foo" will be restored. This behaviour doesn't occur
+            // in any other browsers
+            e.preventDefault();
+        }
+        
+        if (this.isExpanded) {
+            this.collapse();
             e.stopEvent();
         }
     },
@@ -187,7 +194,7 @@ Ext.define('Ext.form.field.Picker', {
             aboveSfx = '-above',
             isAbove;
 
-        me.picker.alignTo(me.inputEl, me.pickerAlign, me.pickerOffset);
+        me.picker.alignTo(me.bodyEl, me.pickerAlign, me.pickerOffset);
         // add the {openCls}-above class if the picker was aligned above
         // the field due to hitting the bottom of the viewport
         isAbove = picker.el.getY() < me.inputEl.getY();

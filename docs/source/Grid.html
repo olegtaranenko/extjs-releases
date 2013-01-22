@@ -233,9 +233,9 @@ Ext.define('Ext.grid.property.Grid', {
      * Specify the width for the name column. The value column will take any remaining space.
      */
 
-<span id='Ext-grid-property-Grid-property-enableColumnMove'>    // private config overrides
+<span id='Ext-grid-property-Grid-cfg-enableColumnMove'>    // private config overrides
 </span>    enableColumnMove: false,
-<span id='Ext-grid-property-Grid-property-columnLines'>    columnLines: true,
+<span id='Ext-grid-property-Grid-cfg-columnLines'>    columnLines: true,
 </span><span id='Ext-grid-property-Grid-property-stripeRows'>    stripeRows: false,
 </span><span id='Ext-grid-property-Grid-property-trackMouseOver'>    trackMouseOver: false,
 </span><span id='Ext-grid-property-Grid-property-clicksToEdit'>    clicksToEdit: 1,
@@ -448,7 +448,7 @@ Ext.define('Ext.grid.property.Grid', {
             direction = 'down';
         }
         pos = Ext.view.Table.prototype.walkCells.call(this, pos, direction, e, preventWrap, verifierFn, scope);
-        if (!pos.column) {
+        if (pos &amp;&amp; !pos.column) {
             pos.column = 1;
         }
         return pos;

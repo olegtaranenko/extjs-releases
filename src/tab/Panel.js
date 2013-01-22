@@ -44,6 +44,30 @@
  *             }
  *         }]
  *     });
+ * 
+ * ## Vetoing Changes
+ * 
+ * User interaction when changing the tabs can be vetoed by listening to the {@link #beforetabchange} event.
+ * By returning `false`, the tab change will not occur.
+ * 
+ *     @example
+ *     Ext.create('Ext.tab.Panel', {
+ *         renderTo: Ext.getBody(),
+ *         width: 200,
+ *         height: 200,
+ *         listeners: {
+ *             beforetabchange: function(tabs, newTab, oldTab) {
+ *                 return newTab.title != 'P2';
+ *             }
+ *         },
+ *         items: [{
+ *             title: 'P1'
+ *         }, {
+ *             title: 'P2'
+ *         }, {
+ *             title: 'P3'
+ *         }]
+ *     }); 
  *
  * # Examples
  *

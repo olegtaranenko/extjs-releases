@@ -90,7 +90,7 @@ Ext.define('Ext.chart.series.Pie', {
 
     extend: 'Ext.chart.series.Series',
 
-<span id='Ext-chart-series-Pie-property-type'>    /* End Definitions */
+<span id='Ext-chart-series-Pie-cfg-type'>    /* End Definitions */
 </span>
     type: &quot;pie&quot;,
 
@@ -213,6 +213,10 @@ Ext.define('Ext.chart.series.Pie', {
             return ans;
         };
         me.__excludes = me.__excludes || [];
+    },
+    
+<span id='Ext-chart-series-Pie-method-onRedraw'>    onRedraw: function(){
+</span>        this.initialize();    
     },
 
 <span id='Ext-chart-series-Pie-method-initialize'>    // @private updates some onbefore render parameters.

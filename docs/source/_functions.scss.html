@@ -61,6 +61,10 @@
 }
 @function rotate90($box) {
     @return left($box) top($box) right($box) bottom($box);
-}</pre>
+}
+@function rtl($box) {
+    @return top($box) left($box) bottom($box) right($box);
+}
+</pre>
 </body>
 </html>

@@ -169,8 +169,11 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         this.editTask = new Ext.util.DelayedTask();
     },
 
-    onReconfigure: function(){
-        this.editors.clear();
+    onReconfigure: function(grid, store, columns){
+        // Only reconfigure editors if passed a new set of columns
+        if (columns) {
+            this.editors.clear();
+        }
         this.callParent();    
     },
 
@@ -218,8 +221,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         var me   = this,
             grid = me.grid,
             view = grid.view;
-            
-        view.addElListener('mousewheel', me.cancelEdit, me);
+
         me.mon(view, 'bodyscroll', me.onBodyScroll, me);
         me.mon(grid, {
             columnresize: me.cancelEdit,
@@ -302,7 +304,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         // Selection is for another view.
         // This can happen in a lockable grid where there are two grids, each with a separate Editing plugin
         if (otherView && otherView !== me.view) {
-            return me.lockingPartner.showEditor(ed, context, value);
+            return me.lockingPartner.showEditor(ed, me.lockingPartner.getEditingContext(selection.record, selection.columnHeader), value);
         }
 
         me.setEditingContext(context);
@@ -375,10 +377,11 @@ Ext.define('Ext.grid.plugin.CellEditing', {
 
     getEditor: function(record, column) {
         var me = this,
-            grid = column.up('tablepanel'),
             editors = me.editors,
             editorId = column.getItemId(),
-            editor = editors.getByKey(editorId);
+            editor = editors.getByKey(editorId),
+            // Add to top level grid if we are editing one side of a locking system
+            editorOwner = me.grid.ownerLockable || me.grid;
 
         // Editors are shared between editing plugins on both sides of a locked grid
         if (!editor && me.lockingPartner) {
@@ -392,15 +395,23 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             }
 
             // Allow them to specify a CellEditor in the Column
-            if (!(editor instanceof Ext.grid.CellEditor)) {
+            if (editor instanceof Ext.grid.CellEditor) {
+                editor.editingPlugin = me;
+                editor.floating = true;
+                editor.isForTree = me.grid.isTree;
+            }
+            // But if it's just a Field, wrap it.
+            else {
                 editor = new Ext.grid.CellEditor({
+                    editingPlugin: me,
+                    floating: true,
                     editorId: editorId,
                     field: editor,
                     isForTree: me.grid.isTree
                 });
-            } else {
-                editor.ownerCt = me.grid;
             }
+            // Add the Editor as a floating child of the grid
+            editorOwner.add(editor);
             editor.on({
                 scope: me,
                 specialkey: me.onSpecialKey,
@@ -410,11 +421,6 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             column.on('removed', me.cancelActiveEdit, me);
             editors.add(editor);
         }
-        editor.editingPlugin = me;
-
-        // The Editor is a floating Component, and must be attached to an ownerCt
-        // which it uses to traverse upwards to find a ZIndexManager at render time.
-        editor.ownerCt = grid;
         return editor;
     },
     
@@ -444,22 +450,20 @@ Ext.define('Ext.grid.plugin.CellEditing', {
     },
 
     onSpecialKey: function(ed, field, e) {
-        var me = this,
-            grid = field.up('tablepanel'),
-            sm;
-            
+        var sm;
+ 
         if (e.getKey() === e.TAB) {
             e.stopEvent();
-            
+
             if (ed) {
                 // Allow the field to act on tabs before onEditorTab, which ends
                 // up calling completeEdit. This is useful for picker type fields.
                 ed.onEditorTab(e);
             }
-            
-            sm = grid.getSelectionModel();
+
+            sm = ed.up('tablepanel').getSelectionModel();
             if (sm.onEditorTab) {
-                return sm.onEditorTab(grid === me.grid ? me : me.lockingPartner, e);
+                return sm.onEditorTab(ed.editingPlugin, e);
             }
         }
     },

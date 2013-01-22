@@ -5,7 +5,7 @@ Ext.require([
     'Ext.grid.*',
     'Ext.data.*',
     'Ext.util.*',
-    'Ext.grid.PagingScroller'
+    'Ext.grid.plugin.BufferedRenderer'
 ]);
 
 Ext.define('Employee', {
@@ -55,10 +55,6 @@ Ext.onReady(function(){
     // through the prefetch mechanism, and be read through the page cache
     var store = Ext.create('Ext.data.Store', {
         id: 'store',
-        // allow the grid to interact with the paging scroller by buffering
-        buffered: true,
-        // Configure the store with a single page of records which will be cached
-        pageSize: 5000,
         data: createFakeData(5000),
         model: 'Employee',
         proxy: {
@@ -69,7 +65,7 @@ Ext.onReady(function(){
     var jumpToRow = function(){
         var fld = grid.down('#gotoLine');
         if (fld.isValid()) {
-            grid.verticalScroller.scrollTo(fld.getValue() - 1, true);
+            grid.view.bufferedRenderer.scrollTo(fld.getValue() - 1, true);
         }    
     };
 
@@ -79,6 +75,7 @@ Ext.onReady(function(){
         title: 'Bufffered Grid of 5,000 random records',
         store: store,
         loadMask: true,
+        plugins: 'bufferedrenderer',
         selModel: {
             pruneRemoved: false
         },

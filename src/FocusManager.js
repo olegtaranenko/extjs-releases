@@ -363,7 +363,7 @@ Ext.define('Ext.FocusManager', {
                 style: 'top: -100px; left: -100px;'
             });
             me.focusFrame.setVisibilityMode(Ext.Element.DISPLAY);
-            me.focusFrame.hide().setLeftTop(0, 0);
+            me.focusFrame.hide().setLocalXY(0, 0);
         }
     },
 
@@ -550,7 +550,7 @@ Ext.define('Ext.FocusManager', {
             ff = me.focusFrame;
             
             // focusEl may in fact be a descendant component to which to delegate focus
-            box = (focusEl.dom ? focusEl : focusEl.el).getPageBox();
+            box = (focusEl.dom ? focusEl : focusEl.el).getBox();
 
             // Size the focus frame's t/b/l/r according to the box
             // This leaves a hole in the middle of the frame so user
@@ -564,10 +564,10 @@ Ext.define('Ext.FocusManager', {
             fl = ff.child(cls + 'left');
             fr = ff.child(cls + 'right');
 
-            ft.setWidth(bw).setLeftTop(bl, bt);
-            fb.setWidth(bw).setLeftTop(bl, bt + bh - 2);
-            fl.setHeight(bh - 2).setLeftTop(bl, bt + 2);
-            fr.setHeight(bh - 2).setLeftTop(bl + bw - 2, bt + 2);
+            ft.setWidth(bw).setLocalXY(bl, bt);
+            fb.setWidth(bw).setLocalXY(bl, bt + bh - 2);
+            fl.setHeight(bh - 2).setLocalXY(bl, bt + 2);
+            fr.setHeight(bh - 2).setLocalXY(bl + bw - 2, bt + 2);
 
             ff.show();
         }

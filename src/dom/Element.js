@@ -121,14 +121,18 @@ Ext.define('Ext.dom.Element', function(Element) {
 
         requires: [
             'Ext.dom.Query',
-
-            'Ext.dom.Element_alignment',
             'Ext.dom.Element_anim',
             'Ext.dom.Element_dd',
             'Ext.dom.Element_fx',
             'Ext.dom.Element_position',
             'Ext.dom.Element_scroll',
             'Ext.dom.Element_style'
+        ],
+        
+        tableTagRe: /^(?:tr|td|table|tbody)$/i,
+
+        mixins: [
+            'Ext.util.Positionable'
         ],
 
         addUnits: function() {
@@ -184,7 +188,9 @@ Ext.define('Ext.dom.Element', function(Element) {
         */
         isBorderBox: function() {
             var box = Ext.isBorderBox;
-            if (box) {
+            
+            // IE6/7 force input elements to content-box even if border-box is set explicitly
+            if (box && Ext.isIE7m) {
                 box = !((this.dom.tagName || "").toLowerCase() in noBoxAdjust);
             }
             return box;
@@ -217,7 +223,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             return this.getAttribute(name, ns);
         },
 
-        getAttribute: (Ext.isIE && !(Ext.isIE9 && DOC.documentMode === 9)) ?
+        getAttribute: (Ext.isIE && !(Ext.isIE9p && DOC.documentMode >= 9)) ?
 
             // Essentially all web browsers (Firefox, Internet Explorer, recent versions of Opera, Safari, Konqueror, and iCab,
             // as a non-exhaustive list) return null when the specified attribute does not exist on the specified element.
@@ -399,12 +405,18 @@ Ext.define('Ext.dom.Element', function(Element) {
             }
 
             Ext.DomHelper.append(dom, [{
-                cls : Ext.baseCSSPrefix + "mask"
+                cls : Ext.baseCSSPrefix + "mask",
+                style: 'top:0;left:0;'
             }, {
                 cls : msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG,
                 cn  : {
                     tag: 'div',
-                    html: msg || ''
+                    cls: Ext.baseCSSPrefix + 'mask-msg-inner',
+                    cn: {
+                        tag: 'div',
+                        cls: Ext.baseCSSPrefix + 'mask-msg-text',
+                        html: msg || ''
+                    }
                 }
             }]);
 
@@ -452,7 +464,7 @@ Ext.define('Ext.dom.Element', function(Element) {
                 } catch (e) {}
             }
             // ie will not expand full height automatically
-            else if (Ext.isIE && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
+            else if (Ext.isIE9m && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
                 if (maskShimEl) {
                     maskShimEl.setSize(undefined, elHeight || me.getHeight());
                 }
@@ -1027,7 +1039,8 @@ Ext.define('Ext.dom.Element', function(Element) {
         replaceScriptTagRe = /(?:<script.*?>)((\n|\r|.)*?)(?:<\/script>)/ig,
         srcRe           = /\ssrc=([\'\"])(.*?)\1/i,
         typeRe          = /\stype=([\'\"])(.*?)\1/i,
-        useDocForId = !(Ext.isIE6 || Ext.isIE7 || Ext.isIE8);
+        useDocForId     = Ext.isIE8m,
+        internalFly;
 
     Element.boxMarkup = '<div class="{0}-tl"><div class="{0}-tr"><div class="{0}-tc"></div></div></div><div class="{0}-ml"><div class="{0}-mr"><div class="{0}-mc"></div></div></div><div class="{0}-bl"><div class="{0}-br"><div class="{0}-bc"></div></div></div>';
     //</!if>
@@ -1152,13 +1165,13 @@ Ext.define('Ext.dom.Element', function(Element) {
          */
         swallowEvent : function(eventName, preventDefault) {
             var me = this,
-                e, eLen;
-            function fn(e) {
-                e.stopPropagation();
-                if (preventDefault) {
-                    e.preventDefault();
-                }
-            }
+                e, eLen,
+                fn = function(e) {
+                    e.stopPropagation();
+                    if (preventDefault) {
+                        e.preventDefault();
+                    }
+                };
 
             if (Ext.isArray(eventName)) {
                 eLen = eventName.length;
@@ -1219,7 +1232,7 @@ Ext.define('Ext.dom.Element', function(Element) {
                     }
                 } else {
                     // Recursively clean
-                    Ext.fly(n).clean();
+                    internalFly.attach(n).clean();
                     n.nodeIndex = ++ni;
                 }
                 n = nx;
@@ -1267,10 +1280,9 @@ Ext.define('Ext.dom.Element', function(Element) {
          */
         syncContent: function(source) {
             source = Ext.getDom(source);
-            var me = this,
-                sourceNodes = source.childNodes,
+            var sourceNodes = source.childNodes,
                 sourceLen = sourceNodes.length,
-                dest = me.dom,
+                dest = this.dom,
                 destNodes = dest.childNodes,
                 destLen = destNodes.length,
                 i,  destNode, sourceNode,
@@ -1324,7 +1336,7 @@ Ext.define('Ext.dom.Element', function(Element) {
                     }
                     destNode.style.cssText = sourceNode.style.cssText;
                     destNode.className = sourceNode.className;
-                    Ext.fly(destNode).syncContent(sourceNode);
+                    internalFly.attach(destNode).syncContent(sourceNode);
                 }
             }
         },
@@ -1552,12 +1564,20 @@ Ext.define('Ext.dom.Element', function(Element) {
     Element.Fly = AbstractElement.Fly = new Ext.Class({
         extend: Element,
 
+        isFly: true,
+
         constructor: function(dom) {
             this.dom = dom;
+            // set an "el" property that references "this".  This allows
+            // Ext.util.Positionable methods to operate on this.el.dom since it
+            // gets mixed into both Element and Component
+            this.el = this;
         },
         
         attach: AbstractElement.Fly.prototype.attach
     });
+    
+    internalFly = new Element.Fly();
 
     if (Ext.isIE) {
         Ext.getElementById = function (id) {

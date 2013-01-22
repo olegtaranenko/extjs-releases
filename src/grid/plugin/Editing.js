@@ -500,11 +500,11 @@ Ext.define('Ext.grid.plugin.Editing', {
         var me = this,
             grid = me.grid,
             view = grid.getView(),
-            node = view.getNode(record),
+            recordNode = view.getNode(record, true),
             rowIdx, colIdx;
 
         // An intervening listener may have deleted the Record
-        if (!node) {
+        if (!recordNode) {
             return;
         }
 
@@ -521,9 +521,9 @@ Ext.define('Ext.grid.plugin.Editing', {
         if (Ext.isNumber(record)) {
             // look up record if numeric row index was passed
             rowIdx = record;
-            record = view.getRecord(node);
+            record = view.getRecord(recordNode);
         } else {
-            rowIdx = view.indexOf(node);
+            rowIdx = view.indexOf(recordNode);
         }
         
         // The record may be removed from the store but the view
@@ -537,7 +537,7 @@ Ext.define('Ext.grid.plugin.Editing', {
             record : record,
             field  : columnHeader.dataIndex,
             value  : record.get(columnHeader.dataIndex),
-            row    : view.getNode(rowIdx),
+            row    : recordNode,
             column : columnHeader,
             rowIdx : rowIdx,
             colIdx : colIdx

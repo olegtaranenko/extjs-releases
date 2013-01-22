@@ -106,7 +106,7 @@ Ext.define('Ext.calendar.view.Day', {
                 hd = this.el.down('.ext-cal-day-header'),
                 h = ct.getHeight() - hd.getHeight();
             
-            this.el.child('.ext-cal-body-ct').setHeight(h);
+            this.el.down('.ext-cal-body-ct').setHeight(h);
         }, 10, this);
     },
     

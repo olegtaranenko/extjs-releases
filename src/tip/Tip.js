@@ -57,8 +57,7 @@ Ext.define('Ext.tip.Tip', {
     baseCls: Ext.baseCSSPrefix + 'tip',
     floating: {
         shadow: true,
-        shim: true,
-        constrain: true
+        shim: true
     },
     focusOnToFront: false,
 
@@ -89,7 +88,10 @@ Ext.define('Ext.tip.Tip', {
     initComponent: function() {
         var me = this;
 
-        me.floating = Ext.apply({}, {shadow: me.shadow}, me.self.prototype.floating);
+        me.floating = Ext.apply( {}, {
+            shadow: me.shadow,
+            constrain: me.constrainPosition
+        }, me.self.prototype.floating);
         me.callParent(arguments);
 
         // Or in the deprecated config. Floating.doConstrain only constrains if the constrain property is truthy.
@@ -135,7 +137,7 @@ Ext.define('Ext.tip.Tip', {
      * Defaults to 'tl-br?' or {@link #defaultAlign} if specified.
      */
     showBy : function(el, pos) {
-        this.showAt(this.el.getAlignToXY(el, pos || this.defaultAlign));
+        this.showAt(this.getAlignToXY(el, pos || this.defaultAlign));
     },
 
     /**

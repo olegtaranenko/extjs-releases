@@ -228,8 +228,11 @@ Ext.define('Ext.selection.CheckboxModel', {
 
 <span id='Ext-selection-CheckboxModel-method-refresh'>    // After refresh, ensure that the header checkbox state matches
 </span>    refresh: function() {
-        this.callParent(arguments);
-        this.updateHeaderState();
+        var me = this;
+
+        me.callParent(arguments);
+
+        me.updateHeaderState();
     },
 
 <span id='Ext-selection-CheckboxModel-method-renderer'>    /**
@@ -297,10 +300,13 @@ Ext.define('Ext.selection.CheckboxModel', {
      */
     updateHeaderState: function() {
         // check to see if all records are selected
-        var storeCount = this.store.getCount(),
-            hdSelectStatus = storeCount &gt; 0 &amp;&amp; this.selected.getCount() === storeCount;
+        var me = this,
+            storeCount = me.store.getCount(),
+            hdSelectStatus = storeCount &gt; 0 &amp;&amp; me.selected.getCount() === storeCount;
             
-        this.toggleUiHeader(hdSelectStatus);
+        if (me.views &amp;&amp; me.views.length) {
+            me.toggleUiHeader(hdSelectStatus);
+        }
     }
 });
 </pre>

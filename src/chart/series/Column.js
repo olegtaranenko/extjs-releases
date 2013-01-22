@@ -101,14 +101,16 @@ Ext.define('Ext.chart.series.Column', {
      */
 
     /**
-     * @cfg {Number} xPadding
-     * Padding between the left/right axes and the bars
+     * @cfg {Number/Object} xPadding Padding between the left/right axes and the bars.
+     * The possible values are a number (the number of pixels for both left and right padding)
+     * or an object with `{ left, right }` properties.
      */
     xPadding: 10,
 
     /**
-     * @cfg {Number} yPadding
-     * Padding between the top/bottom axes and the bars
+     * @cfg {Number/Object} yPadding Padding between the top/bottom axes and the bars.
+     * The possible values are a number (the number of pixels for both top and bottom padding)
+     * or an object with `{ top, bottom }` properties.
      */
     yPadding: 0
 });

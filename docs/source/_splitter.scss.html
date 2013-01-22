@@ -57,6 +57,18 @@
         background-image: theme-background-image($theme-name, 'util/splitter/mini-right.gif');
     }
 
+    @if $include-rtl {
+        .#{$prefix}rtl {
+            &amp;.#{$prefix}layout-split-left {
+                background-image: theme-background-image($theme-name, 'util/splitter/mini-right.gif');
+            }
+
+            &amp;.#{$prefix}layout-split-right {
+                background-image: theme-background-image($theme-name, 'util/splitter/mini-left.gif');
+            }
+        }
+    }
+
     .#{$prefix}layout-split-top {
         background: no-repeat top left;
         background-image: theme-background-image($theme-name, 'util/splitter/mini-top.gif');
@@ -76,6 +88,18 @@
         .#{$prefix}layout-split-right {
             background: no-repeat top right;
             background-image: theme-background-image($theme-name, 'util/splitter/mini-left.gif');
+        }
+
+        @if $include-rtl {
+            .#{$prefix}rtl {
+                &amp;.#{$prefix}layout-split-left {
+                    background-image: theme-background-image($theme-name, 'util/splitter/mini-left.gif');
+                }
+
+                &amp;.#{$prefix}layout-split-right {
+                    background-image: theme-background-image($theme-name, 'util/splitter/mini-right.gif');
+                }
+            }
         }
 
         .#{$prefix}layout-split-top {

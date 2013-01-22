@@ -14,6 +14,9 @@ Ext.define('Ext.util.Event', {
      * `true` in this class to identify an object as an instantiated Event, or subclass thereof.
      */
     isEvent: true,
+    
+    // Private. Event suspend count
+    suspended: 0,
 
     noOptions: {},
     
@@ -25,7 +28,8 @@ Ext.define('Ext.util.Event', {
 
     addListener: function(fn, scope, options) {
         var me = this,
-            listener;
+            listeners, listener, priority, isNegativePriority, highestNegativePriorityIndex,
+            hasNegativePriorityIndex, length, index, i;
             scope = scope || me.observable;
 
         //<debug error>
@@ -44,7 +48,46 @@ Ext.define('Ext.util.Event', {
                 // if we are currently firing this event, don't disturb the listener loop
                 me.listeners = me.listeners.slice(0);
             }
-            me.listeners.push(listener);
+            listeners = me.listeners;
+            index = length = listeners.length;
+            priority = options && options.priority;
+            highestNegativePriorityIndex = me._highestNegativePriorityIndex;
+            hasNegativePriorityIndex = (highestNegativePriorityIndex !== undefined);
+            if (priority) {
+                // Find the index at which to insert the listener into the listeners array,
+                // sorted by priority highest to lowest.
+                isNegativePriority = (priority < 0);
+                if (!isNegativePriority || hasNegativePriorityIndex) {
+                    // If the priority is a positive number, or if it is a negative number
+                    // and there are other existing negative priority listenrs, then we
+                    // need to calcuate the listeners priority-order index.
+                    // If the priority is a negative number, begin the search for priority
+                    // order index at the index of the highest existing negative priority
+                    // listener, otherwise begin at 0
+                    for(i = (isNegativePriority ? highestNegativePriorityIndex : 0); i < length; i++) {
+                        if ((listeners[i].o.priority || 0) < priority) {
+                            index = i;
+                            break;
+                        }
+                    }
+                } else {
+                    // if the priority is a negative number, and there are no other negative
+                    // priority listeners, then no calculation is needed - the negative
+                    // priority listener gets appended to the end of the listeners array.
+                    me._highestNegativePriorityIndex = index;
+                }
+            } else if (hasNegativePriorityIndex) {
+                // listeners with a priority of 0 or undefined are appended to the end of
+                // the listeners array unless there are negative priority listeners in the
+                // listeners array, then they are inserted before the highest negative
+                // priority listener.
+                index = highestNegativePriorityIndex;
+            }
+
+            if (!isNegativePriority && index <= highestNegativePriorityIndex) {
+                me._highestNegativePriorityIndex ++;
+            }
+            Ext.Array.splice(me.listeners, index, 0, listener);
         }
     },
 
@@ -111,10 +154,12 @@ Ext.define('Ext.util.Event', {
         var me = this,
             index,
             listener,
+            highestNegativePriorityIndex,
             k;
         index = me.findListener(fn, scope);
         if (index != -1) {
             listener = me.listeners[index];
+            highestNegativePriorityIndex = me._highestNegativePriorityIndex;
 
             if (me.firing) {
                 me.listeners = me.listeners.slice(0);
@@ -137,6 +182,16 @@ Ext.define('Ext.util.Event', {
 
             // remove this listener from the listeners array
             Ext.Array.erase(me.listeners, index, 1);
+
+            // if the listeners array contains negative priority listeners, adjust the
+            // internal index if needed.
+            if (highestNegativePriorityIndex) {
+                if (index < highestNegativePriorityIndex) {
+                    me._highestNegativePriorityIndex --;
+                } else if (index === highestNegativePriorityIndex && index === me.listeners.length) {
+                    delete me._highestNegativePriorityIndex;
+                }
+            }
             return true;
         }
 
@@ -153,6 +208,16 @@ Ext.define('Ext.util.Event', {
         }
     },
 
+    suspend: function() {
+        this.suspended += 1;
+    },
+
+    resume: function() {
+        if (this.suspended) {
+            this.suspended--;
+        }
+    },
+
     fire: function() {
         var me = this,
             listeners = me.listeners,
@@ -161,7 +226,7 @@ Ext.define('Ext.util.Event', {
             args,
             listener;
 
-        if (count > 0) {
+        if (!me.suspended && count > 0) {
             me.firing = true;
             for (i = 0; i < count; i++) {
                 listener = listeners[i];

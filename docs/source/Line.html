@@ -120,7 +120,7 @@ Ext.define('Ext.chart.series.Line', {
 
     requires: ['Ext.chart.axis.Axis', 'Ext.chart.Shape', 'Ext.draw.Draw', 'Ext.fx.Anim'],
 
-<span id='Ext-chart-series-Line-property-type'>    /* End Definitions */
+<span id='Ext-chart-series-Line-cfg-type'>    /* End Definitions */
 </span>
     type: 'line',
 
@@ -724,7 +724,7 @@ Ext.define('Ext.chart.series.Line', {
                         if (item) {
                             rendererAttributes = me.renderer(item, store.getAt(i), item._to, i, store);
                             me.onAnimate(item, {
-                                to: Ext.apply(rendererAttributes, endMarkerStyle || {})
+                                to: Ext.applyIf(rendererAttributes, endMarkerStyle || {})
                             });
                             item.show(true);
                         }

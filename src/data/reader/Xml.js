@@ -174,8 +174,17 @@ Ext.define('Ext.data.reader.Xml', {
     },
 
     getNodeValue: function(node) {
-        if (node && node.firstChild) {
-            return node.firstChild.nodeValue;
+        if (node) {
+            // overcome a limitation of maximum textnode size
+            // http://reference.sitepoint.com/javascript/Node/normalize
+            // https://developer.mozilla.org/En/DOM/Node.normalize
+            if (typeof node.normalize === 'function') {
+                node.normalize();
+            }
+            node = node.firstChild;
+            if (node) {
+                return node.nodeValue;
+            }
         }
         return undefined;
     },

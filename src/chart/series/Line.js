@@ -707,7 +707,7 @@ Ext.define('Ext.chart.series.Line', {
                         if (item) {
                             rendererAttributes = me.renderer(item, store.getAt(i), item._to, i, store);
                             me.onAnimate(item, {
-                                to: Ext.apply(rendererAttributes, endMarkerStyle || {})
+                                to: Ext.applyIf(rendererAttributes, endMarkerStyle || {})
                             });
                             item.show(true);
                         }

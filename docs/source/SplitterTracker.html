@@ -106,29 +106,32 @@ Ext.define('Ext.resizer.SplitterTracker', {
             // prev and nextConstrainRegions are the maximumBoxes minus the
             // minimumBoxes. The result is always the intersection
             // of these two boxes.
-            prevConstrainRegion, nextConstrainRegion;
+            prevConstrainRegion, nextConstrainRegion, constrainOptions;
 
         // vertical splitters, so resizing left to right
         if (orient === 'vertical') {
-
+            constrainOptions = {
+                prevCmp: prevCmp,
+                nextCmp: nextCmp,
+                prevBox: prevBox,
+                nextBox: nextBox,
+                defaultMin: defaultMin,
+                splitWidth: splitWidth
+            };
             // Region constructor accepts (top, right, bottom, left)
             // anchored/calculated from the left
             prevConstrainRegion = new Ext.util.Region(
                 prevBox.y,
-                // Right boundary is x + maxWidth if there IS a maxWidth.
-                // Otherwise it is calculated based upon the minWidth of the next Component
-                (prevCmp.maxWidth ? prevBox.x + prevCmp.maxWidth : nextBox.right - (nextCmp.minWidth || defaultMin)) + splitWidth,
+                me.getVertPrevConstrainRight(constrainOptions),
                 prevBox.bottom,
-                prevBox.x + (prevCmp.minWidth || defaultMin)
+                me.getVertPrevConstrainLeft(constrainOptions)
             );
             // anchored/calculated from the right
             nextConstrainRegion = new Ext.util.Region(
                 nextBox.y,
-                nextBox.right - (nextCmp.minWidth || defaultMin),
+                me.getVertNextConstrainRight(constrainOptions),
                 nextBox.bottom,
-                // Left boundary is right - maxWidth if there IS a maxWidth.
-                // Otherwise it is calculated based upon the minWidth of the previous Component
-                (nextCmp.maxWidth ? nextBox.right - nextCmp.maxWidth : prevBox.x + (prevBox.minWidth || defaultMin)) - splitWidth
+                me.getVertNextConstrainLeft(constrainOptions)
             );
         } else {
             // anchored/calculated from the top
@@ -179,7 +182,6 @@ Ext.define('Ext.resizer.SplitterTracker', {
             item.flex = size;
         }
 
-        offset = offset || me.getOffset('dragTarget');
         offset = vertical ? offset[0] : offset[1];
 
         if (prevCmp) {
@@ -222,7 +224,7 @@ Ext.define('Ext.resizer.SplitterTracker', {
             splitter = me.getSplitter();
             
         splitter.removeCls(splitter.baseCls + '-active');
-        me.performResize(e, me.getOffset('dragTarget'));
+        me.performResize(e, me.getResizeOffset());
     },
 
 <span id='Ext-resizer-SplitterTracker-method-onDrag'>    // Track the proxy and set the proper XY coordinates
@@ -243,6 +245,33 @@ Ext.define('Ext.resizer.SplitterTracker', {
 
 <span id='Ext-resizer-SplitterTracker-method-getSplitter'>    getSplitter: function() {
 </span>        return this.splitter;
+    },
+
+<span id='Ext-resizer-SplitterTracker-method-getVertPrevConstrainRight'>    getVertPrevConstrainRight: function(o) {
+</span>        // Right boundary is x + maxWidth if there IS a maxWidth.
+        // Otherwise it is calculated based upon the minWidth of the next Component
+        return (o.prevCmp.maxWidth ? o.prevBox.x + o.prevCmp.maxWidth :
+            o.nextBox.right - (o.nextCmp.minWidth || o.defaultMin)) + o.splitWidth;
+    },
+
+<span id='Ext-resizer-SplitterTracker-method-getVertPrevConstrainLeft'>    getVertPrevConstrainLeft: function(o) {
+</span>        return o.prevBox.x + (o.prevCmp.minWidth || o.defaultMin);
+    },
+
+
+<span id='Ext-resizer-SplitterTracker-method-getVertNextConstrainRight'>    getVertNextConstrainRight: function(o) {
+</span>        return o.nextBox.right - (o.nextCmp.minWidth || o.defaultMin);
+    },
+
+<span id='Ext-resizer-SplitterTracker-method-getVertNextConstrainLeft'>    getVertNextConstrainLeft: function(o) {
+</span>        // Left boundary is right - maxWidth if there IS a maxWidth.
+        // Otherwise it is calculated based upon the minWidth of the previous Component
+        return (o.nextCmp.maxWidth ? o.nextBox.right - o.nextCmp.maxWidth :
+            o.prevBox.x + (o.prevBox.minWidth || o.defaultMin)) - o.splitWidth;
+    },
+
+<span id='Ext-resizer-SplitterTracker-method-getResizeOffset'>    getResizeOffset: function() {
+</span>        return this.getOffset('dragTarget');
     }
 });</pre>
 </body>

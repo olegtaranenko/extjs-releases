@@ -56,8 +56,15 @@ Ext.define('Ext.layout.component.FieldSet', {
         var border = ownerContext.getBorderInfo(),
             legend = ownerContext.target.legend;
             
-        // Height of fieldset is content height plus top border width (which is either the legend height or top border width) plus bottom border width
-        return ownerContext.getProp('contentHeight') + ownerContext.getPaddingInfo().height + (legend ? legend.getHeight() : border.top) + border.bottom;
+        // Height of fieldset is content height plus top border width (which is either the
+        // legend height or top border width) plus bottom border width
+        return ownerContext.getProp('contentHeight') +
+               ownerContext.getPaddingInfo().height +
+               // In IE8m and IEquirks the top padding is on the body el
+               ((Ext.isIEQuirks || Ext.isIE8m) ?
+                   ownerContext.bodyContext.getPaddingInfo().top : 0) +
+               (legend ? legend.getHeight() : border.top) +
+               border.bottom;
     },
 
     publishInnerHeight: function (ownerContext, height) {

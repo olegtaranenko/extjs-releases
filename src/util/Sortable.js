@@ -117,7 +117,7 @@ Ext.define("Ext.util.Sortable", {
      */
     sort: function(sorters, direction, where, doSort) {
         var me = this,
-            sorter, sorterFn,
+            sorter,
             newSorters;
 
         if (Ext.isArray(sorters)) {

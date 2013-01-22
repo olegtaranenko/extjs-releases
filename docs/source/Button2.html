@@ -37,7 +37,7 @@ Ext.define('Ext.layout.component.Button', {
 <span id='Ext-layout-component-Button-method-constructor'>    constructor: function () {
 </span>        this.callParent(arguments);
 
-        this.hackWidth = Ext.isIE &amp;&amp; (!Ext.isStrict || Ext.isIE6 || Ext.isIE7 || Ext.isIE8);
+        this.hackWidth = Ext.isIEQuirks || Ext.isIE8m;
         this.heightIncludesPadding = Ext.isIE6 &amp;&amp; Ext.isStrict;
     },
 

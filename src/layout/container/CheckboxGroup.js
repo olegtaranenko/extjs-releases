@@ -139,7 +139,7 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
 
         // The columnNodes are widthed using their own width attributes, we just need to wait
         // for all children to have arranged themselves in that width, and then collect our height.
-        if (!ownerContext.getDomProp('containerChildrenDone')) {
+        if (!ownerContext.getDomProp('containerChildrenSizeDone')) {
             me.done = false;
         } else {
             targetContext = ownerContext.innerCtContext;

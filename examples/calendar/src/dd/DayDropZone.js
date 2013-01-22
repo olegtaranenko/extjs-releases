@@ -67,7 +67,7 @@ Ext.define('Ext.calendar.dd.DayDropZone', {
                     box.y = n.timeBox.y;
                 }
                 dt = Ext.Date.format(n.date, 'n/j g:ia');
-                box.x = n.el.getLeft();
+                box.x = n.el.getX();
 
                 this.shim(n.date, box);
                 text = this.moveText;
@@ -76,7 +76,7 @@ Ext.define('Ext.calendar.dd.DayDropZone', {
                 if (!this.resizeDt) {
                     this.resizeDt = n.date;
                 }
-                box.x = dayCol.getLeft();
+                box.x = dayCol.getX();
                 box.height = Math.ceil(Math.abs(e.xy[1] - box.y) / n.timeBox.height) * n.timeBox.height;
                 if (e.xy[1] < box.y) {
                     box.y -= box.height;

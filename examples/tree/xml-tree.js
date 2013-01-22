@@ -35,8 +35,6 @@ Ext.onReady(function() {
     // create the Tree
     var tree = Ext.create('Ext.tree.Panel', {
         store: store,
-        hideHeaders: true,
-        rootVisible: true,
         viewConfig: {
             plugins: [{
                 ptype: 'treeviewdragdrop'

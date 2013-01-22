@@ -103,7 +103,8 @@ menuItemCfgs : {
      * </pre>
      */
     menuItems : ['lt', 'gt', '-', 'eq'],
-
+    
+    showSeparator: false,
 
     constructor : function (config) {
         var me = this,
@@ -141,9 +142,7 @@ menuItemCfgs : {
                         change: me.onInputChange,
                         keyup: me.onInputKeyUp,
                         el: {
-                            click: function(e) {
-                                e.stopPropagation();
-                            }
+                            click: this.stopFn
                         }
                     },
                     activate: Ext.emptyFn,
@@ -162,6 +161,10 @@ menuItemCfgs : {
             me.add(item);
         }
     },
+    
+    stopFn: function(e) {
+        e.stopPropagation();
+    },
 
     /**
      * @private
@@ -176,11 +179,16 @@ menuItemCfgs : {
      * @return {String} The value of this filter
      */
     getValue : function () {
-        var result = {}, key, field;
-        for (key in this.fields) {
-            field = this.fields[key];
-            if (field.isValid() && field.getValue() !== null) {
-                result[key] = field.getValue();
+        var result = {},
+            fields = this.fields, 
+            key, field;
+            
+        for (key in fields) {
+            if (fields.hasOwnProperty(key)) {
+                field = fields[key];
+                if (field.isValid() && field.getValue() !== null) {
+                    result[key] = field.getValue();
+                }
             }
         }
         return result;
@@ -192,16 +200,18 @@ menuItemCfgs : {
      */	
     setValue : function (data) {
         var me = this,
+            fields = me.fields,
             key,
             field;
 
-        for (key in me.fields) {
-            
-            // Prevent field's change event from tiggering a Store filter. The final upate event will do that
-            field = me.fields[key];
-            field.suspendEvents();
-            field.setValue(key in data ? data[key] : '');
-            field.resumeEvents();
+        for (key in fields) {
+            if (fields.hasOwnProperty(key)) {
+                // Prevent field's change event from tiggering a Store filter. The final upate event will do that
+                field =fields[key];
+                field.suspendEvents();
+                field.setValue(key in data ? data[key] : '');
+                field.resumeEvents();
+            }
         }
 
         // Trigger the filering of the Store

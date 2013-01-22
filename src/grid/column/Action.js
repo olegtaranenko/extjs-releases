@@ -354,7 +354,7 @@ Ext.define('Ext.grid.column.Action', {
         // If the target was not within a cell (ie it's a keydown event from the View), then
         // rely on the selection data injected by View.processUIEvent to grab the
         // first action icon from the selected cell.
-        if (key && !Ext.fly(target).findParent(view.cellSelector)) {
+        if (key && !Ext.fly(target).findParent(view.getCellSelector())) {
             target = Ext.fly(cell).down('.' + Ext.baseCSSPrefix + 'action-col-icon', true);
         }
 

@@ -217,7 +217,7 @@ Ext.define('Ext.form.Panel', {
 
     // Initialize the BasicForm after all layouts have been completed.
     afterFirstLayout: function() {
-        this.callParent();
+        this.callParent(arguments);
         this.form.initialize();
     },
 
@@ -362,8 +362,7 @@ Ext.define('Ext.form.Panel', {
     checkChange: function() {
         var fields = this.form.getFields().items,
             f,
-            fLen   = fields.length,
-            field;
+            fLen   = fields.length;
 
         for (f = 0; f < fLen; f++) {
             fields[f].checkChange();

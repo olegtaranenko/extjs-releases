@@ -102,6 +102,12 @@ Ext.define('Ext.chart.series.Series', {
     // @private animating flag
     animating: false,
 
+    // @private default gutters
+    nullGutters: { lower: 0, upper: 0, verticalAxis: undefined },
+
+    // @private default padding
+    nullPadding: { left:0, right:0, width:0, bottom:0, top:0, height:0 },
+
     /**
      * @cfg {Object} listeners
      * An (optional) object with event callbacks. All event callbacks get the target *item* as first parameter. The callback functions are:
@@ -159,6 +165,8 @@ Ext.define('Ext.chart.series.Series', {
         }
     },
     
+    onRedraw: Ext.emptyFn,
+    
     /**
      * Iterate over each of the records for this series. The default implementation simply iterates
      * through the entire data store, but individual series implementations can override this to
@@ -195,8 +203,7 @@ Ext.define('Ext.chart.series.Series', {
         var me = this,
             chart = me.chart,
             chartBBox = chart.chartBBox,
-            gutterX = noGutter ? 0 : chart.maxGutter[0],
-            gutterY = noGutter ? 0 : chart.maxGutter[1],
+            maxGutters = noGutter ? { left: 0, right: 0, bottom: 0, top: 0 } : chart.maxGutters,
             clipBox, bbox;
 
         clipBox = {
@@ -208,10 +215,10 @@ Ext.define('Ext.chart.series.Series', {
         me.clipBox = clipBox;
 
         bbox = {
-            x: (clipBox.x + gutterX) - (chart.zoom.x * chart.zoom.width),
-            y: (clipBox.y + gutterY) - (chart.zoom.y * chart.zoom.height),
-            width: (clipBox.width - (gutterX * 2)) * chart.zoom.width,
-            height: (clipBox.height - (gutterY * 2)) * chart.zoom.height
+            x: (clipBox.x + maxGutters.left) - (chart.zoom.x * chart.zoom.width),
+            y: (clipBox.y + maxGutters.bottom) - (chart.zoom.y * chart.zoom.height),
+            width: (clipBox.width - (maxGutters.left + maxGutters.right)) * chart.zoom.width,
+            height: (clipBox.height - (maxGutters.bottom + maxGutters.top)) * chart.zoom.height
         };
         me.bbox = bbox;
     },
@@ -234,9 +241,14 @@ Ext.define('Ext.chart.series.Series', {
         }
     },
 
-    // @private return the gutter.
+    // @private return the gutters.
     getGutters: function() {
-        return [0, 0];
+        return this.nullGutters;
+    },
+
+    // @private return the gutters.
+    getPadding: function() {
+        return this.nullPadding;
     },
 
     // @private wrapper for the itemmouseover event.

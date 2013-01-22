@@ -118,12 +118,13 @@ Ext.define('Ext.dd.DD', {
                 Math.max(0, Math.min(oCoord.y, vpSize.height - elSize.height))
             ];
             fly.setXY(aCoord);
-            newLeft = fly.getLocalX();
+            newLeft = this.getLocalX(fly);
             newTop  = fly.getLocalY();
             this.deltaSetXY = [newLeft - oCoord.x, newTop - oCoord.y];
         } else {
             vpSize = this.cachedViewportSize;
-            fly.setLeftTop(
+            this.setLocalXY(
+                fly,
                 Math.max(0, Math.min(oCoord.x + this.deltaSetXY[0], vpSize.width - elSize.width)),
                 Math.max(0, Math.min(oCoord.y + this.deltaSetXY[1], vpSize.height - elSize.height))
             );
@@ -287,6 +288,14 @@ Ext.define('Ext.dd.DD', {
 
 <span id='Ext-dd-DD-method-toString'>    toString: function() {
 </span>        return (&quot;DD &quot; + this.id);
+    },
+    
+<span id='Ext-dd-DD-method-getLocalX'>    getLocalX: function(el) {
+</span>        return el.getLocalX();
+    },
+
+<span id='Ext-dd-DD-method-setLocalXY'>    setLocalXY: function(el, x, y) {
+</span>        el.setLocalXY(x, y);
     }
 
     //////////////////////////////////////////////////////////////////////////

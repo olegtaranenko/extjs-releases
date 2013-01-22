@@ -119,7 +119,7 @@ Ext.define('Ext.form.CheckboxGroup', {
     blankText : &quot;You must select at least one item in this group&quot;,
     //&lt;/locale&gt;
 
-<span id='Ext-form-CheckboxGroup-property-defaultType'>    // private
+<span id='Ext-form-CheckboxGroup-cfg-defaultType'>    // private
 </span>    defaultType : 'checkboxfield',
 
 <span id='Ext-form-CheckboxGroup-property-groupCls'>    // private
@@ -131,7 +131,7 @@ Ext.define('Ext.form.CheckboxGroup', {
      */
     fieldBodyCls: Ext.baseCSSPrefix + 'form-checkboxgroup-body',
 
-<span id='Ext-form-CheckboxGroup-property-layout'>    // private
+<span id='Ext-form-CheckboxGroup-cfg-layout'>    // private
 </span>    layout: 'checkboxgroup',
 
 <span id='Ext-form-CheckboxGroup-method-initComponent'>    initComponent: function() {
@@ -155,23 +155,39 @@ Ext.define('Ext.form.CheckboxGroup', {
         }
     },
 
-<span id='Ext-form-CheckboxGroup-method-onFieldAdded'>    /**
+<span id='Ext-form-CheckboxGroup-method-onAdd'>    /**
 </span>     * When a checkbox is added to the group, monitor it for changes
      * @param {Object} field
      * @protected
      */
-    onFieldAdded: function(field) {
-        var me = this;
-        if (field.isCheckbox) {
-            me.mon(field, 'change', me.checkChange, me);
+    onAdd: function(item) {
+        var me = this,
+            items,
+            len, i;
+
+        if (item.isCheckbox) {
+            me.mon(item, 'change', me.checkChange, me);
+        } else if (item.isContainer) {
+            items = item.items.items;
+            for (i = 0, len = items.length; i &lt; len; i++) {
+                me.onAdd(items[i]);
+            }
         }
         me.callParent(arguments);
     },
 
-<span id='Ext-form-CheckboxGroup-method-onFieldRemoved'>    onFieldRemoved: function(field) {
-</span>        var me = this;
-        if (field.isCheckbox) {
-            me.mun(field, 'change', me.checkChange, me);
+<span id='Ext-form-CheckboxGroup-method-onRemove'>    onRemove: function(item) {
+</span>        var me = this,
+            items,
+            len, i;
+
+        if (item.isCheckbox) {
+            me.mun(item, 'change', me.checkChange, me);
+        } else if (item.isContainer) {
+            items = item.items.items;
+            for (i = 0, len = items.length; i &lt; len; i++) {
+                me.onRemove(items[i]);
+            }
         }
         me.callParent(arguments);
     },

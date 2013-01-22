@@ -180,7 +180,7 @@
  *
  * - {@link Ext.toolbar.Paging Paging toolbar} - paging through large sets of data.
  *
- * - {@link Ext.grid.PagingScroller Infinite scrolling} - another way to handle large sets of data.
+ * - {@link Ext.grid.plugin.BufferedRenderer Infinite scrolling} - another way to handle large sets of data.
  *
  * - {@link Ext.grid.RowNumberer RowNumberer} - automatically numbered rows.
  *
@@ -195,29 +195,9 @@ Ext.define('Ext.grid.Panel', {
     requires: ['Ext.grid.View'],
     alias: ['widget.gridpanel', 'widget.grid'],
     alternateClassName: ['Ext.list.ListView', 'Ext.ListView', 'Ext.grid.GridPanel'],
-<span id='Ext-grid-Panel-property-viewType'>    viewType: 'gridview',
+<span id='Ext-grid-Panel-cfg-viewType'>    viewType: 'gridview',
 </span>
 <span id='Ext-grid-Panel-property-lockable'>    lockable: false,
-</span>
-<span id='Ext-grid-Panel-property-bothCfgCopy'>    // Required for the Lockable Mixin. These are the configurations which will be copied to the
-</span>    // normal and locked sub tablepanels
-    bothCfgCopy: [
-        'invalidateScrollerOnRefresh',
-        'hideHeaders',
-        'enableColumnHide',
-        'enableColumnMove',
-        'enableColumnResize',
-        'sortableColumns',
-        'columnLines',
-        'rowLines'
-    ],
-<span id='Ext-grid-Panel-property-normalCfgCopy'>    normalCfgCopy: [ 
-</span>        'verticalScroller', 
-        'verticalScrollDock', 
-        'verticalScrollerType', 
-        'scroll'
-    ],
-<span id='Ext-grid-Panel-property-lockedCfgCopy'>    lockedCfgCopy: [],
 </span>
 <span id='Ext-grid-Panel-cfg-rowLines'>    /**
 </span>     * @cfg {Boolean} rowLines False to remove row line styling

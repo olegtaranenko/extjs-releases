@@ -16,49 +16,20 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js">@mixin extjs-tool {
-    .#{$prefix}tool {
-        padding: $tool-padding;
+    .#{$prefix}tool img {
+        overflow: hidden;
 
-        img {
-            overflow: hidden;
+        width: $tool-size;
+        height: $tool-size;
 
-            width: $tool-size;
-            height: $tool-size;
+        cursor: pointer;
 
-            cursor: pointer;
+        background-color: transparent;
+        background-repeat: no-repeat;
+        background-image: theme-background-image($theme-name, 'tools/tool-sprites.gif');
 
-            background-color: transparent;
-            background-repeat: no-repeat;
-            background-image: theme-background-image($theme-name, 'tools/tool-sprites.gif');
-
-            margin: 0;
-        }
+        margin: 0;
     }
-
-    .#{$prefix}panel-header-horizontal,
-    .#{$prefix}window-header-horizontal {
-        .#{$prefix}tool {
-            margin-left: 1px;
-        }
-    }
-
-    .#{$prefix}panel-header-vertical,
-    .#{$prefix}window-header-vertical {
-        .#{$prefix}tool {
-            margin-top: 1px;
-            padding: rotate90($tool-padding);
-        }
-    }
-
-    .#{$prefix}panel-header-vertical,
-    .#{$prefix}window-header-vertical {
-        // this assumes that there will only ever be one tool that shows at the top of a vertical header (the collapse tool)
-        // we should revisit this if it is decided that we want to support multiple tools at the top
-        .#{$prefix}tool-top {
-            margin: 0 0 4px;
-        }
-    }
-
 
 .#{$prefix}tool-placeholder {
         visibility: hidden;
@@ -195,6 +166,20 @@
         background-position: 0 -165px;
     }
 
+    @if $include-rtl {
+        .#{$prefix}rtl {
+            &amp;.#{$prefix}tool-expand-left,
+            &amp;.#{$prefix}tool-collapse-left {
+                background-position: 0 -165px;
+            }
+
+            &amp;.#{$prefix}tool-expand-right,
+            &amp;.#{$prefix}tool-collapse-right {
+                background-position: 0 -180px;
+            }
+        }
+    }
+
     .#{$prefix}tool-over {
         .#{$prefix}tool-close {
             background-position: -15px 0;
@@ -302,6 +287,20 @@
         .#{$prefix}tool-expand-right,
         .#{$prefix}tool-collapse-right {
             background-position: -15px -165px;
+        }
+
+        @if $include-rtl {
+            .#{$prefix}rtl {
+                &amp;.#{$prefix}tool-expand-left,
+                &amp;.#{$prefix}tool-collapse-left {
+                    background-position: -15px -165px;
+                }
+            
+                &amp;.#{$prefix}tool-expand-right,
+                &amp;.#{$prefix}tool-collapse-right {
+                    background-position: -15px -180px;
+                }
+            }
         }
     }
 }

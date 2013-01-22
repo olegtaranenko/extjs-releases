@@ -1195,6 +1195,18 @@ Ext.define('Ext.form.field.ComboBox', {
                     }
                     // Tab key event is allowed to propagate to field
                     return true;
+                },
+                enter: function(e){
+                    var selModel = picker.getSelectionModel(),
+                        count = selModel.getCount();
+                        
+                    this.selectHighlighted(e);
+                    
+                    // Handle the case where the highlighted item is already selected
+                    // In this case, the change event won't fire, so just collapse
+                    if (!me.multiSelect && count === selModel.getCount()) {
+                        me.collapse();
+                    }
                 }
             });
         }
@@ -1430,7 +1442,13 @@ Ext.define('Ext.form.field.ComboBox', {
     },
 
     getSubmitValue: function() {
-        return this.getValue();
+        var value = this.getValue();
+        // If the value is null/undefined, we still return an empty string. If we
+        // don't, the field will never get posted to the server since nulls are ignored.
+        if (Ext.isEmpty(value)) {
+            value = '';
+        }
+        return value;
     },
 
     isEqual: function(v1, v2) {

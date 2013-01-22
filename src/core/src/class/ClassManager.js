@@ -1426,6 +1426,23 @@
          *              }
          *          };
          *      });
+         * 
+         * _Note_ that when using override, the above syntax will not override successfully, because
+         * the passed function would need to be executed first to determine whether or not the result 
+         * is an override or defining a new object. As such, an alternative syntax that immediately 
+         * invokes the function can be used:
+         * 
+         *      Ext.define('MyApp.override.BaseOverride', function () {
+         *          var counter = 0;
+         *
+         *          return {
+         *              override: 'Ext.Component',
+         *              logId: function () {
+         *                  console.log(++counter, this.id);
+         *              }
+         *          };
+         *      }());
+         * 
          *
          * When using this form of `Ext.define`, the function is passed a reference to its
          * class. This can be used as an efficient way to access any static properties you
@@ -1608,7 +1625,13 @@
                 }
             }
 
-            delete namespace[parts[partCount]];
+            // Old IE blows up on attempt to delete window property
+            try {
+                delete namespace[parts[partCount]];
+            }
+            catch (e) {
+                namespace[parts[partCount]] = undefined;
+            }
         },
         //</debug>
 

@@ -1037,10 +1037,10 @@ Ext.define('Ext.data.Connection', {
             // which can be created by passing the ArrayBuffer (returned as
             // the xhr.response property) to the Uint8Array constructor.
             byteArray = response ? new Uint8Array(response) : [];
-        } else if (Ext.isIE9) {
+        } else if (Ext.isIE9p) {
             // In IE9 and below the responseBody property contains a byte array
             // but it is not directly accessible using javascript.
-            // In IE9 we can get the bytes by constructing a VBArray
+            // In IE9p we can get the bytes by constructing a VBArray
             // using the responseBody and then converting it to an Array.
             try {
                 byteArray = new VBArray(responseBody).toArray();

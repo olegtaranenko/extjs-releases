@@ -23,13 +23,13 @@
 Ext.define('Ext.tab.Bar', {
     extend: 'Ext.panel.Header',
     alias: 'widget.tabbar',
-<span id='Ext-tab-Bar-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'tab-bar',
+<span id='Ext-tab-Bar-cfg-baseCls'>    baseCls: Ext.baseCSSPrefix + 'tab-bar',
 </span>
     requires: ['Ext.tab.Tab'],
 
 <span id='Ext-tab-Bar-property-isTabBar'>    /**
 </span>     * @property {Boolean} isTabBar
-     * `true` in this class to identify an objact as an instantiated Tab Bar, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Tab Bar, or subclass thereof.
      */
     isTabBar: true,
     
@@ -41,7 +41,7 @@ Ext.define('Ext.tab.Bar', {
 </span>     * @cfg {String} iconCls @hide
      */
 
-<span id='Ext-tab-Bar-property-defaultType'>    // @private
+<span id='Ext-tab-Bar-cfg-defaultType'>    // @private
 </span>    defaultType: 'tab',
 
 <span id='Ext-tab-Bar-cfg-plain'>    /**
@@ -54,9 +54,9 @@ Ext.define('Ext.tab.Bar', {
 </span>        'body', 'strip'
     ],
 
-<span id='Ext-tab-Bar-property-renderTpl'>    // @private
+<span id='Ext-tab-Bar-cfg-renderTpl'>    // @private
 </span>    renderTpl: [
-        '&lt;div id=&quot;{id}-body&quot; class=&quot;{baseCls}-body {bodyCls}&lt;tpl if=&quot;ui&quot;&gt; {baseCls}-body-{ui}&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&lt;/tpl&gt;&lt;/tpl&gt;&quot;&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;',
+        '&lt;div id=&quot;{id}-body&quot; class=&quot;{baseCls}-body {bodyCls} {bodyTargetCls}&lt;tpl if=&quot;ui&quot;&gt; {baseCls}-body-{ui}&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&lt;/tpl&gt;&lt;/tpl&gt;&quot;&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;',
             '{%this.renderContainer(out,values)%}',
         '&lt;/div&gt;',
         '&lt;div id=&quot;{id}-strip&quot; class=&quot;{baseCls}-strip&lt;tpl if=&quot;ui&quot;&gt; {baseCls}-strip-{ui}&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-strip-{parent.ui}-{.}&lt;/tpl&gt;&lt;/tpl&gt;&quot;&gt;&lt;/div&gt;'

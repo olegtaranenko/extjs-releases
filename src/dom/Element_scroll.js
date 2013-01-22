@@ -19,34 +19,33 @@ Ext.define('Ext.dom.Element_scroll', {
      * `{left: (scrollLeft), top: (scrollTop)}`
      */
     getScroll: function() {
-        var d = this.dom,
+        var me = this,
+            dom = me.dom,
             doc = document,
             body = doc.body,
             docElement = doc.documentElement,
-            l,
-            t,
-            ret;
+            left, top;
 
-        if (d == doc || d == body) {
-            if (Ext.isIE && Ext.isStrict) {
-                l = docElement.scrollLeft;
-                t = docElement.scrollTop;
-            } else {
-                l = window.pageXOffset;
-                t = window.pageYOffset;
-            }
-            ret = {
-                left: l || (body ? body.scrollLeft : 0),
-                top : t || (body ? body.scrollTop : 0)
-            };
+        if (dom === doc || dom === body) {
+            // the scrollLeft/scrollTop may be either on the body or documentElement,
+            // depending on browser. It is possible to use window.pageXOffset/pageYOffset
+            // in most modern browsers but this complicates things when in rtl mode because
+            // pageXOffset does not always behave the same as scrollLeft when direction is
+            // rtl. (e.g. pageXOffset can be an offset from the right, while scrollLeft
+            // is offset from the left, one can be positive and the other negative, etc.)
+            // To avoid adding an extra layer of feature detection in rtl mode to deal with
+            // these differences, it's best just to always use scrollLeft/scrollTop
+            left = docElement.scrollLeft || (body ? body.scrollLeft : 0);
+            top = docElement.scrollTop || (body ? body.scrollTop : 0);
         } else {
-            ret = {
-                left: d.scrollLeft,
-                top : d.scrollTop
-            };
+            left = dom.scrollLeft;
+            top = dom.scrollTop;
         }
 
-        return ret;
+        return {
+            left: left,
+            top: top
+        };
     },
 
     /**
@@ -136,14 +135,14 @@ Ext.define('Ext.dom.Element_scroll', {
      * @return {Ext.dom.Element} this
      */
     scrollIntoView: function(container, hscroll, animate) {
-        container = Ext.getDom(container) || Ext.getBody().dom;
-        var el = this.dom,
-            offsets = this.getOffsetsTo(container),
+        var me = this,
+            dom = me.dom,
+            offsets = me.getOffsetsTo(container = Ext.getDom(container) || Ext.getBody().dom),
         // el's box
             left = offsets[0] + container.scrollLeft,
             top = offsets[1] + container.scrollTop,
-            bottom = top + el.offsetHeight,
-            right = left + el.offsetWidth,
+            bottom = top + dom.offsetHeight,
+            right = left + dom.offsetWidth,
         // ct's box
             ctClientHeight = container.clientHeight,
             ctScrollTop = parseInt(container.scrollTop, 10),
@@ -152,32 +151,43 @@ Ext.define('Ext.dom.Element_scroll', {
             ctRight = ctScrollLeft + container.clientWidth,
             newPos;
 
-        if (el.offsetHeight > ctClientHeight || top < ctScrollTop) {
+        // Highlight upon end of scroll
+        if (animate) {
+            animate = Ext.apply({
+                listeners: {
+                    afteranimate: function() {
+                        me.scrollChildFly.attach(dom).highlight();
+                    }
+                }
+            }, animate);
+        }
+
+        if (dom.offsetHeight > ctClientHeight || top < ctScrollTop) {
             newPos = top;
         } else if (bottom > ctBottom) {
             newPos = bottom - ctClientHeight;
         }
         if (newPos != null) {
-            Ext.get(container).scrollTo('top', newPos, animate);
+            me.scrollChildFly.attach(container).scrollTo('top', newPos, animate);
         }
 
         if (hscroll !== false) {
             newPos = null;
-            if (el.offsetWidth > container.clientWidth || left < ctScrollLeft) {
+            if (dom.offsetWidth > container.clientWidth || left < ctScrollLeft) {
                 newPos = left;
             } else if (right > ctRight) {
                 newPos = right - container.clientWidth;
             }
             if (newPos != null) {
-                Ext.get(container).scrollTo('left', newPos, animate);
+                me.scrollChildFly.attach(container).scrollTo('left', newPos, animate);
             }
         }
-        return this;
+        return me;
     },
 
     // @private
     scrollChildIntoView: function(child, hscroll) {
-        Ext.fly(child, '_scrollChildIntoView').scrollIntoView(this, hscroll);
+        this.scrollChildFly.attach(Ext.getDom(child)).scrollIntoView(this, hscroll);
     },
 
     /**
@@ -222,4 +232,7 @@ Ext.define('Ext.dom.Element_scroll', {
         }
         return scrolled;
     }
+}, function() {
+    this.prototype.scrollChildFly = new this.Fly();
+    this.prototype.scrolltoFly = new this.Fly();
 });

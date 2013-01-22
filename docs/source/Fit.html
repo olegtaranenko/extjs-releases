@@ -51,7 +51,7 @@ Ext.define('Ext.layout.container.Fit', {
 
     alias: 'layout.fit',
 
-<span id='Ext-layout-container-Fit-property-itemCls'>    /* End Definitions */
+<span id='Ext-layout-container-Fit-cfg-itemCls'>    /* End Definitions */
 </span>
     itemCls: Ext.baseCSSPrefix + 'fit-item',
 <span id='Ext-layout-container-Fit-property-targetCls'>    targetCls: Ext.baseCSSPrefix + 'layout-fit',
@@ -181,11 +181,11 @@ Ext.define('Ext.layout.container.Fit', {
         c = ownerContext.target;
         ownerContext.overflowX = (!ownerContext.widthModel.shrinkWrap &amp;&amp; 
                                    ownerContext.maxChildMinWidth &amp;&amp;
-                                   (c.autoScroll || c.overflowX)) || undef;
+                                   c.scrollFlags.x) || undef;
 
         ownerContext.overflowY = (!ownerContext.heightModel.shrinkWrap &amp;&amp;
                                    ownerContext.maxChildMinHeight &amp;&amp;
-                                   (c.autoScroll || c.overflowY)) || undef;
+                                   c.scrollFlags.y) || undef;
     },
 
 <span id='Ext-layout-container-Fit-method-calculate'>    calculate : function (ownerContext) {

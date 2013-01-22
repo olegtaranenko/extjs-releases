@@ -72,11 +72,9 @@ Ext.define('Ext.layout.container.VBox', {
 
     names: {
         // parallel
-        lr: 'tb',
-        left: 'top',
+        beforeX: 'top',
         leftCap: 'Top',
-        right: 'bottom',
-        position: 'top',
+        afterX: 'bottom',
         width: 'height',
         contentWidth: 'contentHeight',
         minWidth: 'minHeight',
@@ -89,12 +87,12 @@ Ext.define('Ext.layout.container.VBox', {
         overflowX: 'overflowY',
         hasOverflowX: 'hasOverflowY',
         invalidateScrollX: 'invalidateScrollY',
+        parallelMargins: 'tb',
 
         // perpendicular
         center: 'center',
-        top: 'left',// 'before',
-        topPosition: 'left',
-        bottom: 'right',// 'after',
+        beforeY: 'left',
+        afterY: 'right',
         height: 'width',
         contentHeight: 'contentWidth',
         minHeight: 'minWidth',
@@ -107,6 +105,7 @@ Ext.define('Ext.layout.container.VBox', {
         overflowY: 'overflowX',
         hasOverflowY: 'hasOverflowX',
         invalidateScrollY: 'invalidateScrollX',
+        perpendicularMargins: 'lr',
 
         // Methods
         getWidth: 'getHeight',

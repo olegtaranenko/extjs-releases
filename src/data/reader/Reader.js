@@ -676,7 +676,7 @@ Ext.define('Ext.data.reader.Reader', {
                 '<tpl else>',
         '        dest["{name}"] = value;\n',
                 '</tpl>',
-        '    };',
+        '    };\n',
 
         // Code for processing a source property value when there is no default value
             '<tpl else>',

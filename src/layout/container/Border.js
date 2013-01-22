@@ -582,8 +582,10 @@ Ext.define('Ext.layout.container.Border', {
             // the first panel has finished it's expand animation. If this is the
             // case we do not want the placeholder to be included in the layout
             // items because it will not be once the panel has finished expanding.
-            if ((!ownerItem.floated || ownerItem.isCollapsingOrExpanding === 2) &&
-                !(placeholderFor && placeholderFor.isCollapsingOrExpanding === 2)) {
+            //
+            // If the component is hidden, we need none of these shenanigans
+            if (ownerItem.hidden || ((!ownerItem.floated || ownerItem.isCollapsingOrExpanding === 2) &&
+                !(placeholderFor && placeholderFor.isCollapsingOrExpanding === 2))) {
                 items.push(ownerItem);
             } 
         }

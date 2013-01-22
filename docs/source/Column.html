@@ -100,12 +100,12 @@ Ext.define('Ext.chart.series.Column', {
 
     extend: 'Ext.chart.series.Bar',
 
-<span id='Ext-chart-series-Column-property-type'>    /* End Definitions */
+<span id='Ext-chart-series-Column-cfg-type'>    /* End Definitions */
 </span>
     type: 'column',
     alias: 'series.column',
 
-<span id='Ext-chart-series-Column-property-column'>    column: true,
+<span id='Ext-chart-series-Column-cfg-column'>    column: true,
 </span>
 <span id='Ext-chart-series-Column-property-boundColumn'>    // private: true if the columns are bound to a numerical x-axis; otherwise they are evenly distributed along the axis
 </span>    boundColumn: false,
@@ -118,14 +118,16 @@ Ext.define('Ext.chart.series.Column', {
      */
 
 <span id='Ext-chart-series-Column-cfg-xPadding'>    /**
-</span>     * @cfg {Number} xPadding
-     * Padding between the left/right axes and the bars
+</span>     * @cfg {Number/Object} xPadding Padding between the left/right axes and the bars.
+     * The possible values are a number (the number of pixels for both left and right padding)
+     * or an object with `{ left, right }` properties.
      */
     xPadding: 10,
 
 <span id='Ext-chart-series-Column-cfg-yPadding'>    /**
-</span>     * @cfg {Number} yPadding
-     * Padding between the top/bottom axes and the bars
+</span>     * @cfg {Number/Object} yPadding Padding between the top/bottom axes and the bars.
+     * The possible values are a number (the number of pixels for both top and bottom padding)
+     * or an object with `{ top, bottom }` properties.
      */
     yPadding: 0
 });</pre>

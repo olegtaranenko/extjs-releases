@@ -53,6 +53,25 @@ Ext.define('Ext.util.Floating', {
         // With this we acquire a floatParent for relative positioning, and a zIndexParent which is an
         // ancestor floater which provides zIndex management.
         me.registerWithOwnerCt();
+
+        me.initHierarchyEvents();
+    },
+
+    initHierarchyEvents: function() {
+        var me = this,
+            syncHidden = this.syncHidden;
+
+        if (!me.hasHierarchyEventListeners) {
+            me.mon(me.hierarchyEventSource, {
+                hide: syncHidden,
+                collapse: syncHidden,
+                show: syncHidden,
+                expand: syncHidden,
+                added: syncHidden,
+                scope: me
+            });
+            me.hasHierarchyEventListeners = true;
+        }
     },
 
     registerWithOwnerCt: function() {
@@ -64,7 +83,7 @@ Ext.define('Ext.util.Floating', {
 
         // Acquire a zIndexParent by traversing the ownerCt axis for the nearest floating ancestor
         me.zIndexParent = me.up('[floating]');
-        me.setFloatParent(me.ownerCt);
+        me.setFloatParent(me.ownerCt || me.zIndexParent);
         delete me.ownerCt;
 
         if (me.zIndexParent) {
@@ -98,25 +117,7 @@ Ext.define('Ext.util.Floating', {
     setFloatParent: function(floatParent) {
         var me = this;
 
-        // Remove listeners from previous floatParent
-        if (me.floatParent) {
-            me.mun(me.floatParent, {
-                hide: me.onFloatParentHide,
-                show: me.onFloatParentShow,
-                scope: me
-            });
-        }
-
         me.floatParent = floatParent;
-
-        // Floating Components as children of Containers must hide when their parent hides.
-        if (floatParent) {
-            me.mon(me.floatParent, {
-                hide: me.onFloatParentHide,
-                show: me.onFloatParentShow,
-                scope: me
-            });
-        }
 
         // If a floating Component is configured to be constrained, but has no configured
         // constrainTo setting, set its constrainTo to be it's ownerCt before rendering.
@@ -129,19 +130,28 @@ Ext.define('Ext.util.Floating', {
         this.syncShadow();   
     },
 
-    onFloatParentHide: function() {
-        var me = this;
+    /**
+     * synchronizes the hidden state of this component with the state of its hierarchy
+     * @private
+     */
+    syncHidden: function() {
+        var me = this,
+            hidden = me.hidden || !me.rendered,
+            hierarchicallyHidden = me.hierarchicallyHidden = me.isHierarchicallyHidden(),
+            pendingShow = me.pendingShow;
 
-        if (me.hideOnParentHide !== false && me.isVisible()) {
-            me.hide();
-            me.showOnParentShow = true;
-        }
-    },
-
-    onFloatParentShow: function() {
-        if (this.showOnParentShow) {
-            delete this.showOnParentShow;
-            this.show();
+        if (hidden !== hierarchicallyHidden) {
+            if (hierarchicallyHidden) {
+                me.hide();
+                me.pendingShow = true;
+            } else if (pendingShow) {
+                delete me.pendingShow;
+                if (pendingShow.length) {
+                    me.show.apply(me, pendingShow);
+                } else {
+                    me.show();
+                }
+            }
         }
     },
 
@@ -179,55 +189,15 @@ Ext.define('Ext.util.Floating', {
      */
     doConstrain: function(constrainTo) {
         var me = this,
-
-            // Calculate the constrain vector to coerce our position to within our
-            // constrainTo setting. getConstrainVector will provide a default constraint
+            // Calculate the constrained poition.
+            // calculateConstrainedPosition will provide a default constraint
             // region if there is no explicit constrainTo, *and* there is no floatParent owner Component.
-            vector = me.getConstrainVector(constrainTo),
-            xy;
+            xy = me.calculateConstrainedPosition(null, null, true);
 
-        if (vector) {
-            xy = me.getPosition(!!me.floatParent);
-            xy[0] += vector[0];
-            xy[1] += vector[1];
+        // false is returned if no movement is needed
+        if (xy) {
             me.setPosition(xy);
         }
-    },
-
-
-    /**
-     * Gets the x/y offsets to constrain this float
-     * @private
-     * @param {String/HTMLElement/Ext.Element/Ext.util.Region} [constrainTo] The Element or {@link Ext.util.Region Region}
-     * into which this Component is to be constrained.
-     * @return {Number[]} The x/y constraints
-     */
-    getConstrainVector: function(constrainTo){
-        var me = this;
-
-        if (me.constrain || me.constrainHeader) {
-            constrainTo = constrainTo || me.constrainTo || (me.floatParent && me.floatParent.getTargetEl()) || me.container || me.el.getScopeParent();
-            return (me.constrainHeader ? me.header.el : me.el).getConstrainVector(constrainTo);
-        }
-    },
-
-    /**
-     * Aligns this floating Component to the specified element
-     *
-     * @param {Ext.Component/Ext.Element/HTMLElement/String} element
-     * The element or {@link Ext.Component} to align to. If passing a component, it must be a
-     * component instance. If a string id is passed, it will be used as an element id.
-     * @param {String} [position="tl-bl?"] The position to align to
-     * (see {@link Ext.Element#alignTo} for more details).
-     * @param {Number[]} [offsets] Offset the positioning by [x, y]
-     * @return {Ext.Component} this
-     */
-    alignTo: function(element, position, offsets) {
-
-        // element may be a Component, so first attempt to use its el to align to.
-        // When aligning to an Element's X,Y position, we must use setPagePosition which disregards any floatParent
-        this.setPagePosition(this.el.getAlignToXY(element.el || element, position, offsets));
-        return this;
     },
 
     /**
@@ -318,7 +288,7 @@ Ext.define('Ext.util.Floating', {
             xy;
             
         if (me.isVisible()) {
-            xy = me.el.getAlignToXY(me.container, 'c-c');
+            xy = me.getAlignToXY(me.container, 'c-c');
             me.setPagePosition(xy);
         } else {
             me.needsCenter = true;
@@ -341,16 +311,19 @@ Ext.define('Ext.util.Floating', {
     },
 
     // @private
-    fitContainer: function() {
+    fitContainer: function(animate) {
         var me = this,
             parent = me.floatParent,
-            container = parent ? parent.getTargetEl() : me.container;
+            container = parent ? parent.getTargetEl() : me.container,
+            newBox = container.getViewSize(false),
+            newPosition = parent || (container.dom !== document.body) ?
+                // If we are a contained floater, or rendered to a div, maximized position is (0,0)
+                [0, 0] :
+                // If no parent and rendered to body, align with origin of container el.
+                container.getXY();
 
-        me.setSize(container.getViewSize(false));
-        me.setPosition.apply(me, parent || (container.dom !== document.body) ?
-            // If we are a contained floater, or rendered to a div, maximized position is (0,0)
-            [0, 0] :
-            // If no parent and rendered to body, align with origin of container el.
-            container.getXY());
+        newBox.x = newPosition[0];
+        newBox.y = newPosition[1];
+        me.setBox(newBox, animate);
     }
 });

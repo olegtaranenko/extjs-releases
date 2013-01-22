@@ -1,19 +1,19 @@
 /*
-This file is part of Ext JS 4.1
+This file is part of Ext JS 4.2
 
 Copyright (c) 2011-2012 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial
-Software License Agreement provided with the Software or, alternatively, in accordance with the
-terms contained in a written agreement between you and Sencha.
+Pre-release code in the Ext repository is intended for development purposes only and will
+not always be stable. 
 
-If you are unsure which license is appropriate for your use, please contact the sales department
-at http://www.sencha.com/contact.
+Use of pre-release code is permitted with your application at your own risk under standard
+Ext license terms. Public redistribution is prohibited.
 
-Build date: 2012-10-25 15:13:53 (240477695016a85fb9ed1098fd5f8e116327fcc3)
+For early licensing, please contact us at licensing@sencha.com
+
+Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
 */
 
 //@tag foundation,core
@@ -34,7 +34,10 @@ Ext._startTime = new Date().getTime();
             var method = callOverrideParent.caller.caller; 
             return method.$owner.prototype[method.$name].apply(this, arguments);
         },
-        i;
+        i,
+        nonWhitespaceRe = /\S/;
+
+    Function.prototype.$extIsFunction = true;
 
     Ext.global = global;
 
@@ -269,7 +272,7 @@ Ext._startTime = new Date().getTime();
             if (type === 'object') {
                 if (value.nodeType !== undefined) {
                     if (value.nodeType === 3) {
-                        return (/\S/).test(value.nodeValue) ? 'textnode' : 'whitespace';
+                        return (nonWhitespaceRe).test(value.nodeValue) ? 'textnode' : 'whitespace';
                     }
                     else {
                         return 'element';
@@ -279,6 +282,31 @@ Ext._startTime = new Date().getTime();
                 return 'object';
             }
 
+        },
+
+        
+        coerce: function(from, to) {
+            var fromType = Ext.typeOf(from),
+                toType = Ext.typeOf(to),
+                isString = typeof from === 'string';
+
+            if (fromType !== toType) {
+                switch (toType) {
+                    case 'string':
+                        return String(from);
+                    case 'number':
+                        return Number(from);
+                    case 'boolean':
+                        return isString && (!from || from === 'false') ? false : Boolean(from);
+                    case 'null':
+                        return isString && (!from || from === 'null') ? null : from;
+                    case 'undefined':
+                        return isString && (!from || from === 'undefined') ? undefined : from;
+                    case 'date':
+                        return isString && isNaN(from) ? Ext.Date.parse(from, Ext.Date.defaultFormat) : Date(Number(from));
+                }
+            }
+            return from;
         },
 
         
@@ -318,13 +346,8 @@ Ext._startTime = new Date().getTime();
         },
 
         
-        isFunction:
-        
-        
-        (typeof document !== 'undefined' && typeof document.getElementsByTagName('body') === 'function') ? function(value) {
-            return toString.call(value) === '[object Function]';
-        } : function(value) {
-            return typeof value === 'function';
+        isFunction: function(value) {
+            return !!(value && value.$extIsFunction);
         },
 
         
@@ -520,6 +543,61 @@ Ext._startTime = new Date().getTime();
 
 }());
 
+Ext.apply(Ext, {
+    app: {
+        namespaces: {},
+        
+        
+        collectNamespaces: function(paths) {
+            var namespaces = Ext.app.namespaces,
+                path;
+            
+            for (path in paths) {
+                if (paths.hasOwnProperty(path)) {
+                    namespaces[path] = true;
+                }
+            }
+        },
+
+        
+        addNamespaces: function(ns) {
+            var namespaces = Ext.app.namespaces,
+                i, l;
+
+            if (!Ext.isArray(ns)) {
+                ns = [ns];
+            }
+
+            for (i = 0, l = ns.length; i < l; i++) {
+                namespaces[ns[i]] = true;
+            }
+        },
+
+        
+        clearNamespaces: function() {
+            Ext.app.namespaces = {};
+        },
+
+        
+        getNamespace: function(className) {
+            var namespaces    = Ext.app.namespaces,
+                deepestPrefix = '',
+                prefix;
+
+            for (prefix in namespaces) {
+                if (namespaces.hasOwnProperty(prefix)    &&
+                    prefix.length > deepestPrefix.length &&
+                    (prefix + '.' === className.substring(0, prefix.length + 1))) {
+                    deepestPrefix = prefix;
+                }
+
+            }
+
+            return deepestPrefix === '' ? undefined : deepestPrefix;
+        }
+    }
+});
+
 
 Ext.globalEval = Ext.global.execScript
     ? function(code) {
@@ -547,7 +625,7 @@ Ext.globalEval = Ext.global.execScript
 
 
 
-var version = '4.1.3.548', Version;
+var version = '4.2.0.179', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         
@@ -778,6 +856,13 @@ Ext.String = (function() {
         },
         htmlDecodeReplaceFn = function(match, capture) {
             return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
+        },
+        boundsCheck = function(s, other){
+            if (s === null || s === undefined || other === null || other === undefined) {
+                return false;
+            }
+            
+            return other.length <= s.length; 
         };
 
     return {
@@ -816,6 +901,34 @@ Ext.String = (function() {
                 s = s.substr(0, index) + value + s.substr(index);
             }
             return s;
+        },
+        
+        
+        startsWith: function(s, start, ignoreCase){
+            var result = boundsCheck(s, start);
+            
+            if (result) {
+                if (ignoreCase) {
+                    s = s.toLowerCase();
+                    start = start.toLowerCase();
+                }
+                result = s.lastIndexOf(start, 0) === 0;
+            }
+            return result;
+        },
+        
+        
+        endsWith: function(s, end, ignoreCase){
+            var result = boundsCheck(s, end);
+            
+            if (result) {
+                if (ignoreCase) {
+                    s = s.toLowerCase();
+                    end = end.toLowerCase();
+                }
+                result = s.indexOf(end, s.length - end.length) !== -1;
+            }
+            return result;
         },
 
         
@@ -1200,9 +1313,16 @@ Ext.Number = new function() {
 
     function replaceNative (array, index, removeCount, insert) {
         if (insert && insert.length) {
-            if (index < array.length) {
+            
+            if (index === 0 && !removeCount) {
+                array.unshift.apply(array, insert);
+            }
+            
+            else if (index < array.length) {
                 array.splice.apply(array, [index, removeCount].concat(insert));
-            } else {
+            }
+            
+            else {
                 array.push.apply(array, insert);
             }
         } else {
@@ -1271,7 +1391,7 @@ Ext.Number = new function() {
 
         
         forEach: supportsForEach ? function(array, fn, scope) {
-            return array.forEach(fn, scope);
+            array.forEach(fn, scope);
         } : function(array, fn, scope) {
             var i = 0,
                 ln = array.length;
@@ -1283,7 +1403,7 @@ Ext.Number = new function() {
 
         
         indexOf: supportsIndexOf ? function(array, item, from) {
-            return array.indexOf(item, from);
+            return arrayPrototype.indexOf.call(array, item, from);
          } : function(array, item, from) {
             var i, length = array.length;
 
@@ -1298,7 +1418,7 @@ Ext.Number = new function() {
 
         
         contains: supportsIndexOf ? function(array, item) {
-            return array.indexOf(item) !== -1;
+            return arrayPrototype.indexOf.call(array, item) !== -1;
         } : function(array, item) {
             var i, ln;
 
@@ -1398,6 +1518,30 @@ Ext.Number = new function() {
 
             return false;
         },
+        
+        
+        equals: function(array1, array2) {
+            var len1 = array1.length,
+                len2 = array2.length,
+                i;
+                
+            
+            if (array1 === array2) {
+                return true;
+            }
+                
+            if (len1 !== len2) {
+                return false;
+            }
+            
+            for (i = 0; i < len1; ++i) {
+                if (array1[i] !== array2[i]) {
+                    return false;
+                }
+            }
+            
+            return true;
+        },
 
         
         clean: function(array) {
@@ -1450,6 +1594,19 @@ Ext.Number = new function() {
             }
 
             return results;
+        },
+
+        
+        findBy : function(array, fn, scope) {
+            var i = 0,
+                len = array.length;
+
+            for (; i < len; i++) {
+                if (fn.call(scope || array, array[i], i)) {
+                    return array[i];
+                }
+            }
+            return null;
         },
 
         
@@ -1782,7 +1939,7 @@ Ext.Number = new function() {
             }
             for (; i < len; i++) {
                 newItem = arguments[i];
-                Array.prototype.push[Ext.isArray(newItem) ? 'apply' : 'call'](array, newItem);
+                Array.prototype.push[Ext.isIterable(newItem) ? 'apply' : 'call'](array, newItem);
             }
             return array;
         }
@@ -2141,7 +2298,8 @@ var TemplateClass = function(){},
                 value = Ext.Date.toString(value);
             }
 
-            params.push(encodeURIComponent(paramObject.name) + '=' + encodeURIComponent(String(value)));
+            params.push(encodeURIComponent(paramObject.name) +
+                (value !== '' ? ('=' + encodeURIComponent(String(value))) : ''));
         }
 
         return params.join('&');
@@ -2354,6 +2512,38 @@ var TemplateClass = function(){},
 
         return size;
     },
+    
+    
+    equals: (function() {
+        var check = function(o1, o2) {
+            var key;
+        
+            for (key in o1) {
+                if (o1.hasOwnProperty(key)) {
+                    if (o1[key] !== o2[key]) {
+                        return false;
+                    }    
+                }
+            }    
+            return true;
+        };
+        
+        return function(object1, object2) {
+            
+            
+            if (object1 === object2) {
+                return true;
+            } if (object1 && object2) {
+                
+                
+                return check(object1, object2) && check(object2, object1);  
+            } else if (!object1 && !object2) {
+                return object1 === object2;
+            } else {
+                return false;
+            }
+        };
+    })(),
 
     
     classify: function(object) {
@@ -3117,7 +3307,7 @@ Ext.Date = new function() {
         T: {
             g:0,
             c:null,
-            s:"[A-Z]{1,4}" 
+            s:"[A-Z]{1,5}" 
         },
         Z: {
             g:1,
@@ -3225,7 +3415,7 @@ Ext.Date = new function() {
         
         
         
-        return date.toString().replace(/^.* (?:\((.*)\)|([A-Z]{1,4})(?:[\-+][0-9]{4})?(?: -?\d+)?)$/, "$1$2").replace(/[^A-Z]/g, "");
+        return date.toString().replace(/^.* (?:\((.*)\)|([A-Z]{1,5})(?:[\-+][0-9]{4})?(?: -?\d+)?)$/, "$1$2").replace(/[^A-Z]/g, "");
     },
 
     
@@ -3381,17 +3571,35 @@ Ext.Date = new function() {
 
         if (value) {
             switch(interval.toLowerCase()) {
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 case Ext.Date.MILLI:
-                    d.setMilliseconds(d.getMilliseconds() + value);
+                    d.setTime(d.getTime() + value);
                     break;
                 case Ext.Date.SECOND:
-                    d.setSeconds(d.getSeconds() + value);
+                    d.setTime(d.getTime() + value * 1000);
                     break;
                 case Ext.Date.MINUTE:
-                    d.setMinutes(d.getMinutes() + value);
+                    d.setTime(d.getTime() + value * 60 * 1000);
                     break;
                 case Ext.Date.HOUR:
-                    d.setHours(d.getHours() + value);
+                    d.setTime(d.getTime() + value * 60 * 60 * 1000);
                     break;
                 case Ext.Date.DAY:
                     d.setDate(d.getDate() + value);
@@ -3440,6 +3648,11 @@ Ext.Date = new function() {
 
         return d;
     },
+    
+    
+    subtract: function(date, interval, value){
+        return utilDate.add(date, interval, -value);
+    },
 
     
     between : function(date, start, end) {
@@ -3485,7 +3698,21 @@ Ext.Date = new function() {
 (function(flexSetter) {
 
 var noArgs = [],
-    Base = function(){};
+    Base = function(){},
+    hookFunctionFactory = function(hookFunction, underriddenFunction, methodName, owningClass) {
+        var result = function() {
+            var result = this.callParent(arguments);
+            hookFunction.apply(this, arguments);
+            return result;
+        };
+        result.$name = methodName;
+        result.$owner = owningClass;
+        if (underriddenFunction) {
+            result.$previous = underriddenFunction.$previous;
+            underriddenFunction.$previous = result;
+        }
+        return result;
+    };
 
     
     Ext.apply(Base, {
@@ -3687,14 +3914,13 @@ var noArgs = [],
         },
 
         
-        addMember: function(name, member) {
+        addMember: function(name, member) {            
             if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                 member.$owner = this;
                 member.$name = name;
             }
 
             this.prototype[name] = member;
-
             return this;
         },
 
@@ -3822,12 +4048,14 @@ var noArgs = [],
 
         
         mixin: function(name, mixinClass) {
-            var mixin = mixinClass.prototype,
-                prototype = this.prototype,
-                key;
+            var me = this,
+                mixin = mixinClass.prototype,
+                prototype = me.prototype,
+                key, statics, i, ln, staticName,
+                mixinValue, hookKey, hookFunction;
 
             if (typeof mixin.onClassMixedIn != 'undefined') {
-                mixin.onClassMixedIn.call(mixinClass, this);
+                mixin.onClassMixedIn.call(mixinClass, me);
             }
 
             if (!prototype.hasOwnProperty('mixins')) {
@@ -3840,20 +4068,54 @@ var noArgs = [],
             }
 
             for (key in mixin) {
+                mixinValue = mixin[key];
                 if (key === 'mixins') {
-                    Ext.merge(prototype.mixins, mixin[key]);
+                    Ext.merge(prototype.mixins, mixinValue);
                 }
-                else if (typeof prototype[key] == 'undefined' && key != 'mixinId' && key != 'config') {
-                    prototype[key] = mixin[key];
+                else if (key === 'xhooks') {
+                    for (hookKey in mixinValue) {
+                        hookFunction = mixinValue[hookKey];
+
+                        
+                        hookFunction.$previous = Ext.emptyFn;
+
+                        if (prototype.hasOwnProperty(hookKey)) {
+
+                            
+                            
+                            
+                            hookFunctionFactory(hookFunction, prototype[hookKey], hookKey, me);
+                        } else {
+                            
+                            
+                            prototype[hookKey] = hookFunctionFactory(hookFunction, null, hookKey, me);
+                        }
+                    }
+                }
+                else if (!(key === 'mixinId' || key === 'config') && (prototype[key] === undefined)) {
+                    prototype[key] = mixinValue;
+                }
+            }
+
+            
+            statics = mixin.$inheritableStatics;
+
+            if (statics) {
+                for (i = 0, ln = statics.length; i < ln; i++) {
+                    staticName = statics[i];
+
+                    if (!me.hasOwnProperty(staticName)) {
+                        me[staticName] = mixinClass[staticName];
+                    }
                 }
             }
 
             if ('config' in mixin) {
-                this.addConfig(mixin.config, false);
+                me.addConfig(mixin.config, false);
             }
 
             prototype.mixins[name] = mixin;
-            return this;
+            return me;
         },
 
         
@@ -4179,7 +4441,7 @@ var noArgs = [],
                 },
                 preprocessors = [],
                 preprocessor, preprocessorsProperties,
-                i, ln, j, subLn, preprocessorProperty, process;
+                i, ln, j, subLn, preprocessorProperty;
 
             delete data.preprocessors;
 
@@ -4215,18 +4477,19 @@ var noArgs = [],
             this.doProcess(Class, data, hooks);
         },
         
-        doProcess: function(Class, data, hooks){
+        doProcess: function(Class, data, hooks) {
             var me = this,
-                preprocessor = hooks.preprocessors.shift();
+                preprocessors = hooks.preprocessors,
+                preprocessor = preprocessors.shift(),
+                doProcess = me.doProcess;
 
-            if (!preprocessor) {
-                hooks.onBeforeCreated.apply(me, arguments);
-                return;
+            for ( ; preprocessor ; preprocessor = preprocessors.shift()) {
+                
+                if (preprocessor.call(me, Class, data, hooks, doProcess) === false) {
+                    return;
+                }
             }
-
-            if (preprocessor.call(me, Class, data, hooks, me.doProcess) !== false) {
-                me.doProcess(Class, data, hooks);
-            }
+            hooks.onBeforeCreated.apply(me, arguments);
         },
 
         
@@ -5581,9 +5844,17 @@ Ext.Loader = new function() {
         setConfig: function(name, value) {
             if (Ext.isObject(name) && arguments.length === 1) {
                 Ext.merge(Loader.config, name);
+
+                if ('paths' in name) {
+                    Ext.app.collectNamespaces(name.paths);
+                }
             }
             else {
                 Loader.config[name] = (Ext.isObject(value)) ? Ext.merge(Loader.config[name], value) : value;
+
+                if (name === 'paths') {
+                    Ext.app.collectNamespaces(value);
+                }
             }
 
             return Loader;
@@ -5601,7 +5872,9 @@ Ext.Loader = new function() {
         
         setPath: flexSetter(function(name, path) {
             Loader.config.paths[name] = path;
+            Ext.app.namespaces[name] = true;
             setPathCount++;
+
             return Loader;
         }),
 
@@ -6685,12 +6958,16 @@ Ext.apply(Ext, {
     
     enableListenerCollection: true,
 
+    
+    rootHierarchyState: {},
+
     addCacheEntry: function(id, el, dom) {
         dom = dom || el.dom;
 
 
-        var key = id || (el && el.id) || dom.id,
-            entry = Ext.cache[key] || (Ext.cache[key] = {
+        var cache = Ext.cache,
+            key = id || (el && el.id) || dom.id,
+            entry = cache[key] || (cache[key] = {
                 data: {},
                 events: {},
 
@@ -6709,7 +6986,7 @@ Ext.apply(Ext, {
 
         return entry;
     },
-    
+
     updateCacheEntry: function(cacheItem, dom){
         cacheItem.dom = dom;
         if (cacheItem.el) {
@@ -6867,9 +7144,10 @@ window.undefined = window.undefined;
         isSafari5_0 = isSafari && check(/version\/5\.0/),
         isSafari5 = isSafari && check(/version\/5/),
         isIE = !isOpera && check(/msie/),
-        isIE7 = isIE && ((check(/msie 7/) && docMode != 8 && docMode != 9) || docMode == 7),
-        isIE8 = isIE && ((check(/msie 8/) && docMode != 7 && docMode != 9) || docMode == 8),
-        isIE9 = isIE && ((check(/msie 9/) && docMode != 7 && docMode != 8) || docMode == 9),
+        isIE7 = isIE && ((check(/msie 7/) && docMode != 8 && docMode != 9 && docMode != 10) || docMode == 7),
+        isIE8 = isIE && ((check(/msie 8/) && docMode != 7 && docMode != 9 && docMode != 10) || docMode == 8),
+        isIE9 = isIE && ((check(/msie 9/) && docMode != 7 && docMode != 8 && docMode != 10) || docMode == 9),
+        isIE10 = isIE && ((check(/msie 10/) && docMode != 7 && docMode != 8 && docMode != 9) || docMode == 10),
         isIE6 = isIE && check(/msie 6/),
         isGecko = !isWebKit && check(/gecko/),
         isGecko3 = isGecko && check(/rv:1\.9/),
@@ -6903,7 +7181,7 @@ window.undefined = window.undefined;
     nullLog.info = nullLog.warn = nullLog.error = Ext.emptyFn;
 
     
-    Ext.setVersion('extjs', '4.1.3.548');
+    Ext.setVersion('extjs', '4.2.0.179');
     Ext.apply(Ext, {
         
         SSL_SECURE_URL : isSecure && isIE ? 'javascript:\'\'' : 'about:blank',
@@ -6912,7 +7190,7 @@ window.undefined = window.undefined;
 
         
         scopeResetCSS : Ext.buildSettings.scopeResetCSS,
-        
+
         
         resetCls: Ext.buildSettings.baseCSSPrefix + 'reset',
 
@@ -6991,7 +7269,8 @@ window.undefined = window.undefined;
 
         isStrict: isStrict,
 
-        isIEQuirks: isIE && !isStrict,
+        
+        isIEQuirks: isIE && (!isStrict && (isIE6 || isIE7 || isIE8 || isIE9)),
 
         
         isOpera : isOpera,
@@ -7056,6 +7335,15 @@ window.undefined = window.undefined;
 
         
         isIE9p : isIE && !(isIE6 || isIE7 || isIE8),
+        
+        
+        isIE10 : isIE10, 
+ 
+        
+        isIE10m : isIE6 || isIE7 || isIE8 || isIE9 || isIE10,
+ 
+        
+        isIE10p : isIE && !(isIE6 || isIE7 || isIE8 || isIE9),
 
         
         isGecko : isGecko,
@@ -7119,7 +7407,7 @@ window.undefined = window.undefined;
 
         
         isSecure: isSecure,
-        
+
         
         BLANK_IMAGE_URL : (isIE6 || isIE7) ? '/' + '/www.sencha.com/s.gif' : 'data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==',
 
@@ -7198,7 +7486,7 @@ window.undefined = window.undefined;
             }
 
             var n,
-                nLen = names.length,
+                nLen = names? names.length : 0,
                 name;
 
             for(n = 0; n < nLen; n++) {
@@ -7305,27 +7593,14 @@ window.undefined = window.undefined;
 
 
 Ext.application = function(config) {
-    var App, paths, ns;
-
+    var App;
+    
     if (typeof config === "string") {
         Ext.require(config, function(){
             App = Ext.ClassManager.get(config);
         });
-    } else {
-        
-        
-        
-        Ext.Loader.setPath(config.name, config.appFolder || 'app');
-        paths = config.paths;
-
-        if (paths) {
-            for (ns in paths) {
-                if (paths.hasOwnProperty(ns)) {
-                    Ext.Loader.setPath(ns, paths[ns]);
-                }
-            }
-        }
-
+    }
+    else {
         
         
         Ext.define(config.name + ".$application", Ext.apply({
@@ -7336,7 +7611,7 @@ Ext.application = function(config) {
                 App = this;
             });
     }
-    
+
     Ext.onReady(function() {
         
         
@@ -7526,7 +7801,6 @@ Ext.application = function(config) {
             }
             var comma = UtilFormat.thousandSeparator,
                 dec   = UtilFormat.decimalSeparator,
-                i18n  = false,
                 neg   = v < 0,
                 hasComma,
                 psplit,
@@ -7549,7 +7823,6 @@ Ext.application = function(config) {
                     I18NFormatCleanRe = new RegExp('[^\\d\\' + UtilFormat.decimalSeparator + ']','g');
                 }
                 formatString = formatString.substr(0, formatString.length - 2);
-                i18n   = true;
                 hasComma = formatString.indexOf(comma) != -1;
                 psplit = formatString.replace(I18NFormatCleanRe, '').split(dec);
             } else {
@@ -7609,6 +7882,20 @@ Ext.application = function(config) {
         },
 
         
+        attributes: function(attributes) {
+            if (typeof attributes === 'object') {
+                var result = [],
+                    name;
+
+                for (name in attributes) {
+                    result.push(name, '="', name === 'style' ? Ext.DomHelper.generateStyles(attributes[name]) : Ext.htmlEncode(attributes[name]), '"');
+                }
+                attributes = result.join('');
+            }
+            return attributes||'';
+        },
+
+        
         plural : function(v, s, p) {
             return v +' ' + (v == 1 ? s : (p ? p : s+'s'));
         },
@@ -7641,10 +7928,17 @@ Ext.application = function(config) {
 
         
         parseBox : function(box) {
-          box = Ext.isEmpty(box) ? '' : box;
-            if (Ext.isNumber(box)) {
-                box = box.toString();
-            }
+            box = box || 0;
+
+            if (typeof box === 'number') {
+                return {
+                    top   : box,
+                    right : box,
+                    bottom: box,
+                    left  : box
+                };
+             }
+
             var parts  = box.split(' '),
                 ln = parts.length;
 
@@ -8517,17 +8811,36 @@ Ext.is.init();
         var view = element.ownerDocument.defaultView,
             style = (view ? view.getComputedStyle(element, null) : element.currentStyle) || element.style;
         return style[styleName];
+    },
+    supportsVectors = {
+        'IE6-quirks': [0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,1,0,0,1,0,0,1,0,1,0],
+        'IE6-strict': [0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,1,0,1,1,0,0,1,0,1,0],
+        'IE7-quirks': [0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,1,0,0,1,0,0,1,0,1,0],
+        'IE7-strict': [0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0],
+        'IE8-quirks': [0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,1,0,0,1,0,0,1,0,1,0],
+        'IE8-strict': [0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,1,1,1,1,0,0,1,0,1,0],
+        'IE9-quirks': [0,1,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,1,1,0,0,0,1,0,0,1,0,0,1,0,1,0],
+        'IE9-strict': [0,1,0,0,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,0,0,0]
     };
+
+function getBrowserKey() {
+    var browser = Ext.isIE6 ? 'IE6' : Ext.isIE7 ? 'IE7' : Ext.isIE8 ? 'IE8' :
+        Ext.isIE9 ? 'IE9': '';
+
+    return browser ? browser + (Ext.isStrict ? '-strict' : '-quirks') : '';
+}
 
 Ext.supports = {
     
     init : function() {
         var me = this,
             doc = document,
-            tests = me.tests,
-            n = tests.length,
+            toRun = me.toRun || me.tests,
+            n = toRun.length,
             div = n && Ext.isReady && doc.createElement('div'),
-            test, notRun = [];
+            notRun = [],
+            browserKey = getBrowserKey(),
+            test, vector, value;
 
         if (div) {
             div.innerHTML = [
@@ -8544,9 +8857,13 @@ Ext.supports = {
             doc.body.appendChild(div);
         }
 
+        vector = supportsVectors[browserKey];
         while (n--) {
-            test = tests[n];
-            if (div || test.early) {
+            test = toRun[n];
+            value = vector && vector[n];
+            if (value !== undefined) {
+                me[test.identity] = value;
+            } else if (div || test.early) {
                 me[test.identity] = test.fn.call(me, doc, div);
             } else {
                 notRun.push(test);
@@ -8557,14 +8874,23 @@ Ext.supports = {
             doc.body.removeChild(div);
         }
 
-        me.tests = notRun;
+        me.toRun = notRun;
     },
+
 
     
     PointerEvents: 'pointerEvents' in document.documentElement.style,
+
     
     
-    LocalStorage: 'localStorage' in window && window['localStorage'] !== null,
+    
+    LocalStorage: (function() {
+        try {
+            return 'localStorage' in window && window['localStorage'] !== null;
+        } catch (e) {
+            return false;
+        }
+    })(),
 
     
     CSS3BoxShadow: 'boxShadow' in document.documentElement.style || 'WebkitBoxShadow' in document.documentElement.style || 'MozBoxShadow' in document.documentElement.style,
@@ -8813,7 +9139,7 @@ Ext.supports = {
         {
             identity: 'Direct2DBug',
             fn: function() {
-                return Ext.isString(document.body.style.msTransformOrigin);
+                return Ext.isString(document.body.style.msTransformOrigin) && Ext.isIE9m;
             }
         },
         
@@ -8908,6 +9234,36 @@ Ext.supports = {
             fn: function(doc, div){
                return getStyle(div.childNodes[2], 'left') == '10%';
             }
+        },
+        
+        {
+            identity: 'PercentageHeightOverflowBug',
+            fn: function() {
+                var hasBug = false,
+                    el;
+
+                if (Ext.getScrollbarSize().height) {
+                    
+                    el = Ext.getBody().createChild([
+                        '<div style="height:50px;width:50px;overflow:auto;position:absolute;">',
+                            '<div style="display:table;height:100%;">',
+                                
+                                
+                                
+                                '<div style="width:51px;"></div>',
+                            '</div>',
+                        '</div>'
+                    ].join(''));
+         
+                    if (el.dom.firstChild.offsetHeight === 50) {
+                        hasBug = true;
+                    }
+
+                    el.remove();
+                }
+                
+                return hasBug;
+            }
         }
     ]
 };
@@ -8923,9 +9279,10 @@ Ext.supports.init();
 
 
 
-Ext.util.DelayedTask = function(fn, scope, args) {
+Ext.util.DelayedTask = function(fn, scope, args, cancelOnDelay) {
     var me = this,
         id,
+        delay,
         call = function() {
             clearInterval(id);
             id = null;
@@ -8933,17 +9290,24 @@ Ext.util.DelayedTask = function(fn, scope, args) {
             Ext.EventManager.idleEvent.fire();
         };
 
+    cancelOnDelay = typeof cancelOnDelay === 'boolean' ? cancelOnDelay : true;
+
     
-    this.delay = function(delay, newFn, newScope, newArgs) {
-        me.cancel();
-        fn = newFn || fn;
+    me.delay = function(newDelay, newFn, newScope, newArgs) {
+        if (cancelOnDelay) {
+            me.cancel();
+        }
+        delay = newDelay || delay,
+        fn    = newFn    || fn;
         scope = newScope || scope;
-        args = newArgs || args;
-        id = setInterval(call, delay);
+        args  = newArgs  || args;
+        if (!id) {
+            id = setInterval(call, delay);
+        }
     };
 
     
-    this.cancel = function(){
+    me.cancel = function() {
         if (id) {
             clearInterval(id);
             id = null;
@@ -8959,6 +9323,9 @@ Ext.define('Ext.util.Event', {
 
     
     isEvent: true,
+    
+    
+    suspended: 0,
 
     noOptions: {},
     
@@ -8970,7 +9337,8 @@ Ext.define('Ext.util.Event', {
 
     addListener: function(fn, scope, options) {
         var me = this,
-            listener;
+            listeners, listener, priority, isNegativePriority, highestNegativePriorityIndex,
+            hasNegativePriorityIndex, length, index, i;
             scope = scope || me.observable;
 
 
@@ -8980,7 +9348,46 @@ Ext.define('Ext.util.Event', {
                 
                 me.listeners = me.listeners.slice(0);
             }
-            me.listeners.push(listener);
+            listeners = me.listeners;
+            index = length = listeners.length;
+            priority = options && options.priority;
+            highestNegativePriorityIndex = me._highestNegativePriorityIndex;
+            hasNegativePriorityIndex = (highestNegativePriorityIndex !== undefined);
+            if (priority) {
+                
+                
+                isNegativePriority = (priority < 0);
+                if (!isNegativePriority || hasNegativePriorityIndex) {
+                    
+                    
+                    
+                    
+                    
+                    
+                    for(i = (isNegativePriority ? highestNegativePriorityIndex : 0); i < length; i++) {
+                        if ((listeners[i].o.priority || 0) < priority) {
+                            index = i;
+                            break;
+                        }
+                    }
+                } else {
+                    
+                    
+                    
+                    me._highestNegativePriorityIndex = index;
+                }
+            } else if (hasNegativePriorityIndex) {
+                
+                
+                
+                
+                index = highestNegativePriorityIndex;
+            }
+
+            if (!isNegativePriority && index <= highestNegativePriorityIndex) {
+                me._highestNegativePriorityIndex ++;
+            }
+            Ext.Array.splice(me.listeners, index, 0, listener);
         }
     },
 
@@ -9047,10 +9454,12 @@ Ext.define('Ext.util.Event', {
         var me = this,
             index,
             listener,
+            highestNegativePriorityIndex,
             k;
         index = me.findListener(fn, scope);
         if (index != -1) {
             listener = me.listeners[index];
+            highestNegativePriorityIndex = me._highestNegativePriorityIndex;
 
             if (me.firing) {
                 me.listeners = me.listeners.slice(0);
@@ -9073,6 +9482,16 @@ Ext.define('Ext.util.Event', {
 
             
             Ext.Array.erase(me.listeners, index, 1);
+
+            
+            
+            if (highestNegativePriorityIndex) {
+                if (index < highestNegativePriorityIndex) {
+                    me._highestNegativePriorityIndex --;
+                } else if (index === highestNegativePriorityIndex && index === me.listeners.length) {
+                    delete me._highestNegativePriorityIndex;
+                }
+            }
             return true;
         }
 
@@ -9089,6 +9508,16 @@ Ext.define('Ext.util.Event', {
         }
     },
 
+    suspend: function() {
+        this.suspended += 1;
+    },
+
+    resume: function() {
+        if (this.suspended) {
+            this.suspended--;
+        }
+    },
+
     fire: function() {
         var me = this,
             listeners = me.listeners,
@@ -9097,7 +9526,7 @@ Ext.define('Ext.util.Event', {
             args,
             listener;
 
-        if (count > 0) {
+        if (!me.suspended && count > 0) {
             me.firing = true;
             for (i = 0; i < count; i++) {
                 listener = listeners[i];
@@ -9167,11 +9596,12 @@ Ext.EventManager = new function() {
     var EventManager = this,
         doc = document,
         win = window,
+        prefix = Ext.baseCSSPrefix,
         readyEvent,
         initExtCss = function() {
             
             var bd = doc.body || doc.getElementsByTagName('body')[0],
-                cls = [Ext.baseCSSPrefix + 'body'],
+                cls = [prefix + 'body'],
                 htmlCls = [],
                 supportsLG = Ext.supports.CSS3LinearGradient,
                 supportsBR = Ext.supports.CSS3BorderRadius,
@@ -9186,11 +9616,11 @@ Ext.EventManager = new function() {
             html = bd.parentNode;
 
             function add (c) {
-                cls.push(Ext.baseCSSPrefix + c);
+                cls.push(prefix + c);
             }
 
             
-            if (Ext.isIE) {
+            if (Ext.isIE && Ext.isIE9m) {
                 add('ie');
 
                 
@@ -9239,6 +9669,11 @@ Ext.EventManager = new function() {
                     add('ie78');
                 }
             }
+            
+            if (Ext.isIE10) {
+                add('ie10');
+            }
+            
             if (Ext.isGecko) {
                 add('gecko');
                 if (Ext.isGecko3) {
@@ -9298,15 +9733,15 @@ Ext.EventManager = new function() {
 
                 
                 resetElementSpec = Ext.resetElementSpec = {
-                    cls: Ext.baseCSSPrefix + 'reset'
+                    cls: prefix + 'reset'
                 };
                 
                 if (!supportsLG) {
-                    resetCls.push(Ext.baseCSSPrefix + 'nlg');
+                    resetCls.push(prefix + 'nlg');
                 }
                 
                 if (!supportsBR) {
-                    resetCls.push(Ext.baseCSSPrefix + 'nbr');
+                    resetCls.push(prefix + 'nbr');
                 }
                 
                 if (resetCls.length) {                    
@@ -9336,12 +9771,12 @@ Ext.EventManager = new function() {
                 }
 
                 if(Ext.isBorderBox) {
-                    htmlCls.push(Ext.baseCSSPrefix + 'border-box');
+                    htmlCls.push(prefix + 'border-box');
                 }
                 if (Ext.isStrict) {
-                    htmlCls.push(Ext.baseCSSPrefix + 'strict');
+                    htmlCls.push(prefix + 'strict');
                 } else {
-                    htmlCls.push(Ext.baseCSSPrefix + 'quirks');
+                    htmlCls.push(prefix + 'quirks');
                 }
                 Ext.fly(html, '_internal').addCls(htmlCls);
             }
@@ -9686,11 +10121,11 @@ Ext.EventManager = new function() {
             }
 
             var dom = Ext.getDom(element),
-                el = element.dom ? element : Ext.get(dom),
+                id, el = element.dom ? element : Ext.get(dom),
                 cache = EventManager.getEventListenerCache(el, eventName),
                 bindName = EventManager.normalizeEvent(eventName).eventName,
-                i = cache.length, j, cacheItem, needsClone,
-                listener, wrap, tasks, id;
+                i = cache.length, j, cacheItem,
+                listener, wrap;
 
 
             while (i--) {
@@ -9860,7 +10295,7 @@ Ext.EventManager = new function() {
                     if(options.buffer) {
                         f.push('}, ' + options.buffer + ');');
                     }
-                    f.push('return result;')
+                    f.push('return result;');
 
                     gen = Ext.cacheableFunctionFactory('e', 'options', 'fn', 'scope', 'ename', 'dom', 'wrap', 'args', 'X', 'evtMgr', f.join('\n'));
                 }
@@ -10004,18 +10439,18 @@ Ext.EventManager = new function() {
         
         resolveTextNode: Ext.isGecko ?
             function(node) {
-                if (!node) {
-                    return;
+                if (node) {
+                    
+                    var s = HTMLElement.prototype.toString.call(node);
+                    if (s !== '[xpconnect wrapped native prototype]' && s !== '[object XULElement]') {
+                        return node.nodeType == 3 ? node.parentNode: node;
+                    }
                 }
-                
-                var s = HTMLElement.prototype.toString.call(node);
-                if (s == '[xpconnect wrapped native prototype]' || s == '[object XULElement]') {
-                    return;
-                }
-                    return node.nodeType == 3 ? node.parentNode: node;
-                }: function(node) {
-                    return node && node.nodeType == 3 ? node.parentNode: node;
-                },
+            }
+            :
+            function(node) {
+                return node && node.nodeType == 3 ? node.parentNode: node;
+            },
 
         
 
@@ -10961,7 +11396,8 @@ Ext.define('Ext.dom.AbstractElement_static', {
     inheritableStatics: {
         unitRe: /\d+(px|em|%|en|ex|pt|in|cm|mm|pc)$/i,
         camelRe: /(-[a-z])/gi,
-        cssRe: /([a-z0-9\-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*);?/gi,
+        msRe: /^-ms-/,
+        cssRe: /([a-z0-9\-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*)?;?/gi,
         opacityRe: /alpha\(opacity=(.*)\)/i,
         propertyCache: {},
         defaultUnit : "px",
@@ -11010,9 +11446,17 @@ Ext.define('Ext.dom.AbstractElement_static', {
 
         
         parseBox: function(box) {
-            if (typeof box != 'string') {
-                box = box.toString();
-            }
+            box = box || 0;
+
+            if (typeof box === 'number') {
+                return {
+                    top   : box,
+                    right : box,
+                    bottom: box,
+                    left  : box
+                };
+             }
+
             var parts  = box.split(' '),
                 ln = parts.length;
 
@@ -11038,12 +11482,12 @@ Ext.define('Ext.dom.AbstractElement_static', {
         
         unitizeBox: function(box, units) {
             var a = this.addUnits,
-                b = this.parseBox(box);
+                b = Ext.isObject(box) ? box : this.parseBox(box);
 
             return a(b.top, units) + ' ' +
-                a(b.right, units) + ' ' +
-                a(b.bottom, units) + ' ' +
-                a(b.left, units);
+                   a(b.right, units) + ' ' +
+                   a(b.bottom, units) + ' ' +
+                   a(b.left, units);
 
         },
 
@@ -11058,7 +11502,8 @@ Ext.define('Ext.dom.AbstractElement_static', {
             if (prop == 'float') {
                 prop = Ext.supports.Float ? 'cssFloat' : 'styleFloat';
             }
-            return this.propertyCache[prop] || (this.propertyCache[prop] = prop.replace(this.camelRe, this.camelReplaceFn));
+            
+            return this.propertyCache[prop] || (this.propertyCache[prop] = prop.replace(this.msRe, 'ms-').replace(this.camelRe, this.camelReplaceFn));
         },
 
         
@@ -11116,7 +11561,7 @@ Ext.define('Ext.dom.AbstractElement_static', {
                 
                 cssRe.lastIndex = 0;
                 while ((matches = cssRe.exec(styles))) {
-                    out[matches[1]] = matches[2];
+                    out[matches[1]] = matches[2]||'';
                 }
             }
             return out;
@@ -11125,17 +11570,8 @@ Ext.define('Ext.dom.AbstractElement_static', {
 },
 function () {
     var doc = document,
-        AbstractElement = this,
         activeElement = null,
-        isCSS1 = doc.compatMode == "CSS1Compat",
-        flyInstance,
-        fly = function (el) {
-            if (!flyInstance) {
-                flyInstance = new AbstractElement.Fly();
-            }
-            flyInstance.attach(el);
-            return flyInstance;
-        };
+        isCSS1 = doc.compatMode == "CSS1Compat";
 
     
     
@@ -11157,7 +11593,7 @@ function () {
         };
     }
 
-    AbstractElement.addInheritableStatics({
+    this.addInheritableStatics({
         
         getActiveElement: function () {
             var active;
@@ -11228,78 +11664,14 @@ function () {
         },
 
         getViewportHeight: function(){
-            return Ext.isIE ?
+            return Ext.isIE9m ?
                    (Ext.isStrict ? doc.documentElement.clientHeight : doc.body.clientHeight) :
                    self.innerHeight;
         },
 
         getViewportWidth: function() {
             return (!Ext.isStrict && !Ext.isOpera) ? doc.body.clientWidth :
-                   Ext.isIE ? doc.documentElement.clientWidth : self.innerWidth;
-        },
-
-        getY: function(el) {
-            return Ext.dom.Element.getXY(el)[1];
-        },
-
-        getX: function(el) {
-            return Ext.dom.Element.getXY(el)[0];
-        },
-
-        getXY: function(el) {
-            var bd = doc.body,
-                docEl = doc.documentElement,
-                leftBorder = 0,
-                topBorder = 0,
-                ret = [0,0],
-                round = Math.round,
-                box,
-                scroll;
-
-            el = Ext.getDom(el);
-
-            if(el != doc && el != bd){
-                
-                
-                if (Ext.isIE) {
-                    try {
-                        box = el.getBoundingClientRect();
-                        
-                        topBorder = docEl.clientTop || bd.clientTop;
-                        leftBorder = docEl.clientLeft || bd.clientLeft;
-                    } catch (ex) {
-                        box = { left: 0, top: 0 };
-                    }
-                } else {
-                    box = el.getBoundingClientRect();
-                }
-
-                scroll = fly(document).getScroll();
-                ret = [round(box.left + scroll.left - leftBorder), round(box.top + scroll.top - topBorder)];
-            }
-            return ret;
-        },
-
-        setXY: function(el, xy) {
-            (el = Ext.fly(el, '_setXY')).position();
-
-            var pts = el.translatePoints(xy),
-                style = el.dom.style,
-                pos;
-
-            for (pos in pts) {
-                if (!isNaN(pts[pos])) {
-                    style[pos] = pts[pos] + "px";
-                }
-            }
-        },
-
-        setX: function(el, x) {
-            Ext.dom.Element.setXY(el, [x, false]);
-        },
-
-        setY: function(el, y) {
-            Ext.dom.Element.setXY(el, [false, y]);
+                   Ext.isIE9m ? doc.documentElement.clientWidth : self.innerWidth;
         },
 
         
@@ -11344,166 +11716,36 @@ function () {
 //@tag dom,core
 
 
-Ext.define('Ext.dom.AbstractElement_alignment', {
-    override: 'Ext.dom.AbstractElement',
-
-    
-    getAnchorXY: function(anchor, local, size) {
-        
-        
-        anchor = (anchor || "tl").toLowerCase();
-        size = size || {};
-
-        var me = this,
-            vp = me.dom == document.body || me.dom == document,
-            width = size.width || vp ? window.innerWidth: me.getWidth(),
-            height = size.height || vp ? window.innerHeight: me.getHeight(),
-            xy,
-            rnd = Math.round,
-            myXY = me.getXY(),
-            extraX = vp ? 0: !local ? myXY[0] : 0,
-            extraY = vp ? 0: !local ? myXY[1] : 0,
-            hash = {
-                c: [rnd(width * 0.5), rnd(height * 0.5)],
-                t: [rnd(width * 0.5), 0],
-                l: [0, rnd(height * 0.5)],
-                r: [width, rnd(height * 0.5)],
-                b: [rnd(width * 0.5), height],
-                tl: [0, 0],
-                bl: [0, height],
-                br: [width, height],
-                tr: [width, 0]
-            };
-
-        xy = hash[anchor];
-        return [xy[0] + extraX, xy[1] + extraY];
-    },
-
-    alignToRe: /^([a-z]+)-([a-z]+)(\?)?$/,
-
-    
-    getAlignToXY: function(el, position, offsets, local) {
-        local = !!local;
-        el = Ext.get(el);
-
-        offsets = offsets || [0, 0];
-
-        if (!position || position == '?') {
-            position = 'tl-bl?';
-        }
-        else if (! (/-/).test(position) && position !== "") {
-            position = 'tl-' + position;
-        }
-        position = position.toLowerCase();
-
-        var me = this,
-            matches = position.match(this.alignToRe),
-            dw = window.innerWidth,
-            dh = window.innerHeight,
-            p1 = "",
-            p2 = "",
-            a1,
-            a2,
-            x,
-            y,
-            swapX,
-            swapY,
-            p1x,
-            p1y,
-            p2x,
-            p2y,
-            width,
-            height,
-            region,
-            constrain;
-
-        if (!matches) {
-            throw "Element.alignTo with an invalid alignment " + position;
-        }
-
-        p1 = matches[1];
-        p2 = matches[2];
-        constrain = !!matches[3];
-
-        
-        
-        a1 = me.getAnchorXY(p1, true);
-        a2 = el.getAnchorXY(p2, local);
-
-        x = a2[0] - a1[0] + offsets[0];
-        y = a2[1] - a1[1] + offsets[1];
-
-        if (constrain) {
-            width = me.getWidth();
-            height = me.getHeight();
-
-            region = el.getPageBox();
-
-            
-            
-            
-            p1y = p1.charAt(0);
-            p1x = p1.charAt(p1.length - 1);
-            p2y = p2.charAt(0);
-            p2x = p2.charAt(p2.length - 1);
-
-            swapY = ((p1y == "t" && p2y == "b") || (p1y == "b" && p2y == "t"));
-            swapX = ((p1x == "r" && p2x == "l") || (p1x == "l" && p2x == "r"));
-
-            if (x + width > dw) {
-                x = swapX ? region.left - width: dw - width;
-            }
-            if (x < 0) {
-                x = swapX ? region.right: 0;
-            }
-            if (y + height > dh) {
-                y = swapY ? region.top - height: dh - height;
-            }
-            if (y < 0) {
-                y = swapY ? region.bottom: 0;
-            }
-        }
-
-        return [x, y];
-    },
-
-    
-    getAnchor: function(){
-        var data = (this.$cache || this.getCache()).data,
-            anchor;
-            
-        if (!this.dom) {
-            return;
-        }
-        anchor = data._anchor;
-
-        if(!anchor){
-            anchor = data._anchor = {};
-        }
-        return anchor;
-    },
-
-    
-    adjustForConstraints: function(xy, parent) {
-        var vector = this.getConstrainVector(parent, xy);
-        if (vector) {
-            xy[0] += vector[0];
-            xy[1] += vector[1];
-        }
-        return xy;
-    }
-
-});
-
-//@tag dom,core
-
-
 Ext.define('Ext.dom.AbstractElement_insertion', {
     override: 'Ext.dom.AbstractElement',
 
     
-    appendChild: function(el) {
-        return Ext.get(el).appendTo(this);
+    appendChild: function(el, returnDom) {
+        var me = this,
+            insertEl,
+            eLen, e, oldUseDom;
+
+        if (el.nodeType || el.dom || typeof el == 'string') { 
+            el = Ext.getDom(el);
+            me.dom.appendChild(el);
+            return !returnDom ? Ext.get(el) : el;
+        } else if (el.length) {
+            
+            insertEl = Ext.fly(document.createDocumentFragment(), '_internal');
+            eLen = el.length;
+
+            
+            Ext.DomHelper.useDom = true;
+            for (e = 0; e < eLen; e++) {
+                insertEl.appendChild(el[e], returnDom);
+            }
+            Ext.DomHelper.useDom = oldUseDom;
+            me.dom.appendChild(insertEl.dom);
+            return returnDom ? insertEl.dom : insertEl;
+        }
+        else { 
+            return me.createChild(el, null, returnDom);
+        }
     },
 
     
@@ -11540,38 +11782,42 @@ Ext.define('Ext.dom.AbstractElement_insertion', {
     },
 
     
-    insertSibling: function(el, where, returnDom){
-        var me      = this,
-            isAfter = (where || 'before').toLowerCase() == 'after',
+    insertSibling: function(el, where, returnDom) {
+        var me        = this,
+            DomHelper = Ext.core.DomHelper,
+            oldUseDom = DomHelper.useDom,
+            isAfter   = (where || 'before').toLowerCase() == 'after',
             rt, insertEl, eLen, e;
 
         if (Ext.isArray(el)) {
-            insertEl = me;
-            eLen = el.length;
             
+            insertEl = Ext.fly(document.createDocumentFragment(), '_internal');
+            eLen = el.length;
+
+            
+            DomHelper.useDom = true;
             for (e = 0; e < eLen; e++) {
-                rt = Ext.fly(insertEl, '_internal').insertSibling(el[e], where, returnDom);
-
-                if (isAfter) {
-                    insertEl = rt;
-                }
+                rt = insertEl.appendChild(el[e], returnDom);
             }
+            DomHelper.useDom = oldUseDom;
 
+            
+            me.dom.parentNode.insertBefore(insertEl.dom, isAfter ? me.dom.nextSibling : me.dom);
             return rt;
         }
 
         el = el || {};
 
-        if(el.nodeType || el.dom){
+        if (el.nodeType || el.dom) {
             rt = me.dom.parentNode.insertBefore(Ext.getDom(el), isAfter ? me.dom.nextSibling : me.dom);
             if (!returnDom) {
                 rt = Ext.get(rt);
             }
-        }else{
+        } else {
             if (isAfter && !me.dom.nextSibling) {
-                rt = Ext.core.DomHelper.append(me.dom.parentNode, el, !returnDom);
+                rt = DomHelper.append(me.dom.parentNode, el, !returnDom);
             } else {
-                rt = Ext.core.DomHelper[isAfter ? 'insertAfter' : 'insertBefore'](me.dom, el, !returnDom);
+                rt = DomHelper[isAfter ? 'insertAfter' : 'insertBefore'](me.dom, el, !returnDom);
             }
         }
         return rt;
@@ -11589,10 +11835,10 @@ Ext.define('Ext.dom.AbstractElement_insertion', {
     replaceWith: function(el){
         var me = this;
 
-        if(el.nodeType || el.dom || typeof el == 'string'){
+        if (el.nodeType || el.dom || typeof el == 'string') {
             el = Ext.get(el);
-            me.dom.parentNode.insertBefore(el, me.dom);
-        }else{
+            me.dom.parentNode.insertBefore(el.dom, me.dom);
+        } else {
             el = Ext.core.DomHelper.insertBefore(me.dom, el);
         }
 
@@ -11610,7 +11856,7 @@ Ext.define('Ext.dom.AbstractElement_insertion', {
             return Ext.core.DomHelper.insertBefore(insertBefore, config, returnDom !== true);
         }
         else {
-            return Ext.core.DomHelper[!this.dom.firstChild ? 'insertFirst' : 'append'](this.dom, config,  returnDom !== true);
+            return Ext.core.DomHelper.append(this.dom, config,  returnDom !== true);
         }
     },
 
@@ -11637,239 +11883,6 @@ Ext.define('Ext.dom.AbstractElement_insertion', {
 //@tag dom,core
 
 
-Ext.define('Ext.dom.AbstractElement_position', {
-    override: 'Ext.dom.AbstractElement',
-
-    
-    getX: function(el) {
-        return this.getXY(el)[0];
-    },
-
-    
-    getY: function(el) {
-        return this.getXY(el)[1];
-    },
-
-    
-    getXY: function() {
-        
-        var point = window.webkitConvertPointFromNodeToPage(this.dom, new WebKitPoint(0, 0));
-        return [point.x, point.y];
-    },
-
-    
-    getOffsetsTo: function(el){
-        var o = this.getXY(),
-            e = Ext.fly(el, '_internal').getXY();
-        return [o[0]-e[0],o[1]-e[1]];
-    },
-
-    
-    setX: function(x){
-        return this.setXY([x, this.getY()]);
-    },
-
-    
-    setY: function(y) {
-        return this.setXY([this.getX(), y]);
-    },
-
-    
-    setLeft: function(left) {
-        this.setStyle('left', this.self.addUnits(left));
-        return this;
-    },
-
-    
-    setTop: function(top) {
-        this.setStyle('top', this.self.addUnits(top));
-        return this;
-    },
-
-    
-    setRight: function(right) {
-        this.setStyle('right', this.self.addUnits(right));
-        return this;
-    },
-
-    
-    setBottom: function(bottom) {
-        this.setStyle('bottom', this.self.addUnits(bottom));
-        return this;
-    },
-
-    
-    setXY: function(pos) {
-        var me = this,
-            pts,
-            style,
-            pt;
-
-        if (arguments.length > 1) {
-            pos = [pos, arguments[1]];
-        }
-
-        
-        pts = me.translatePoints(pos);
-        style = me.dom.style;
-
-        for (pt in pts) {
-            if (!pts.hasOwnProperty(pt)) {
-                continue;
-            }
-            if (!isNaN(pts[pt])) {
-                style[pt] = pts[pt] + "px";
-            }
-        }
-        return me;
-    },
-
-    
-    getLeft: function(local) {
-        return parseInt(this.getStyle('left'), 10) || 0;
-    },
-
-    
-    getRight: function(local) {
-        return parseInt(this.getStyle('right'), 10) || 0;
-    },
-
-    
-    getTop: function(local) {
-        return parseInt(this.getStyle('top'), 10) || 0;
-    },
-
-    
-    getBottom: function(local) {
-        return parseInt(this.getStyle('bottom'), 10) || 0;
-    },
-
-    
-    translatePoints: function(x, y) {
-        y = isNaN(x[1]) ? y : x[1];
-        x = isNaN(x[0]) ? x : x[0];
-        var me = this,
-            relative = me.isStyle('position', 'relative'),
-            o = me.getXY(),
-            l = parseInt(me.getStyle('left'), 10),
-            t = parseInt(me.getStyle('top'), 10);
-
-        l = !isNaN(l) ? l : (relative ? 0 : me.dom.offsetLeft);
-        t = !isNaN(t) ? t : (relative ? 0 : me.dom.offsetTop);
-
-        return {left: (x - o[0] + l), top: (y - o[1] + t)};
-    },
-
-    
-    setBox: function(box) {
-        var me = this,
-            width = box.width,
-            height = box.height,
-            top = box.top,
-            left = box.left;
-
-        if (left !== undefined) {
-            me.setLeft(left);
-        }
-        if (top !== undefined) {
-            me.setTop(top);
-        }
-        if (width !== undefined) {
-            me.setWidth(width);
-        }
-        if (height !== undefined) {
-            me.setHeight(height);
-        }
-
-        return this;
-    },
-
-    
-    getBox: function(contentBox, local) {
-        var me = this,
-            dom = me.dom,
-            width = dom.offsetWidth,
-            height = dom.offsetHeight,
-            xy, box, l, r, t, b;
-
-        if (!local) {
-            xy = me.getXY();
-        }
-        else if (contentBox) {
-            xy = [0,0];
-        }
-        else {
-            xy = [parseInt(me.getStyle("left"), 10) || 0, parseInt(me.getStyle("top"), 10) || 0];
-        }
-
-        if (!contentBox) {
-            box = {
-                x: xy[0],
-                y: xy[1],
-                0: xy[0],
-                1: xy[1],
-                width: width,
-                height: height
-            };
-        }
-        else {
-            l = me.getBorderWidth.call(me, "l") + me.getPadding.call(me, "l");
-            r = me.getBorderWidth.call(me, "r") + me.getPadding.call(me, "r");
-            t = me.getBorderWidth.call(me, "t") + me.getPadding.call(me, "t");
-            b = me.getBorderWidth.call(me, "b") + me.getPadding.call(me, "b");
-            box = {
-                x: xy[0] + l,
-                y: xy[1] + t,
-                0: xy[0] + l,
-                1: xy[1] + t,
-                width: width - (l + r),
-                height: height - (t + b)
-            };
-        }
-
-        box.left = box.x;
-        box.top = box.y;
-        box.right = box.x + box.width;
-        box.bottom = box.y + box.height;
-
-        return box;
-    },
-
-    
-    getPageBox: function(getRegion) {
-        var me = this,
-            el = me.dom,
-            w = el.offsetWidth,
-            h = el.offsetHeight,
-            xy = me.getXY(),
-            t = xy[1],
-            r = xy[0] + w,
-            b = xy[1] + h,
-            l = xy[0];
-
-        if (!el) {
-            return new Ext.util.Region();
-        }
-
-        if (getRegion) {
-            return new Ext.util.Region(t, r, b, l);
-        }
-        else {
-            return {
-                left: l,
-                top: t,
-                width: w,
-                height: h,
-                right: r,
-                bottom: b
-            };
-        }
-    }
-});
-
-//@tag dom,core
-
-
 Ext.define('Ext.dom.AbstractElement_style', {
 
     override: 'Ext.dom.AbstractElement'
@@ -11880,6 +11893,10 @@ Ext.define('Ext.dom.AbstractElement_style', {
         wordsRe = /\w/g,
         spacesRe = /\s+/,
         transparentRe = /^(?:transparent|(?:rgba[(](?:\s*\d+\s*[,]){3}\s*0\s*[)]))$/i,
+        
+        
+        
+        
         hasClassList = Ext.supports.ClassList,
         PADDING = 'padding',
         MARGIN = 'margin',
@@ -11892,7 +11909,8 @@ Ext.define('Ext.dom.AbstractElement_style', {
         
         borders = {l: BORDER + LEFT_SUFFIX + WIDTH, r: BORDER + RIGHT_SUFFIX + WIDTH, t: BORDER + TOP_SUFFIX + WIDTH, b: BORDER + BOTTOM_SUFFIX + WIDTH},
         paddings = {l: PADDING + LEFT_SUFFIX, r: PADDING + RIGHT_SUFFIX, t: PADDING + TOP_SUFFIX, b: PADDING + BOTTOM_SUFFIX},
-        margins = {l: MARGIN + LEFT_SUFFIX, r: MARGIN + RIGHT_SUFFIX, t: MARGIN + TOP_SUFFIX, b: MARGIN + BOTTOM_SUFFIX};
+        margins = {l: MARGIN + LEFT_SUFFIX, r: MARGIN + RIGHT_SUFFIX, t: MARGIN + TOP_SUFFIX, b: MARGIN + BOTTOM_SUFFIX},
+        internalFly = new Element.Fly();
 
 
     Ext.override(Element, {
@@ -11929,11 +11947,12 @@ Ext.define('Ext.dom.AbstractElement_style', {
         },
 
         
-        addCls: hasClassList ?
-            function (className) {
+        addCls: (function(){
+            var addWithClassList = function(className) {
                 var me = this,
                     dom = me.dom,
                     trimRe = me.trimRe,
+                    origClassName = className,
                     classList,
                     newCls,
                     i,
@@ -11952,31 +11971,33 @@ Ext.define('Ext.dom.AbstractElement_style', {
                         dom.className = className.join(' ');
                     } else {
                         classList = dom.classList;
-                        for (i = 0; i < len; ++i) {
-                            cls = className[i];
-                            if (cls) {
-                                if (!classList.contains(cls)) {
-                                    if (newCls) {
-                                        newCls.push(cls);
-                                    } else {
-                                        newCls = dom.className.replace(trimRe, '');
-                                        newCls = newCls ? [newCls, cls] : [cls];
+                        if (classList) {
+                            for (i = 0; i < len; ++i) {
+                                cls = className[i];
+                                if (cls) {
+                                    if (!classList.contains(cls)) {
+                                        if (newCls) {
+                                            newCls.push(cls);
+                                        } else {
+                                            newCls = dom.className.replace(trimRe, '');
+                                            newCls = newCls ? [newCls, cls] : [cls];
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        if (newCls) {
-                            dom.className = newCls.join(' '); 
+                            if (newCls) {
+                                dom.className = newCls.join(' '); 
+                            }
+                        } else {
+                            addWithoutClassList(origClassName);
                         }
                     }
                 }
                 return me;
-            } :
-            function(className) {
+            }, addWithoutClassList = function(className) {
                 var me = this,
                     dom = me.dom,
-                    changed,
                     elClasses;
 
                 if (dom && className && className.length) {
@@ -11986,13 +12007,17 @@ Ext.define('Ext.dom.AbstractElement_style', {
                     }
                 }
                 return me;
-            },
+            };
+            
+            return hasClassList ? addWithClassList : addWithoutClassList;
+        })(),
 
 
         
         removeCls: function(className) {
             var me = this,
                 dom = me.dom,
+                classList,
                 len,
                 elClasses;
 
@@ -12002,9 +12027,10 @@ Ext.define('Ext.dom.AbstractElement_style', {
             }
 
             if (dom && dom.className && className && !!(len = className.length)) {
-                if (len == 1 && hasClassList) {
+                classList = dom.classList;
+                if (len === 1 && classList) {
                     if (className[0]) {
-                        dom.classList.remove(className[0]); 
+                        classList.remove(className[0]); 
                     }
                 } else {
                     elClasses = Ext.Element.removeCls(dom.className, className);
@@ -12025,42 +12051,62 @@ Ext.define('Ext.dom.AbstractElement_style', {
             for (i = 0, len = cn.length; i < len; i++) {
                 v = cn[i];
                 if (v && v.nodeType == 1) {
-                    Ext.fly(v, '_internal').removeCls(className);
+                    internalFly.attach(v).removeCls(className);
                 }
             }
             return this.addCls(className);
         },
 
         
-        toggleCls: hasClassList ?
-            function (className) {
+        toggleCls: (function(){
+            var toggleWithClassList = function(className){
                 var me = this,
-                    dom = me.dom;
+                    dom = me.dom,
+                    classList;
 
                 if (dom) {
                     className = className.replace(me.trimRe, '');
                     if (className) {
-                        dom.classList.toggle(className);
+                        classList = dom.classList;
+                        if (classList) {
+                            classList.toggle(className);
+                        } else {
+                            toggleWithoutClassList(className);
+                        }
                     }
                 }
 
                 return me;
-            } :
-            function(className) {
-                var me = this;
-                return me.hasCls(className) ? me.removeCls(className) : me.addCls(className);
-            },
+            }, toggleWithoutClassList = function(className){
+                return this.hasCls(className) ? this.removeCls(className) : this.addCls(className);
+            };
+            
+            return hasClassList ? toggleWithClassList :  toggleWithoutClassList;
+        })(),
 
         
-        hasCls: hasClassList ?
-            function (className) {
+        hasCls: (function(){
+            var hasClsWithClassList = function(className) {
+                var dom = this.dom,
+                    out = false,
+                    classList;
+                    
+                if (dom && className) {
+                    classList = dom.classList;
+                    if (classList) {
+                        out = classList.contains(className);
+                    } else {
+                        out = hasClsWithoutClassList(className);
+                    }
+                }
+                return out;
+            }, hasClsWithoutClassList = function(className){
                 var dom = this.dom;
-                return (dom && className) ? dom.classList.contains(className) : false;
-            } :
-            function(className) {
-                var dom = this.dom;
-                return dom ? className && (' '+dom.className+' ').indexOf(' '+className+' ') != -1 : false;
-            },
+                return dom ? className && (' '+dom.className+' ').indexOf(' '+className+' ') !== -1 : false;
+            };
+            
+            return hasClassList ? hasClsWithClassList : hasClsWithoutClassList;
+        })(),
 
         
         replaceCls: function(oldClassName, newClassName){
@@ -12312,11 +12358,11 @@ Ext.define('Ext.dom.AbstractElement_style', {
         },
 
         
-        repaint: function(){
+        repaint: function() {
             var dom = this.dom;
             this.addCls(Ext.baseCSSPrefix + 'repaint');
             setTimeout(function(){
-                Ext.fly(dom).removeCls(Ext.baseCSSPrefix + 'repaint');
+                internalFly.attach(dom).removeCls(Ext.baseCSSPrefix + 'repaint');
             }, 1);
             return this;
         },
@@ -12348,7 +12394,7 @@ Ext.define('Ext.dom.AbstractElement_style', {
 
                 return o;
             } else {
-                return me.addStyles.call(me, side, me.margins);
+                return me.addStyles(side, me.margins);
             }
         },
 
@@ -12423,25 +12469,6 @@ Ext.define('Ext.dom.AbstractElement_style', {
                 Ext.EventManager.unOrientationChange(me.orientationHandler, me);
                 delete me.orientationHandler;
             }
-        },
-
-        statics: {
-            
-            populateStyleMap: function (map, order) {
-                var baseStyles = ['margin-', 'padding-', 'border-width-'],
-                    beforeAfter = ['before', 'after'],
-                    index, style, name, i;
-
-                for (index = baseStyles.length; index--; ) {
-                    for (i = 2; i--; ) {
-                        style = baseStyles[index] + beforeAfter[i]; 
-                        
-                        map[Element.normalize(style)] = map[style] = {
-                            name: Element.normalize(baseStyles[index] + order[i])
-                        };
-                    }
-                }
-            }            
         }
     });
 
@@ -12491,9 +12518,6 @@ Ext.define('Ext.dom.AbstractElement_style', {
         }
 
         styleHooks = Element.prototype.styleHooks;
-
-        
-        Element.populateStyleMap(styleHooks, ['left', 'right']);
 
         
         
@@ -12563,8 +12587,8 @@ Ext.define('Ext.dom.AbstractElement_traversal', {
     },
 
     
-    up: function(simpleSelector, limit) {
-        return this.findParentNode(simpleSelector, limit, true);
+    up: function(simpleSelector, limit, returnDom) {
+        return this.findParentNode(simpleSelector, limit, !returnDom);
     },
 
     
@@ -12654,9 +12678,7 @@ Ext.define('Ext.dom.AbstractElement', {
     requires: [
         'Ext.EventManager',
         'Ext.dom.AbstractElement_static',
-        'Ext.dom.AbstractElement_alignment',
         'Ext.dom.AbstractElement_insertion',
-        'Ext.dom.AbstractElement_position',
         'Ext.dom.AbstractElement_style',
         'Ext.dom.AbstractElement_traversal'
     ],
@@ -12674,12 +12696,18 @@ Ext.define('Ext.dom.AbstractElement', {
                 document = window.document,
                 El = Ext.dom.Element,
                 cacheItem,
+                docEl,
                 extEl,
                 dom,
                 id;
 
             if (!el) {
                 return null;
+            }
+
+            
+            if (el.isFly) {
+                el = el.dom;
             }
 
             if (typeof el == "string") { 
@@ -12740,10 +12768,14 @@ Ext.define('Ext.dom.AbstractElement', {
             } else if (el === document) {
                 
                 if (!me.docEl) {
-                    me.docEl = Ext.Object.chain(El.prototype);
-                    me.docEl.dom = document;
-                    me.docEl.id = Ext.id(document);
-                    me.addToCache(me.docEl);
+                    docEl = me.docEl = Ext.Object.chain(El.prototype);
+                    docEl.dom = document;
+                    
+                    
+                    
+                    docEl.el = docEl;
+                    docEl.id = Ext.id(document);
+                    me.addToCache(docEl);
                 }
                 return me.docEl;
             } else if (el === window) {
@@ -12856,6 +12888,11 @@ Ext.define('Ext.dom.AbstractElement', {
                 : element,
             id;
 
+        
+        
+        
+        me.el = me;
+
         if (!dom) {
             return null;
         }
@@ -12922,7 +12959,11 @@ Ext.define('Ext.dom.AbstractElement', {
     
     remove: function() {
         var me = this,
-        dom = me.dom;
+            dom = me.dom;
+            
+        if (me.isAnimate) {
+            me.stopAnimation();
+        }
 
         if (dom) {
             Ext.removeNode(dom);
@@ -13089,6 +13130,10 @@ function() {
 
             constructor: function(dom) {
                 this.dom = dom;
+                
+                
+                
+                this.el = this;
             },
 
             
@@ -13224,6 +13269,7 @@ Ext.define('Ext.dom.AbstractHelper', {
     emptyTags : /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i,
     confRe : /^(?:tag|children|cn|html|tpl|tplData)$/i,
     endRe : /end/i,
+    styleSepRe: /\s*(?::|;)\s*/,
 
     
     attributeTransform: { cls : 'class', htmlFor : 'for' },
@@ -13328,16 +13374,15 @@ Ext.define('Ext.dom.AbstractHelper', {
     applyStyles: function(el, styles) {
         if (styles) {
             var i = 0,
-                len,
-                style;
+                len;
 
-            el = Ext.fly(el);
+            el = Ext.fly(el, '_applyStyles');
             if (typeof styles == 'function') {
                 styles = styles.call();
             }
-            if (typeof styles == 'string'){
-                styles = Ext.util.Format.trim(styles).split(/\s*(?::|;)\s*/);
-                for(len = styles.length; i < len;){
+            if (typeof styles == 'string') {
+                styles = Ext.util.Format.trim(styles).split(this.styleSepRe);
+                for (len = styles.length; i < len;) {
                     el.setStyle(styles[i++], styles[i++]);
                 }
             } else if (Ext.isObject(styles)) {
@@ -13349,12 +13394,10 @@ Ext.define('Ext.dom.AbstractHelper', {
     
     insertHtml: function(where, el, html) {
         var hash = {},
-            hashVal,
             setStart,
             range,
             frag,
-            rangeEl,
-            rs;
+            rangeEl;
 
         where = where.toLowerCase();
 
@@ -13597,7 +13640,6 @@ return {
 
     applyStyles: function(el, styles) {
         if (styles) {
-            el = Ext.fly(el);
             if (typeof styles == "function") {
                 styles = styles.call();
             }
@@ -13605,7 +13647,7 @@ return {
                 styles = Ext.dom.Element.parseStyles(styles);
             }
             if (typeof styles == "object") {
-                el.setStyle(styles);
+                Ext.fly(el, '_applyStyles').setStyle(styles);
             }
         }
     },
@@ -13749,10 +13791,19 @@ return {
 
 Ext.ns('Ext.core');
 
-Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
-    var cache = {},
+Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function() {
+    var DQ,
+        doc = document,
+        cache = {},
         simpleCache = {},
         valueCache = {},
+        useClassList = !!doc.documentElement.classList,
+        useElementPointer = !!doc.documentElement.firstElementChild,
+        useChildrenCollection = (function() {
+            var d = doc.createElement('div');
+            d.innerHTML = '<!-- -->text<!-- -->';
+            return d.children && (d.children.length === 0);
+        })(),
         nonSpace = /\S/,
         trimRe = /^\s+|\s+$/g,
         tplRe = /\{(\d+)\}/g,
@@ -13760,7 +13811,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         tagTokenRe = /^(#)?([\w\-\*\|\\]+)/,
         nthRe = /(\d*)n\+?(\d*)/,
         nthRe2 = /\D/,
-        startIdRe = /^\s*\#/,
+        startIdRe = /^\s*#/,
         
         
         
@@ -13770,7 +13821,22 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         shortHex = /\\([0-9a-fA-F]{1,6})\s{0,1}/g,
         nonHex = /\\([^0-9a-fA-F]{1})/g,
         escapes = /\\/g,
-        num, hasEscapes, supportsColonInGetElementsByTagName,
+        num, hasEscapes,
+        
+        
+        supportsColonNsSeparator = (function () {
+            var xmlDoc,
+                xmlString = '<r><a:b xmlns:a="n"></a:b></r>';
+
+            if (window.DOMParser) {
+                xmlDoc = (new DOMParser()).parseFromString(xmlString, "application/xml");
+            } else {
+                xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+                xmlDoc.loadXML(xmlString);
+            }
+
+            return !!xmlDoc.getElementsByTagName('a:b').length;
+        })(),
 
         
         
@@ -13798,14 +13864,14 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         
         
         
-        unescapeCssSelector = function (selector) {
+        unescapeCssSelector = function(selector) {
             return (hasEscapes)
                 ? selector.replace(longHex, longHexToChar)
                 : selector;
         },
+
         
-        
-        setupEscapes = function(path){
+        setupEscapes = function(path) {
             hasEscapes = (path.indexOf('\\') > -1);
             if (hasEscapes) {
                 path = path
@@ -13818,48 +13884,61 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
     
     
-    eval("var batch = 30803;");
+    eval("var batch = 30803, child, next, prev, byClassName;");
 
     
     
-    function child(parent, index){
-        var i = 0,
-            n = parent.firstChild;
-        while(n){
-            if(n.nodeType == 1){
-               if(++i == index){
-                   return n;
-               }
+    child = useChildrenCollection ?
+        function child(parent, index) {
+            return parent.children[index]
+        } :
+        function child(parent, index) {
+            var i = 0,
+                n = parent.firstChild;
+            while (n) {
+                if (n.nodeType == 1) {
+                    if (++i == index) {
+                        return n;
+                    }
+                }
+                n = n.nextSibling;
             }
-            n = n.nextSibling;
-        }
-        return null;
-    }
+            return null;
+        };
 
     
-    function next(n){
-        while((n = n.nextSibling) && n.nodeType != 1);
-        return n;
-    }
+    next = useElementPointer ?
+        function(n) {
+            return n.nextElementSibling;
+        } :
+        function(n) {
+            while ((n = n.nextSibling) && n.nodeType != 1);
+            return n;
+        };
 
     
-    function prev(n){
-        while((n = n.previousSibling) && n.nodeType != 1);
-        return n;
-    }
+    prev = useElementPointer ?
+        function(n) {
+            return n.previousElementSibling;
+        } :
+        function(n) {
+            while ((n = n.previousSibling) && n.nodeType != 1);
+            return n;
+        };
 
     
     
-    function children(parent){
+    function children(parent) {
         var n = parent.firstChild,
-        nodeIndex = -1,
-        nextNode;
-        while(n){
+            nodeIndex = -1,
+            nextNode;
+
+        while (n) {
             nextNode = n.nextSibling;
             
-            if(n.nodeType == 3 && !nonSpace.test(n.nodeValue)){
+            if (n.nodeType == 3 && !nonSpace.test(n.nodeValue)) {
                 parent.removeChild(n);
-            }else{
+            } else {
                 
                 n.nodeIndex = ++nodeIndex;
             }
@@ -13870,61 +13949,84 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
     
     
-    function byClassName(nodeSet, cls){
-        cls = unescapeCssSelector(cls);
-        if(!cls){
-            return nodeSet;
-        }
-        var result = [], ri = -1,
-            i, ci;
-        for(i = 0, ci; ci = nodeSet[i]; i++){
-            if((' '+ci.className+' ').indexOf(cls) != -1){
-                result[++ri] = ci;
+    byClassName = useClassList ? 
+        function (nodeSet, cls) {
+            cls = unescapeCssSelector(cls);
+            if (!cls) {
+                return nodeSet;
             }
-        }
-        return result;
-    }
+            var result = [], ri = -1,
+                i, ci, classList;
 
-    function attrValue(n, attr){
+            for (i = 0; ci = nodeSet[i]; i++) {
+                classList = ci.classList;
+                if (classList) {
+                    if (classList.contains(cls)) {
+                        result[++ri] = ci;
+                    }
+                } else if ((' ' + ci.className + ' ').indexOf(cls) !== -1) {
+                    
+                    
+                    result[++ri] = ci;
+                }
+            }
+            return result;
+        } :
+        function (nodeSet, cls) {
+            cls = unescapeCssSelector(cls);
+            if (!cls) {
+                return nodeSet;
+            }
+            var result = [], ri = -1,
+                i, ci;
+
+            for (i = 0; ci = nodeSet[i]; i++) {
+                if ((' ' + ci.className + ' ').indexOf(cls) !== -1) {
+                    result[++ri] = ci;
+                }
+            }
+            return result;
+        };
+
+    function attrValue(n, attr) {
         
-        if(!n.tagName && typeof n.length != "undefined"){
+        if (!n.tagName && typeof n.length != "undefined") {
             n = n[0];
         }
-        if(!n){
+        if (!n) {
             return null;
         }
 
-        if(attr == "for"){
+        if (attr == "for") {
             return n.htmlFor;
         }
-        if(attr == "class" || attr == "className"){
+        if (attr == "class" || attr == "className") {
             return n.className;
         }
         return n.getAttribute(attr) || n[attr];
 
     }
 
-
     
     
     
-    function getNodes(ns, mode, tagName){
+    function getNodes(ns, mode, tagName) {
         var result = [], ri = -1, cs,
             i, ni, j, ci, cn, utag, n, cj;
-        if(!ns){
+        if (!ns) {
             return result;
         }
         tagName = tagName.replace('|', ':') || "*";
         
-        if(typeof ns.getElementsByTagName != "undefined"){
+        if (typeof ns.getElementsByTagName != "undefined") {
             ns = [ns];
         }
 
         
         
-        if(!mode){
+        if (!mode) {
             tagName = unescapeCssSelector(tagName);
-            if (!supportsColonNsSeparator() && Ext.DomQuery.isXml(ns[0]) &&
+            if (!supportsColonNsSeparator && DQ.isXml(ns[0]) &&
                 tagName.indexOf(':') !== -1) {
                 
                 
@@ -13932,51 +14034,51 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 
                 
                 
-                for(i = 0, ni; ni = ns[i]; i++){
+                for (i = 0; ni = ns[i]; i++) {
                     cs = ni.getElementsByTagName(tagName.split(':').pop());
-                    for(j = 0, ci; ci = cs[j]; j++){
+                    for (j = 0; ci = cs[j]; j++) {
                         if (ci.tagName === tagName) {
                             result[++ri] = ci;
                         }
                     }
                 }
             } else {
-                for(i = 0, ni; ni = ns[i]; i++){
+                for (i = 0; ni = ns[i]; i++) {
                     cs = ni.getElementsByTagName(tagName);
-                    for(j = 0, ci; ci = cs[j]; j++){
+                    for (j = 0; ci = cs[j]; j++) {
                         result[++ri] = ci;
                     }
                 }
             }
-        
-        
-        } else if(mode == "/" || mode == ">"){
+            
+            
+        } else if (mode == "/" || mode == ">") {
             utag = tagName.toUpperCase();
-            for(i = 0, ni, cn; ni = ns[i]; i++){
+            for (i = 0; ni = ns[i]; i++) {
                 cn = ni.childNodes;
-                for(j = 0, cj; cj = cn[j]; j++){
-                    if(cj.nodeName == utag || cj.nodeName == tagName  || tagName == '*'){
+                for (j = 0; cj = cn[j]; j++) {
+                    if (cj.nodeName == utag || cj.nodeName == tagName || tagName == '*') {
                         result[++ri] = cj;
                     }
                 }
             }
-        
-        
-        }else if(mode == "+"){
+            
+            
+        } else if (mode == "+") {
             utag = tagName.toUpperCase();
-            for(i = 0, n; n = ns[i]; i++){
-                while((n = n.nextSibling) && n.nodeType != 1);
-                if(n && (n.nodeName == utag || n.nodeName == tagName || tagName == '*')){
+            for (i = 0; n = ns[i]; i++) {
+                while ((n = n.nextSibling) && n.nodeType != 1);
+                if (n && (n.nodeName == utag || n.nodeName == tagName || tagName == '*')) {
                     result[++ri] = n;
                 }
             }
-        
-        
-        }else if(mode == "~"){
+            
+            
+        } else if (mode == "~") {
             utag = tagName.toUpperCase();
-            for(i = 0, n; n = ns[i]; i++){
-                while((n = n.nextSibling)){
-                    if (n.nodeName == utag || n.nodeName == tagName || tagName == '*'){
+            for (i = 0; n = ns[i]; i++) {
+                while ((n = n.nextSibling)) {
+                    if (n.nodeName == utag || n.nodeName == tagName || tagName == '*') {
                         result[++ri] = n;
                     }
                 }
@@ -13985,46 +14087,41 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         return result;
     }
 
-    function concat(a, b){
-        if(b.slice){
-            return a.concat(b);
-        }
-        for(var i = 0, l = b.length; i < l; i++){
-            a[a.length] = b[i];
-        }
+    function concat(a, b) {
+        a.push.apply(a, b);
         return a;
     }
 
-    function byTag(cs, tagName){
-        if(cs.tagName || cs == document){
+    function byTag(cs, tagName) {
+        if (cs.tagName || cs === doc) {
             cs = [cs];
         }
-        if(!tagName){
+        if (!tagName) {
             return cs;
         }
         var result = [], ri = -1,
             i, ci;
         tagName = tagName.toLowerCase();
-        for(i = 0, ci; ci = cs[i]; i++){
-            if(ci.nodeType == 1 && ci.tagName.toLowerCase() == tagName){
+        for (i = 0; ci = cs[i]; i++) {
+            if (ci.nodeType == 1 && ci.tagName.toLowerCase() == tagName) {
                 result[++ri] = ci;
             }
         }
         return result;
     }
 
-    function byId(cs, id){
+    function byId(cs, id) {
         id = unescapeCssSelector(id);
-        if(cs.tagName || cs == document){
+        if (cs.tagName || cs === doc) {
             cs = [cs];
         }
-        if(!id){
+        if (!id) {
             return cs;
         }
         var result = [], ri = -1,
             i, ci;
-        for(i = 0, ci; ci = cs[i]; i++){
-            if(ci && ci.id == id){
+        for (i = 0; ci = cs[i]; i++) {
+            if (ci && ci.id == id) {
                 result[++ri] = ci;
                 return result;
             }
@@ -14034,11 +14131,11 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
     
     
-    function byAttribute(cs, attr, value, op, custom){
+    function byAttribute(cs, attr, value, op, custom) {
         var result = [],
             ri = -1,
             useGetStyle = custom == "{",
-            fn = Ext.DomQuery.operators[op],
+            fn = DQ.operators[op],
             a,
             xml,
             hasXml,
@@ -14046,89 +14143,88 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
         value = unescapeCssSelector(value);
 
-        for(i = 0, ci; ci = cs[i]; i++){
+        for (i = 0; ci = cs[i]; i++) {
             
-            if(ci.nodeType != 1){
-                continue;
-            }
-            
-            if(!hasXml){
-                xml = Ext.DomQuery.isXml(ci);
-                hasXml = true;
-            }
+            if (ci.nodeType === 1) {
+                
+                if (!hasXml) {
+                    xml = DQ.isXml(ci);
+                    hasXml = true;
+                }
 
-            
-            if(!xml){
-                if(useGetStyle){
-                    a = Ext.DomQuery.getStyle(ci, attr);
-                } else if (attr == "class" || attr == "className"){
-                    a = ci.className;
-                } else if (attr == "for"){
-                    a = ci.htmlFor;
-                } else if (attr == "href"){
-                    
-                    
-                    a = ci.getAttribute("href", 2);
-                } else{
+                
+                if (!xml) {
+                    if (useGetStyle) {
+                        a = DQ.getStyle(ci, attr);
+                    } else if (attr == "class" || attr == "className") {
+                        a = ci.className;
+                    } else if (attr == "for") {
+                        a = ci.htmlFor;
+                    } else if (attr == "href") {
+                        
+                        
+                        a = ci.getAttribute("href", 2);
+                    } else {
+                        a = ci.getAttribute(attr);
+                    }
+                } else {
                     a = ci.getAttribute(attr);
                 }
-            }else{
-                a = ci.getAttribute(attr);
-            }
-            if((fn && fn(a, value)) || (!fn && a)){
-                result[++ri] = ci;
+                if ((fn && fn(a, value)) || (!fn && a)) {
+                    result[++ri] = ci;
+                }
             }
         }
         return result;
     }
 
-    function byPseudo(cs, name, value){
+    function byPseudo(cs, name, value) {
         value = unescapeCssSelector(value);
-        return Ext.DomQuery.pseudos[name](cs, value);
+        return DQ.pseudos[name](cs, value);
     }
 
-    function nodupIEXml(cs){
+    function nodupIEXml(cs) {
         var d = ++key,
             r,
             i, len, c;
         cs[0].setAttribute("_nodup", d);
         r = [cs[0]];
-        for(i = 1, len = cs.length; i < len; i++){
+        for (i = 1, len = cs.length; i < len; i++) {
             c = cs[i];
-            if(!c.getAttribute("_nodup") != d){
+            if (!c.getAttribute("_nodup") != d) {
                 c.setAttribute("_nodup", d);
                 r[r.length] = c;
             }
         }
-        for(i = 0, len = cs.length; i < len; i++){
+        for (i = 0, len = cs.length; i < len; i++) {
             cs[i].removeAttribute("_nodup");
         }
         return r;
     }
 
-    function nodup(cs){
-        if(!cs){
+    function nodup(cs) {
+        if (!cs) {
             return [];
         }
         var len = cs.length, c, i, r = cs, cj, ri = -1, d, j;
-        if(!len || typeof cs.nodeType != "undefined" || len == 1){
+        if (!len || typeof cs.nodeType != "undefined" || len == 1) {
             return cs;
         }
-        if(isIE && typeof cs[0].selectSingleNode != "undefined"){
+        if (isIE && typeof cs[0].selectSingleNode != "undefined") {
             return nodupIEXml(cs);
         }
         d = ++key;
         cs[0]._nodup = d;
-        for(i = 1; c = cs[i]; i++){
-            if(c._nodup != d){
+        for (i = 1; c = cs[i]; i++) {
+            if (c._nodup != d) {
                 c._nodup = d;
-            }else{
+            } else {
                 r = [];
-                for(j = 0; j < i; j++){
+                for (j = 0; j < i; j++) {
                     r[++ri] = cs[j];
                 }
-                for(j = i+1; cj = cs[j]; j++){
-                    if(cj._nodup != d){
+                for (j = i + 1; cj = cs[j]; j++) {
+                    if (cj._nodup != d) {
                         cj._nodup = d;
                         r[++ri] = cj;
                     }
@@ -14139,48 +14235,48 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         return r;
     }
 
-    function quickDiffIEXml(c1, c2){
+    function quickDiffIEXml(c1, c2) {
         var d = ++key,
             r = [],
             i, len;
-        for(i = 0, len = c1.length; i < len; i++){
+        for (i = 0, len = c1.length; i < len; i++) {
             c1[i].setAttribute("_qdiff", d);
         }
-        for(i = 0, len = c2.length; i < len; i++){
-            if(c2[i].getAttribute("_qdiff") != d){
+        for (i = 0, len = c2.length; i < len; i++) {
+            if (c2[i].getAttribute("_qdiff") != d) {
                 r[r.length] = c2[i];
             }
         }
-        for(i = 0, len = c1.length; i < len; i++){
-           c1[i].removeAttribute("_qdiff");
+        for (i = 0, len = c1.length; i < len; i++) {
+            c1[i].removeAttribute("_qdiff");
         }
         return r;
     }
 
-    function quickDiff(c1, c2){
+    function quickDiff(c1, c2) {
         var len1 = c1.length,
             d = ++key,
             r = [],
             i, len;
-        if(!len1){
+        if (!len1) {
             return c2;
         }
-        if(isIE && typeof c1[0].selectSingleNode != "undefined"){
+        if (isIE && typeof c1[0].selectSingleNode != "undefined") {
             return quickDiffIEXml(c1, c2);
         }
-        for(i = 0; i < len1; i++){
+        for (i = 0; i < len1; i++) {
             c1[i]._qdiff = d;
         }
-        for(i = 0, len = c2.length; i < len; i++){
-            if(c2[i]._qdiff != d){
+        for (i = 0, len = c2.length; i < len; i++) {
+            if (c2[i]._qdiff != d) {
                 r[r.length] = c2[i];
             }
         }
         return r;
     }
 
-    function quickId(ns, mode, root, id){
-        if(ns == root){
+    function quickId(ns, mode, root, id) {
+        if (ns == root) {
             id = unescapeCssSelector(id);
             var d = root.ownerDocument || root;
             return d.getElementById(id);
@@ -14188,39 +14284,19 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         ns = getNodes(ns, mode, "*");
         return byId(ns, id);
     }
-    
-    
-    
-    function supportsColonNsSeparator() {
-        var xml, doc;
 
-        if (supportsColonInGetElementsByTagName === undefined) {
-            xml = '<r><a:b xmlns:a="n"></a:b></r>';
-
-            if (window.DOMParser) {
-                doc = (new DOMParser()).parseFromString(xml, "application/xml");
-            } else {
-                doc = new ActiveXObject("Microsoft.XMLDOM");
-                doc.loadXML(xml);
-            }
-
-            supportsColonInGetElementsByTagName = !!doc.getElementsByTagName('a:b').length;
-        }
-        return supportsColonInGetElementsByTagName;
-    }
-
-    return {
-        getStyle : function(el, name){
-            return Ext.fly(el).getStyle(name);
+    return DQ = {
+        getStyle: function(el, name) {
+            return Ext.fly(el, '_DomQuery').getStyle(name);
         },
         
-        compile : function(path, type){
+        compile: function(path, type) {
             type = type || "select";
 
             
-            var fn = ["var f = function(root){\n var mode; ++batch; var n = root || document;\n"],
+            var fn = ["var f = function(root) {\n var mode; ++batch; var n = root || document;\n"],
                 lastPath,
-                matchers = Ext.DomQuery.matchers,
+                matchers = DQ.matchers,
                 matchersLn = matchers.length,
                 modeMatch,
                 
@@ -14229,49 +14305,49 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
             path = setupEscapes(path);
 
-            if(lmode && lmode[1]){
-                fn[fn.length] = 'mode="'+lmode[1].replace(trimRe, "")+'";';
+            if (lmode && lmode[1]) {
+                fn[fn.length] = 'mode="' + lmode[1].replace(trimRe, "") + '";';
                 path = path.replace(lmode[1], "");
             }
 
             
-            while(path.substr(0, 1)=="/"){
+            while (path.substr(0, 1) == "/") {
                 path = path.substr(1);
             }
 
-            while(path && lastPath != path){
+            while (path && lastPath != path) {
                 lastPath = path;
                 tokenMatch = path.match(tagTokenRe);
-                if(type == "select"){
-                    if(tokenMatch){
+                if (type == "select") {
+                    if (tokenMatch) {
                         
-                        if(tokenMatch[1] == "#"){
-                            fn[fn.length] = 'n = quickId(n, mode, root, "'+tokenMatch[2]+'");';
-                        }else{
-                            fn[fn.length] = 'n = getNodes(n, mode, "'+tokenMatch[2]+'");';
+                        if (tokenMatch[1] == "#") {
+                            fn[fn.length] = 'n = quickId(n, mode, root, "' + tokenMatch[2] + '");';
+                        } else {
+                            fn[fn.length] = 'n = getNodes(n, mode, "' + tokenMatch[2] + '");';
                         }
                         path = path.replace(tokenMatch[0], "");
-                    }else if(path.substr(0, 1) != '@'){
+                    } else if (path.substr(0, 1) != '@') {
                         fn[fn.length] = 'n = getNodes(n, mode, "*");';
                     }
-                
-                }else{
-                    if(tokenMatch){
-                        if(tokenMatch[1] == "#"){
-                            fn[fn.length] = 'n = byId(n, "'+tokenMatch[2]+'");';
-                        }else{
-                            fn[fn.length] = 'n = byTag(n, "'+tokenMatch[2]+'");';
+                    
+                } else {
+                    if (tokenMatch) {
+                        if (tokenMatch[1] == "#") {
+                            fn[fn.length] = 'n = byId(n, "' + tokenMatch[2] + '");';
+                        } else {
+                            fn[fn.length] = 'n = byTag(n, "' + tokenMatch[2] + '");';
                         }
                         path = path.replace(tokenMatch[0], "");
                     }
                 }
-                while(!(modeMatch = path.match(modeRe))){
+                while (!(modeMatch = path.match(modeRe))) {
                     matched = false;
-                    for(j = 0; j < matchersLn; j++){
+                    for (j = 0; j < matchersLn; j++) {
                         t = matchers[j];
                         m = path.match(t.re);
-                        if(m){
-                            fn[fn.length] = t.select.replace(tplRe, function(x, i){
+                        if (m) {
+                            fn[fn.length] = t.select.replace(tplRe, function(x, i) {
                                 return m[i];
                             });
                             path = path.replace(m[0], "");
@@ -14280,16 +14356,16 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                         }
                     }
                     
-                    if(!matched){
+                    if (!matched) {
                         Ext.Error.raise({
-                            sourceClass: 'Ext.DomQuery',
-                            sourceMethod: 'compile',
-                            msg: 'Error parsing selector. Parsing failed at "' + path + '"'
+                            sourceClass:'Ext.DomQuery',
+                            sourceMethod:'compile',
+                            msg:'Error parsing selector. Parsing failed at "' + path + '"'
                         });
                     }
                 }
-                if(modeMatch[1]){
-                    fn[fn.length] = 'mode="'+modeMatch[1].replace(trimRe, "")+'";';
+                if (modeMatch[1]) {
+                    fn[fn.length] = 'mode="' + modeMatch[1].replace(trimRe, "") + '";';
                     path = path.replace(modeMatch[1], "");
                 }
             }
@@ -14302,29 +14378,29 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         },
 
         
-        jsSelect: function(path, root, type){
+        jsSelect: function(path, root, type) {
             
-            root = root || document;
+            root = root || doc;
 
-            if(typeof root == "string"){
-                root = document.getElementById(root);
+            if (typeof root == "string") {
+                root = doc.getElementById(root);
             }
             var paths = path.split(","),
                 results = [],
                 i, len, subPath, result;
 
             
-            for(i = 0, len = paths.length; i < len; i++){
+            for (i = 0, len = paths.length; i < len; i++) {
                 subPath = paths[i].replace(trimRe, "");
                 
-                if(!cache[subPath]){
+                if (!cache[subPath]) {
                     
-                    cache[subPath] = Ext.DomQuery.compile(subPath, type);
-                    if(!cache[subPath]){
+                    cache[subPath] = DQ.compile(subPath, type);
+                    if (!cache[subPath]) {
                         Ext.Error.raise({
-                            sourceClass: 'Ext.DomQuery',
-                            sourceMethod: 'jsSelect',
-                            msg: subPath + ' is not a valid selector'
+                            sourceClass:'Ext.DomQuery',
+                            sourceMethod:'jsSelect',
+                            msg:subPath + ' is not a valid selector'
                         });
                     }
                 } else {
@@ -14333,14 +14409,14 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                     setupEscapes(subPath);
                 }
                 result = cache[subPath](root);
-                if(result && result != document){
+                if (result && result !== doc) {
                     results = results.concat(result);
                 }
             }
 
             
             
-            if(paths.length > 1){
+            if (paths.length > 1) {
                 return nodup(results);
             }
             return results;
@@ -14352,42 +14428,43 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         },
 
         
-        select : document.querySelectorAll ? function(path, root, type) {
-            root = root || document;
-            if (!Ext.DomQuery.isXml(root)) {
+        select : doc.querySelectorAll ? function(path, root, type, single) {
+            root = root || doc;
+            if (!DQ.isXml(root)) {
                 try {
                     
                     if (root.parentNode && (root.nodeType !== 9) && path.indexOf(',') === -1 && !startIdRe.test(path)) {
                         path = '#' + Ext.escapeId(Ext.id(root)) + ' ' + path;
                         root = root.parentNode;
                     }
-                    return Ext.Array.toArray(root.querySelectorAll(path));
+                    return single ? [ root.querySelector(path) ]
+                        : Ext.Array.toArray(root.querySelectorAll(path));
                 }
                 catch (e) {
                 }
             }
-            return Ext.DomQuery.jsSelect.call(this, path, root, type);
+            return DQ.jsSelect.call(this, path, root, type);
         } : function(path, root, type) {
-            return Ext.DomQuery.jsSelect.call(this, path, root, type);
+            return DQ.jsSelect.call(this, path, root, type);
         },
 
         
         selectNode : function(path, root){
-            return Ext.DomQuery.select(path, root)[0];
+            return Ext.DomQuery.select(path, root, null, true)[0];
         },
 
         
-        selectValue : function(path, root, defaultValue){
+        selectValue: function(path, root, defaultValue) {
             path = path.replace(trimRe, "");
             if (!valueCache[path]) {
-                valueCache[path] = Ext.DomQuery.compile(path, "select");
+                valueCache[path] = DQ.compile(path, "select");
             } else {
                 setupEscapes(path);
             }
-            
-            var n = valueCache[path](root), 
+
+            var n = valueCache[path](root),
                 v;
-                
+
             n = n[0] ? n[0] : n;
 
             
@@ -14399,132 +14476,131 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
             }
 
             v = (n && n.firstChild ? n.firstChild.nodeValue : null);
-            return ((v === null||v === undefined||v==='') ? defaultValue : v);
+            return ((v === null || v === undefined || v === '') ? defaultValue : v);
         },
 
         
-        selectNumber : function(path, root, defaultValue){
-            var v = Ext.DomQuery.selectValue(path, root, defaultValue || 0);
+        selectNumber: function(path, root, defaultValue) {
+            var v = DQ.selectValue(path, root, defaultValue || 0);
             return parseFloat(v);
         },
 
         
-        is : function(el, ss){
-            if(typeof el == "string"){
-                el = document.getElementById(el);
+        is: function(el, ss) {
+            if (typeof el == "string") {
+                el = doc.getElementById(el);
             }
             var isArray = Ext.isArray(el),
-                result = Ext.DomQuery.filter(isArray ? el : [el], ss);
+                result = DQ.filter(isArray ? el : [el], ss);
             return isArray ? (result.length == el.length) : (result.length > 0);
         },
 
         
-        filter : function(els, ss, nonMatches){
+        filter: function(els, ss, nonMatches) {
             ss = ss.replace(trimRe, "");
             if (!simpleCache[ss]) {
-                simpleCache[ss] = Ext.DomQuery.compile(ss, "simple");
+                simpleCache[ss] = DQ.compile(ss, "simple");
             } else {
                 setupEscapes(ss);
             }
-            
+
             var result = simpleCache[ss](els);
             return nonMatches ? quickDiff(result, els) : result;
         },
 
         
-        matchers : [{
-                re: /^\.([\w\-\\]+)/,
-                select: 'n = byClassName(n, " {1} ");'
-            }, {
-                re: /^\:([\w\-]+)(?:\(((?:[^\s>\/]*|.*?))\))?/,
-                select: 'n = byPseudo(n, "{1}", "{2}");'
-            },{
-                re: /^(?:([\[\{])(?:@)?([\w\-]+)\s?(?:(=|.=)\s?['"]?(.*?)["']?)?[\]\}])/,
-                select: 'n = byAttribute(n, "{2}", "{4}", "{3}", "{1}");'
-            }, {
-                re: /^#([\w\-\\]+)/,
-                select: 'n = byId(n, "{1}");'
-            },{
-                re: /^@([\w\-\.]+)/,
-                select: 'return {firstChild:{nodeValue:attrValue(n, "{1}")}};'
-            }
-        ],
+        matchers: [{
+            re: /^\.([\w\-\\]+)/,
+            select: useClassList ? 'n = byClassName(n, "{1}");' : 'n = byClassName(n, " {1} ");'
+        }, {
+            re: /^\:([\w\-]+)(?:\(((?:[^\s>\/]*|.*?))\))?/,
+            select: 'n = byPseudo(n, "{1}", "{2}");'
+        },  {
+            re: /^(?:([\[\{])(?:@)?([\w\-]+)\s?(?:(=|.=)\s?['"]?(.*?)["']?)?[\]\}])/,
+            select: 'n = byAttribute(n, "{2}", "{4}", "{3}", "{1}");'
+        }, {
+            re: /^#([\w\-\\]+)/,
+            select: 'n = byId(n, "{1}");'
+        }, {
+            re: /^@([\w\-\.]+)/,
+            select: 'return {firstChild:{nodeValue:attrValue(n, "{1}")}};'
+        }],
 
         
-        operators : {
-            "=" : function(a, v){
+        operators: {
+            "=": function(a, v) {
                 return a == v;
             },
-            "!=" : function(a, v){
+            "!=": function(a, v) {
                 return a != v;
             },
-            "^=" : function(a, v){
+            "^=": function(a, v) {
                 return a && a.substr(0, v.length) == v;
             },
-            "$=" : function(a, v){
-                return a && a.substr(a.length-v.length) == v;
+            "$=": function(a, v) {
+                return a && a.substr(a.length - v.length) == v;
             },
-            "*=" : function(a, v){
+            "*=": function(a, v) {
                 return a && a.indexOf(v) !== -1;
             },
-            "%=" : function(a, v){
+            "%=": function(a, v) {
                 return (a % v) == 0;
             },
-            "|=" : function(a, v){
-                return a && (a == v || a.substr(0, v.length+1) == v+'-');
+            "|=": function(a, v) {
+                return a && (a == v || a.substr(0, v.length + 1) == v + '-');
             },
-            "~=" : function(a, v){
-                return a && (' '+a+' ').indexOf(' '+v+' ') != -1;
+            "~=": function(a, v) {
+                return a && (' ' + a + ' ').indexOf(' ' + v + ' ') != -1;
             }
         },
 
         
-        pseudos : {
-            "first-child" : function(c){
+        pseudos: {
+            "first-child": function(c) {
                 var r = [], ri = -1, n,
                     i, ci;
-                for(i = 0; (ci = n = c[i]); i++){
-                    while((n = n.previousSibling) && n.nodeType != 1);
-                    if(!n){
+                for (i = 0; (ci = n = c[i]); i++) {
+                    while ((n = n.previousSibling) && n.nodeType != 1);
+                    if (!n) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "last-child" : function(c){
+            "last-child": function(c) {
                 var r = [], ri = -1, n,
                     i, ci;
-                for(i = 0; (ci = n = c[i]); i++){
-                    while((n = n.nextSibling) && n.nodeType != 1);
-                    if(!n){
+                for (i = 0; (ci = n = c[i]); i++) {
+                    while ((n = n.nextSibling) && n.nodeType != 1);
+                    if (!n) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "nth-child" : function(c, a) {
+            "nth-child": function(c, a) {
                 var r = [], ri = -1,
                     m = nthRe.exec(a == "even" && "2n" || a == "odd" && "2n+1" || !nthRe2.test(a) && "n+" + a || a),
                     f = (m[1] || 1) - 0, l = m[2] - 0,
                     i, n, j, cn, pn;
-                for(i = 0; n = c[i]; i++){
+                for (i = 0; n = c[i]; i++) {
                     pn = n.parentNode;
                     if (batch != pn._batch) {
                         j = 0;
-                        for(cn = pn.firstChild; cn; cn = cn.nextSibling){
-                            if(cn.nodeType == 1){
-                               cn.nodeIndex = ++j;
+                        for (cn = pn.firstChild; cn; cn = cn.nextSibling) {
+                            if (cn.nodeType == 1) {
+                                cn.nodeIndex = ++j;
                             }
                         }
                         pn._batch = batch;
                     }
                     if (f == 1) {
-                        if (l == 0 || n.nodeIndex == l){
+                        if (l == 0 || n.nodeIndex == l) {
                             r[++ri] = n;
                         }
-                    } else if ((n.nodeIndex + l) % f == 0){
+                    } else if ((n.nodeIndex + l) % f == 0) {
                         r[++ri] = n;
                     }
                 }
@@ -14532,82 +14608,82 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 return r;
             },
 
-            "only-child" : function(c){
+            "only-child": function(c) {
                 var r = [], ri = -1,
                     i, ci;
-                for(i = 0; ci = c[i]; i++){
-                    if(!prev(ci) && !next(ci)){
+                for (i = 0; ci = c[i]; i++) {
+                    if (!prev(ci) && !next(ci)) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "empty" : function(c){
+            "empty": function(c) {
                 var r = [], ri = -1,
                     i, ci, cns, j, cn, empty;
-                for(i = 0, ci; ci = c[i]; i++){
+                for (i = 0; ci = c[i]; i++) {
                     cns = ci.childNodes;
                     j = 0;
                     empty = true;
-                    while(cn = cns[j]){
+                    while (cn = cns[j]) {
                         ++j;
-                        if(cn.nodeType == 1 || cn.nodeType == 3){
+                        if (cn.nodeType == 1 || cn.nodeType == 3) {
                             empty = false;
                             break;
                         }
                     }
-                    if(empty){
+                    if (empty) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "contains" : function(c, v){
+            "contains": function(c, v) {
                 var r = [], ri = -1,
                     i, ci;
-                for(i = 0; ci = c[i]; i++){
-                    if((ci.textContent||ci.innerText||ci.text||'').indexOf(v) != -1){
+                for (i = 0; ci = c[i]; i++) {
+                    if ((ci.textContent || ci.innerText || ci.text || '').indexOf(v) != -1) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "nodeValue" : function(c, v){
+            "nodeValue": function(c, v) {
                 var r = [], ri = -1,
                     i, ci;
-                for(i = 0; ci = c[i]; i++){
-                    if(ci.firstChild && ci.firstChild.nodeValue == v){
+                for (i = 0; ci = c[i]; i++) {
+                    if (ci.firstChild && ci.firstChild.nodeValue == v) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "checked" : function(c){
+            "checked": function(c) {
                 var r = [], ri = -1,
                     i, ci;
-                for(i = 0; ci = c[i]; i++){
-                    if(ci.checked == true){
+                for (i = 0; ci = c[i]; i++) {
+                    if (ci.checked == true) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "not" : function(c, ss){
-                return Ext.DomQuery.filter(c, ss, true);
+            "not": function(c, ss) {
+                return DQ.filter(c, ss, true);
             },
 
-            "any" : function(c, selectors){
+            "any": function(c, selectors) {
                 var ss = selectors.split('|'),
                     r = [], ri = -1, s,
                     i, ci, j;
-                for(i = 0; ci = c[i]; i++){
-                    for(j = 0; s = ss[j]; j++){
-                        if(Ext.DomQuery.is(ci, s)){
+                for (i = 0; ci = c[i]; i++) {
+                    for (j = 0; s = ss[j]; j++) {
+                        if (DQ.is(ci, s)) {
                             r[++ri] = ci;
                             break;
                         }
@@ -14616,58 +14692,58 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 return r;
             },
 
-            "odd" : function(c){
+            "odd": function(c) {
                 return this["nth-child"](c, "odd");
             },
 
-            "even" : function(c){
+            "even": function(c) {
                 return this["nth-child"](c, "even");
             },
 
-            "nth" : function(c, a){
-                return c[a-1] || [];
+            "nth": function(c, a) {
+                return c[a - 1] || [];
             },
 
-            "first" : function(c){
+            "first": function(c) {
                 return c[0] || [];
             },
 
-            "last" : function(c){
-                return c[c.length-1] || [];
+            "last": function(c) {
+                return c[c.length - 1] || [];
             },
 
-            "has" : function(c, ss){
-                var s = Ext.DomQuery.select,
+            "has": function(c, ss) {
+                var s = DQ.select,
                     r = [], ri = -1,
                     i, ci;
-                for(i = 0; ci = c[i]; i++){
-                    if(s(ss, ci).length > 0){
+                for (i = 0; ci = c[i]; i++) {
+                    if (s(ss, ci).length > 0) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "next" : function(c, ss){
-                var is = Ext.DomQuery.is,
+            "next": function(c, ss) {
+                var is = DQ.is,
                     r = [], ri = -1,
                     i, ci, n;
-                for(i = 0; ci = c[i]; i++){
+                for (i = 0; ci = c[i]; i++) {
                     n = next(ci);
-                    if(n && is(n, ss)){
+                    if (n && is(n, ss)) {
                         r[++ri] = ci;
                     }
                 }
                 return r;
             },
 
-            "prev" : function(c, ss){
-                var is = Ext.DomQuery.is,
+            "prev": function(c, ss) {
+                var is = DQ.is,
                     r = [], ri = -1,
                     i, ci, n;
-                for(i = 0; ci = c[i]; i++){
+                for (i = 0; ci = c[i]; i++) {
                     n = prev(ci);
-                    if(n && is(n, ss)){
+                    if (n && is(n, ss)) {
                         r[++ri] = ci;
                     }
                 }
@@ -14682,7 +14758,23 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
                 for (; i < len; i++) {
                     c = candidates[i];
-                    if (Ext.fly(c).isFocusable()) {
+                    if (Ext.fly(c, '_DomQuery').isFocusable()) {
+                        results.push(c);
+                    }
+                }
+
+                return results;
+            },
+            
+            visible: function(candidates, deep) {
+                var len = candidates.length,
+                    results = [],
+                    i = 0,
+                    c;
+
+                for (; i < len; i++) {
+                    c = candidates[i];
+                    if (Ext.fly(c, '_DomQuery').isVisible(deep)) {
                         results.push(c);
                     }
                 }
@@ -14695,255 +14787,6 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
 
 Ext.query = Ext.DomQuery.select;
-
-
-//@tag dom,core
-
-
-Ext.define('Ext.dom.Element_alignment', (function () {
-    var doc = document,
-        alignRe = /^([a-z]+)-([a-z]+)(\?)?$/,
-        round = Math.round;
-
-    return {
-        override: 'Ext.dom.Element',
-
-        
-        getAnchorXY: function(anchor, local, mySize) {
-            
-            
-            anchor = (anchor || "tl").toLowerCase();
-            mySize = mySize || {};
-
-            var me = this,
-                isViewport = me.dom == doc.body || me.dom == doc,
-                myWidth = mySize.width || isViewport ? Ext.dom.Element.getViewWidth() : me.getWidth(),
-                myHeight = mySize.height || isViewport ? Ext.dom.Element.getViewHeight() : me.getHeight(),
-                xy,
-                myPos = me.getXY(),
-                scroll = me.getScroll(),
-                extraX = isViewport ? scroll.left : !local ? myPos[0] : 0,
-                extraY = isViewport ? scroll.top : !local ? myPos[1] : 0;
-
-            
-            
-            switch (anchor) {
-                case 'tl' : xy = [ 0,                    0];
-                            break;
-                case 'bl' : xy = [ 0,                    myHeight];
-                            break;
-                case 'tr' : xy = [ myWidth,              0];
-                            break;
-                case 'c'  : xy = [ round(myWidth * 0.5), round(myHeight * 0.5)];
-                            break;
-                case 't'  : xy = [ round(myWidth * 0.5), 0];
-                            break;
-                case 'l'  : xy = [ 0,                    round(myHeight * 0.5)];
-                            break;
-                case 'r'  : xy = [ myWidth,              round(myHeight * 0.5)];
-                            break;
-                case 'b'  : xy = [ round(myWidth * 0.5), myHeight];
-                            break;
-                case 'br' : xy = [ myWidth,              myHeight];
-            }
-            return [xy[0] + extraX, xy[1] + extraY];
-        },
-
-        
-        getAlignToXY : function(alignToEl, posSpec, offset) {
-            alignToEl = Ext.get(alignToEl);
-
-            if (!alignToEl || !alignToEl.dom) {
-            }
-
-            offset = offset || [0,0];
-            posSpec = (!posSpec || posSpec == "?" ? "tl-bl?" : (!(/-/).test(posSpec) && posSpec !== "" ? "tl-" + posSpec : posSpec || "tl-bl")).toLowerCase();
-
-            var me = this,
-                    myPosition,
-                    alignToElPosition,
-                    x,
-                    y,
-                    myWidth,
-                    myHeight,
-                    alignToElRegion,
-                    viewportWidth = Ext.dom.Element.getViewWidth(),
-                    viewportHeight = Ext.dom.Element.getViewHeight(),
-                    p1y,
-                    p1x,
-                    p2y,
-                    p2x,
-                    swapY,
-                    swapX,
-                    docElement = doc.documentElement,
-                    docBody = doc.body,
-                    scrollX = (docElement.scrollLeft || docBody.scrollLeft || 0),
-                    scrollY = (docElement.scrollTop  || docBody.scrollTop  || 0),
-                    constrain, 
-                    align1,
-                    align2,
-                    alignMatch = posSpec.match(alignRe);
-
-
-            align1 = alignMatch[1];
-            align2 = alignMatch[2];
-            constrain = !!alignMatch[3];
-
-            
-            
-            myPosition = me.getAnchorXY(align1, true);
-            alignToElPosition = alignToEl.getAnchorXY(align2, false);
-
-            x = alignToElPosition[0] - myPosition[0] + offset[0];
-            y = alignToElPosition[1] - myPosition[1] + offset[1];
-
-            
-            if (constrain) {
-                myWidth = me.getWidth();
-                myHeight = me.getHeight();
-                alignToElRegion = alignToEl.getRegion();
-                
-                
-                
-                p1y = align1.charAt(0);
-                p1x = align1.charAt(align1.length - 1);
-                p2y = align2.charAt(0);
-                p2x = align2.charAt(align2.length - 1);
-                swapY = ((p1y == "t" && p2y == "b") || (p1y == "b" && p2y == "t"));
-                swapX = ((p1x == "r" && p2x == "l") || (p1x == "l" && p2x == "r"));
-
-                if (x + myWidth > viewportWidth + scrollX) {
-                    x = swapX ? alignToElRegion.left - myWidth : viewportWidth + scrollX - myWidth;
-                }
-                if (x < scrollX) {
-                    x = swapX ? alignToElRegion.right : scrollX;
-                }
-                if (y + myHeight > viewportHeight + scrollY) {
-                    y = swapY ? alignToElRegion.top - myHeight : viewportHeight + scrollY - myHeight;
-                }
-                if (y < scrollY) {
-                    y = swapY ? alignToElRegion.bottom : scrollY;
-                }
-            }
-            return [x,y];
-        },
-
-
-        
-        anchorTo : function(el, alignment, offsets, animate, monitorScroll, callback) {
-            var me = this,
-                dom = me.dom,
-                scroll = !Ext.isEmpty(monitorScroll),
-                action = function() {
-                    Ext.fly(dom).alignTo(el, alignment, offsets, animate);
-                    Ext.callback(callback, Ext.fly(dom));
-                },
-                anchor = this.getAnchor();
-
-            
-            this.removeAnchor();
-            Ext.apply(anchor, {
-                fn: action,
-                scroll: scroll
-            });
-
-            Ext.EventManager.onWindowResize(action, null);
-
-            if (scroll) {
-                Ext.EventManager.on(window, 'scroll', action, null,
-                        {buffer: !isNaN(monitorScroll) ? monitorScroll : 50});
-            }
-            action.call(me); 
-            return me;
-        },
-
-        
-        removeAnchor : function() {
-            var me = this,
-                anchor = this.getAnchor();
-
-            if (anchor && anchor.fn) {
-                Ext.EventManager.removeResizeListener(anchor.fn);
-                if (anchor.scroll) {
-                    Ext.EventManager.un(window, 'scroll', anchor.fn);
-                }
-                delete anchor.fn;
-            }
-            return me;
-        },
-
-        getAlignVector: function(el, spec, offset) {
-            var me = this,
-                myPos = me.getXY(),
-                alignedPos = me.getAlignToXY(el, spec, offset);
-
-            el = Ext.get(el);
-
-            alignedPos[0] -= myPos[0];
-            alignedPos[1] -= myPos[1];
-            return alignedPos;
-        },
-
-        
-        alignTo: function(element, position, offsets, animate) {
-            var me = this;
-            return me.setXY(me.getAlignToXY(element, position, offsets),
-                    me.anim && !!animate ? me.anim(animate) : false);
-        },
-
-        
-        getConstrainVector: function(constrainTo, proposedPosition) {
-            if (!(constrainTo instanceof Ext.util.Region)) {
-                constrainTo = Ext.get(constrainTo).getViewRegion();
-            }
-            var thisRegion = this.getRegion(),
-                    vector = [0, 0],
-                    shadowSize = (this.shadow && !this.shadowDisabled) ? this.shadow.getShadowSize() : undefined,
-                    overflowed = false;
-
-            
-            if (proposedPosition) {
-                thisRegion.translateBy(proposedPosition[0] - thisRegion.x, proposedPosition[1] - thisRegion.y);
-            }
-
-            
-            if (shadowSize) {
-                constrainTo.adjust(shadowSize[0], -shadowSize[1], -shadowSize[2], shadowSize[3]);
-            }
-
-            
-            if (thisRegion.right > constrainTo.right) {
-                overflowed = true;
-                vector[0] = (constrainTo.right - thisRegion.right);    
-            }
-            if (thisRegion.left + vector[0] < constrainTo.left) {
-                overflowed = true;
-                vector[0] = (constrainTo.left - thisRegion.left);      
-            }
-
-            
-            if (thisRegion.bottom > constrainTo.bottom) {
-                overflowed = true;
-                vector[1] = (constrainTo.bottom - thisRegion.bottom);  
-            }
-            if (thisRegion.top + vector[1] < constrainTo.top) {
-                overflowed = true;
-                vector[1] = (constrainTo.top - thisRegion.top);        
-            }
-            return overflowed ? vector : false;
-        },
-
-        
-        getCenterXY : function(){
-            return this.getAlignToXY(doc, 'c-c');
-        },
-
-        
-        center : function(centerIn){
-            return this.alignTo(centerIn || doc, 'c-c');
-        }
-    };
-}()));
 
 //@tag dom,core
 
@@ -15046,7 +14889,8 @@ Ext.define('Ext.dom.Element_anim', {
     
     slideIn: function(anchor, obj, slideOut) {
         var me = this,
-            elStyle = me.dom.style,
+            dom = me.dom,
+            elStyle = dom.style,
             beforeAnim,
             wrapAnim,
             restoreScroll,
@@ -15058,40 +14902,41 @@ Ext.define('Ext.dom.Element_anim', {
         beforeAnim = function() {
             var animScope = this,
                 listeners = obj.listeners,
+                el = Ext.fly(dom, '_anim'),
                 box, originalStyles, anim, wrap;
 
             if (!slideOut) {
-                me.fixDisplay();
+                el.fixDisplay();
             }
 
-            box = me.getBox();
+            box = el.getBox();
             if ((anchor == 't' || anchor == 'b') && box.height === 0) {
-                box.height = me.dom.scrollHeight;
+                box.height = dom.scrollHeight;
             }
             else if ((anchor == 'l' || anchor == 'r') && box.width === 0) {
-                box.width = me.dom.scrollWidth;
+                box.width = dom.scrollWidth;
             }
 
-            originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
-            me.setSize(box.width, box.height);
+            originalStyles = el.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
+            el.setSize(box.width, box.height);
 
             
             if (obj.preserveScroll) {
-                restoreScroll = me.cacheScrollValues();
+                restoreScroll = el.cacheScrollValues();
             }
 
-            wrap = me.wrap({
-                id: Ext.id() + '-anim-wrap-for-' + me.id,
+            wrap = el.wrap({
+                id: Ext.id() + '-anim-wrap-for-' + el.dom.id,
                 style: {
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
             });
             wrapDomParentNode = wrap.dom.parentNode;
-            wrap.setPositioning(me.getPositioning());
+            wrap.setPositioning(el.getPositioning(true));
             if (wrap.isStyle('position', 'static')) {
                 wrap.position('relative');
             }
-            me.clearPositioning('auto');
+            el.clearPositioning('auto');
             wrap.clip();
 
             
@@ -15102,7 +14947,7 @@ Ext.define('Ext.dom.Element_anim', {
             
             
             
-            me.setStyle({
+            el.setStyle({
                 visibility: '',
                 position: 'absolute'
             });
@@ -15135,7 +14980,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
-                    elStyle.right = '0px';
+                    me.anchorAnimX(anchor);
                     break;
                 case 'r':
                     anim = {
@@ -15150,6 +14995,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
+                    me.anchorAnimX(anchor);
                     break;
                 case 'b':
                     anim = {
@@ -15179,7 +15025,7 @@ Ext.define('Ext.dom.Element_anim', {
                         }
                     };
                     elStyle.bottom = '0px';
-                    elStyle.right = '0px';
+                    me.anchorAnimX('l');
                     break;
                 case 'bl':
                     anim = {
@@ -15194,7 +15040,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
-                    elStyle.bottom = '0px';
+                    me.anchorAnimX('l');
                     break;
                 case 'br':
                     anim = {
@@ -15211,6 +15057,7 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
+                    me.anchorAnimX('r');
                     break;
                 case 'tr':
                     anim = {
@@ -15225,7 +15072,8 @@ Ext.define('Ext.dom.Element_anim', {
                             height: box.height + 'px'
                         }
                     };
-                    elStyle.right = '0px';
+                    elStyle.bottom = '0px';
+                    me.anchorAnimX('r');
                     break;
             }
 
@@ -15242,19 +15090,21 @@ Ext.define('Ext.dom.Element_anim', {
 
             
             wrapAnim.on('afteranimate', function() {
-                me.setStyle(originalStyles);
+                var el = Ext.fly(dom, '_anim');
+                
+                el.setStyle(originalStyles);
                 if (slideOut) {
                     if (obj.useDisplay) {
-                        me.setDisplayed(false);
+                        el.setDisplayed(false);
                     } else {
-                        me.hide();
+                        el.hide();
                     }
                 }
                 if (wrap.dom) {
                     if (wrap.dom.parentNode) {
-                        wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
+                        wrap.dom.parentNode.insertBefore(el.dom, wrap.dom);
                     } else {
-                        wrapDomParentNode.appendChild(me.dom);
+                        wrapDomParentNode.appendChild(el.dom);
                     }
                     wrap.remove();
                 }
@@ -15290,6 +15140,7 @@ Ext.define('Ext.dom.Element_anim', {
     
     puff: function(obj) {
         var me = this,
+            dom = me.dom,
             beforeAnim,
             box = me.getBox(),
             originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', 'font-size', 'opacity', true);
@@ -15301,8 +15152,10 @@ Ext.define('Ext.dom.Element_anim', {
         });
 
         beforeAnim = function() {
-            me.clearOpacity();
-            me.show();
+            var el = Ext.fly(dom, '_anim');
+            
+            el.clearOpacity();
+            el.show();
             this.to = {
                 width: box.width * 2,
                 height: box.height * 2,
@@ -15312,14 +15165,15 @@ Ext.define('Ext.dom.Element_anim', {
                 fontSize: '200%'
             };
             this.on('afteranimate',function() {
-                if (me.dom) {
+                var el = Ext.fly(dom, '_anim');
+                if (el) {
                     if (obj.useDisplay) {
-                        me.setDisplayed(false);
+                        el.setDisplayed(false);
                     } else {
-                        me.hide();
+                        el.hide();
                     }
-                    me.setStyle(originalStyles);
-                    obj.callback.call(obj.scope);
+                    el.setStyle(originalStyles);
+                    Ext.callback(obj.callback, obj.scope);
                 }
             });
         };
@@ -15339,6 +15193,7 @@ Ext.define('Ext.dom.Element_anim', {
     
     switchOff: function(obj) {
         var me = this,
+            dom = me.dom,
             beforeAnim;
 
         obj = Ext.applyIf(obj || {}, {
@@ -15349,16 +15204,18 @@ Ext.define('Ext.dom.Element_anim', {
         });
 
         beforeAnim = function() {
-            var animScope = this,
-                size = me.getSize(),
-                xy = me.getXY(),
+            var el = Ext.fly(dom, '_anim'),
+                animScope = this,
+                size = el.getSize(),
+                xy = el.getXY(),
                 keyframe, position;
-            me.clearOpacity();
-            me.clip();
-            position = me.getPositioning();
+                
+            el.clearOpacity();
+            el.clip();
+            position = el.getPositioning();
 
             keyframe = new Ext.fx.Animator({
-                target: me,
+                target: dom,
                 duration: obj.duration,
                 easing: obj.easing,
                 keyframes: {
@@ -15376,14 +15233,15 @@ Ext.define('Ext.dom.Element_anim', {
                 }
             });
             keyframe.on('afteranimate', function() {
+                var el = Ext.fly(dom, '_anim');
                 if (obj.useDisplay) {
-                    me.setDisplayed(false);
+                    el.setDisplayed(false);
                 } else {
-                    me.hide();
+                    el.hide();
                 }
-                me.clearOpacity();
-                me.setPositioning(position);
-                me.setSize(size);
+                el.clearOpacity();
+                el.setPositioning(position);
+                el.setSize(size);
                 
                 animScope.end();
             });
@@ -15404,6 +15262,7 @@ Ext.define('Ext.dom.Element_anim', {
     
     frame : function(color, count, obj){
         var me = this,
+            dom = me.dom,
             beforeAnim;
 
         color = color || '#C3DAF9';
@@ -15411,19 +15270,23 @@ Ext.define('Ext.dom.Element_anim', {
         obj = obj || {};
 
         beforeAnim = function() {
-            me.show();
-            var animScope = this,
-                box = me.getBox(),
-                proxy = Ext.getBody().createChild({
-                    id: me.id + '-anim-proxy',
-                    style: {
-                        position : 'absolute',
-                        'pointer-events': 'none',
-                        'z-index': 35000,
-                        border : '0px solid ' + color
-                    }
-                }),
-                proxyAnim;
+            var el = Ext.fly(dom, '_anim'),
+                animScope = this,
+                box,
+                proxy, proxyAnim;
+                
+            el.show();
+            box = el.getBox();
+            proxy = Ext.getBody().createChild({
+                id: el.dom.id + '-anim-proxy',
+                style: {
+                    position : 'absolute',
+                    'pointer-events': 'none',
+                    'z-index': 35000,
+                    border : '0px solid ' + color
+                }
+            });
+            
             proxyAnim = new Ext.fx.Anim({
                 target: proxy,
                 duration: obj.duration || 1000,
@@ -15467,14 +15330,16 @@ Ext.define('Ext.dom.Element_anim', {
     
     ghost: function(anchor, obj) {
         var me = this,
+            dom = me.dom,
             beforeAnim;
 
         anchor = anchor || "b";
         beforeAnim = function() {
-            var width = me.getWidth(),
-                height = me.getHeight(),
-                xy = me.getXY(),
-                position = me.getPositioning(),
+            var el = Ext.fly(dom, '_anim'),
+                width = el.getWidth(),
+                height = el.getHeight(),
+                xy = el.getXY(),
+                position = el.getPositioning(),
                 to = {
                     opacity: 0
                 };
@@ -15510,10 +15375,11 @@ Ext.define('Ext.dom.Element_anim', {
             }
             this.to = to;
             this.on('afteranimate', function () {
-                if (me.dom) {
-                    me.hide();
-                    me.clearOpacity();
-                    me.setPositioning(position);
+                var el = Ext.fly(dom, '_anim');
+                if (el) {
+                    el.hide();
+                    el.clearOpacity();
+                    el.setPositioning(position);
                 }
             });
         };
@@ -15522,9 +15388,7 @@ Ext.define('Ext.dom.Element_anim', {
             duration: 500,
             easing: 'ease-out',
             listeners: {
-                beforeanimate: {
-                    fn: beforeAnim
-                }
+                beforeanimate: beforeAnim
             }
         }));
         return me;
@@ -15536,6 +15400,11 @@ Ext.define('Ext.dom.Element_anim', {
             dom = me.dom,
             from = {},
             restore, to, attr, lns, event, fn;
+
+        
+        if (dom.tagName.match(me.tableTagRe)) {
+            return me.select('div').highlight(color, o);
+        }
 
         o = o || {};
         lns = o.listeners || {};
@@ -15554,8 +15423,9 @@ Ext.define('Ext.dom.Element_anim', {
         o.listeners = Ext.apply(Ext.apply({}, lns), {
             beforeanimate: function() {
                 restore = dom.style[attr];
-                me.clearOpacity();
-                me.show();
+                var el = Ext.fly(dom, '_anim');
+                el.clearOpacity();
+                el.show();
 
                 event = lns.beforeanimate;
                 if (event) {
@@ -15596,17 +15466,20 @@ Ext.define('Ext.dom.Element_anim', {
 
     
     fadeIn: function(o) {
-        var me = this;
+        var me = this,
+            dom = me.dom;
+            
         me.animate(Ext.apply({}, o, {
             opacity: 1,
             internalListeners: {
                 beforeanimate: function(anim){
                     
                     
-                    if (me.isStyle('display', 'none')) {
-                        me.setDisplayed('');
+                    var el = Ext.fly(dom, '_anim');
+                    if (el.isStyle('display', 'none')) {
+                        el.setDisplayed('');
                     } else {
-                        me.show();
+                        el.show();
                     } 
                 }
             }
@@ -15616,17 +15489,19 @@ Ext.define('Ext.dom.Element_anim', {
 
     
     fadeOut: function(o) {
-        var me = this;
+        var me = this,
+            dom = me.dom;
+            
         o = Ext.apply({
             opacity: 0,
             internalListeners: {
                 afteranimate: function(anim){
-                    var dom = me.dom;
                     if (dom && anim.to.opacity === 0) {
+                        var el = Ext.fly(dom, '_anim');
                         if (o.useDisplay) {
-                            me.setDisplayed(false);
+                            el.setDisplayed(false);
                         } else {
-                            me.hide();
+                            el.hide();
                         }
                     }         
                 }
@@ -15649,6 +15524,12 @@ Ext.define('Ext.dom.Element_anim', {
     shift: function(config) {
         this.animate(config);
         return this;
+    },
+
+    
+    anchorAnimX: function(anchor) {
+        var xName = (anchor === 'l') ? 'right' : 'left';
+        this.dom.style[xName] = '0px';
     }
 });
 
@@ -15857,7 +15738,8 @@ Ext.define('Ext.dom.Element_position', {
 },
 function() {
 
-var Element = this,
+var flyInstance,
+    Element = this,
     LEFT = "left",
     RIGHT = "right",
     TOP = "top",
@@ -15865,7 +15747,6 @@ var Element = this,
     POSITION = "position",
     STATIC = "static",
     RELATIVE = "relative",
-    AUTO = "auto",
     ZINDEX = "z-index",
     BODY = 'BODY',
 
@@ -15881,413 +15762,413 @@ var Element = this,
     paddings = {l: PADDING + SLEFT, r: PADDING + SRIGHT, t: PADDING + STOP, b: PADDING + SBOTTOM},
     paddingsTLRB = [paddings.l, paddings.r, paddings.t, paddings.b],
     bordersTLRB = [borders.l,  borders.r,  borders.t,  borders.b],
-    positionTopLeft = ['position', 'top', 'left'];
-
-Element.override({
-
-    getX: function() {
-        return Element.getX(this.dom);
-    },
-
-    getY: function() {
-        return Element.getY(this.dom);
-    },
-
-    
-    getXY: function() {
-        return Element.getXY(this.dom);
-    },
-
-    
-    getOffsetsTo : function(el){
-        var o = this.getXY(),
-                e = Ext.fly(el, '_internal').getXY();
-        return [o[0] - e[0],o[1] - e[1]];
-    },
-
-    setX: function(x, animate) {
-        return this.setXY([x, this.getY()], animate);
-    },
-
-    setY: function(y, animate) {
-        return this.setXY([this.getX(), y], animate);
-    },
-
-    setLeft: function(left) {
-        this.setStyle(LEFT, this.addUnits(left));
-        return this;
-    },
-
-    setTop: function(top) {
-        this.setStyle(TOP, this.addUnits(top));
-        return this;
-    },
-
-    setRight: function(right) {
-        this.setStyle(RIGHT, this.addUnits(right));
-        return this;
-    },
-
-    setBottom: function(bottom) {
-        this.setStyle(BOTTOM, this.addUnits(bottom));
-        return this;
-    },
-
-    
-    setXY: function(pos, animate) {
-        var me = this;
-        if (!animate || !me.anim) {
-            Element.setXY(me.dom, pos);
+    round = Math.round,
+    doc = document,
+    fly = function (el) {
+        if (!flyInstance) {
+            flyInstance = new Ext.Element.Fly();
         }
-        else {
-            if (!Ext.isObject(animate)) {
-                animate = {};
+        flyInstance.attach(el);
+        return flyInstance;
+    };
+
+    Element.override({
+
+        pxRe: /^\d+(?:\.\d*)?px$/i,
+
+        inheritableStatics: {
+            getX: function(el) {
+                return Element.getXY(el)[0];
+            },
+
+            getXY: function(el) {
+                var bd = doc.body,
+                    docEl = doc.documentElement,
+                    leftBorder = 0,
+                    topBorder = 0,
+                    ret = [0,0],
+                    box,
+                    scroll;
+
+                el = Ext.getDom(el);
+
+                if(el != doc && el != bd){
+                    
+                    
+                    if (Ext.isIE) {
+                        try {
+                            box = el.getBoundingClientRect();
+                            
+                            
+                            topBorder = docEl.clientTop || bd.clientTop;
+                            leftBorder = docEl.clientLeft || bd.clientLeft;
+                        } catch (ex) {
+                            box = { left: 0, top: 0 };
+                        }
+                    } else {
+                        box = el.getBoundingClientRect();
+                    }
+
+                    scroll = fly(doc).getScroll();
+                    ret = [
+                        round(box.left + scroll.left - leftBorder),
+                        round(box.top + scroll.top - topBorder)
+                    ];
+                }
+                return ret;
+            },
+
+            getY: function(el) {
+                return Element.getXY(el)[1];
+            },
+
+            setX: function(el, x) {
+                Element.setXY(el, [x, false]);
+            },
+
+            setXY: function(el, xy) {
+                (el = Ext.fly(el, '_setXY')).position();
+
+                var pts = el.translatePoints(xy),
+                    style = el.dom.style,
+                    pos;
+
+                
+                
+                style.right = 'auto';
+                for (pos in pts) {
+                    if (!isNaN(pts[pos])) {
+                        style[pos] = pts[pos] + "px";
+                    }
+                }
+            },
+
+            setY: function(el, y) {
+                Element.setXY(el, [false, y]);
             }
-            me.animate(Ext.applyIf({ to: { x: pos[0], y: pos[1] } }, animate));
-        }
-        return me;
-    },
-
-    pxRe: /^\d+(?:\.\d*)?px$/i,
-
-    
-    getLocalX: function() {
-        var me = this,
-            offsetParent,
-            x = me.getStyle(LEFT);
-
-        if (!x || x === AUTO) {
-            return 0;
-        }
-        if (x && me.pxRe.test(x)) {
-            return parseFloat(x);
-        }
-
-        x = me.getX();
-
-        offsetParent = me.dom.offsetParent;
-        if (offsetParent) {
-            x -= Ext.fly(offsetParent).getX();
-        }
-
-        return x;
-    },
-
-    
-    getLocalY: function() {
-        var me = this,
-            offsetParent,
-            y = me.getStyle(TOP);
-
-        if (!y || y === AUTO) {
-            return 0;
-        }
-        if (y && me.pxRe.test(y)) {
-            return parseFloat(y);
-        }
-
-        y = me.getY();
-
-        offsetParent = me.dom.offsetParent;
-        if (offsetParent) {
-            y -= Ext.fly(offsetParent).getY();
-        }
-
-        return y;
-    },
-
-    getLeft: function(local) {
-        return local ? this.getLocalX() : this.getX();
-    },
-
-    getRight: function(local) {
-        return (local ? this.getLocalX() : this.getX()) + this.getWidth();
-    },
-
-    getTop: function(local) {
-        return local ? this.getLocalY() : this.getY();
-    },
-
-    getBottom: function(local) {
-        return (local ? this.getLocalY() : this.getY()) + this.getHeight();
-    },
-
-    translatePoints: function(x, y) {
-        var me = this,
-            styles = me.getStyle(positionTopLeft),
-            relative = styles.position == 'relative',
-            left = parseFloat(styles.left),
-            top = parseFloat(styles.top),
-            xy = me.getXY();
-
-        if (Ext.isArray(x)) {
-             y = x[1];
-             x = x[0];
-        }
-        if (isNaN(left)) {
-            left = relative ? 0 : me.dom.offsetLeft;
-        }
-        if (isNaN(top)) {
-            top = relative ? 0 : me.dom.offsetTop;
-        }
-        left = (typeof x == 'number') ? x - xy[0] + left : undefined;
-        top = (typeof y == 'number') ? y - xy[1] + top : undefined;
-        return {
-            left: left,
-            top: top
-        };
-
-    },
-
-    setBox: function(box, adjust, animate) {
-        var me = this,
-                w = box.width,
-                h = box.height;
-        if ((adjust && !me.autoBoxAdjust) && !me.isBorderBox()) {
-            w -= (me.getBorderWidth("lr") + me.getPadding("lr"));
-            h -= (me.getBorderWidth("tb") + me.getPadding("tb"));
-        }
-        me.setBounds(box.x, box.y, w, h, animate);
-        return me;
-    },
-
-    getBox: function(contentBox, local) {
-        var me = this,
-            xy,
-            left,
-            top,
-            paddingWidth,
-            bordersWidth,
-            l, r, t, b, w, h, bx;
-
-        if (!local) {
-            xy = me.getXY();
-        } else {
-            xy = me.getStyle([LEFT, TOP]);
-            xy = [ parseFloat(xy.left) || 0, parseFloat(xy.top) || 0];
-        }
-        w = me.getWidth();
-        h = me.getHeight();
-        if (!contentBox) {
-            bx = {
-                x: xy[0],
-                y: xy[1],
-                0: xy[0],
-                1: xy[1],
-                width: w,
-                height: h
-            };
-        } else {
-            paddingWidth = me.getStyle(paddingsTLRB);
-            bordersWidth = me.getStyle(bordersTLRB);
-
-            l = (parseFloat(bordersWidth[borders.l]) || 0) + (parseFloat(paddingWidth[paddings.l]) || 0);
-            r = (parseFloat(bordersWidth[borders.r]) || 0) + (parseFloat(paddingWidth[paddings.r]) || 0);
-            t = (parseFloat(bordersWidth[borders.t]) || 0) + (parseFloat(paddingWidth[paddings.t]) || 0);
-            b = (parseFloat(bordersWidth[borders.b]) || 0) + (parseFloat(paddingWidth[paddings.b]) || 0);
-
-            bx = {
-                x: xy[0] + l,
-                y: xy[1] + t,
-                0: xy[0] + l,
-                1: xy[1] + t,
-                width: w - (l + r),
-                height: h - (t + b)
-            };
-        }
-        bx.right = bx.x + bx.width;
-        bx.bottom = bx.y + bx.height;
-
-        return bx;
-    },
-
-    getPageBox: function(getRegion) {
-        var me = this,
-            el = me.dom,
-            isDoc = el.nodeName == BODY,
-            w = isDoc ? Ext.dom.AbstractElement.getViewWidth() : el.offsetWidth,
-            h = isDoc ? Ext.dom.AbstractElement.getViewHeight() : el.offsetHeight,
-            xy = me.getXY(),
-            t = xy[1],
-            r = xy[0] + w,
-            b = xy[1] + h,
-            l = xy[0];
-
-        if (getRegion) {
-            return new Ext.util.Region(t, r, b, l);
-        }
-        else {
-            return {
-                left: l,
-                top: t,
-                width: w,
-                height: h,
-                right: r,
-                bottom: b
-            };
-        }
-    },
-
-    
-    setLocation : function(x, y, animate) {
-        return this.setXY([x, y], animate);
-    },
-
-    
-    moveTo : function(x, y, animate) {
-        return this.setXY([x, y], animate);
-    },
-
-    
-    position : function(pos, zIndex, x, y) {
-        var me = this;
-
-        if (!pos && me.isStyle(POSITION, STATIC)) {
-            me.setStyle(POSITION, RELATIVE);
-        } else if (pos) {
-            me.setStyle(POSITION, pos);
-        }
-        if (zIndex) {
-            me.setStyle(ZINDEX, zIndex);
-        }
-        if (x || y) {
-            me.setXY([x || false, y || false]);
-        }
-    },
-
-    
-    clearPositioning : function(value) {
-        value = value || '';
-        this.setStyle({
-            left : value,
-            right : value,
-            top : value,
-            bottom : value,
-            "z-index" : "",
-            position : STATIC
-        });
-        return this;
-    },
-
-    
-    getPositioning : function(){
-        var styles = this.getStyle([LEFT, TOP, POSITION, RIGHT, BOTTOM, ZINDEX]);
-        styles[RIGHT] =  styles[LEFT] ? '' : styles[RIGHT];
-        styles[BOTTOM] = styles[TOP] ? '' : styles[BOTTOM];
-        return styles;
-    },
-
-    
-    setPositioning : function(pc) {
-        var me = this,
-            style = me.dom.style;
-
-        me.setStyle(pc);
-
-        if (pc.right == AUTO) {
-            style.right = "";
-        }
-        if (pc.bottom == AUTO) {
-            style.bottom = "";
-        }
-
-        return me;
-    },
-
-    
-    move: function(direction, distance, animate) {
-        var me = this,
-            xy = me.getXY(),
-            x = xy[0],
-            y = xy[1],
-            left = [x - distance, y],
-            right = [x + distance, y],
-            top = [x, y - distance],
-            bottom = [x, y + distance],
-            hash = {
-                l: left,
-                left: left,
-                r: right,
-                right: right,
-                t: top,
-                top: top,
-                up: top,
-                b: bottom,
-                bottom: bottom,
-                down: bottom
-            };
-
-        direction = direction.toLowerCase();
-        me.moveTo(hash[direction][0], hash[direction][1], animate);
-    },
-
-    
-    setLeftTop: function(left, top) {
-        var style = this.dom.style;
-
-        style.left = Element.addUnits(left);
-        style.top = Element.addUnits(top);
-
-        return this;
-    },
-
-    
-    getRegion: function() {
-        return this.getPageBox(true);
-    },
-
-    
-    getViewRegion: function() {
-        var me = this,
-            isBody = me.dom.nodeName == BODY,
-            scroll, pos, top, left, width, height;
+        },
 
         
-        if (isBody) {
-            scroll = me.getScroll();
-            left = scroll.left;
-            top = scroll.top;
-            width = Ext.dom.AbstractElement.getViewportWidth();
-            height = Ext.dom.AbstractElement.getViewportHeight();
-        }
-        else {
-            pos = me.getXY();
-            left = pos[0] + me.getBorderWidth('l') + me.getPadding('l');
-            top = pos[1] + me.getBorderWidth('t') + me.getPadding('t');
-            width = me.getWidth(true);
-            height = me.getHeight(true);
-        }
+        center: function(centerIn){
+            return this.alignTo(centerIn || doc, 'c-c');
+        },
 
-        return new Ext.util.Region(top, left + width - 1, top + height - 1, left);
-    },
+        
+        clearPositioning: function(value) {
+            value = value || '';
+            return this.setStyle({
+                left : value,
+                right : value,
+                top : value,
+                bottom : value,
+                'z-index' : '',
+                position : STATIC
+            });
+        },
 
-    
-    setBounds: function(x, y, width, height, animate) {
-        var me = this;
-        if (!animate || !me.anim) {
-            me.setSize(width, height);
-            me.setLocation(x, y);
-        } else {
-            if (!Ext.isObject(animate)) {
-                animate = {};
-            }
-            me.animate(Ext.applyIf({
-                to: {
-                    x: x,
-                    y: y,
-                    width: me.adjustWidth(width),
-                    height: me.adjustHeight(height)
+        getAnchorToXY: function(el, anchor, local, mySize) {
+            return el.getAnchorXY(anchor, local, mySize);
+        },
+
+        
+        getBottom: function(local) {
+            return (local ? this.getLocalY() : this.getY()) + this.getHeight();
+        },
+
+        getBorderPadding: function() {
+            var paddingWidth = this.getStyle(paddingsTLRB),
+                bordersWidth = this.getStyle(bordersTLRB);
+
+            return {
+                beforeX: (parseFloat(bordersWidth[borders.l]) || 0) + (parseFloat(paddingWidth[paddings.l]) || 0),
+                afterX: (parseFloat(bordersWidth[borders.r]) || 0) + (parseFloat(paddingWidth[paddings.r]) || 0),
+                beforeY: (parseFloat(bordersWidth[borders.t]) || 0) + (parseFloat(paddingWidth[paddings.t]) || 0),
+                afterY: (parseFloat(bordersWidth[borders.b]) || 0) + (parseFloat(paddingWidth[paddings.b]) || 0)
+            };
+        },
+
+        
+        getCenterXY: function(){
+            return this.getAlignToXY(doc, 'c-c');
+        },
+
+        
+        getLeft: function(local) {
+            return local ? this.getLocalX() : this.getX();
+        },
+
+        getLocalX: function() {
+            var me = this,
+                offsetParent = me.dom.offsetParent,
+                x = me.getStyle('left');
+
+            if (!x || x === 'auto') {
+                x = 0;
+            } else if (me.pxRe.test(x)) {
+                x = parseFloat(x);
+            } else {
+                x = me.getX();
+                if (offsetParent) {
+                    x -= Element.getX(offsetParent);
                 }
-            }, animate));
-        }
-        return me;
-    },
+            }
 
-    
-    setRegion: function(region, animate) {
-        return this.setBounds(region.left, region.top, region.right - region.left, region.bottom - region.top, animate);
-    }
-});
+            return x;
+        },
+
+        getLocalXY: function() {
+            var me = this,
+                offsetParent = me.dom.offsetParent,
+                style = me.getStyle(['left', 'top']),
+                x = style.left,
+                y = style.top;
+
+            if (!x || x === 'auto') {
+                x = 0;
+            } else if (me.pxRe.test(x)) {
+                x = parseFloat(x);
+            } else {
+                x = me.getX();
+                if (offsetParent) {
+                    x -= Element.getX(offsetParent);
+                }
+            }
+
+            if (!y || y === 'auto') {
+                y = 0;
+            } else if (me.pxRe.test(y)) {
+                y = parseFloat(y);
+            } else {
+                y = me.getY();
+                if (offsetParent) {
+                    y -= Element.getY(offsetParent);
+                }
+            }
+
+            return [x, y];
+        },
+
+        getLocalY: function() {
+            var me = this,
+                offsetParent = me.dom.offsetParent,
+                y = me.getStyle('top');
+
+            if (!y || y === 'auto') {
+                y = 0;
+            } else if (me.pxRe.test(y)) {
+                y = parseFloat(y);
+            } else {
+                y = me.getY();
+                if (offsetParent) {
+                    y -= Element.getY(offsetParent);
+                }
+            }
+
+            return y;
+        },
+
+        
+        getPageBox: function(getRegion) {
+            var me = this,
+                dom = me.dom,
+                isDoc = dom.nodeName == BODY,
+                w = isDoc ? Ext.Element.getViewWidth() : dom.offsetWidth,
+                h = isDoc ? Ext.Element.getViewHeight() : dom.offsetHeight,
+                xy = me.getXY(),
+                t = xy[1],
+                r = xy[0] + w,
+                b = xy[1] + h,
+                l = xy[0];
+
+            if (getRegion) {
+                return new Ext.util.Region(t, r, b, l);
+            }
+            else {
+                return {
+                    left: l,
+                    top: t,
+                    width: w,
+                    height: h,
+                    right: r,
+                    bottom: b
+                };
+            }
+        },
+
+        
+        getPositioning: function(autoPx){
+            var styles = this.getStyle(['left', 'top', 'position', 'z-index']),
+                dom = this.dom;
+
+            if(autoPx) {
+                if(styles.left === 'auto') {
+                    styles.left = dom.offsetLeft + 'px';
+                }
+                if(styles.top === 'auto') {
+                    styles.top = dom.offsetTop + 'px';
+                }
+            }
+
+            return styles;
+        },
+
+        
+        getRight: function(local) {
+            return (local ? this.getLocalX() : this.getX()) + this.getWidth();
+        },
+
+        
+        getTop: function(local) {
+            return local ? this.getLocalY() : this.getY();
+        },
+
+        getX: function() {
+            return Element.getX(this.dom);
+        },
+
+        getXY: function() {
+            return Element.getXY(this.dom);
+        },
+
+        getY: function() {
+            return Element.getY(this.dom);
+        },
+
+        
+        moveTo: function(x, y, animate) {
+            return this.setXY([x, y], animate);
+        },
+
+        
+        position: function(pos, zIndex, x, y) {
+            var me = this;
+
+            if (!pos && me.isStyle(POSITION, STATIC)) {
+                me.setStyle(POSITION, RELATIVE);
+            } else if (pos) {
+                me.setStyle(POSITION, pos);
+            }
+            if (zIndex) {
+                me.setStyle(ZINDEX, zIndex);
+            }
+            if (x || y) {
+                me.setXY([x || false, y || false]);
+            }
+        },
+
+        
+        setBottom: function(bottom) {
+            this.dom.style[BOTTOM] = this.addUnits(bottom);
+            return this;
+        },
+
+        
+        setBounds: function(x, y, width, height, animate) {
+            return this.setBox({
+                x: x,
+                y: y,
+                width: width,
+                height: height
+            }, animate);
+        },
+
+        
+        setLeft: function(left) {
+            this.dom.style[LEFT] = this.addUnits(left); 
+            return this;
+        },
+
+        
+        setLeftTop: function(left, top) {
+            var me = this,
+                style = me.dom.style;
+
+            style.left = me.addUnits(left);
+            style.top = me.addUnits(top);
+
+            return me;
+        },
+
+        setLocalX: function(x) {
+            var style = this.dom.style;
+
+            
+            style.right = 'auto';
+            style.left = (x === null) ? 'auto' : x + 'px';
+        },
+
+        setLocalXY: function(x, y) {
+            var style = this.dom.style;
+
+            
+            style.right = 'auto';
+
+            if (x && x.length) {
+                y = x[1];
+                x = x[0];
+            }
+
+            if (x === null) {
+                style.left = 'auto';
+            } else if (x !== undefined) {
+                style.left = x + 'px';
+            }
+
+            if (y === null) {
+                style.top = 'auto';
+            } else if (y !== undefined) {
+                style.top = y + 'px';
+            }
+        },
+
+        setLocalY: function(y) {
+            this.dom.style.top = (y === null) ? 'auto' : y + 'px';
+        },
+
+        
+        setLocation: function(x, y, animate) {
+            return this.setXY([x, y], animate);
+        },
+
+        
+        setPositioning: function(pc) {
+            return this.setStyle(pc);
+        },
+
+        
+        setRight: function(right) {
+            this.dom.style[RIGHT] = this.addUnits(right);
+            return this;
+        },
+
+        
+        setTop: function(top) {
+            this.dom.style[TOP] = this.addUnits(top);
+            return this;
+        },
+
+        setX: function(x, animate) {
+            return this.setXY([x, this.getY()], animate);
+        },
+
+        setXY: function(xy, animate) {
+            var me = this;
+
+            if (!animate || !me.anim) {
+                Element.setXY(me.dom, xy);
+            } else {
+                if (!Ext.isObject(animate)) {
+                    animate = {};
+                }
+                me.animate(Ext.applyIf({ to: { x: xy[0], y: xy[1] } }, animate));
+            }
+            return this;
+        },
+
+        setY: function(y, animate) {
+            return this.setXY([this.getX(), y], animate);
+        }
+    });
 
 });
 
@@ -16305,34 +16186,33 @@ Ext.define('Ext.dom.Element_scroll', {
 
     
     getScroll: function() {
-        var d = this.dom,
+        var me = this,
+            dom = me.dom,
             doc = document,
             body = doc.body,
             docElement = doc.documentElement,
-            l,
-            t,
-            ret;
+            left, top;
 
-        if (d == doc || d == body) {
-            if (Ext.isIE && Ext.isStrict) {
-                l = docElement.scrollLeft;
-                t = docElement.scrollTop;
-            } else {
-                l = window.pageXOffset;
-                t = window.pageYOffset;
-            }
-            ret = {
-                left: l || (body ? body.scrollLeft : 0),
-                top : t || (body ? body.scrollTop : 0)
-            };
+        if (dom === doc || dom === body) {
+            
+            
+            
+            
+            
+            
+            
+            
+            left = docElement.scrollLeft || (body ? body.scrollLeft : 0);
+            top = docElement.scrollTop || (body ? body.scrollTop : 0);
         } else {
-            ret = {
-                left: d.scrollLeft,
-                top : d.scrollTop
-            };
+            left = dom.scrollLeft;
+            top = dom.scrollTop;
         }
 
-        return ret;
+        return {
+            left: left,
+            top: top
+        };
     },
 
     
@@ -16392,14 +16272,14 @@ Ext.define('Ext.dom.Element_scroll', {
 
     
     scrollIntoView: function(container, hscroll, animate) {
-        container = Ext.getDom(container) || Ext.getBody().dom;
-        var el = this.dom,
-            offsets = this.getOffsetsTo(container),
+        var me = this,
+            dom = me.dom,
+            offsets = me.getOffsetsTo(container = Ext.getDom(container) || Ext.getBody().dom),
         
             left = offsets[0] + container.scrollLeft,
             top = offsets[1] + container.scrollTop,
-            bottom = top + el.offsetHeight,
-            right = left + el.offsetWidth,
+            bottom = top + dom.offsetHeight,
+            right = left + dom.offsetWidth,
         
             ctClientHeight = container.clientHeight,
             ctScrollTop = parseInt(container.scrollTop, 10),
@@ -16408,32 +16288,43 @@ Ext.define('Ext.dom.Element_scroll', {
             ctRight = ctScrollLeft + container.clientWidth,
             newPos;
 
-        if (el.offsetHeight > ctClientHeight || top < ctScrollTop) {
+        
+        if (animate) {
+            animate = Ext.apply({
+                listeners: {
+                    afteranimate: function() {
+                        me.scrollChildFly.attach(dom).highlight();
+                    }
+                }
+            }, animate);
+        }
+
+        if (dom.offsetHeight > ctClientHeight || top < ctScrollTop) {
             newPos = top;
         } else if (bottom > ctBottom) {
             newPos = bottom - ctClientHeight;
         }
         if (newPos != null) {
-            Ext.get(container).scrollTo('top', newPos, animate);
+            me.scrollChildFly.attach(container).scrollTo('top', newPos, animate);
         }
 
         if (hscroll !== false) {
             newPos = null;
-            if (el.offsetWidth > container.clientWidth || left < ctScrollLeft) {
+            if (dom.offsetWidth > container.clientWidth || left < ctScrollLeft) {
                 newPos = left;
             } else if (right > ctRight) {
                 newPos = right - container.clientWidth;
             }
             if (newPos != null) {
-                Ext.get(container).scrollTo('left', newPos, animate);
+                me.scrollChildFly.attach(container).scrollTo('left', newPos, animate);
             }
         }
-        return this;
+        return me;
     },
 
     
     scrollChildIntoView: function(child, hscroll) {
-        Ext.fly(child, '_scrollChildIntoView').scrollIntoView(this, hscroll);
+        this.scrollChildFly.attach(Ext.getDom(child)).scrollIntoView(this, hscroll);
     },
 
     
@@ -16463,6 +16354,9 @@ Ext.define('Ext.dom.Element_scroll', {
         }
         return scrolled;
     }
+}, function() {
+    this.prototype.scrollChildFly = new this.Fly();
+    this.prototype.scrolltoFly = new this.Fly();
 });
 
 //@tag dom,core
@@ -17045,28 +16939,56 @@ Element.override({
         return {width: w || me.getWidth(true), height: h || me.getHeight(true)};
     },
 
+    statics: {
+        selectableCls: Ext.baseCSSPrefix + 'selectable',
+        unselectableCls: Ext.baseCSSPrefix + 'unselectable'
+    },
+
     
     selectable : function() {
         var me = this;
-        me.dom.unselectable = "off";
+
         
-        me.on('selectstart', function (e) {
-            e.stopPropagation();
-            return true;
-        });
-        me.applyStyles("-webkit-user-select: text; -moz-user-select: text; -khtml-user-select: text; -o-user-select: text; user-select: text;");
-        me.removeCls(Ext.baseCSSPrefix + 'unselectable');
+        
+        me.dom.unselectable = '';
+
+        me.removeCls(Element.unselectableCls);
+        me.addCls(Element.selectableCls);
+
         return me;
     },
 
     
     unselectable : function() {
+        
+        
+        
+        
+        
+        
+        
         var me = this;
-        me.dom.unselectable = "on";
 
-        me.swallowEvent("selectstart", true);
-        me.applyStyles("-webkit-user-select: none; -moz-user-select: -moz-none; -khtml-user-select: none; -o-user-select: none; user-select: none;");
-        me.addCls(Ext.baseCSSPrefix + 'unselectable');
+        
+        
+        
+        
+        
+        if (Ext.isOpera) {
+            me.dom.unselectable = 'on';
+        }
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        me.removeCls(Element.selectableCls);
+        me.addCls(Element.unselectableCls);
 
         return me;
     },
@@ -17131,7 +17053,7 @@ Element.override({
 
 Element.prototype.styleHooks = styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
 
-if (Ext.isIE6 || Ext.isIE7) {
+if (Ext.isIE7m) {
     styleHooks.fontSize = styleHooks['font-size'] = {
         name: 'fontSize',
         canThrow: true
@@ -17171,6 +17093,72 @@ if (Ext.isIEQuirks || Ext.isIE && Ext.ieVersion <= 8) {
         };
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ext.getDoc().on('selectstart', function(ev, dom) {
+    var doc = document.documentElement,
+        selectableCls = Element.selectableCls,
+        unselectableCls = Element.unselectableCls,
+        tagName = dom && dom.tagName;
+
+    tagName = tagName && tagName.toLowerCase();
+
+    
+    
+    
+    if (tagName === 'input' || tagName === 'textarea') {
+        return;
+    }
+
+    
+    while (dom && dom.nodeType === 1 && dom !== doc) {
+        var el = Ext.fly(dom);
+
+        
+        if (el.hasCls(selectableCls)) {
+            return;
+        }
+
+        
+        if (el.hasCls(unselectableCls)) {
+            ev.stopEvent();
+            return;
+        }
+
+        dom = dom.parentNode;
+    }
+});
 
 });
 
@@ -17224,6 +17212,503 @@ Ext.onReady(function () {
     
 });
 
+//@tag core
+
+
+Ext.define('Ext.util.Positionable', {
+
+    _positionTopLeft: ['position', 'top', 'left'],
+
+    _alignRe: /^([a-z]+)-([a-z]+)(\?)?$/,
+
+    
+    
+    afterSetPosition: Ext.emptyFn,
+
+
+    
+    
+    adjustForConstraints: function(xy, parent) {
+        var vector = this.getConstrainVector(parent, xy);
+        if (vector) {
+            xy[0] += vector[0];
+            xy[1] += vector[1];
+        }
+        return xy;
+    },
+
+    
+    alignTo: function(element, position, offsets, animate) {
+        var me = this,
+            el = me.el;
+
+        return me.setXY(me.getAlignToXY(element, position, offsets),
+                el.anim && !!animate ? el.anim(animate) : false);
+    },
+
+    
+    anchorTo: function(anchorToEl, alignment, offsets, animate, monitorScroll, callback) {
+        var me = this,
+            scroll = !Ext.isEmpty(monitorScroll),
+            action = function() {
+                me.alignTo(anchorToEl, alignment, offsets, animate);
+                Ext.callback(callback, me);
+            },
+            anchor = me.getAnchor();
+
+        
+        me.removeAnchor();
+        Ext.apply(anchor, {
+            fn: action,
+            scroll: scroll
+        });
+
+        Ext.EventManager.onWindowResize(action, null);
+
+        if (scroll) {
+            Ext.EventManager.on(window, 'scroll', action, null,
+                    {buffer: !isNaN(monitorScroll) ? monitorScroll : 50});
+        }
+        action(); 
+        return me;
+    },
+
+    
+    calculateAnchorXY: function(anchor, extraX, extraY, mySize) {
+        
+        
+        var me = this,
+            el = me.el,
+            doc = document,
+            isViewport = el.dom == doc.body || el.dom == doc,
+            round = Math.round,
+            xy, myWidth, myHeight;
+
+        anchor = (anchor || "tl").toLowerCase();
+        mySize = mySize || {};
+
+        myWidth = mySize.width || isViewport ? Ext.Element.getViewWidth() : me.getWidth();
+        myHeight = mySize.height || isViewport ? Ext.Element.getViewHeight() : me.getHeight();
+
+        
+        
+        switch (anchor) {
+            case 'tl' : xy = [0, 0];
+                        break;
+            case 'bl' : xy = [0, myHeight];
+                        break;
+            case 'tr' : xy = [myWidth, 0];
+                        break;
+            case 'c'  : xy = [round(myWidth * 0.5), round(myHeight * 0.5)];
+                        break;
+            case 't'  : xy = [round(myWidth * 0.5), 0];
+                        break;
+            case 'l'  : xy = [0, round(myHeight * 0.5)];
+                        break;
+            case 'r'  : xy = [myWidth, round(myHeight * 0.5)];
+                        break;
+            case 'b'  : xy = [round(myWidth * 0.5), myHeight];
+                        break;
+            case 'br' : xy = [myWidth, myHeight];
+        }
+        return [xy[0] + extraX, xy[1] + extraY];
+    },
+
+    
+    convertPositionSpec: function(posSpec) {
+        return posSpec;
+    },
+
+    
+    getAlignToXY: function(alignToEl, posSpec, offset) {
+        var me = this,
+            viewportWidth = Ext.Element.getViewWidth() - 10, 
+            viewportHeight = Ext.Element.getViewHeight() - 10, 
+            doc = document,
+            docElement = doc.documentElement,
+            docBody = doc.body,
+            scrollX = (docElement.scrollLeft || docBody.scrollLeft || 0),
+            scrollY = (docElement.scrollTop  || docBody.scrollTop  || 0),
+            alignMatch, myPosition, alignToElPosition, myWidth, myHeight,
+            alignToElRegion, swapY, swapX, constrain, align1, align2,
+            p1y, p1x, p2y, p2x, x, y;
+
+        alignToEl = Ext.get(alignToEl.el || alignToEl);
+
+        if (!alignToEl || !alignToEl.dom) {
+        }
+
+        offset = offset || [0,0];
+        posSpec = (!posSpec || posSpec == "?" ? "tl-bl?" :
+            (!(/-/).test(posSpec) && posSpec !== "" ? "tl-" + posSpec : posSpec || "tl-bl")).toLowerCase();
+
+        posSpec = me.convertPositionSpec(posSpec);
+
+        alignMatch = posSpec.match(me._alignRe);
+
+
+        align1 = alignMatch[1];
+        align2 = alignMatch[2];
+        constrain = !!alignMatch[3];
+
+        
+        
+        myPosition = me.getAnchorXY(align1, true);
+        alignToElPosition = me.getAnchorToXY(alignToEl, align2, false);
+
+        x = alignToElPosition[0] - myPosition[0] + offset[0];
+        y = alignToElPosition[1] - myPosition[1] + offset[1];
+
+        
+        if (constrain) {
+            myWidth = me.getWidth();
+            myHeight = me.getHeight();
+            alignToElRegion = alignToEl.getRegion();
+            
+            
+            
+            
+            p1y = align1.charAt(0);
+            p1x = align1.charAt(align1.length - 1);
+            p2y = align2.charAt(0);
+            p2x = align2.charAt(align2.length - 1);
+            swapY = ((p1y == "t" && p2y == "b") || (p1y == "b" && p2y == "t"));
+            swapX = ((p1x == "r" && p2x == "l") || (p1x == "l" && p2x == "r"));
+
+            if (x + myWidth > viewportWidth + scrollX) {
+                x = swapX ? alignToElRegion.left - myWidth : viewportWidth + scrollX - myWidth;
+            }
+            if (x < scrollX) {
+                x = swapX ? alignToElRegion.right : scrollX;
+            }
+            if (y + myHeight > viewportHeight + scrollY) {
+                y = swapY ? alignToElRegion.top - myHeight : viewportHeight + scrollY - myHeight;
+            }
+            if (y < scrollY) {
+                y = swapY ? alignToElRegion.bottom : scrollY;
+            }
+        }
+        return [x,y];
+    },
+
+    
+    getAnchor: function(){
+        var el = this.el,
+            data = (el.$cache || el.getCache()).data,
+            anchor;
+            
+        if (!el.dom) {
+            return;
+        }
+        anchor = data._anchor;
+
+        if(!anchor){
+            anchor = data._anchor = {};
+        }
+        return anchor;
+    },
+
+    
+    getAnchorXY: function(anchor, local, mySize) {
+        var me = this,
+            myPos = me.getXY(),
+            el = me.el,
+            doc = document,
+            isViewport = el.dom == doc.body || el.dom == doc,
+            scroll = el.getScroll(),
+            extraX = isViewport ? scroll.left : local ? 0 : myPos[0],
+            extraY = isViewport ? scroll.top : local ? 0 : myPos[1];
+
+        return me.calculateAnchorXY(anchor, extraX, extraY, mySize);
+    },
+
+    
+    getBox: function(contentBox, local) {
+        var me = this,
+            xy = local ? me.getLocalXY() : me.getXY(),
+            x = xy[0],
+            y = xy[1],
+            w = me.getWidth(),
+            h = me.getHeight(),
+            borderPadding, beforeX, beforeY;
+
+        if (contentBox) {
+            borderPadding = me.getBorderPadding();
+            beforeX = borderPadding.beforeX;
+            beforeY = borderPadding.beforeY;
+
+            x += beforeX;
+            y += beforeY;
+            w -= (beforeX + borderPadding.afterX);
+            h -= (beforeY + borderPadding.afterY);
+        }
+
+        return {
+            x: x,
+            left: x,
+            0: x,
+            y: y,
+            top: y,
+            1: y,
+            width: w,
+            height: h,
+            right: x + w,
+            bottom: y + h
+        };
+    },
+
+    
+    calculateConstrainedPosition: function(constrainTo, proposedPosition, local, proposedSize) {
+        var me = this,
+            vector,
+            fp = me.floatParent,
+            parentNode = fp ? fp.getTargetEl() : null,
+            parentOffset,
+            borderPadding,
+            proposedConstrainPosition,
+            xy = false;
+
+        if (local && fp) {
+            parentOffset = parentNode.getXY();
+            borderPadding = parentNode.getBorderPadding();
+            parentOffset[0] += borderPadding.beforeX;
+            parentOffset[1] += borderPadding.beforeY;
+            if (proposedPosition) {
+                proposedConstrainPosition = [proposedPosition[0] + parentOffset[0], proposedPosition[1] + parentOffset[1]];
+            }
+        } else {
+            proposedConstrainPosition = proposedPosition;
+        }
+        
+        
+        
+        constrainTo = constrainTo || me.constrainTo || parentNode || me.container || me.el.getScopeParent();
+        vector = (me.constrainHeader ? me.header.el : me.el).getConstrainVector(constrainTo, proposedConstrainPosition, proposedSize);
+
+        
+        if (vector) {
+            xy = proposedPosition || me.getPosition(local);
+            xy[0] += vector[0];
+            xy[1] += vector[1];
+        }
+        return xy;
+    },
+
+    
+    getConstrainVector: function(constrainTo, proposedPosition, proposedSize) {
+        var thisRegion = this.getRegion(),
+            el = this.el,
+            vector = [0, 0],
+            shadowSize = (this.shadow && this.constrainShadow && !this.shadowDisabled) ? this.shadow.getShadowSize() : undefined,
+            overflowed = false;
+
+        if (!(constrainTo instanceof Ext.util.Region)) {
+            constrainTo = Ext.get(constrainTo.el || constrainTo).getViewRegion();
+        }
+
+        
+        if (proposedPosition) {
+            thisRegion.translateBy(proposedPosition[0] - thisRegion.x, proposedPosition[1] - thisRegion.y);
+        }
+        
+        if (proposedSize) {
+            thisRegion.right = thisRegion.left + proposedSize[0];
+            thisRegion.bottom = thisRegion.top + proposedSize[1];
+        }
+
+        
+        if (shadowSize) {
+            constrainTo.adjust(shadowSize[0], -shadowSize[1], -shadowSize[2], shadowSize[3]);
+        }
+
+        
+        if (thisRegion.right > constrainTo.right) {
+            overflowed = true;
+            vector[0] = (constrainTo.right - thisRegion.right);    
+        }
+        if (thisRegion.left + vector[0] < constrainTo.left) {
+            overflowed = true;
+            vector[0] = (constrainTo.left - thisRegion.left);      
+        }
+
+        
+        if (thisRegion.bottom > constrainTo.bottom) {
+            overflowed = true;
+            vector[1] = (constrainTo.bottom - thisRegion.bottom);  
+        }
+        if (thisRegion.top + vector[1] < constrainTo.top) {
+            overflowed = true;
+            vector[1] = (constrainTo.top - thisRegion.top);        
+        }
+        return overflowed ? vector : false;
+    },
+
+    
+    getOffsetsTo: function(offsetsTo) {
+        var o = this.getXY(),
+                e = Ext.fly(offsetsTo.el || offsetsTo, '_internal').getXY();
+        return [o[0] - e[0],o[1] - e[1]];
+    },
+
+    
+    getRegion: function() {
+        var box = this.getBox();
+        return new Ext.util.Region(box.top, box.right, box.bottom, box.left);
+    },
+
+    
+    getViewRegion: function() {
+        var me = this,
+            el = me.el,
+            isBody = el.dom.nodeName === 'BODY',
+            borderPadding, scroll, pos, top, left, width, height;
+
+        
+        if (isBody) {
+            scroll = el.getScroll();
+            left = scroll.left;
+            top = scroll.top;
+            width = Ext.dom.AbstractElement.getViewportWidth();
+            height = Ext.dom.AbstractElement.getViewportHeight();
+        }
+        else {
+            borderPadding = me.getBorderPadding();
+            pos = me.getXY();
+            left = pos[0] + borderPadding.beforeX;
+            top = pos[1] + borderPadding.beforeY;
+            width = me.getWidth(true);
+            height = me.getHeight(true);
+        }
+
+        return new Ext.util.Region(top, left + width, top + height, left);
+    },
+
+    
+    move: function(direction, distance, animate) {
+        var me = this,
+            xy = me.getXY(),
+            x = xy[0],
+            y = xy[1],
+            left = [x - distance, y],
+            right = [x + distance, y],
+            top = [x, y - distance],
+            bottom = [x, y + distance],
+            hash = {
+                l: left,
+                left: left,
+                r: right,
+                right: right,
+                t: top,
+                top: top,
+                up: top,
+                b: bottom,
+                bottom: bottom,
+                down: bottom
+            };
+
+        direction = direction.toLowerCase();
+        me.setXY([hash[direction][0], hash[direction][1]], animate);
+    },
+
+    
+    removeAnchor: function() {
+        var anchor = this.getAnchor();
+
+        if (anchor && anchor.fn) {
+            Ext.EventManager.removeResizeListener(anchor.fn);
+            if (anchor.scroll) {
+                Ext.EventManager.un(window, 'scroll', anchor.fn);
+            }
+            delete anchor.fn;
+        }
+        return this;
+    },
+
+    
+    setBox: function(box, animate) {
+        var me = this,
+            el = me.el,
+            x = box.x,
+            y = box.y,
+            xy = [x, y],
+            w = box.width,
+            h = box.height,
+            constrainedPos = me.constrain && me.calculateConstrainedPosition(null, [x, y], false, [w, h]);
+
+        
+        if (constrainedPos) {
+            x = constrainedPos[0];
+            y = constrainedPos[1];
+        }
+        if (!animate || !el.anim) {
+            me.setSize(w, h);
+            me.setXY([x, y]);
+            me.afterSetPosition(x, y);
+        } else {
+            me.animate(Ext.applyIf({
+                to: {
+                    x: x,
+                    y: y,
+                    width: el.adjustWidth(w),
+                    height: el.adjustHeight(h)
+                },
+                listeners: {
+                    afteranimate: Ext.Function.bind(me.afterSetPosition, me, [x, y])
+                }
+            }, animate));
+        }
+        return me;
+    },
+
+    
+    setRegion: function(region, animate) {
+        return this.setBox({
+            x: region.left,
+            y: region.top,
+            width: region.right - region.left,
+            height: region.bottom - region.top
+        }, animate);
+    },
+
+    
+    translatePoints: function(x, y) {
+        var pos = this.translateXY(x, y);
+
+        return {
+            left: pos.x,
+            top: pos.y
+        };
+    },
+
+    
+    translateXY: function(x, y) {
+        var me = this,
+            el = me.el,
+            styles = el.getStyle(me._positionTopLeft),
+            relative = styles.position == 'relative',
+            left = parseFloat(styles.left),
+            top = parseFloat(styles.top),
+            xy = me.getXY();
+
+        if (Ext.isArray(x)) {
+             y = x[1];
+             x = x[0];
+        }
+        if (isNaN(left)) {
+            left = relative ? 0 : el.dom.offsetLeft;
+        }
+        if (isNaN(top)) {
+            top = relative ? 0 : el.dom.offsetTop;
+        }
+        left = (typeof x == 'number') ? x - xy[0] + left : undefined;
+        top = (typeof y == 'number') ? y - xy[1] + top : undefined;
+        return {
+            x: left,
+            y: top
+        };
+    }
+});
+
 //@tag dom,core
 
 
@@ -17268,14 +17753,18 @@ Ext.define('Ext.dom.Element', function(Element) {
 
         requires: [
             'Ext.dom.Query',
-
-            'Ext.dom.Element_alignment',
             'Ext.dom.Element_anim',
             'Ext.dom.Element_dd',
             'Ext.dom.Element_fx',
             'Ext.dom.Element_position',
             'Ext.dom.Element_scroll',
             'Ext.dom.Element_style'
+        ],
+        
+        tableTagRe: /^(?:tr|td|table|tbody)$/i,
+
+        mixins: [
+            'Ext.util.Positionable'
         ],
 
         addUnits: function() {
@@ -17321,7 +17810,9 @@ Ext.define('Ext.dom.Element', function(Element) {
         
         isBorderBox: function() {
             var box = Ext.isBorderBox;
-            if (box) {
+            
+            
+            if (box && Ext.isIE7m) {
                 box = !((this.dom.tagName || "").toLowerCase() in noBoxAdjust);
             }
             return box;
@@ -17340,7 +17831,7 @@ Ext.define('Ext.dom.Element', function(Element) {
             return this.getAttribute(name, ns);
         },
 
-        getAttribute: (Ext.isIE && !(Ext.isIE9 && DOC.documentMode === 9)) ?
+        getAttribute: (Ext.isIE && !(Ext.isIE9p && DOC.documentMode >= 9)) ?
 
             
             
@@ -17485,12 +17976,18 @@ Ext.define('Ext.dom.Element', function(Element) {
             }
 
             Ext.DomHelper.append(dom, [{
-                cls : Ext.baseCSSPrefix + "mask"
+                cls : Ext.baseCSSPrefix + "mask",
+                style: 'top:0;left:0;'
             }, {
                 cls : msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG,
                 cn  : {
                     tag: 'div',
-                    html: msg || ''
+                    cls: Ext.baseCSSPrefix + 'mask-msg-inner',
+                    cn: {
+                        tag: 'div',
+                        cls: Ext.baseCSSPrefix + 'mask-msg-text',
+                        html: msg || ''
+                    }
                 }
             }]);
 
@@ -17538,7 +18035,7 @@ Ext.define('Ext.dom.Element', function(Element) {
                 } catch (e) {}
             }
             
-            else if (Ext.isIE && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
+            else if (Ext.isIE9m && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
                 if (maskShimEl) {
                     maskShimEl.setSize(undefined, elHeight || me.getHeight());
                 }
@@ -17738,7 +18235,8 @@ Ext.define('Ext.dom.Element', function(Element) {
         replaceScriptTagRe = /(?:<script.*?>)((\n|\r|.)*?)(?:<\/script>)/ig,
         srcRe           = /\ssrc=([\'\"])(.*?)\1/i,
         typeRe          = /\stype=([\'\"])(.*?)\1/i,
-        useDocForId = !(Ext.isIE6 || Ext.isIE7 || Ext.isIE8);
+        useDocForId     = Ext.isIE8m,
+        internalFly;
 
     Element.boxMarkup = '<div class="{0}-tl"><div class="{0}-tr"><div class="{0}-tc"></div></div></div><div class="{0}-ml"><div class="{0}-mr"><div class="{0}-mc"></div></div></div><div class="{0}-bl"><div class="{0}-br"><div class="{0}-bc"></div></div></div>';
     
@@ -17831,13 +18329,13 @@ Ext.define('Ext.dom.Element', function(Element) {
         
         swallowEvent : function(eventName, preventDefault) {
             var me = this,
-                e, eLen;
-            function fn(e) {
-                e.stopPropagation();
-                if (preventDefault) {
-                    e.preventDefault();
-                }
-            }
+                e, eLen,
+                fn = function(e) {
+                    e.stopPropagation();
+                    if (preventDefault) {
+                        e.preventDefault();
+                    }
+                };
 
             if (Ext.isArray(eventName)) {
                 eLen = eventName.length;
@@ -17887,7 +18385,7 @@ Ext.define('Ext.dom.Element', function(Element) {
                     }
                 } else {
                     
-                    Ext.fly(n).clean();
+                    internalFly.attach(n).clean();
                     n.nodeIndex = ++ni;
                 }
                 n = nx;
@@ -17920,10 +18418,9 @@ Ext.define('Ext.dom.Element', function(Element) {
         
         syncContent: function(source) {
             source = Ext.getDom(source);
-            var me = this,
-                sourceNodes = source.childNodes,
+            var sourceNodes = source.childNodes,
                 sourceLen = sourceNodes.length,
-                dest = me.dom,
+                dest = this.dom,
                 destNodes = dest.childNodes,
                 destLen = destNodes.length,
                 i,  destNode, sourceNode,
@@ -17977,7 +18474,7 @@ Ext.define('Ext.dom.Element', function(Element) {
                     }
                     destNode.style.cssText = sourceNode.style.cssText;
                     destNode.className = sourceNode.className;
-                    Ext.fly(destNode).syncContent(sourceNode);
+                    internalFly.attach(destNode).syncContent(sourceNode);
                 }
             }
         },
@@ -18167,12 +18664,20 @@ Ext.define('Ext.dom.Element', function(Element) {
     Element.Fly = AbstractElement.Fly = new Ext.Class({
         extend: Element,
 
+        isFly: true,
+
         constructor: function(dom) {
             this.dom = dom;
+            
+            
+            
+            this.el = this;
         },
         
         attach: AbstractElement.Fly.prototype.attach
     });
+    
+    internalFly = new Element.Fly();
 
     if (Ext.isIE) {
         Ext.getElementById = function (id) {
@@ -18304,6 +18809,11 @@ Ext.define('Ext.dom.CompositeElementLite', {
     },
 
     
+    slice: function() {
+        return this.elements.slice.apply(this.elements, arguments);
+    },
+
+    
     addListener: function(eventName, handler, scope, opt) {
         var els = this.elements,
                 len = els.length,
@@ -18342,6 +18852,10 @@ Ext.define('Ext.dom.CompositeElementLite', {
         me.elements = [];
         me.add(els);
         return me;
+    },
+
+    insert: function(index, nodes) {
+        Ext.Array.insert(this.elements, index, nodes);
     },
 
     
@@ -18399,7 +18913,16 @@ Ext.define('Ext.dom.CompositeElementLite', {
     },
 
     
-    clear: function() {
+    clear: function(removeDom) {
+        var me  = this,
+            els = me.elements,
+            i = els.length - 1;
+        
+        if (removeDom) {
+            for (; i >= 0; i--) {
+                Ext.removeNode(els[i]);
+            }
+        }
         this.elements = [];
     },
 
@@ -18536,15 +19059,2154 @@ Ext.define('Ext.dom.CompositeElement', {
 
 Ext.select = Ext.Element.select;
 
+//@tag core
+
+
+Ext.define('Ext.Template', {
+
+    
+
+    requires: ['Ext.dom.Helper', 'Ext.util.Format'],
+
+    inheritableStatics: {
+        
+        from: function(el, config) {
+            el = Ext.getDom(el);
+            return new this(el.value || el.innerHTML, config || '');
+        }
+    },
+
+    
+
+    
+    constructor: function(html) {
+        var me = this,
+            args = arguments,
+            buffer = [],
+            i = 0,
+            length = args.length,
+            value;
+
+        me.initialConfig = {};
+        
+        
+        
+        
+        if (length === 1 && Ext.isArray(html)) {
+            args = html;
+            length = args.length;
+        }
+
+        if (length > 1) {
+            for (; i < length; i++) {
+                value = args[i];
+                if (typeof value == 'object') {
+                    Ext.apply(me.initialConfig, value);
+                    Ext.apply(me, value);
+                } else {
+                    buffer.push(value);
+                }
+            }
+        } else {
+            buffer.push(html);
+        }
+
+        
+        me.html = buffer.join('');
+
+        if (me.compiled) {
+            me.compile();
+        }
+    },
+
+    
+    isTemplate: true,
+
+    
+
+    
+    disableFormats: false,
+
+    re: /\{([\w\-]+)(?:\:([\w\.]*)(?:\((.*?)?\))?)?\}/g,
+
+    
+    apply: function(values) {
+        var me = this,
+            useFormat = me.disableFormats !== true,
+            fm = Ext.util.Format,
+            tpl = me,
+            ret;
+
+        if (me.compiled) {
+            return me.compiled(values).join('');
+        }
+
+        function fn(m, name, format, args) {
+            if (format && useFormat) {
+                if (args) {
+                    args = [values[name]].concat(Ext.functionFactory('return ['+ args +'];')());
+                } else {
+                    args = [values[name]];
+                }
+                if (format.substr(0, 5) == "this.") {
+                    return tpl[format.substr(5)].apply(tpl, args);
+                }
+                else {
+                    return fm[format].apply(fm, args);
+                }
+            }
+            else {
+                return values[name] !== undefined ? values[name] : "";
+            }
+        }
+
+        ret = me.html.replace(me.re, fn);
+        return ret;
+    },
+
+    
+    applyOut: function(values, out) {
+        var me = this;
+
+        if (me.compiled) {
+            out.push.apply(out, me.compiled(values));
+        } else {
+            out.push(me.apply(values));
+        }
+
+        return out;
+    },
+
+    
+    applyTemplate: function () {
+        return this.apply.apply(this, arguments);
+    },
+
+    
+    set: function(html, compile) {
+        var me = this;
+        me.html = html;
+        me.compiled = null;
+        return compile ? me.compile() : me;
+    },
+
+    compileARe: /\\/g,
+    compileBRe: /(\r\n|\n)/g,
+    compileCRe: /'/g,
+
+    /**
+     * Compiles the template into an internal function, eliminating the RegEx overhead.
+     * @return {Ext.Template} this
+     */
+    compile: function() {
+        var me = this,
+            fm = Ext.util.Format,
+            useFormat = me.disableFormats !== true,
+            body, bodyReturn;
+
+        function fn(m, name, format, args) {
+            if (format && useFormat) {
+                args = args ? ',' + args: "";
+                if (format.substr(0, 5) != "this.") {
+                    format = "fm." + format + '(';
+                }
+                else {
+                    format = 'this.' + format.substr(5) + '(';
+                }
+            }
+            else {
+                args = '';
+                format = "(values['" + name + "'] == undefined ? '' : ";
+            }
+            return "'," + format + "values['" + name + "']" + args + ") ,'";
+        }
+
+        bodyReturn = me.html.replace(me.compileARe, '\\\\').replace(me.compileBRe, '\\n').replace(me.compileCRe, "\\'").replace(me.re, fn);
+        body = "this.compiled = function(values){ return ['" + bodyReturn + "'];};";
+        eval(body);
+        return me;
+    },
+
+    /**
+     * Applies the supplied values to the template and inserts the new node(s) as the first child of el.
+     *
+     * @param {String/HTMLElement/Ext.Element} el The context element
+     * @param {Object/Array} values The template values. See {@link #applyTemplate} for details.
+     * @param {Boolean} returnElement (optional) true to return a Ext.Element.
+     * @return {HTMLElement/Ext.Element} The new node or Element
+     */
+    insertFirst: function(el, values, returnElement) {
+        return this.doInsert('afterBegin', el, values, returnElement);
+    },
+
+    /**
+     * Applies the supplied values to the template and inserts the new node(s) before el.
+     *
+     * @param {String/HTMLElement/Ext.Element} el The context element
+     * @param {Object/Array} values The template values. See {@link #applyTemplate} for details.
+     * @param {Boolean} returnElement (optional) true to return a Ext.Element.
+     * @return {HTMLElement/Ext.Element} The new node or Element
+     */
+    insertBefore: function(el, values, returnElement) {
+        return this.doInsert('beforeBegin', el, values, returnElement);
+    },
+
+    /**
+     * Applies the supplied values to the template and inserts the new node(s) after el.
+     *
+     * @param {String/HTMLElement/Ext.Element} el The context element
+     * @param {Object/Array} values The template values. See {@link #applyTemplate} for details.
+     * @param {Boolean} returnElement (optional) true to return a Ext.Element.
+     * @return {HTMLElement/Ext.Element} The new node or Element
+     */
+    insertAfter: function(el, values, returnElement) {
+        return this.doInsert('afterEnd', el, values, returnElement);
+    },
+
+    /**
+     * Applies the supplied `values` to the template and appends the new node(s) to the specified `el`.
+     *
+     * For example usage see {@link Ext.Template Ext.Template class docs}.
+     *
+     * @param {String/HTMLElement/Ext.Element} el The context element
+     * @param {Object/Array} values The template values. See {@link #applyTemplate} for details.
+     * @param {Boolean} returnElement (optional) true to return an Ext.Element.
+     * @return {HTMLElement/Ext.Element} The new node or Element
+     */
+    append: function(el, values, returnElement) {
+        return this.doInsert('beforeEnd', el, values, returnElement);
+    },
+
+    doInsert: function(where, el, values, returnElement) {
+        var newNode = Ext.DomHelper.insertHtml(where, Ext.getDom(el), this.apply(values));
+        return returnElement ? Ext.get(newNode) : newNode;
+    },
+
+    /**
+     * Applies the supplied values to the template and overwrites the content of el with the new node(s).
+     *
+     * @param {String/HTMLElement/Ext.Element} el The context element
+     * @param {Object/Array} values The template values. See {@link #applyTemplate} for details.
+     * @param {Boolean} returnElement (optional) true to return a Ext.Element.
+     * @return {HTMLElement/Ext.Element} The new node or Element
+     */
+    overwrite: function(el, values, returnElement) {
+        var newNode = Ext.DomHelper.overwrite(Ext.getDom(el), this.apply(values));
+        return returnElement ? Ext.get(newNode) : newNode;
+    }
+});
+
+//@tag core
+/**
+ * This class parses the XTemplate syntax and calls abstract methods to process the parts.
+ * @private
+ */
+Ext.define('Ext.XTemplateParser', {
+    constructor: function (config) {
+        Ext.apply(this, config);
+    },
+
+    /**
+     * @property {Number} level The 'for' or 'foreach' loop context level. This is adjusted
+     * up by one prior to calling {@link #doFor} or {@link #doForEach} and down by one after
+     * calling the corresponding {@link #doEnd} that closes the loop. This will be 1 on the
+     * first {@link #doFor} or {@link #doForEach} call.
+     */
+
+    /**
+     * This method is called to process a piece of raw text from the tpl.
+     * @param {String} text
+     * @method doText
+     */
+    // doText: function (text)
+
+    /**
+     * This method is called to process expressions (like `{[expr]}`).
+     * @param {String} expr The body of the expression (inside "{[" and "]}").
+     * @method doExpr
+     */
+    // doExpr: function (expr)
+
+    /**
+     * This method is called to process simple tags (like `{tag}`).
+     * @method doTag
+     */
+    // doTag: function (tag)
+
+    /**
+     * This method is called to process `<tpl else>`.
+     * @method doElse
+     */
+    // doElse: function ()
+
+    /**
+     * This method is called to process `{% text %}`.
+     * @param {String} text
+     * @method doEval
+     */
+    // doEval: function (text)
+
+    /**
+     * This method is called to process `<tpl if="action">`. If there are other attributes,
+     * these are passed in the actions object.
+     * @param {String} action
+     * @param {Object} actions Other actions keyed by the attribute name (such as 'exec').
+     * @method doIf
+     */
+    // doIf: function (action, actions)
+
+    /**
+     * This method is called to process `<tpl elseif="action">`. If there are other attributes,
+     * these are passed in the actions object.
+     * @param {String} action
+     * @param {Object} actions Other actions keyed by the attribute name (such as 'exec').
+     * @method doElseIf
+     */
+    // doElseIf: function (action, actions)
+
+    /**
+     * This method is called to process `<tpl switch="action">`. If there are other attributes,
+     * these are passed in the actions object.
+     * @param {String} action
+     * @param {Object} actions Other actions keyed by the attribute name (such as 'exec').
+     * @method doSwitch
+     */
+    // doSwitch: function (action, actions)
+
+    /**
+     * This method is called to process `<tpl case="action">`. If there are other attributes,
+     * these are passed in the actions object.
+     * @param {String} action
+     * @param {Object} actions Other actions keyed by the attribute name (such as 'exec').
+     * @method doCase
+     */
+    // doCase: function (action, actions)
+
+    /**
+     * This method is called to process `<tpl default>`.
+     * @method doDefault
+     */
+    // doDefault: function ()
+
+    /**
+     * This method is called to process `</tpl>`. It is given the action type that started
+     * the tpl and the set of additional actions.
+     * @param {String} type The type of action that is being ended.
+     * @param {Object} actions The other actions keyed by the attribute name (such as 'exec').
+     * @method doEnd
+     */
+    // doEnd: function (type, actions) 
+
+    /**
+     * This method is called to process `<tpl for="action">`. If there are other attributes,
+     * these are passed in the actions object.
+     * @param {String} action
+     * @param {Object} actions Other actions keyed by the attribute name (such as 'exec').
+     * @method doFor
+     */
+    // doFor: function (action, actions)
+
+    /**
+     * This method is called to process `<tpl foreach="action">`. If there are other
+     * attributes, these are passed in the actions object.
+     * @param {String} action
+     * @param {Object} actions Other actions keyed by the attribute name (such as 'exec').
+     * @method doForEach
+     */
+    // doForEach: function (action, actions)
+
+    /**
+     * This method is called to process `<tpl exec="action">`. If there are other attributes,
+     * these are passed in the actions object.
+     * @param {String} action
+     * @param {Object} actions Other actions keyed by the attribute name.
+     * @method doExec
+     */
+    // doExec: function (action, actions)
+
+    /**
+     * This method is called to process an empty `<tpl>`. This is unlikely to need to be
+     * implemented, so a default (do nothing) version is provided.
+     * @method
+     */
+    doTpl: Ext.emptyFn,
+
+    parse: function (str) {
+        var me = this,
+            len = str.length,
+            aliases = { elseif: 'elif' },
+            topRe = me.topRe,
+            actionsRe = me.actionsRe,
+            index, stack, s, m, t, prev, frame, subMatch, begin, end, actions,
+            prop;
+
+        me.level = 0;
+        me.stack = stack = [];
+
+        for (index = 0; index < len; index = end) {
+            topRe.lastIndex = index;
+            m = topRe.exec(str);
+
+            if (!m) {
+                me.doText(str.substring(index, len));
+                break;
+            }
+
+            begin = m.index;
+            end = topRe.lastIndex;
+
+            if (index < begin) {
+                me.doText(str.substring(index, begin));
+            }
+
+            if (m[1]) {
+                end = str.indexOf('%}', begin+2);
+                me.doEval(str.substring(begin+2, end));
+                end += 2;
+            } else if (m[2]) {
+                end = str.indexOf(']}', begin+2);
+                me.doExpr(str.substring(begin+2, end));
+                end += 2;
+            } else if (m[3]) { // if ('{' token)
+                me.doTag(m[3]);
+            } else if (m[4]) { // content of a <tpl xxxxxx xxx> tag
+                actions = null;
+                while ((subMatch = actionsRe.exec(m[4])) !== null) {
+                    s = subMatch[2] || subMatch[3];
+                    if (s) {
+                        s = Ext.String.htmlDecode(s); // decode attr value
+                        t = subMatch[1];
+                        t = aliases[t] || t;
+                        actions = actions || {};
+                        prev = actions[t];
+
+                        if (typeof prev == 'string') {
+                            actions[t] = [prev, s];
+                        } else if (prev) {
+                            actions[t].push(s);
+                        } else {
+                            actions[t] = s;
+                        }
+                    }
+                }
+
+                if (!actions) {
+                    if (me.elseRe.test(m[4])) {
+                        me.doElse();
+                    } else if (me.defaultRe.test(m[4])) {
+                        me.doDefault();
+                    } else {
+                        me.doTpl();
+                        stack.push({ type: 'tpl' });
+                    }
+                }
+                else if (actions['if']) {
+                    me.doIf(actions['if'], actions);
+                    stack.push({ type: 'if' });
+                }
+                else if (actions['switch']) {
+                    me.doSwitch(actions['switch'], actions);
+                    stack.push({ type: 'switch' });
+                }
+                else if (actions['case']) {
+                    me.doCase(actions['case'], actions);
+                }
+                else if (actions['elif']) {
+                    me.doElseIf(actions['elif'], actions);
+                }
+                else if (actions['for']) {
+                    ++me.level;
+
+                    // Extract property name to use from indexed item
+                    if (prop = me.propRe.exec(m[4])) {
+                        actions.propName = prop[1] || prop[2];
+                    }
+                    me.doFor(actions['for'], actions);
+                    stack.push({ type: 'for', actions: actions });
+                }
+                else if (actions['foreach']) {
+                    ++me.level;
+
+                    // Extract property name to use from indexed item
+                    if (prop = me.propRe.exec(m[4])) {
+                        actions.propName = prop[1] || prop[2];
+                    }
+                    me.doForEach(actions['foreach'], actions);
+                    stack.push({ type: 'foreach', actions: actions });
+                }
+                else if (actions.exec) {
+                    me.doExec(actions.exec, actions);
+                    stack.push({ type: 'exec', actions: actions });
+                }
+                /*
+                else {
+                    // todo - error
+                }
+                */
+            } else if (m[0].length === 5) {
+                // if the length of m[0] is 5, assume that we're dealing with an opening tpl tag with no attributes (e.g. <tpl>...</tpl>)
+                // in this case no action is needed other than pushing it on to the stack
+                stack.push({ type: 'tpl' });
+            } else {
+                frame = stack.pop();
+                me.doEnd(frame.type, frame.actions);
+                if (frame.type == 'for' || frame.type == 'foreach') {
+                    --me.level;
+                }
+            }
+        }
+    },
+
+    // Internal regexes
+    
+    topRe:     /(?:(\{\%)|(\{\[)|\{([^{}]+)\})|(?:<tpl([^>]*)\>)|(?:<\/tpl>)/g,
+    actionsRe: /\s*(elif|elseif|if|for|foreach|exec|switch|case|eval|between)\s*\=\s*(?:(?:"([^"]*)")|(?:'([^']*)'))\s*/g,
+    propRe:    /prop=(?:(?:"([^"]*)")|(?:'([^']*)'))/,
+    defaultRe: /^\s*default\s*$/,
+    elseRe:    /^\s*else\s*$/
+});
+
+//@tag core
+
+
+Ext.define('Ext.XTemplateCompiler', {
+    extend: 'Ext.XTemplateParser',
+
+    
+    
+    
+    useEval: Ext.isGecko,
+
+    
+    
+    
+    useIndex: Ext.isIE7m,
+
+    useFormat: true,
+    
+    propNameRe: /^[\w\d\$]*$/,
+
+    compile: function (tpl) {
+        var me = this,
+            code = me.generate(tpl);
+
+        
+        
+        
+        
+        return me.useEval ? me.evalTpl(code) : (new Function('Ext', code))(Ext);
+    },
+
+    generate: function (tpl) {
+        var me = this,
+            
+            definitions = 'var fm=Ext.util.Format,ts=Object.prototype.toString;',
+            code;
+
+        
+        me.maxLevel = 0;
+
+        me.body = [
+            'var c0=values, a0=' + me.createArrayTest(0) + ', p0=parent, n0=xcount, i0=xindex, k0, v;\n'
+        ];
+        if (me.definitions) {
+            if (typeof me.definitions === 'string') {
+                me.definitions = [me.definitions, definitions ];
+            } else {
+                me.definitions.push(definitions);
+            }
+        } else {
+            me.definitions = [ definitions ];
+        }
+        me.switches = [];
+
+        me.parse(tpl);
+
+        me.definitions.push(
+            (me.useEval ? '$=' : 'return') + ' function (' + me.fnArgs + ') {',
+                me.body.join(''),
+            '}'
+        );
+
+        code = me.definitions.join('\n');
+
+        
+        me.definitions.length = me.body.length = me.switches.length = 0;
+        delete me.definitions;
+        delete me.body;
+        delete me.switches;
+
+        return code;
+    },
+
+    
+    
+
+    doText: function (text) {
+        var me = this,
+            out = me.body;
+
+        text = text.replace(me.aposRe, "\\'").replace(me.newLineRe, '\\n');
+        if (me.useIndex) {
+            out.push('out[out.length]=\'', text, '\'\n');
+        } else {
+            out.push('out.push(\'', text, '\')\n');
+        }
+    },
+
+    doExpr: function (expr) {
+        var out = this.body;
+        out.push('if ((v=' + expr + ') != null) out');
+
+        
+        
+        if (this.useIndex) {
+             out.push('[out.length]=v+\'\'\n');
+        } else {
+             out.push('.push(v+\'\')\n');
+        }
+    },
+
+    doTag: function (tag) {
+        var expr = this.parseTag(tag);
+        if (expr) {
+            this.doExpr(expr);
+        } else {
+            
+            this.doText('{' + tag + '}');
+        }
+    },
+
+    doElse: function () {
+        this.body.push('} else {\n');
+    },
+
+    doEval: function (text) {
+        this.body.push(text, '\n');
+    },
+
+    doIf: function (action, actions) {
+        var me = this;
+
+        
+        if (action === '.') {
+            me.body.push('if (values) {\n');
+        } else if (me.propNameRe.test(action)) {
+            me.body.push('if (', me.parseTag(action), ') {\n');
+        }
+        
+        else {
+            me.body.push('if (', me.addFn(action), me.callFn, ') {\n');
+        }
+        if (actions.exec) {
+            me.doExec(actions.exec);
+        }
+    },
+
+    doElseIf: function (action, actions) {
+        var me = this;
+
+        
+        if (action === '.') {
+            me.body.push('else if (values) {\n');
+        } else if (me.propNameRe.test(action)) {
+            me.body.push('} else if (', me.parseTag(action), ') {\n');
+        }
+        
+        else {
+            me.body.push('} else if (', me.addFn(action), me.callFn, ') {\n');
+        }
+        if (actions.exec) {
+            me.doExec(actions.exec);
+        }
+    },
+
+    doSwitch: function (action) {
+        var me = this;
+
+        
+        if (action === '.') {
+            me.body.push('switch (values) {\n');
+        } else if (me.propNameRe.test(action)) {
+            me.body.push('switch (', me.parseTag(action), ') {\n');
+        }
+        
+        else {
+            me.body.push('switch (', me.addFn(action), me.callFn, ') {\n');
+        }
+        me.switches.push(0);
+    },
+
+    doCase: function (action) {
+        var me = this,
+            cases = Ext.isArray(action) ? action : [action],
+            n = me.switches.length - 1,
+            match, i;
+
+        if (me.switches[n]) {
+            me.body.push('break;\n');
+        } else {
+            me.switches[n]++;
+        }
+
+        for (i = 0, n = cases.length; i < n; ++i) {
+            match = me.intRe.exec(cases[i]);
+            cases[i] = match ? match[1] : ("'" + cases[i].replace(me.aposRe,"\\'") + "'");
+        }
+
+        me.body.push('case ', cases.join(': case '), ':\n');
+    },
+
+    doDefault: function () {
+        var me = this,
+            n = me.switches.length - 1;
+
+        if (me.switches[n]) {
+            me.body.push('break;\n');
+        } else {
+            me.switches[n]++;
+        }
+
+        me.body.push('default:\n');
+    },
+
+    doEnd: function (type, actions) {
+        var me = this,
+            L = me.level-1;
+
+        if (type == 'for' || type == 'foreach') {
+            
+            if (actions.exec) {
+                me.doExec(actions.exec);
+            }
+
+            me.body.push('}\n');
+            me.body.push('parent=p',L,';values=r',L+1,';xcount=n'+L+';xindex=i',L,'+1;xkey=k',L,';\n');
+        } else if (type == 'if' || type == 'switch') {
+            me.body.push('}\n');
+        }
+    },
+
+    doFor: function (action, actions) {
+        var me = this,
+            s,
+            L = me.level,
+            up = L-1,
+            parentAssignment;
+
+        
+        if (action === '.') {
+            s = 'values';
+        } else if (me.propNameRe.test(action)) {
+            s = me.parseTag(action);
+        }
+        
+        else {
+            s = me.addFn(action) + me.callFn;
+        }
+
+        
+
+        
+        if (me.maxLevel < L) {
+            me.maxLevel = L;
+            me.body.push('var ');
+        }
+        
+        if (action == '.') {
+            parentAssignment = 'c' + L;
+        } else {
+            parentAssignment = 'a' + up + '?c' + up + '[i' + up + ']:c' + up;
+        }
+        
+        me.body.push('i',L,'=0,n', L, '=0,c',L,'=',s,',a',L,'=', me.createArrayTest(L),',r',L,'=values,p',L,',k',L,';\n',
+            'p',L,'=parent=',parentAssignment,'\n',
+            'if (c',L,'){if(a',L,'){n', L,'=c', L, '.length;}else if (c', L, '.isMixedCollection){c',L,'=c',L,'.items;n',L,'=c',L,'.length;}else if(c',L,'.isStore){c',L,'=c',L,'.data.items;n',L,'=c',L,'.length;}else{c',L,'=[c',L,'];n',L,'=1;}}\n',
+            'for (xcount=n',L,';i',L,'<n'+L+';++i',L,'){\n',
+            'values=c',L,'[i',L,']');
+        if (actions.propName) {
+            me.body.push('.', actions.propName);
+        }
+        me.body.push('\n',
+            'xindex=i',L,'+1\n');
+        
+        if (actions.between) {
+            me.body.push('if(xindex>1){ out.push("',actions.between,'"); } \n');
+        }
+    },
+
+    doForEach: function (action, actions) {
+        var me = this,
+            s,
+            L = me.level,
+            up = L-1,
+            parentAssignment;
+
+        
+        if (action === '.') {
+            s = 'values';
+        } else if (me.propNameRe.test(action)) {
+            s = me.parseTag(action);
+        }
+        
+        else {
+            s = me.addFn(action) + me.callFn;
+        }
+
+        
+
+        
+        if (me.maxLevel < L) {
+            me.maxLevel = L;
+            me.body.push('var ');
+        }
+        
+        if (action == '.') {
+            parentAssignment = 'c' + L;
+        } else {
+            parentAssignment = 'a' + up + '?c' + up + '[i' + up + ']:c' + up;
+        }
+        
+        me.body.push('i',L,'=-1,n',L,'=0,c',L,'=',s,',a',L,'=',me.createArrayTest(L),',r',L,'=values,p',L,',k',L,';\n',
+            'p',L,'=parent=',parentAssignment,'\n',
+            'for(k',L,' in c',L,'){\n',
+                'xindex=++i',L,'+1;\n',
+                'xkey=k',L,';\n',
+                'values=c',L,'[k',L,'];');
+        if (actions.propName) {
+            me.body.push('.', actions.propName);
+        }
+        
+        if (actions.between) {
+            me.body.push('if(xindex>1){ out.push("',actions.between,'"); } \n');
+        }
+    },
+
+    createArrayTest: ('isArray' in Array) ? function(L) {
+        return 'Array.isArray(c' + L + ')';
+    } : function(L) {
+        return 'ts.call(c' + L + ')==="[object Array]"';
+    },
+
+    doExec: function (action, actions) {
+        var me = this,
+            name = 'f' + me.definitions.length;
+
+        me.definitions.push('function ' + name + '(' + me.fnArgs + ') {',
+                            ' try { with(values) {',
+                            '  ' + action,
+                            ' }} catch(e) {',
+                            '}',
+                      '}');
+
+        me.body.push(name + me.callFn + '\n');
+    },
+
+    
+    
+
+    addFn: function (body) {
+        var me = this,
+            name = 'f' + me.definitions.length;
+
+        if (body === '.') {
+            me.definitions.push('function ' + name + '(' + me.fnArgs + ') {',
+                            ' return values',
+                       '}');
+        } else if (body === '..') {
+            me.definitions.push('function ' + name + '(' + me.fnArgs + ') {',
+                            ' return parent',
+                       '}');
+        } else {
+            me.definitions.push('function ' + name + '(' + me.fnArgs + ') {',
+                            ' try { with(values) {',
+                            '  return(' + body + ')',
+                            ' }} catch(e) {',
+                            '}',
+                       '}');
+        }
+
+        return name;
+    },
+
+    parseTag: function (tag) {
+        var me = this,
+            m = me.tagRe.exec(tag),
+            name, format, args, math, v;
+
+        if (!m) {
+            return null;
+        }
+
+        name = m[1];
+        format = m[2];
+        args = m[3];
+        math = m[4];
+
+        
+        if (name == '.') {
+            
+            if (!me.validTypes) {
+                me.definitions.push('var validTypes={string:1,number:1,boolean:1};');
+                me.validTypes = true;
+            }
+            v = 'validTypes[typeof values] || ts.call(values) === "[object Date]" ? values : ""';
+        }
+        
+        else if (name == '#') {
+            v = 'xindex';
+        }
+        
+        else if (name == '$') {
+            v = 'xkey';
+        }
+        else if (name.substr(0, 7) == "parent.") {
+            v = name;
+        }
+        
+        else if (isNaN(name) && name.indexOf('-') == -1 && name.indexOf('.') != -1) {
+            v = "values." + name;
+        }
+        
+        
+        else {    
+            v = "values['" + name + "']";
+        }
+
+        if (math) {
+            v = '(' + v + math + ')';
+        }
+
+        if (format && me.useFormat) {
+            args = args ? ',' + args : "";
+            if (format.substr(0, 5) != "this.") {
+                format = "fm." + format + '(';
+            } else {
+                format += '(';
+            }
+        } else {
+            return v;
+        }
+
+        return format + v + args + ')';
+    },
+
+    
+    evalTpl: function ($) {
+
+        
+        
+        
+        
+        eval($);
+        return $;
+    },
+
+    newLineRe: /\r\n|\r|\n/g,
+    aposRe: /[']/g,
+    intRe:  /^\s*(\d+)\s*$/,
+    tagRe:  /^([\w-\.\#\$]+)(?:\:([\w\.]*)(?:\((.*?)?\))?)?(\s?[\+\-\*\/]\s?[\d\.\+\-\*\/\(\)]+)?$/
+
+}, function () {
+    var proto = this.prototype;
+
+    proto.fnArgs = 'out,values,parent,xindex,xcount,xkey';
+    proto.callFn = '.call(this,' + proto.fnArgs + ')';
+});
+
+//@tag core
+/**
+ * A template class that supports advanced functionality like:
+ *
+ * - Autofilling arrays using templates and sub-templates
+ * - Conditional processing with basic comparison operators
+ * - Basic math function support
+ * - Execute arbitrary inline code with special built-in template variables
+ * - Custom member functions
+ * - Many special tags and built-in operators that aren't defined as part of the API, but are supported in the templates that can be created
+ *
+ * XTemplate provides the templating mechanism built into {@link Ext.view.View}.
+ *
+ * The {@link Ext.Template} describes the acceptable parameters to pass to the constructor. The following examples
+ * demonstrate all of the supported features.
+ *
+ * # Sample Data
+ *
+ * This is the data object used for reference in each code example:
+ *
+ *     var data = {
+ *         name: 'Don Griffin',
+ *         title: 'Senior Technomage',
+ *         company: 'Sencha Inc.',
+ *         drinks: ['Coffee', 'Water', 'More Coffee'],
+ *         kids: [
+ *             { name: 'Aubrey',  age: 17 },
+ *             { name: 'Joshua',  age: 13 },
+ *             { name: 'Cale',    age: 10 },
+ *             { name: 'Nikol',   age: 5 },
+ *             { name: 'Solomon', age: 0 }
+ *         ]
+ *     };
+ *
+ * # Auto filling of arrays
+ *
+ * The **tpl** tag and the **for** operator are used to process the provided data object:
+ *
+ * - If the value specified in for is an array, it will auto-fill, repeating the template block inside the tpl
+ *   tag for each item in the array.
+ * - If for="." is specified, the data object provided is examined.
+ * - If between="..." is specified, the provided value will be inserted between the items.
+ *   This is also supported in the "foreach" looping template.
+ * - While processing an array, the special variable {#} will provide the current array index + 1 (starts at 1, not 0).
+ *
+ * Examples:
+ *
+ *     <tpl for=".">...</tpl>       
+ *     <tpl for="foo">...</tpl>     
+ *     <tpl for="foo.bar">...</tpl> 
+ *     <tpl for="." between=",">...</tpl> 
+ *
+ * Using the sample data above:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Kids: ',
+ *         '<tpl for=".">',       
+ *             '<p>{#}. {name}</p>',  
+ *         '</tpl></p>'
+ *     );
+ *     tpl.overwrite(panel.body, data.kids); 
+ *
+ * An example illustrating how the **for** property can be leveraged to access specified members of the provided data
+ * object to populate the template:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Title: {title}</p>',
+ *         '<p>Company: {company}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',     
+ *             '<p>{name}</p>',
+ *         '</tpl></p>'
+ *     );
+ *     tpl.overwrite(panel.body, data);  
+ *
+ * Flat arrays that contain values (and not objects) can be auto-rendered using the special **`{.}`** variable inside a
+ * loop. This variable will represent the value of the array at the current index:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>{name}\'s favorite beverages:</p>',
+ *         '<tpl for="drinks">',
+ *             '<div> - {.}</div>',
+ *         '</tpl>'
+ *     );
+ *     tpl.overwrite(panel.body, data);
+ *
+ * When processing a sub-template, for example while looping through a child array, you can access the parent object's
+ * members via the **parent** object:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '<tpl if="age &gt; 1">',
+ *                 '<p>{name}</p>',
+ *                 '<p>Dad: {parent.name}</p>',
+ *             '</tpl>',
+ *         '</tpl></p>'
+ *     );
+ *     tpl.overwrite(panel.body, data);
+ *     
+ * The **foreach** operator is used to loop over an object's properties.  The following
+ * example demonstrates looping over the main data object's properties:
+ * 
+ *     var tpl = new Ext.XTemplate(
+ *         '<dl>',
+ *             '<tpl foreach=".">',
+ *                 '<dt>{$}</dt>', // the special **`{$}`** variable contains the property name
+ *                 '<dd>{.}</dd>', // within the loop, the **`{.}`** variable is set to the property value
+ *             '</tpl>',
+ *         '</dl>'
+ *     );
+ *     tpl.overwrite(panel.body, data);
+ *
+ * # Conditional processing with basic comparison operators
+ *
+ * The **tpl** tag and the **if** operator are used to provide conditional checks for deciding whether or not to render
+ * specific parts of the template.
+ *
+ * Using the sample data above:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '<tpl if="age &gt; 1">',
+ *                 '<p>{name}</p>',
+ *             '</tpl>',
+ *         '</tpl></p>'
+ *     );
+ *     tpl.overwrite(panel.body, data);
+ *
+ * More advanced conditionals are also supported:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '<p>{name} is a ',
+ *             '<tpl if="age &gt;= 13">',
+ *                 '<p>teenager</p>',
+ *             '<tpl elseif="age &gt;= 2">',
+ *                 '<p>kid</p>',
+ *             '<tpl else>',
+ *                 '<p>baby</p>',
+ *             '</tpl>',
+ *         '</tpl></p>'
+ *     );
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '<p>{name} is a ',
+ *             '<tpl switch="name">',
+ *                 '<tpl case="Aubrey" case="Nikol">',
+ *                     '<p>girl</p>',
+ *                 '<tpl default>',
+ *                     '<p>boy</p>',
+ *             '</tpl>',
+ *         '</tpl></p>'
+ *     );
+ *
+ * A `break` is implied between each case and default, however, multiple cases can be listed
+ * in a single &lt;tpl&gt; tag.
+ *
+ * # Using double quotes
+ *
+ * Examples:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         "<tpl if='age &gt; 1 && age &lt; 10'>Child</tpl>",
+ *         "<tpl if='age &gt;= 10 && age &lt; 18'>Teenager</tpl>",
+ *         "<tpl if='this.isGirl(name)'>...</tpl>",
+ *         '<tpl if="id == \'download\'">...</tpl>',
+ *         "<tpl if='needsIcon'><img src='{icon}' class='{iconCls}'/></tpl>",
+ *         "<tpl if='name == \"Don\"'>Hello</tpl>"
+ *     );
+ *
+ * # Basic math support
+ *
+ * The following basic math operators may be applied directly on numeric data values:
+ *
+ *     + - * /
+ *
+ * For example:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '<tpl if="age &gt; 1">',  
+ *                 '<p>{#}: {name}</p>',  
+ *                 '<p>In 5 Years: {age+5}</p>',  
+ *                 '<p>Dad: {parent.name}</p>',
+ *             '</tpl>',
+ *         '</tpl></p>'
+ *     );
+ *     tpl.overwrite(panel.body, data);
+ *
+ * # Execute arbitrary inline code with special built-in template variables
+ *
+ * Anything between `{[ ... ]}` is considered code to be executed in the scope of the template.
+ * The expression is evaluated and the result is included in the generated result. There are
+ * some special variables available in that code:
+ *
+ * - **out**: The output array into which the template is being appended (using `push` to later
+ *   `join`).
+ * - **values**: The values in the current scope. If you are using scope changing sub-templates,
+ *   you can change what values is.
+ * - **parent**: The scope (values) of the ancestor template.
+ * - **xindex**: If you are in a "for" or "foreach" looping template, the index of the loop you are in (1-based).
+ * - **xcount**: If you are in a "for" looping template, the total length of the array you are looping.
+ * - **xkey**: If you are in a "foreach" looping template, the key of the current property
+ * being examined.
+ *
+ * This example demonstrates basic row striping using an inline code block and the xindex variable:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Company: {[values.company.toUpperCase() + ", " + values.title]}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '<div class="{[xindex % 2 === 0 ? "even" : "odd"]}">',
+ *             '{name}',
+ *             '</div>',
+ *         '</tpl></p>'
+ *      );
+ *
+ * Any code contained in "verbatim" blocks (using "{% ... %}") will be inserted directly in
+ * the generated code for the template. These blocks are not included in the output. This
+ * can be used for simple things like break/continue in a loop, or control structures or
+ * method calls (when they don't produce output). The `this` references the template instance.
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Company: {[values.company.toUpperCase() + ", " + values.title]}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '{% if (xindex % 2 === 0) continue; %}',
+ *             '{name}',
+ *             '{% if (xindex > 100) break; %}',
+ *             '</div>',
+ *         '</tpl></p>'
+ *      );
+ *
+ * # Template member functions
+ *
+ * One or more member functions can be specified in a configuration object passed into the XTemplate constructor for
+ * more complex processing:
+ *
+ *     var tpl = new Ext.XTemplate(
+ *         '<p>Name: {name}</p>',
+ *         '<p>Kids: ',
+ *         '<tpl for="kids">',
+ *             '<tpl if="this.isGirl(name)">',
+ *                 '<p>Girl: {name} - {age}</p>',
+ *             '<tpl else>',
+ *                 '<p>Boy: {name} - {age}</p>',
+ *             '</tpl>',
+ *             '<tpl if="this.isBaby(age)">',
+ *                 '<p>{name} is a baby!</p>',
+ *             '</tpl>',
+ *         '</tpl></p>',
+ *         {
+ *             // XTemplate configuration:
+ *             disableFormats: true,
+ *             // member functions:
+ *             isGirl: function(name){
+ *                return name == 'Aubrey' || name == 'Nikol';
+ *             },
+ *             isBaby: function(age){
+ *                return age < 1;
+ *             }
+ *         }
+ *     );
+ *     tpl.overwrite(panel.body, data);
+ */
+Ext.define('Ext.XTemplate', {
+    extend: 'Ext.Template',
+
+    requires: 'Ext.XTemplateCompiler',
+
+    /**
+     * @private
+     */
+    emptyObj: {},
+
+    /**
+     * @cfg {Boolean} compiled
+     * Only applies to {@link Ext.Template}, XTemplates are compiled automatically on the
+     * first call to {@link #apply} or {@link #applyOut}.
+     * @hide
+     */
+
+    /**
+     * @cfg {String/Array} definitions
+     * Optional. A statement, or array of statements which set up `var`s which may then
+     * be accessed within the scope of the generated function.
+     */
+
+    apply: function(values, parent) {
+        return this.applyOut(values, [], parent).join('');
+    },
+
+    applyOut: function(values, out, parent) {
+        var me = this,
+            compiler;
+
+        if (!me.fn) {
+            compiler = new Ext.XTemplateCompiler({
+                useFormat: me.disableFormats !== true,
+                definitions: me.definitions
+            });
+
+            me.fn = compiler.compile(me.html);
+        }
+
+        try {
+            me.fn(out, values, parent || me.emptyObj, 1, 1);
+        } catch (e) {
+        }
+
+        return out;
+    },
+
+    /**
+     * Does nothing. XTemplates are compiled automatically, so this function simply returns this.
+     * @return {Ext.XTemplate} this
+     */
+    compile: function() {
+        return this;
+    },
+
+    statics: {
+        /**
+         * Gets an `XTemplate` from an object (an instance of an {@link Ext#define}'d class).
+         * Many times, templates are configured high in the class hierarchy and are to be
+         * shared by all classes that derive from that base. To further complicate matters,
+         * these templates are seldom actual instances but are rather configurations. For
+         * example:
+         *
+         *      Ext.define('MyApp.Class', {
+         *          extraCls: 'extra-class',
+         *
+         *          someTpl: [
+         *              '<div class="{%this.emitClass(out)%}"></div>',
+         *          {
+         *              
+         *              emitClass: function(out) {
+         *                  out.push(this.owner.extraCls);
+         *              }
+         *          }]
+         *      });
+         *
+         * The goal being to share that template definition with all instances and even
+         * instances of derived classes, until `someTpl` is overridden. This method will
+         * "upgrade" these configurations to be real `XTemplate` instances *in place* (to
+         * avoid creating one instance per object).
+         *
+         * The resulting XTemplate will have an `owner` reference injected which refers back
+         * to the owning object whether that is an object which has an *own instance*, or a
+         * class prototype. Through this link, XTemplate member functions will be able to access
+         * prototype properties of its owning class.
+         *
+         * @param {Object} instance The object from which to get the `XTemplate` (must be
+         * an instance of an {@link Ext#define}'d class).
+         * @param {String} name The name of the property by which to get the `XTemplate`.
+         * @return {Ext.XTemplate} The `XTemplate` instance or null if not found.
+         * @protected
+         * @static
+         */
+        getTpl: function (instance, name) {
+            var tpl = instance[name], // go for it! 99% of the time we will get it!
+                owner;
+
+            if (tpl && !tpl.isTemplate) { // tpl is just a configuration (not an instance)
+                // create the template instance from the configuration:
+                tpl = Ext.ClassManager.dynInstantiate('Ext.XTemplate', tpl);
+
+                // and replace the reference with the new instance:
+                if (instance.hasOwnProperty(name)) { // the tpl is on the instance
+                    owner = instance;
+                } else { // must be somewhere in the prototype chain
+                    for (owner = instance.self.prototype; owner && !owner.hasOwnProperty(name); owner = owner.superclass) {
+                    }
+                }
+                owner[name] = tpl;
+                tpl.owner = owner;
+            }
+            // else !tpl (no such tpl) or the tpl is an instance already... either way, tpl
+            // is ready to return
+
+            return tpl || null;
+        }
+    }
+});
+
+//@tag core
+/**
+ * Base class that provides a common interface for publishing events. Subclasses are expected to to have a property
+ * "events" with all the events defined, and, optionally, a property "listeners" with configured listeners defined.
+ *
+ * For example:
+ *
+ *     Ext.define('Employee', {
+ *         mixins: {
+ *             observable: 'Ext.util.Observable'
+ *         },
+ *
+ *         constructor: function (config) {
+ *             // The Observable constructor copies all of the properties of `config` on
+ *             // to `this` using {@link Ext#apply}. Further, the `listeners` property is
+ *             // processed to add listeners.
+ *             //
+ *             this.mixins.observable.constructor.call(this, config);
+ *
+ *             this.addEvents(
+ *                 'fired',
+ *                 'quit'
+ *             );
+ *         }
+ *     });
+ *
+ * This could then be used like this:
+ *
+ *     var newEmployee = new Employee({
+ *         name: employeeName,
+ *         listeners: {
+ *             quit: function() {
+ *                 // By default, "this" will be the object that fired the event.
+ *                 alert(this.name + " has quit!");
+ *             }
+ *         }
+ *     });
+ */
+Ext.define('Ext.util.Observable', function(Observable) {
+
+    // Private Destroyable class which removes listeners
+    var ListenerRemover = function(observable) {
+
+        // Passed a ListenerRemover: return it
+        if (observable instanceof ListenerRemover) {
+            return observable;
+        }
+
+        this.observable = observable;
+
+        // Called when addManagedListener is used with the event source as the second arg:
+        // (owner, eventSource, args...)
+        if (arguments[1].isObservable) {
+            this.managedListeners = true;
+        }
+        this.args = Ext.Array.slice(arguments, 1);
+    };
+    ListenerRemover.prototype.destroy = function() {
+        this.observable[this.managedListeners ? 'mun' : 'un'].apply(this.observable, this.args);
+    }
+
+    return {
+
+        /* Begin Definitions */
+
+        requires: ['Ext.util.Event', 'Ext.EventManager'],
+
+        statics: {
+            /**
+            * Removes **all** added captures from the Observable.
+            *
+            * @param {Ext.util.Observable} o The Observable to release
+            * @static
+            */
+            releaseCapture: function(o) {
+                o.fireEvent = this.prototype.fireEvent;
+            },
+
+            /**
+            * Starts capture on the specified Observable. All events will be passed to the supplied function with the event
+            * name + standard signature of the event **before** the event is fired. If the supplied function returns false,
+            * the event will not fire.
+            *
+            * @param {Ext.util.Observable} o The Observable to capture events from.
+            * @param {Function} fn The function to call when an event is fired.
+            * @param {Object} scope (optional) The scope (`this` reference) in which the function is executed. Defaults to
+            * the Observable firing the event.
+            * @static
+            */
+            capture: function(o, fn, scope) {
+                o.fireEvent = Ext.Function.createInterceptor(o.fireEvent, fn, scope);
+            },
+
+            /**
+            * Sets observability on the passed class constructor.
+            *
+            * This makes any event fired on any instance of the passed class also fire a single event through
+            * the **class** allowing for central handling of events on many instances at once.
+            *
+            * Usage:
+            *
+            *     Ext.util.Observable.observe(Ext.data.Connection);
+            *     Ext.data.Connection.on('beforerequest', function(con, options) {
+            *         console.log('Ajax request made to ' + options.url);
+            *     });
+            *
+            * @param {Function} c The class constructor to make observable.
+            * @param {Object} listeners An object containing a series of listeners to add. See {@link #addListener}.
+            * @static
+            */
+            observe: function(cls, listeners) {
+                if (cls) {
+                    if (!cls.isObservable) {
+                        Ext.applyIf(cls, new this());
+                        this.capture(cls.prototype, cls.fireEvent, cls);
+                    }
+                    if (Ext.isObject(listeners)) {
+                        cls.on(listeners);
+                    }
+                }
+                return cls;
+            },
+
+            /**
+            * Prepares a given class for observable instances. This method is called when a
+            * class derives from this class or uses this class as a mixin.
+            * @param {Function} T The class constructor to prepare.
+            * @private
+            */
+            prepareClass: function (T, mixin) {
+                // T.hasListeners is the object to track listeners on class T. This object's
+                
+
+                
+                
+
+                if (!T.HasListeners) {
+                    
+                    
+                    
+                    var HasListeners = function () {},
+                        SuperHL = T.superclass.HasListeners || (mixin && mixin.HasListeners) ||
+                                Observable.HasListeners;
+
+                    
+                    T.prototype.HasListeners = T.HasListeners = HasListeners;
+
+                    
+                    
+                    HasListeners.prototype = T.hasListeners = new SuperHL();
+                }
+            }
+        },
+
+        
+
+        
+
+        
+        isObservable: true,
+
+        
+        eventsSuspended: 0,
+
+        
+
+        constructor: function(config) {
+            var me = this;
+
+            Ext.apply(me, config);
+
+            
+            if (!me.hasListeners) {
+                me.hasListeners = new me.HasListeners();
+            }
+
+            me.events = me.events || {};
+            if (me.listeners) {
+                me.on(me.listeners);
+                me.listeners = null; 
+            }
+
+            if (me.bubbleEvents) {
+                me.enableBubble(me.bubbleEvents);
+            }
+        },
+
+        onClassExtended: function (T) {
+
+            if (!T.HasListeners) {
+                
+                
+                Observable.prepareClass(T);
+            }
+        },
+
+        
+        
+        eventOptionsRe : /^(?:scope|delay|buffer|single|stopEvent|preventDefault|stopPropagation|normalized|args|delegate|element|destroyable|vertical|horizontal|freezeEvent|priority)$/,
+
+        
+        addManagedListener : function(item, ename, fn, scope, options,  noDestroy) {
+            var me = this,
+                managedListeners = me.managedListeners = me.managedListeners || [],
+                config;
+
+            if (typeof ename !== 'string') {
+                options = ename;
+                for (ename in options) {
+                    if (options.hasOwnProperty(ename)) {
+                        config = options[ename];
+                        if (!me.eventOptionsRe.test(ename)) {
+                            
+                            
+                            me.addManagedListener(item, ename, config.fn || config, config.scope || options.scope || scope, config.fn ? config : options, true);
+                        }
+                    }
+                }
+                if (options && options.destroyable) {
+                    return new ListenerRemover(me, item, options);
+                }
+            }
+            else {
+                if (typeof fn === 'string') {
+                    scope = scope || me;
+                    fn = scope[fn];
+                }
+                managedListeners.push({
+                    item: item,
+                    ename: ename,
+                    fn: fn,
+                    scope: scope,
+                    options: options
+                });
+
+                item.on(ename, fn, scope, options);
+
+                
+                if (!noDestroy && options && options.destroyable) {
+                    return new ListenerRemover(me, item, ename, fn, scope);
+                }
+            }
+        },
+
+        
+        removeManagedListener : function(item, ename, fn, scope) {
+            var me = this,
+                options,
+                config,
+                managedListeners,
+                length,
+                i;
+
+            if (typeof ename !== 'string') {
+                options = ename;
+                for (ename in options) {
+                    if (options.hasOwnProperty(ename)) {
+                        config = options[ename];
+                        if (!me.eventOptionsRe.test(ename)) {
+                            me.removeManagedListener(item, ename, config.fn || config, config.scope || options.scope || scope);
+                        }
+                    }
+                }
+            } else {
+
+                managedListeners = me.managedListeners ? me.managedListeners.slice() : [];
+
+                for (i = 0, length = managedListeners.length; i < length; i++) {
+                    me.removeManagedListenerItem(false, managedListeners[i], item, ename, fn, scope);
+                }
+            }
+        },
+
+        
+        fireEvent: function(eventName) {
+            eventName = eventName.toLowerCase();
+            var me = this,
+                events = me.events,
+                event = events && events[eventName],
+                ret = true;
+
+            
+            
+            if (event && me.hasListeners[eventName]) {
+                ret = me.continueFireEvent(eventName, Ext.Array.slice(arguments, 1), event.bubble);
+            }
+            return ret;
+        },
+
+        
+        continueFireEvent: function(eventName, args, bubbles) {
+            var target = this,
+                queue, event,
+                ret = true;
+
+            do {
+                if (target.eventsSuspended) {
+                    if ((queue = target.eventQueue)) {
+                        queue.push([eventName, args, bubbles]);
+                    }
+                    return ret;
+                } else {
+                    event = target.events[eventName];
+                    
+                    
+                    if (event && event != true) {
+                        if ((ret = event.fire.apply(event, args)) === false) {
+                            break;
+                        }
+                    }
+                }
+            } while (bubbles && (target = target.getBubbleParent()));
+            return ret;
+        },
+
+        
+        getBubbleParent: function(){
+            var me = this, parent = me.getBubbleTarget && me.getBubbleTarget();
+            if (parent && parent.isObservable) {
+                return parent;
+            }
+            return null;
+        },
+
+        
+        addListener: function(ename, fn, scope, options) {
+            var me = this,
+                config, event, hasListeners,
+                prevListenerCount = 0;
+
+            
+            if (typeof ename !== 'string') {
+                options = ename;
+                for (ename in options) {
+                    if (options.hasOwnProperty(ename)) {
+                        config = options[ename];
+                        if (!me.eventOptionsRe.test(ename)) {
+                            
+                            me.addListener(ename, config.fn || config, config.scope || options.scope, config.fn ? config : options);
+                        }
+                    }
+                }
+                if (options && options.destroyable) {
+                    return new ListenerRemover(me, options);
+                }
+            }
+            
+            else {
+                ename = ename.toLowerCase();
+                event = me.events[ename];
+                if (event && event.isEvent) {
+                    prevListenerCount = event.listeners.length;
+                } else {
+                    me.events[ename] = event = new Ext.util.Event(me, ename);
+                }
+
+                
+                if (typeof fn === 'string') {
+                    scope = scope || me;
+                    fn = scope[fn];
+                }
+                event.addListener(fn, scope, options);
+
+                
+                
+                if (event.listeners.length !== prevListenerCount) {
+                    hasListeners = me.hasListeners;
+                    if (hasListeners.hasOwnProperty(ename)) {
+                        
+                        ++hasListeners[ename];
+                    } else {
+                        
+                        
+                        hasListeners[ename] = 1;
+                    }
+                }
+                if (options && options.destroyable) {
+                    return new ListenerRemover(me, ename, fn, scope, options);
+                }
+            }
+        },
+
+        
+        removeListener: function(ename, fn, scope) {
+            var me = this,
+                config,
+                event,
+                options;
+
+            if (typeof ename !== 'string') {
+                options = ename;
+                for (ename in options) {
+                    if (options.hasOwnProperty(ename)) {
+                        config = options[ename];
+                        if (!me.eventOptionsRe.test(ename)) {
+                            me.removeListener(ename, config.fn || config, config.scope || options.scope);
+                        }
+                    }
+                }
+            } else {
+                ename = ename.toLowerCase();
+                event = me.events[ename];
+                if (event && event.isEvent) {
+                    if (event.removeListener(fn, scope) && !--me.hasListeners[ename]) {
+                        
+                        
+                        
+                        delete me.hasListeners[ename];
+                    }
+                }
+            }
+        },
+
+        
+        clearListeners: function() {
+            var events = this.events,
+                hasListeners = this.hasListeners,
+                event,
+                key;
+
+            for (key in events) {
+                if (events.hasOwnProperty(key)) {
+                    event = events[key];
+                    if (event.isEvent) {
+                        delete hasListeners[key];
+                        event.clearListeners();
+                    }
+                }
+            }
+
+            this.clearManagedListeners();
+        },
+
+
+        
+        clearManagedListeners : function() {
+            var managedListeners = this.managedListeners || [],
+                i = 0,
+                len = managedListeners.length;
+
+            for (; i < len; i++) {
+                this.removeManagedListenerItem(true, managedListeners[i]);
+            }
+
+            this.managedListeners = [];
+        },
+
+        
+        removeManagedListenerItem: function(isClear, managedListener, item, ename, fn, scope){
+            if (isClear || (managedListener.item === item && managedListener.ename === ename && (!fn || managedListener.fn === fn) && (!scope || managedListener.scope === scope))) {
+                managedListener.item.un(managedListener.ename, managedListener.fn, managedListener.scope);
+                if (!isClear) {
+                    Ext.Array.remove(this.managedListeners, managedListener);
+                }
+            }
+        },
+
+
+        
+        addEvents: function(o) {
+            var me = this,
+                events = me.events || (me.events = {}),
+                arg, args, i;
+
+            if (typeof o == 'string') {
+                for (args = arguments, i = args.length; i--; ) {
+                    arg = args[i];
+                    if (!events[arg]) {
+                        events[arg] = true;
+                    }
+                }
+            } else {
+                Ext.applyIf(me.events, o);
+            }
+        },
+
+        
+        hasListener: function(ename) {
+            return !!this.hasListeners[ename.toLowerCase()];
+        },
+
+        
+        suspendEvents: function(queueSuspended) {
+            this.eventsSuspended += 1;
+            if (queueSuspended && !this.eventQueue) {
+                this.eventQueue = [];
+            }
+        },
+
+        
+        suspendEvent: function(eventName) {
+            var len = arguments.length,
+                i, event;
+
+            for (i = 0; i < len; i++) {
+                event = this.events[arguments[i]];
+
+                
+                if (event && event.suspend) {
+                    event.suspend();
+                }
+            }
+        },
+
+        
+        resumeEvent: function() {
+            var len = arguments.length,
+                i, event;
+
+            for (i = 0; i < len; i++) {
+
+                
+                event = this.events[arguments[i]];
+                if (event && event.resume) {
+                    event.resume();
+                }
+            }
+        },
+
+        
+        resumeEvents: function() {
+            var me = this,
+                queued = me.eventQueue,
+                qLen, q;
+
+            if (me.eventsSuspended && ! --me.eventsSuspended) {
+                delete me.eventQueue;
+
+                if (queued) {
+                    qLen = queued.length;
+                    for (q = 0; q < qLen; q++) {
+                        me.continueFireEvent.apply(me, queued[q]);
+                    }
+                }
+            }
+        },
+
+        
+        relayEvents : function(origin, events, prefix) {
+            var me = this,
+                len = events.length,
+                i = 0,
+                oldName,
+                relayers = {};
+
+            for (; i < len; i++) {
+                oldName = events[i];
+
+                
+                relayers[oldName] = me.createRelayer(prefix ? prefix + oldName : oldName);
+            }
+            
+            me.mon(origin, relayers);
+
+            
+            return new ListenerRemover(me, origin, relayers);
+        },
+
+        
+        createRelayer: function(newName, beginEnd){
+            var me = this;
+            return function() {
+                return me.fireEvent.apply(me, [newName].concat(Array.prototype.slice.apply(arguments, beginEnd || [0, -1])));
+            };
+        },
+
+        
+        enableBubble: function(eventNames) {
+            if (eventNames) {
+                var me = this,
+                    names = (typeof eventNames == 'string') ? arguments : eventNames,
+                    length = names.length,
+                    events = me.events,
+                    ename, event, i;
+
+                for (i = 0; i < length; ++i) {
+                    ename = names[i].toLowerCase();
+                    event = events[ename];
+
+                    if (!event || typeof event == 'boolean') {
+                        events[ename] = event = new Ext.util.Event(me, ename);
+                    }
+
+                    
+                    me.hasListeners[ename] = (me.hasListeners[ename]||0) + 1;
+
+                    event.bubble = true;
+                }
+            }
+        }
+    };
+}, function() {
+    var Observable = this,
+        proto = Observable.prototype,
+        HasListeners = function () {},
+        prepareMixin = function (T) {
+            if (!T.HasListeners) {
+                var proto = T.prototype;
+
+                
+                Observable.prepareClass(T, this);
+
+                
+                
+                T.onExtended(function (U) {
+                    Observable.prepareClass(U);
+                });
+
+                
+                
+                if (proto.onClassMixedIn) {
+                    
+                    Ext.override(T, {
+                        onClassMixedIn: function (U) {
+                            prepareMixin.call(this, U);
+                            this.callParent(arguments);
+                        }
+                    });
+                } else {
+                    
+                    proto.onClassMixedIn = function (U) {
+                        prepareMixin.call(this, U);
+                    };
+                }
+            }
+        },
+        globalEvents;
+
+    HasListeners.prototype = {
+        
+    };
+
+    proto.HasListeners = Observable.HasListeners = HasListeners;
+
+    Observable.createAlias({
+        
+        on: 'addListener',
+        
+        un: 'removeListener',
+        
+        mon: 'addManagedListener',
+        
+        mun: 'removeManagedListener'
+    });
+
+    
+    Observable.observeClass = Observable.observe;
+
+    
+    Ext.globalEvents = globalEvents = new Observable({
+        events: {
+            idle: Ext.EventManager.idleEvent,
+            ready: Ext.EventManager.readyEvent
+        }
+    });
+
+    
+    Ext.on = function() {
+        return globalEvents.addListener.apply(globalEvents, arguments);
+    };
+
+    
+    Ext.un = function() {
+        return globalEvents.removeListener.apply(globalEvents, arguments);
+    };
+
+    
+    
+    
+    function getMethodEvent(method){
+        var e = (this.methodEvents = this.methodEvents || {})[method],
+            returnValue,
+            v,
+            cancel,
+            obj = this,
+            makeCall;
+
+        if (!e) {
+            this.methodEvents[method] = e = {};
+            e.originalFn = this[method];
+            e.methodName = method;
+            e.before = [];
+            e.after = [];
+
+            makeCall = function(fn, scope, args){
+                if((v = fn.apply(scope || obj, args)) !== undefined){
+                    if (typeof v == 'object') {
+                        if(v.returnValue !== undefined){
+                            returnValue = v.returnValue;
+                        }else{
+                            returnValue = v;
+                        }
+                        cancel = !!v.cancel;
+                    }
+                    else
+                        if (v === false) {
+                            cancel = true;
+                        }
+                        else {
+                            returnValue = v;
+                        }
+                }
+            };
+
+            this[method] = function(){
+                var args = Array.prototype.slice.call(arguments, 0),
+                    b, i, len;
+                returnValue = v = undefined;
+                cancel = false;
+
+                for(i = 0, len = e.before.length; i < len; i++){
+                    b = e.before[i];
+                    makeCall(b.fn, b.scope, args);
+                    if (cancel) {
+                        return returnValue;
+                    }
+                }
+
+                if((v = e.originalFn.apply(obj, args)) !== undefined){
+                    returnValue = v;
+                }
+
+                for(i = 0, len = e.after.length; i < len; i++){
+                    b = e.after[i];
+                    makeCall(b.fn, b.scope, args);
+                    if (cancel) {
+                        return returnValue;
+                    }
+                }
+                return returnValue;
+            };
+        }
+        return e;
+    }
+
+    Ext.apply(proto, {
+        onClassMixedIn: prepareMixin,
+
+        
+        
+        
+        beforeMethod : function(method, fn, scope){
+            getMethodEvent.call(this, method).before.push({
+                fn: fn,
+                scope: scope
+            });
+        },
+
+        
+        afterMethod : function(method, fn, scope){
+            getMethodEvent.call(this, method).after.push({
+                fn: fn,
+                scope: scope
+            });
+        },
+
+        removeMethodListener: function(method, fn, scope){
+            var e = this.getMethodEvent(method),
+                i, len;
+            for(i = 0, len = e.before.length; i < len; i++){
+                if(e.before[i].fn == fn && e.before[i].scope == scope){
+                    Ext.Array.erase(e.before, i, 1);
+                    return;
+                }
+            }
+            for(i = 0, len = e.after.length; i < len; i++){
+                if(e.after[i].fn == fn && e.after[i].scope == scope){
+                    Ext.Array.erase(e.after, i, 1);
+                    return;
+                }
+            }
+        },
+
+        toggleEventLogging: function(toggle) {
+            Ext.util.Observable[toggle ? 'capture' : 'releaseCapture'](this, function(en) {
+                if (Ext.isDefined(Ext.global.console)) {
+                    Ext.global.console.log(en, arguments);
+                }
+            });
+        }
+    });
+});
+
 Ext.ClassManager.addNameAlternateMappings({
   "Ext.draw.engine.ImageExporter": [],
   "Ext.layout.component.Auto": [],
   "Ext.grid.property.Store": [
     "Ext.grid.PropertyStore"
   ],
+  "Ext.rtl.layout.container.Container": [],
   "Ext.layout.container.Box": [
     "Ext.layout.BoxLayout"
   ],
+  "Ext.rtl.resizer.BorderSplitterTracker": [],
   "Ext.direct.JsonProvider": [],
   "Ext.tree.Panel": [
     "Ext.tree.TreePanel",
@@ -18564,6 +21226,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.util.Grouper": [],
   "Ext.direct.RemotingProvider": [],
   "Ext.data.NodeInterface": [],
+  "Ext.view.NodeCache": [],
   "Ext.grid.column.Date": [
     "Ext.grid.DateColumn"
   ],
@@ -18576,6 +21239,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.tip.QuickTip": [
     "Ext.QuickTip"
   ],
+  "Ext.rtl.grid.plugin.HeaderResizer": [],
   "Ext.form.action.Load": [
     "Ext.form.Action.Load"
   ],
@@ -18600,15 +21264,14 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.form.field.Checkbox": [
     "Ext.form.Checkbox"
   ],
-  "Ext.XTemplateCompiler": [],
   "Ext.direct.Transaction": [
     "Ext.Direct.Transaction"
   ],
   "Ext.util.Offset": [],
+  "Ext.view.DragZone": [],
   "Ext.util.KeyNav": [
     "Ext.KeyNav"
   ],
-  "Ext.view.DragZone": [],
   "Ext.form.field.File": [
     "Ext.form.FileUploadField",
     "Ext.ux.form.FileUploadField",
@@ -18623,10 +21286,10 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.panel.Proxy": [
     "Ext.dd.PanelProxy"
   ],
+  "Ext.fx.target.Target": [],
   "Ext.ComponentManager": [
     "Ext.ComponentMgr"
   ],
-  "Ext.fx.target.Target": [],
   "Ext.grid.feature.GroupingSummary": [],
   "Ext.grid.property.HeaderContainer": [
     "Ext.grid.PropertyColumnModel"
@@ -18654,6 +21317,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.layout.component.FieldSet": [],
   "Ext.util.Bindable": [],
   "Ext.data.SortTypes": [],
+  "Ext.rtl.layout.container.HBox": [],
   "Ext.util.Animate": [],
   "Ext.form.field.Date": [
     "Ext.form.DateField",
@@ -18732,13 +21396,14 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.fx.Easing": [],
   "Ext.ProgressBar": [],
+  "Ext.tree.ViewDragZone": [],
   "Ext.data.reader.Array": [
     "Ext.data.ArrayReader"
   ],
   "Ext.picker.Date": [
     "Ext.DatePicker"
   ],
-  "Ext.tree.ViewDragZone": [],
+  "Ext.rtl.grid.column.Column": [],
   "Ext.data.proxy.JsonP": [
     "Ext.data.ScriptTagProxy"
   ],
@@ -18747,12 +21412,16 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.menu.Item": [
     "Ext.menu.TextItem"
   ],
+  "Ext.rtl.dom.Element_position": [],
   "Ext.chart.Legend": [],
   "Ext.grid.plugin.HeaderReorderer": [],
+  "Ext.rtl.view.Table": [],
+  "Ext.rtl.util.Floating": [],
   "Ext.layout.container.VBox": [
     "Ext.layout.VBoxLayout"
   ],
   "Ext.view.DropZone": [],
+  "Ext.rtl.tree.Column": [],
   "Ext.layout.component.Button": [],
   "Ext.form.field.Hidden": [
     "Ext.form.Hidden"
@@ -18768,6 +21437,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.grid.column.Column": [
     "Ext.grid.Column"
   ],
+  "Ext.rtl.layout.component.Dock": [],
   "Ext.data.ResultSet": [],
   "Ext.data.association.HasMany": [
     "Ext.data.HasManyAssociation"
@@ -18776,11 +21446,13 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.layout.FitLayout"
   ],
   "Ext.util.CSS": [],
+  "Ext.rtl.AbstractComponent": [],
   "Ext.layout.component.field.Field": [],
   "Ext.data.proxy.Ajax": [
     "Ext.data.HttpProxy",
     "Ext.data.AjaxProxy"
   ],
+  "Ext.rtl.EventObjectImpl": [],
   "Ext.form.Label": [],
   "Ext.data.writer.Writer": [
     "Ext.data.DataWriter",
@@ -18788,7 +21460,6 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.view.BoundListKeyNav": [],
   "Ext.form.FieldSet": [],
-  "Ext.XTemplateParser": [],
   "Ext.form.field.VTypes": [
     "Ext.form.VTypes"
   ],
@@ -18800,6 +21471,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.panel.Header": [],
   "Ext.app.Controller": [],
   "Ext.grid.plugin.CellEditing": [],
+  "Ext.rtl.dom.Layer": [],
   "Ext.form.field.Time": [
     "Ext.form.TimeField",
     "Ext.form.Time"
@@ -18815,7 +21487,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.data.XmlStore": [],
   "Ext.grid.ViewDropZone": [],
   "Ext.grid.header.DropZone": [],
-  "Ext.Layer": [],
+  "Ext.rtl.layout.component.field.Text": [],
   "Ext.util.HashMap": [],
   "Ext.grid.column.Template": [
     "Ext.grid.TemplateColumn"
@@ -18835,6 +21507,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.draw.Text": [],
   "Ext.window.MessageBox": [],
   "Ext.fx.target.CompositeElementCSS": [],
+  "Ext.rtl.layout.ContextItem": [],
   "Ext.chart.series.Line": [
     "Ext.chart.LineSeries",
     "Ext.chart.LineChart"
@@ -18860,6 +21533,7 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.form.TextField",
     "Ext.form.Text"
   ],
+  "Ext.rtl.layout.component.field.Trigger": [],
   "Ext.data.reader.Xml": [
     "Ext.data.XmlReader"
   ],
@@ -18870,6 +21544,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.layout.container.Absolute": [
     "Ext.layout.AbsoluteLayout"
   ],
+  "Ext.rtl.layout.container.Box": [],
   "Ext.data.reader.Json": [
     "Ext.data.JsonReader"
   ],
@@ -18885,12 +21560,12 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.layout.FormLayout"
   ],
   "Ext.chart.MaskLayer": [],
-  "Ext.util.Observable": [],
   "Ext.resizer.BorderSplitterTracker": [],
   "Ext.util.LruCache": [],
   "Ext.tip.Tip": [
     "Ext.Tip"
   ],
+  "Ext.rtl.resizer.SplitterTracker": [],
   "Ext.grid.feature.RowWrap": [],
   "Ext.data.proxy.Client": [
     "Ext.data.ClientProxy"
@@ -18907,8 +21582,8 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.data.association.Association": [
     "Ext.data.Association"
   ],
-  "Ext.grid.LockingView": [],
   "Ext.tree.ViewDropZone": [],
+  "Ext.grid.LockingView": [],
   "Ext.toolbar.Toolbar": [
     "Ext.Toolbar"
   ],
@@ -18923,7 +21598,6 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.ListView",
     "Ext.grid.GridPanel"
   ],
-  "Ext.XTemplate": [],
   "Ext.data.NodeStore": [],
   "Ext.Shadow": [],
   "Ext.form.action.Submit": [
@@ -18962,7 +21636,11 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.layout.component.field.Text": [],
   "Ext.data.DirectStore": [],
+  "Ext.dom.Layer": [
+    "Ext.Layer"
+  ],
   "Ext.data.BufferStore": [],
+  "Ext.grid.plugin.DivRenderer": [],
   "Ext.grid.ColumnLayout": [],
   "Ext.chart.series.Column": [
     "Ext.chart.ColumnSeries",
@@ -18970,7 +21648,6 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.chart.StackedColumnChart"
   ],
   "Ext.AbstractComponent": [],
-  "Ext.Template": [],
   "Ext.flash.Component": [
     "Ext.FlashComponent"
   ],
@@ -18978,6 +21655,7 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.form.Field",
     "Ext.form.BaseField"
   ],
+  "Ext.grid.feature.GroupStore": [],
   "Ext.data.SequentialIdGenerator": [],
   "Ext.grid.header.Container": [],
   "Ext.container.ButtonGroup": [
@@ -19007,6 +21685,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.container.DockingContainer": [],
   "Ext.selection.DataViewModel": [],
   "Ext.dd.DragTracker": [],
+  "Ext.data.Group": [],
   "Ext.dd.DragDropManager": [
     "Ext.dd.DragDropMgr",
     "Ext.dd.DDM"
@@ -19021,6 +21700,7 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.form.NumberField",
     "Ext.form.Number"
   ],
+  "Ext.rtl.util.Renderable": [],
   "Ext.data.proxy.Direct": [
     "Ext.data.DirectProxy"
   ],
@@ -19030,6 +21710,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.form.field.TextArea": [
     "Ext.form.TextArea"
   ],
+  "Ext.rtl.layout.container.VBox": [],
   "Ext.form.field.Radio": [
     "Ext.form.Radio"
   ],
@@ -19038,15 +21719,15 @@ Ext.ClassManager.addNameAlternateMappings({
     "Ext.chart.PieSeries",
     "Ext.chart.PieChart"
   ],
-  "Ext.view.TableChunker": [],
+  "Ext.tree.plugin.TreeViewDragDrop": [],
   "Ext.direct.Provider": [],
   "Ext.data.TreeModel": [],
-  "Ext.tree.plugin.TreeViewDragDrop": [],
   "Ext.layout.Layout": [],
   "Ext.toolbar.TextItem": [
     "Ext.Toolbar.TextItem"
   ],
   "Ext.util.AbstractMixedCollection": [],
+  "Ext.rtl.button.Button": [],
   "Ext.data.JsonStore": [],
   "Ext.button.Split": [
     "Ext.SplitButton"
@@ -19111,10 +21792,12 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.form.RadioGroup": [],
   "Ext.slider.Thumb": [],
   "Ext.grid.header.DragZone": [],
+  "Ext.rtl.resizer.ResizeTracker": [],
   "Ext.form.action.DirectLoad": [
     "Ext.form.Action.DirectLoad"
   ],
   "Ext.picker.Time": [],
+  "Ext.grid.plugin.BufferedRenderer": [],
   "Ext.resizer.BorderSplitter": [],
   "Ext.ZIndexManager": [
     "Ext.WindowGroup"
@@ -19125,6 +21808,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.toolbar.Spacer": [
     "Ext.Toolbar.Spacer"
   ],
+  "Ext.rtl.dd.DD": [],
   "Ext.panel.Panel": [
     "Ext.Panel"
   ],
@@ -19139,28 +21823,30 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.layout.component.Tab": [],
   "Ext.ComponentQuery": [],
   "Ext.draw.engine.SvgExporter": [],
-  "Ext.grid.feature.Chunking": [],
   "Ext.layout.container.Auto": [],
   "Ext.view.AbstractView": [],
   "Ext.util.Region": [],
-  "Ext.fx.target.ElementCSS": [],
   "Ext.draw.Draw": [],
-  "Ext.grid.PagingScroller": [],
+  "Ext.fx.target.ElementCSS": [],
+  "Ext.rtl.panel.Panel": [],
   "Ext.layout.component.field.HtmlEditor": [],
   "Ext.data.proxy.SessionStorage": [
     "Ext.data.SessionStorageProxy"
   ],
   "Ext.app.EventBus": [],
   "Ext.menu.Separator": [],
-  "Ext.direct.RemotingMethod": [],
-  "Ext.direct.Event": [],
   "Ext.util.History": [
     "Ext.History"
   ],
+  "Ext.direct.RemotingMethod": [],
+  "Ext.direct.Event": [],
   "Ext.dd.ScrollManager": [],
   "Ext.chart.Mask": [],
+  "Ext.rtl.dom.Element_anim": [],
   "Ext.selection.CellModel": [],
   "Ext.view.TableLayout": [],
+  "Ext.rtl.dom.Element_scroll": [],
+  "Ext.rtl.panel.Header": [],
   "Ext.state.Provider": [],
   "Ext.layout.container.Editor": [],
   "Ext.data.Errors": [],
@@ -19178,6 +21864,7 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.AbstractManager": [],
   "Ext.chart.series.Radar": [],
+  "Ext.rtl.dom.Element_insertion": [],
   "Ext.grid.property.Property": [
     "Ext.PropGridProperty"
   ],
@@ -19187,10 +21874,10 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.direct.PollingProvider": [],
   "Ext.grid.plugin.HeaderResizer": [],
+  "Ext.tree.Column": [],
   "Ext.data.writer.Xml": [
     "Ext.data.XmlWriter"
   ],
-  "Ext.tree.Column": [],
   "Ext.slider.Multi": [
     "Ext.slider.MultiSlider"
   ],
@@ -19218,9 +21905,11 @@ Ext.ClassManager.addNameAlternateMappings({
     "layout.autocomponent"
   ],
   "Ext.grid.property.Store": [],
+  "Ext.rtl.layout.container.Container": [],
   "Ext.layout.container.Box": [
     "layout.box"
   ],
+  "Ext.rtl.resizer.BorderSplitterTracker": [],
   "Ext.direct.JsonProvider": [
     "direct.jsonprovider"
   ],
@@ -19240,6 +21929,7 @@ Ext.ClassManager.addNameAlternateMappings({
     "direct.remotingprovider"
   ],
   "Ext.data.NodeInterface": [],
+  "Ext.view.NodeCache": [],
   "Ext.grid.column.Date": [
     "widget.datecolumn"
   ],
@@ -19253,6 +21943,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.tip.QuickTip": [
     "widget.quicktip"
   ],
+  "Ext.rtl.grid.plugin.HeaderResizer": [],
   "Ext.form.action.Load": [
     "formaction.load"
   ],
@@ -19269,7 +21960,9 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.layout.component.field.TextArea": [
     "layout.textareafield"
   ],
-  "Ext.layout.container.Container": [],
+  "Ext.layout.container.Container": [
+    "layout.container"
+  ],
   "Ext.util.Sortable": [],
   "Ext.selection.Model": [],
   "Ext.draw.CompositeSprite": [],
@@ -19279,13 +21972,12 @@ Ext.ClassManager.addNameAlternateMappings({
     "widget.checkboxfield",
     "widget.checkbox"
   ],
-  "Ext.XTemplateCompiler": [],
   "Ext.direct.Transaction": [
     "direct.transaction"
   ],
   "Ext.util.Offset": [],
-  "Ext.util.KeyNav": [],
   "Ext.view.DragZone": [],
+  "Ext.util.KeyNav": [],
   "Ext.form.field.File": [
     "widget.filefield",
     "widget.fileuploadfield"
@@ -19295,8 +21987,8 @@ Ext.ClassManager.addNameAlternateMappings({
     "widget.sliderfield"
   ],
   "Ext.panel.Proxy": [],
-  "Ext.ComponentManager": [],
   "Ext.fx.target.Target": [],
+  "Ext.ComponentManager": [],
   "Ext.grid.feature.GroupingSummary": [
     "feature.groupingsummary"
   ],
@@ -19334,6 +22026,7 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.util.Bindable": [],
   "Ext.data.SortTypes": [],
+  "Ext.rtl.layout.container.HBox": [],
   "Ext.util.Animate": [],
   "Ext.form.field.Date": [
     "widget.datefield"
@@ -19426,13 +22119,14 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.ProgressBar": [
     "widget.progressbar"
   ],
+  "Ext.tree.ViewDragZone": [],
   "Ext.data.reader.Array": [
     "reader.array"
   ],
   "Ext.picker.Date": [
     "widget.datepicker"
   ],
-  "Ext.tree.ViewDragZone": [],
+  "Ext.rtl.grid.column.Column": [],
   "Ext.data.proxy.JsonP": [
     "proxy.jsonp",
     "proxy.scripttag"
@@ -19444,14 +22138,18 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.menu.Item": [
     "widget.menuitem"
   ],
+  "Ext.rtl.dom.Element_position": [],
   "Ext.chart.Legend": [],
   "Ext.grid.plugin.HeaderReorderer": [
     "plugin.gridheaderreorderer"
   ],
+  "Ext.rtl.view.Table": [],
+  "Ext.rtl.util.Floating": [],
   "Ext.layout.container.VBox": [
     "layout.vbox"
   ],
   "Ext.view.DropZone": [],
+  "Ext.rtl.tree.Column": [],
   "Ext.layout.component.Button": [
     "layout.button"
   ],
@@ -19469,6 +22167,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.grid.column.Column": [
     "widget.gridcolumn"
   ],
+  "Ext.rtl.layout.component.Dock": [],
   "Ext.data.ResultSet": [],
   "Ext.data.association.HasMany": [
     "association.hasmany"
@@ -19477,12 +22176,14 @@ Ext.ClassManager.addNameAlternateMappings({
     "layout.fit"
   ],
   "Ext.util.CSS": [],
+  "Ext.rtl.AbstractComponent": [],
   "Ext.layout.component.field.Field": [
     "layout.field"
   ],
   "Ext.data.proxy.Ajax": [
     "proxy.ajax"
   ],
+  "Ext.rtl.EventObjectImpl": [],
   "Ext.form.Label": [
     "widget.label"
   ],
@@ -19493,7 +22194,6 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.form.FieldSet": [
     "widget.fieldset"
   ],
-  "Ext.XTemplateParser": [],
   "Ext.form.field.VTypes": [],
   "Ext.fx.PropertyHandler": [],
   "Ext.form.CheckboxGroup": [
@@ -19511,6 +22211,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.grid.plugin.CellEditing": [
     "plugin.cellediting"
   ],
+  "Ext.rtl.dom.Layer": [],
   "Ext.form.field.Time": [
     "widget.timefield"
   ],
@@ -19527,7 +22228,7 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.grid.ViewDropZone": [],
   "Ext.grid.header.DropZone": [],
-  "Ext.Layer": [],
+  "Ext.rtl.layout.component.field.Text": [],
   "Ext.util.HashMap": [],
   "Ext.grid.column.Template": [
     "widget.templatecolumn"
@@ -19557,6 +22258,7 @@ Ext.ClassManager.addNameAlternateMappings({
     "widget.messagebox"
   ],
   "Ext.fx.target.CompositeElementCSS": [],
+  "Ext.rtl.layout.ContextItem": [],
   "Ext.chart.series.Line": [
     "series.line"
   ],
@@ -19584,6 +22286,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.form.field.Text": [
     "widget.textfield"
   ],
+  "Ext.rtl.layout.component.field.Trigger": [],
   "Ext.data.reader.Xml": [
     "reader.xml"
   ],
@@ -19596,6 +22299,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.layout.container.Absolute": [
     "layout.absolute"
   ],
+  "Ext.rtl.layout.container.Box": [],
   "Ext.data.reader.Json": [
     "reader.json"
   ],
@@ -19613,10 +22317,10 @@ Ext.ClassManager.addNameAlternateMappings({
     "layout.form"
   ],
   "Ext.chart.MaskLayer": [],
-  "Ext.util.Observable": [],
   "Ext.resizer.BorderSplitterTracker": [],
   "Ext.util.LruCache": [],
   "Ext.tip.Tip": [],
+  "Ext.rtl.resizer.SplitterTracker": [],
   "Ext.grid.feature.RowWrap": [
     "feature.rowwrap"
   ],
@@ -19631,8 +22335,8 @@ Ext.ClassManager.addNameAlternateMappings({
     "widget.pagingtoolbar"
   ],
   "Ext.data.association.Association": [],
-  "Ext.grid.LockingView": [],
   "Ext.tree.ViewDropZone": [],
+  "Ext.grid.LockingView": [],
   "Ext.toolbar.Toolbar": [
     "widget.toolbar"
   ],
@@ -19646,7 +22350,6 @@ Ext.ClassManager.addNameAlternateMappings({
     "widget.gridpanel",
     "widget.grid"
   ],
-  "Ext.XTemplate": [],
   "Ext.data.NodeStore": [
     "store.node"
   ],
@@ -19691,8 +22394,12 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.data.DirectStore": [
     "store.direct"
   ],
+  "Ext.dom.Layer": [],
   "Ext.data.BufferStore": [
     "store.buffer"
+  ],
+  "Ext.grid.plugin.DivRenderer": [
+    "plugin.divrenderer"
   ],
   "Ext.grid.ColumnLayout": [
     "layout.gridcolumn"
@@ -19701,13 +22408,13 @@ Ext.ClassManager.addNameAlternateMappings({
     "series.column"
   ],
   "Ext.AbstractComponent": [],
-  "Ext.Template": [],
   "Ext.flash.Component": [
     "widget.flash"
   ],
   "Ext.form.field.Base": [
     "widget.field"
   ],
+  "Ext.grid.feature.GroupStore": [],
   "Ext.data.SequentialIdGenerator": [
     "idgen.sequential"
   ],
@@ -19749,6 +22456,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.container.DockingContainer": [],
   "Ext.selection.DataViewModel": [],
   "Ext.dd.DragTracker": [],
+  "Ext.data.Group": [],
   "Ext.dd.DragDropManager": [],
   "Ext.selection.CheckboxModel": [
     "selection.checkboxmodel"
@@ -19761,6 +22469,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.form.field.Number": [
     "widget.numberfield"
   ],
+  "Ext.rtl.util.Renderable": [],
   "Ext.data.proxy.Direct": [
     "proxy.direct"
   ],
@@ -19773,6 +22482,7 @@ Ext.ClassManager.addNameAlternateMappings({
     "widget.textareafield",
     "widget.textarea"
   ],
+  "Ext.rtl.layout.container.VBox": [],
   "Ext.form.field.Radio": [
     "widget.radiofield",
     "widget.radio"
@@ -19783,19 +22493,19 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.chart.series.Pie": [
     "series.pie"
   ],
-  "Ext.view.TableChunker": [],
+  "Ext.tree.plugin.TreeViewDragDrop": [
+    "plugin.treeviewdragdrop"
+  ],
   "Ext.direct.Provider": [
     "direct.provider"
   ],
   "Ext.data.TreeModel": [],
-  "Ext.tree.plugin.TreeViewDragDrop": [
-    "plugin.treeviewdragdrop"
-  ],
   "Ext.layout.Layout": [],
   "Ext.toolbar.TextItem": [
     "widget.tbtext"
   ],
   "Ext.util.AbstractMixedCollection": [],
+  "Ext.rtl.button.Button": [],
   "Ext.data.JsonStore": [
     "store.json"
   ],
@@ -19882,11 +22592,15 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.slider.Thumb": [],
   "Ext.grid.header.DragZone": [],
+  "Ext.rtl.resizer.ResizeTracker": [],
   "Ext.form.action.DirectLoad": [
     "formaction.directload"
   ],
   "Ext.picker.Time": [
     "widget.timepicker"
+  ],
+  "Ext.grid.plugin.BufferedRenderer": [
+    "plugin.bufferedrenderer"
   ],
   "Ext.resizer.BorderSplitter": [
     "widget.bordersplitter"
@@ -19902,6 +22616,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.toolbar.Spacer": [
     "widget.tbspacer"
   ],
+  "Ext.rtl.dd.DD": [],
   "Ext.panel.Panel": [
     "widget.panel"
   ],
@@ -19920,18 +22635,15 @@ Ext.ClassManager.addNameAlternateMappings({
   ],
   "Ext.ComponentQuery": [],
   "Ext.draw.engine.SvgExporter": [],
-  "Ext.grid.feature.Chunking": [
-    "feature.chunking"
-  ],
   "Ext.layout.container.Auto": [
     "layout.auto",
     "layout.autocontainer"
   ],
   "Ext.view.AbstractView": [],
   "Ext.util.Region": [],
-  "Ext.fx.target.ElementCSS": [],
   "Ext.draw.Draw": [],
-  "Ext.grid.PagingScroller": [],
+  "Ext.fx.target.ElementCSS": [],
+  "Ext.rtl.panel.Panel": [],
   "Ext.layout.component.field.HtmlEditor": [
     "layout.htmleditor"
   ],
@@ -19942,19 +22654,22 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.menu.Separator": [
     "widget.menuseparator"
   ],
+  "Ext.util.History": [],
   "Ext.direct.RemotingMethod": [],
   "Ext.direct.Event": [
     "direct.event"
   ],
-  "Ext.util.History": [],
   "Ext.dd.ScrollManager": [],
   "Ext.chart.Mask": [],
+  "Ext.rtl.dom.Element_anim": [],
   "Ext.selection.CellModel": [
     "selection.cellmodel"
   ],
   "Ext.view.TableLayout": [
     "layout.tableview"
   ],
+  "Ext.rtl.dom.Element_scroll": [],
+  "Ext.rtl.panel.Header": [],
   "Ext.state.Provider": [],
   "Ext.layout.container.Editor": [
     "layout.editor"
@@ -19976,6 +22691,7 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.chart.series.Radar": [
     "series.radar"
   ],
+  "Ext.rtl.dom.Element_insertion": [],
   "Ext.grid.property.Property": [],
   "Ext.chart.TipSurface": [],
   "Ext.grid.column.Boolean": [
@@ -19987,11 +22703,11 @@ Ext.ClassManager.addNameAlternateMappings({
   "Ext.grid.plugin.HeaderResizer": [
     "plugin.gridheaderresizer"
   ],
-  "Ext.data.writer.Xml": [
-    "writer.xml"
-  ],
   "Ext.tree.Column": [
     "widget.treecolumn"
+  ],
+  "Ext.data.writer.Xml": [
+    "writer.xml"
   ],
   "Ext.slider.Multi": [
     "widget.multislider"

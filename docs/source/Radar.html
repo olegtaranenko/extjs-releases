@@ -109,7 +109,7 @@ Ext.define('Ext.chart.series.Radar', {
 
     requires: ['Ext.chart.Shape', 'Ext.fx.Anim'],
 
-<span id='Ext-chart-series-Radar-property-type'>    /* End Definitions */
+<span id='Ext-chart-series-Radar-cfg-type'>    /* End Definitions */
 </span>
     type: &quot;radar&quot;,
     alias: 'series.radar',
@@ -117,7 +117,7 @@ Ext.define('Ext.chart.series.Radar', {
 
 <span id='Ext-chart-series-Radar-property-rad'>    rad: Math.PI / 180,
 </span>
-<span id='Ext-chart-series-Radar-property-showInLegend'>    showInLegend: false,
+<span id='Ext-chart-series-Radar-cfg-showInLegend'>    showInLegend: false,
 </span>
 <span id='Ext-chart-series-Radar-cfg-style'>    /**
 </span>     * @cfg {Object} style
@@ -309,6 +309,7 @@ Ext.define('Ext.chart.series.Radar', {
         var me = this,
             chart = me.chart,
             surface = chart.surface,
+            store = chart.getChartStore(),
             markerStyle = Ext.apply({}, me.markerStyle || {}),
             endMarkerStyle = Ext.apply(markerStyle, me.markerConfig, {
                 fill: me.colorArrayStyle[me.themeIdx % me.colorArrayStyle.length]
@@ -318,7 +319,8 @@ Ext.define('Ext.chart.series.Radar', {
             markerGroup = me.markerGroup,
             centerX = me.centerX,
             centerY = me.centerY,
-            item, i, l, marker;
+            item, i, l, marker, rendererAttributes;
+
         delete endMarkerStyle.type;
 
         for (i = 0, l = items.length; i &lt; l; i++) {
@@ -338,7 +340,9 @@ Ext.define('Ext.chart.series.Radar', {
             else {
                 marker.show();
             }
+
             item.sprite = marker;
+
             if (chart.resizing) {
                 marker.setAttributes({
                     x: 0,
@@ -356,13 +360,15 @@ Ext.define('Ext.chart.series.Radar', {
                 }
             };
             //render/animate
+            rendererAttributes = me.renderer(marker, store.getAt(i), marker._to, i, store);
+            rendererAttributes = Ext.applyIf(rendererAttributes || {}, endMarkerStyle || {});
             if (chart.animate) {
                 me.onAnimate(marker, {
-                    to: marker._to
+                    to: rendererAttributes
                 });
             }
             else {
-                marker.setAttributes(Ext.apply(marker._to, endMarkerStyle || {}), true);
+                marker.setAttributes(rendererAttributes, true);
             }
         }
     },
@@ -481,6 +487,19 @@ Ext.define('Ext.chart.series.Radar', {
         for (; i &lt; count; i++) {
             me.markerGroup.getAt(i).hide(true);
         }
+    },
+
+<span id='Ext-chart-series-Radar-method-getAxesForXAndYFields'>    // @private return the radial axis as yAxis (there is no xAxis).
+</span>    // Required by the base class 'Ext.chart.axis.Axis'.
+    getAxesForXAndYFields: function() {
+        var me = this,
+            chart = me.chart,
+            axes = chart.axes,
+            axis = [].concat(axes &amp;&amp; axes.get(0));
+
+        return {
+            yAxis: axis
+        };
     }
 });
 

@@ -213,7 +213,7 @@ Ext.define('Ext.form.field.Date', {
 </span>
     initTimeFormat: 'H',
 
-<span id='Ext-form-field-Date-property-matchFieldWidth'>    matchFieldWidth: false,
+<span id='Ext-form-field-Date-cfg-matchFieldWidth'>    matchFieldWidth: false,
 </span>    //&lt;locale&gt;
 <span id='Ext-form-field-Date-cfg-startDay'>    /**
 </span>     * @cfg {Number} [startDay=undefined]
@@ -534,6 +534,13 @@ Ext.define('Ext.form.field.Date', {
                 }
             }
         });
+    },
+    
+<span id='Ext-form-field-Date-method-onDownArrow'>    onDownArrow: function(e) {
+</span>        this.callParent(arguments);
+        if (this.isExpanded) {
+            this.getPicker().focus();
+        }
     },
 
 <span id='Ext-form-field-Date-method-onSelect'>    onSelect: function(m, d) {

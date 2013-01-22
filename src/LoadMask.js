@@ -74,10 +74,17 @@ Ext.define('Ext.LoadMask', {
     baseCls: Ext.baseCSSPrefix + 'mask-msg',
 
     childEls: [
-        'msgEl'
+        'msgEl',
+        'msgTextEl'
     ],
 
-    renderTpl: '<div id="{id}-msgEl" style="position:relative" class="{[values.$comp.msgCls]}"></div>',
+    renderTpl: [
+        '<div id="{id}-msgEl" class="{[values.$comp.msgCls]} ',
+            Ext.baseCSSPrefix, 'mask-msg-inner<tpl if="childElCls"> {childElCls}</tpl>">',
+            '<div id="{id}-msgTextEl" class="', Ext.baseCSSPrefix ,'mask-msg-text',
+                '<tpl if="childElCls"> {childElCls}</tpl>"></div>',
+        '</div>'
+    ],
 
     // @private Obviously, it's floating.
     floating: {
@@ -129,8 +136,7 @@ Ext.define('Ext.LoadMask', {
                 resize: me.sizeMask,
                 added: me.onComponentAdded,
                 removed: me.onComponentRemoved
-            },
-            hierarchyEventSource = Ext.container.Container.hierarchyEventSource;
+            };
             
         if (comp.floating) {
             listeners.move = me.sizeMask;
@@ -145,7 +151,7 @@ Ext.define('Ext.LoadMask', {
         me.mon(comp, listeners);
         
         // subscribe to the observer that manages the hierarchy
-        me.mon(hierarchyEventSource, {
+        me.mon(me.hierarchyEventSource, {
             show: me.onContainerShow,
             hide: me.onContainerHide,
             expand: me.onContainerExpand,
@@ -269,20 +275,21 @@ Ext.define('Ext.LoadMask', {
     },
 
     getStoreListeners: function(store) {
-        var result = {
-            exception: this.onLoad,
+        var load = this.onLoad,
+            beforeLoad = this.onBeforeLoad,
+            result = {
+                // Fired when a range is requested for rendering that is not in the cache
+                cachemiss: beforeLoad,
 
-            // Fired when a range is requested for rendering that is not in the cache
-            cachemiss: this.onBeforeLoad,
-
-            // Fired when a range for rendering which was previously missing from the cache is loaded
-            cachefilled: this.onLoad
-        };
+                // Fired when a range for rendering which was previously missing from the cache is loaded
+                cachefilled: load
+            };
 
         // Only need to mask on load if the proxy is asynchronous - ie: Ajax/JsonP
         if (!store.proxy.isSynchronous) {
-            result.beforeLoad = this.onBeforeLoad;
-            result.load = this.onLoad;
+            result.beforeLoad = beforeLoad;
+            result.load = load;
+            result.prefech = load;
         }
         return result;
     },
@@ -357,7 +364,8 @@ Ext.define('Ext.LoadMask', {
         me.loading = true;
 
         if (me.useMsg) {
-            msgEl.show().update(me.msg);
+            msgEl.show();
+            me.msgTextEl.update(me.msg);
         } else {
             msgEl.parent().hide();
         }

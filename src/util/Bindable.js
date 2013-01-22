@@ -10,15 +10,19 @@ Ext.define('Ext.util.Bindable', {
      * Binds a store to this instance.
      * @param {Ext.data.AbstractStore/String} [store] The store to bind or ID of the store.
      * When no store given (or when `null` or `undefined` passed), unbinds the existing store.
-     * @param {Boolean} [initial=false] True to not remove listeners from existing store.
      */
-    bindStore: function(store, initial){
-        var me = this,
-            oldStore = me.store;
+    bindStore: function(store, initial, propertyName) {
+        // Private params
+        // @param {Boolean} [initial=false] True to not remove listeners from existing store.
+        // @param {String} [propertyName="store"] The property in this object under which to cache the passed Store.
+        propertyName = propertyName || 'store';
 
-        if (!initial && me.store) {
+        var me = this,
+            oldStore = me[propertyName];
+
+        if (!initial && oldStore) {
             // Perform implementation-specific unbinding operations *before* possible Store destruction.
-            me.onUnbindStore(oldStore, initial);
+            me.onUnbindStore(oldStore, initial, propertyName);
 
             if (store !== oldStore && oldStore.autoDestroy) {
                 oldStore.destroyStore();
@@ -29,9 +33,9 @@ Ext.define('Ext.util.Bindable', {
         if (store) {
             store = Ext.data.StoreManager.lookup(store);
             me.bindStoreListeners(store);
-            me.onBindStore(store, initial);
+            me.onBindStore(store, initial, propertyName);
         }
-        me.store = store || null;
+        me[propertyName] = store || null;
         return me;
     },
 

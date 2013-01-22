@@ -29,8 +29,6 @@
     );
 
     .#{$prefix}tip-header-text {
-        @include no-select;
-
         color: $tip-header-color;
         font-size: $tip-header-font-size;
         font-weight: $tip-header-font-weight;

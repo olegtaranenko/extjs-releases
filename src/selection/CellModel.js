@@ -108,26 +108,24 @@ Ext.define('Ext.selection.CellModel', {
     },
 
     onKeyUp: function(e, t) {
-        this.keyNavigation = true;
-        this.move('up', e);
-        this.keyNavigation = false;
+        this.doMove('up', e);
     },
 
     onKeyDown: function(e, t) {
-        this.keyNavigation = true;
-        this.move('down', e);
-        this.keyNavigation = false;
+        this.doMove('down', e);
     },
 
     onKeyLeft: function(e, t) {
-        this.keyNavigation = true;
-        this.move('left', e);
-        this.keyNavigation = false;
+        this.doMove('left', e);
     },
 
     onKeyRight: function(e, t) {
+        this.doMove('right', e);
+    },
+    
+    doMove: function(direction, e){
         this.keyNavigation = true;
-        this.move('right', e);
+        this.move(direction, e);
         this.keyNavigation = false;
     },
 
@@ -172,7 +170,7 @@ Ext.define('Ext.selection.CellModel', {
         me.lastSelection = last;
         if (last) {
             // If the position is the same, jump out & don't fire the event
-            if (pos && pos.row === last.row && pos.column === last.column) {
+            if (pos && (pos.row === last.row && pos.column === last.column && pos.view === last.view)) {
                 pos = null;
             } else {
                 me.onCellDeselect(me.selection);
@@ -194,6 +192,18 @@ Ext.define('Ext.selection.CellModel', {
         // Enforce code correctness in unbuilt source.
         return null;
         // </debug>
+    },
+
+    isCellSelected: function(row, column) {
+        var me = this,
+            testPos,
+            pos = me.getCurrentPosition();
+        
+        if (pos) {
+            testPos = new this.Selection(me);
+            testPos.setPosition(row, column);
+            return (testPos.record === pos.record) && (testPos.columnHeader === pos.columnHeader);
+        }
     },
 
     // Keep selection model in consistent state upon record deletion.
@@ -235,18 +245,22 @@ Ext.define('Ext.selection.CellModel', {
      * @private
      */
     onMouseDown: function(view, cell, cellIndex, record, row, rowIndex, e) {
-        this.setCurrentPosition({
-            view: view,
-            row: rowIndex,
-            column: cellIndex
-        });
+
+        // Record index will be -1 if the clicked record is a metadata record and not selectable
+        if (rowIndex !== -1) {
+            this.setCurrentPosition({
+                view: view,
+                row: rowIndex,
+                column: cellIndex
+            });
+        }
     },
 
     // notify the view that the cell has been selected to update the ui
     // appropriately and bring the cell into focus
     onCellSelect: function(position, supressEvent) {
         if (position && position.row !== undefined && position.row > -1) {
-            this.doSelect(position.view.getStore().getAt(position.row), /*keepExisting*/false, supressEvent);
+            this.doSelect(position.record, /*keepExisting*/false, supressEvent);
         }
     },
 
@@ -254,7 +268,7 @@ Ext.define('Ext.selection.CellModel', {
     // appropriately
     onCellDeselect: function(position, supressEvent) {
         if (position && position.row !== undefined) {
-            this.doDeselect(position.view.getStore().getAt(position.row), supressEvent);
+            this.doDeselect(position.record, supressEvent);
         }
     },
 

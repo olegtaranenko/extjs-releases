@@ -26,15 +26,16 @@ Ext.define('Ext.tip.QuickTip', {
 
     // @private
     tagConfig : {
-        namespace : "data-",
-        attribute : "qtip",
-        width : "qwidth",
-        target : "target",
-        title : "qtitle",
-        hide : "hide",
-        cls : "qclass",
-        align : "qalign",
-        anchor : "anchor"
+        namespace : 'data-',
+        attribute : 'qtip',
+        width : 'qwidth',
+        target : 'target',
+        title : 'qtitle',
+        hide : 'hide',
+        cls : 'qclass',
+        align : 'qalign',
+        anchor : 'anchor',
+        showDelay: 'qshowDelay'
     },
 
     // @private
@@ -204,10 +205,10 @@ Ext.define('Ext.tip.QuickTip', {
                 if (me.anchor) {
                     me.anchorTarget = target;
                 }
-                hasShowDelay = Ext.isDefined(me.activeTarget.showDelay);
+                hasShowDelay = parseInt(me.activeTarget.showDelay, 10);
                 if (hasShowDelay) {
                     delay = me.showDelay;
-                    me.showDelay = me.activeTarget.showDelay;
+                    me.showDelay = hasShowDelay;
                 }
                 me.delayShow();
                 if (hasShowDelay) {
@@ -240,17 +241,17 @@ Ext.define('Ext.tip.QuickTip', {
                 autoHide: autoHide != "user" && autoHide !== 'false',
                 title: elTarget.getAttribute(ns + cfg.title),
                 cls: elTarget.getAttribute(ns + cfg.cls),
-                align: elTarget.getAttribute(ns + cfg.align)
-
+                align: elTarget.getAttribute(ns + cfg.align),
+                showDelay: parseInt(elTarget.getAttribute(ns + cfg.showDelay), 10)
             };
             me.anchor = elTarget.getAttribute(ns + cfg.anchor);
             if (me.anchor) {
                 me.anchorTarget = target;
             }
-            hasShowDelay = Ext.isDefined(me.activeTarget.showDelay);
+            hasShowDelay = parseInt(me.activeTarget.showDelay, 10);
             if (hasShowDelay) {
                 delay = me.showDelay;
-                me.showDelay = me.activeTarget.showDelay;
+                me.showDelay = hasShowDelay;
             }
             me.delayShow();
             if (hasShowDelay) {
@@ -275,10 +276,10 @@ Ext.define('Ext.tip.QuickTip', {
         me.clearTimer('show');
         delete me.activeTarget;
         if (me.autoHide !== false) {
-            hasHideDelay = active && Ext.isDefined(active.hideDelay);
+            hasHideDelay = active && parseInt(active.hideDelay, 10);
             if (hasHideDelay) {
                 delay = me.hideDelay;
-                me.hideDelay = active.hideDelay;
+                me.hideDelay = hasHideDelay;
             }
             me.delayHide();
             if (hasHideDelay) {
@@ -365,7 +366,7 @@ Ext.define('Ext.tip.QuickTip', {
             if (me.anchor) {
                 me.constrainPosition = false;
             } else if (target.align) { // TODO: this doesn't seem to work consistently
-                xy = me.el.getAlignToXY(target.el, target.align);
+                xy = me.getAlignToXY(target.el, target.align);
                 me.constrainPosition = false;
             }else{
                 me.constrainPosition = true;

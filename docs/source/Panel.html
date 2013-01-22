@@ -234,7 +234,7 @@ Ext.define('Ext.form.Panel', {
 
 <span id='Ext-form-Panel-method-afterFirstLayout'>    // Initialize the BasicForm after all layouts have been completed.
 </span>    afterFirstLayout: function() {
-        this.callParent();
+        this.callParent(arguments);
         this.form.initialize();
     },
 
@@ -379,8 +379,7 @@ Ext.define('Ext.form.Panel', {
     checkChange: function() {
         var fields = this.form.getFields().items,
             f,
-            fLen   = fields.length,
-            field;
+            fLen   = fields.length;
 
         for (f = 0; f &lt; fLen; f++) {
             fields[f].checkChange();

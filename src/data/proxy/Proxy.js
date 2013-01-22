@@ -36,6 +36,11 @@ Ext.define('Ext.data.proxy.Proxy', {
     alias: 'proxy.proxy',
     alternateClassName: ['Ext.data.DataProxy', 'Ext.data.Proxy'],
 
+    requires: [
+        'Ext.data.reader.Json',
+        'Ext.data.writer.Json'
+    ],
+
     uses: [
         'Ext.data.Batch',
         'Ext.data.Operation',
@@ -444,7 +449,4 @@ Ext.define('Ext.data.proxy.Proxy', {
             Ext.callback(batchOptions.callback, scope, [batch, batchOptions]);
         }
     }
-}, function() {
-    //backwards compatibility
-    Ext.data.DataProxy = this;
 });

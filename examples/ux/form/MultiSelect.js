@@ -98,6 +98,13 @@ Ext.define('Ext.ux.form.MultiSelect', {
      * parameters rather than a single delimited parameter, set this to `null`.
      */
     delimiter: ',',
+    
+    /**
+     * @cfg String [dragText="{0} Item{1}"] The text to show while dragging items.
+     * {0} will be replaced by the number of items. {1} will be replaced by the plural
+     * form if there is more than 1 item.
+     */
+    dragText: '{0} Item{1}',
 
     /**
      * @cfg {Ext.data.Store/Array} store The data source to which this MultiSelect is bound (defaults to `undefined`).
@@ -232,7 +239,7 @@ Ext.define('Ext.ux.form.MultiSelect', {
             me.dragZone = Ext.create('Ext.view.DragZone', {
                 view: me.boundList,
                 ddGroup: me.dragGroup,
-                dragText: '{0} Item{1}'
+                dragText: me.dragText
             });
         }
         if (me.droppable || me.dropGroup){

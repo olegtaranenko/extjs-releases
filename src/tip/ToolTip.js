@@ -284,7 +284,7 @@ Ext.define('Ext.tip.ToolTip', {
         if (me.anchor) {
             me.targetCounter++;
             offsets = me.getOffsets();
-            xy = (me.anchorToTarget && !me.trackMouse) ? me.el.getAlignToXY(me.anchorTarget, me.getAnchorAlign()) : me.targetXY;
+            xy = (me.anchorToTarget && !me.trackMouse) ? me.getAlignToXY(me.anchorTarget, me.getAnchorAlign()) : me.targetXY;
             dw = Ext.Element.getViewWidth() - 5;
             dh = Ext.Element.getViewHeight() - 5;
             de = document.documentElement;
@@ -456,6 +456,7 @@ Ext.define('Ext.tip.ToolTip', {
         t = e.getTarget(me.delegate);
         if (t) {
             me.triggerElement = t;
+            me.triggerEvent = e;
             me.clearTimer('hide');
             me.targetXY = e.getXY();
             me.delayShow();

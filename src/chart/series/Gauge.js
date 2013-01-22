@@ -269,8 +269,6 @@ Ext.define('Ext.chart.series.Gauge', {
             seriesLabelStyle = me.seriesLabelStyle,
             colorArrayStyle = me.colorArrayStyle,
             colorArrayLength = colorArrayStyle && colorArrayStyle.length || 0,
-            gutterX = chart.maxGutter[0],
-            gutterY = chart.maxGutter[1],
             cos = Math.cos,
             sin = Math.sin,
             rendererAttributes, centerX, centerY, slice, slices, sprite, value,

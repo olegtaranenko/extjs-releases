@@ -669,6 +669,17 @@ Ext.define('Ext.window.MessageBox', {
         var me = this,
             visibleFocusables;
 
+        // If called during global layout suspension, make the call after layout resumption
+        if (Ext.AbstractComponent.layoutSuspendCount) {
+            Ext.on({
+                resumelayouts: function() {
+                    me.show(cfg);
+                },
+                single: true
+            });
+            return me;
+        }
+
         me.reconfigure(cfg);
         me.addCls(cfg.cls);
         me.doAutoSize();

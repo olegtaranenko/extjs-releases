@@ -24,7 +24,7 @@ Ext.define('Ext.resizer.ResizeTracker', {
 <span id='Ext-resizer-ResizeTracker-property-dynamic'>    dynamic: true,
 </span><span id='Ext-resizer-ResizeTracker-property-preserveRatio'>    preserveRatio: false,
 </span>
-<span id='Ext-resizer-ResizeTracker-property-constrainTo'>    // Default to no constraint
+<span id='Ext-resizer-ResizeTracker-cfg-constrainTo'>    // Default to no constraint
 </span>    constrainTo: null,
     
 <span id='Ext-resizer-ResizeTracker-property-proxyCls'>    proxyCls:  Ext.baseCSSPrefix + 'resizable-proxy',
@@ -77,7 +77,7 @@ Ext.define('Ext.resizer.ResizeTracker', {
 
 <span id='Ext-resizer-ResizeTracker-method-onBeforeStart'>    onBeforeStart: function(e) {
 </span>        // record the startBox
-        this.startBox = this.el.getBox();
+        this.startBox = this.target.getBox();
     },
 
 <span id='Ext-resizer-ResizeTracker-method-getDynamicTarget'>    /**
@@ -166,6 +166,8 @@ Ext.define('Ext.resizer.ResizeTracker', {
             axis, // 1 = x, 2 = y, 3 = x and y.
             newBox,
             newHeight, newWidth;
+
+        region = me.convertRegionName(region);
 
         switch (region) {
             case 'south':
@@ -330,27 +332,14 @@ Ext.define('Ext.resizer.ResizeTracker', {
     },
 
 <span id='Ext-resizer-ResizeTracker-method-resize'>    resize: function(box, direction, atEnd) {
-</span>        var target = this.getResizeTarget(atEnd);
-        if (target.isComponent) {
-            target.setSize(box.width, box.height);
-            if (target.floating) {
-                target.setPagePosition(box.x, box.y);
-            }
-        } else {
-            target.setBox(box);
-        }
+</span>        var me = this,
+            target = me.getResizeTarget(atEnd);
+
+        target.setBox(box);
 
         // update the originalTarget if it was wrapped, and the target passed in was the wrap el.
-        target = this.originalTarget;
-        if (target &amp;&amp; (this.dynamic || atEnd)) {
-            if (target.isComponent) {
-                target.setSize(box.width, box.height);
-                if (target.floating) {
-                    target.setPagePosition(box.x, box.y);
-                }
-            } else {
-                target.setBox(box);
-            }
+        if (me.originalTarget &amp;&amp; (me.dynamic || atEnd)) {
+            me.originalTarget.setBox(box);
         }
     },
 
@@ -359,6 +348,10 @@ Ext.define('Ext.resizer.ResizeTracker', {
         if (this.proxy) {
             this.proxy.hide();
         }
+    },
+
+<span id='Ext-resizer-ResizeTracker-method-convertRegionName'>    convertRegionName: function(name) {
+</span>        return name;
     }
 });
 </pre>

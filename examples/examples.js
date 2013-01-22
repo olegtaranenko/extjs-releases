@@ -57,6 +57,13 @@ Ext.samples = {
                     "url": "simple-tasks/index.html",
                     "icon": "tasks.gif",
                     "desc": "Complete personal task management application example"
+                },
+                {
+                    "text": "Right-to-Left (RTL)",
+                    "url": "rtl/rtl.html",
+                    "icon": "tasks.gif",
+                    "desc": "Demonstrates Ext JS support for right-to-left languages",
+                    "status": "new"
                 }
             ]
         },
@@ -495,6 +502,13 @@ Ext.samples = {
                     "desc": "The TreeGrid component"
                 },
                 {
+                    "text": "Locking TreeGrid",
+                    "url": "tree/locking-treegrid.html",
+                    "icon": "tree-columns.gif",
+                    "desc": "TreeGrid with lockable columns",
+                    "status": "new"
+                },
+                {
                     "text": "Check Tree",
                     "url": "tree/check-tree.html",
                     "icon": "tree-check.gif",
@@ -616,6 +630,12 @@ Ext.samples = {
                     "url": "dd/dnd_grid_to_grid.html",
                     "icon": "dd-gridtogrid.gif",
                     "desc": "Shows how rows can be easily dragged and dropped between two or more grids"
+                },
+                {
+                    "text": "Grid Cell to Cell DnD",
+                    "url": "dd/cell-to-cell-dd.html",
+                    "icon": "dd-celltocell.gif",
+                    "desc": "Illustrates how a custom plugin can enable cell drag and drop operations within the same GridView"
                 },
                 {
                     "text": "Grid to Form DnD",

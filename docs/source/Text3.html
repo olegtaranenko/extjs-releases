@@ -77,15 +77,18 @@ Ext.define('Ext.layout.component.field.Text', {
             ieInputWidthAdjustment = me.ieInputWidthAdjustment;
 
         if (ieInputWidthAdjustment) {
-            // adjust for IE 6/7 strict content-box model
-            // RTL: This might have to be padding-left unless the senses of the padding styles switch when in RTL mode.
-            me.owner.bodyEl.setStyle('padding-right', ieInputWidthAdjustment + 'px');
+            me.adjustIEInputPadding(ownerContext);
             if(suffix === 'px') {
                 width -= ieInputWidthAdjustment;
             }
         }
 
         me.callParent(arguments);
+    },
+
+<span id='Ext-layout-component-field-Text-method-adjustIEInputPadding'>    adjustIEInputPadding: function(ownerContext) {
+</span>        // adjust for IE 6/7 strict content-box model
+        this.owner.bodyEl.setStyle('padding-right', this.ieInputWidthAdjustment + 'px');
     }
 });
 </pre>

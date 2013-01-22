@@ -238,7 +238,6 @@ Ext.define('Ext.container.AbstractContainer', {
      * See {@link Ext.util.Observable#enableBubble}.
      * @since Ext 3
      */
-    bubbleEvents: ['add', 'remove'],
 
     defaultLayoutType: 'auto',
 
@@ -350,21 +349,84 @@ Ext.define('Ext.container.AbstractContainer', {
 
     beforeRender: function () {
         var me = this,
-            layout = me.getLayout();
+            layout = me.getLayout(),
+            targetCls;
 
         me.callParent();
 
         if (!layout.initialized) {
             layout.initLayout();
         }
-    },
-    
-    setupRenderTpl: function (renderTpl) {
-        var layout = this.getLayout();
 
+        targetCls = layout.targetCls;
+
+        if (targetCls) {
+            me.applyTargetCls(targetCls);
+        }
+    },
+
+    // The targetCls is a CSS class that the layout needs added to the targetEl. The targetEl is where the container's
+    // children are rendered and is usually just the main el. Some containers (e.g. panels) use a body instead.
+    //
+    // In general, if a class overrides getTargetEl it will also need to override this method. This is necessary to
+    // avoid a post-render step to add the targetCls.
+    applyTargetCls: function(targetCls) {
+        this.addCls(targetCls);
+    },
+
+    afterComponentLayout: function() {
+        var floaters = this.floatingItems.items,
+            floaterCount = floaters.length,
+            i, floater
+            
         this.callParent(arguments);
 
-        layout.setupRenderTpl(renderTpl);
+        // Contained, unrendered, autoShow items must be shown upon next layout of the Container
+        for (i = 0; i < floaterCount; i++) {
+            floater = floaters[i];
+            if (!floater.rendered && floater.autoShow) {
+                floater.show();
+            }
+        }
+    },
+
+    onPosition: function() {
+        this.callParent(arguments);
+        this.repositionFloatingItems();
+    },
+
+    onResize: function() {
+        this.callParent(arguments);
+        this.repositionFloatingItems();
+    },
+
+    repositionFloatingItems: function() {
+        var floaters = this.floatingItems.items,
+            floaterCount = floaters.length,
+            i, floater;
+
+        // Ensure correct positioning of floated children before calling superclass
+        for (i = 0; i < floaterCount; i++) {
+            floater = floaters[i];
+            if (floater.el && !floater.hidden) {
+                floater.setPosition(floater.x, floater.y);
+            }
+        }
+    },
+
+    setupRenderTpl: function (renderTpl) {
+        this.callParent(arguments);
+        this.getLayout().setupRenderTpl(renderTpl);
+    },
+    
+    // @private
+    getDefaultContentTarget: function() {
+        return this.el;
+    },
+    
+    // @private
+    getContentTarget: function(){
+        return this.getLayout().getContentTarget();
     },
 
     // @private
@@ -742,14 +804,18 @@ Ext.define('Ext.container.AbstractContainer', {
     },
 
     // @private
-    doRemove : function(component, autoDestroy) {
+    doRemove : function(component, doDestroy) {
+        // Ensure the flag is set correctly
+        doDestroy = doDestroy === true || (doDestroy !== false && this.autoDestroy);
+
         var me = this,
             layout = me.layout,
             hasLayout = layout && me.rendered,
-            destroying = autoDestroy === true || (autoDestroy !== false && me.autoDestroy),
+
+            // isDestroying flag is true if the removal is taking place as part of destruction, OR if removal is intended to *cause* destruction
+            isDestroying = component.destroying || doDestroy,
             floating = component.floating;
 
-        autoDestroy = autoDestroy === true || (autoDestroy !== false && me.autoDestroy);
         if (floating) {
             me.floatingItems.remove(component);
         } else {
@@ -760,17 +826,17 @@ Ext.define('Ext.container.AbstractContainer', {
         if (hasLayout && !floating) {
             // Removing a component from a running layout has to cancel the layout
             if (layout.running) {
-                Ext.AbstractComponent.cancelLayout(component, destroying);
+                Ext.AbstractComponent.cancelLayout(component, isDestroying);
             }
-            layout.onRemove(component, destroying);
+            layout.onRemove(component, isDestroying);
         }
 
-        component.onRemoved(destroying);
+        component.onRemoved(isDestroying);
 
-        me.onRemove(component, destroying);
+        me.onRemove(component, isDestroying);
 
         // Destroy if we were explicitly told to, or we're defaulting to our autoDestroy configuration
-        if (destroying) {
+        if (doDestroy) {
             component.destroy();
         }
         // Only have the layout perform remove postprocessing if the Component is not being destroyed

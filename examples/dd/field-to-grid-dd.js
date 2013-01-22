@@ -40,7 +40,7 @@ Ext.define('Ext.ux.CellFieldDropZone', {
             v = me.view;
 
 //      Ascertain whether the mousemove is within a grid cell
-        var cell = e.getTarget(v.cellSelector);
+        var cell = e.getTarget(v.getCellSelector());
         if (cell) {
 
 //          We *are* within a grid cell, so ask the View exactly which one,
