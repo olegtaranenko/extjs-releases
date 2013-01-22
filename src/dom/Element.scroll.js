@@ -13,7 +13,8 @@ Ext.dom.Element.override({
 
     /**
      * Returns the current scroll position of the element.
-     * @return {Object} An object containing the scroll position in the format {left: (scrollLeft), top: (scrollTop)}
+     * @return {Object} An object containing the scroll position in the format
+     * `{left: (scrollLeft), top: (scrollTop)}`
      */
     getScroll: function() {
         var d = this.dom,
@@ -47,10 +48,52 @@ Ext.dom.Element.override({
     },
 
     /**
-     * Scrolls this element the specified scroll point. It does NOT do bounds checking so if you scroll to a weird value it will try to do it. For auto bounds checking, use scroll().
+     * Scrolls this element by the passed delta values, optionally animating.
+     * 
+     * All of the following are equivalent:
+     *
+     *      el.scrollBy(10, 10, true);
+     *      el.scrollBy([10, 10], true);
+     *      el.scrollBy({ x: 10, y: 10 }, true);
+     * 
+     * @param {Number/Number[]/Object} deltaX Either the x delta, an Array specifying x and y deltas or
+     * an object with "x" and "y" properties.
+     * @param {Number/Boolean/Object} deltaY Either the y delta, or an animate flag or config object.
+     * @param {Boolean/Object} animate Animate flag/config object if the delta values were passed separately.
+     * @return {Ext.Element} this
+     */
+    scrollBy: function(deltaX, deltaY, animate) {
+        var me = this,
+            dom = me.dom;
+
+        // Extract args if deltas were passed as an Array.
+        if (deltaX.length) {
+            animate = deltaY;
+            deltaY = deltaX[1];
+            deltaX = deltaX[0];
+        } else if (typeof deltaX != 'number') { // or an object
+            animate = deltaY;
+            deltaY = deltaX.y;
+            deltaX = deltaX.x;
+        }
+
+        if (deltaX) {
+            me.scrollTo('left', Math.max(Math.min(dom.scrollLeft + deltaX, dom.scrollWidth - dom.clientWidth), 0), animate);
+        }
+        if (deltaY) {
+            me.scrollTo('top', Math.max(Math.min(dom.scrollTop + deltaY, dom.scrollHeight - dom.clientHeight), 0), animate);
+        }
+
+        return me;
+    },
+
+    /**
+     * Scrolls this element the specified scroll point. It does NOT do bounds checking so
+     * if you scroll to a weird value it will try to do it. For auto bounds checking, use #scroll.
      * @param {String} side Either "left" for scrollLeft values or "top" for scrollTop values.
      * @param {Number} value The new scroll value
-     * @param {Boolean/Object} animate (optional) true for the default animation or a standard Element animation config object
+     * @param {Boolean/Object} [animate] true for the default animation or a standard Element
+     * animation config object
      * @return {Ext.Element} this
      */
     scrollTo: function(side, value, animate) {
@@ -80,9 +123,9 @@ Ext.dom.Element.override({
 
     /**
      * Scrolls this element into view within the passed container.
-     * @param {String/HTMLElement/Ext.Element} container (optional) The container element to scroll (defaults to document.body).  Should be a
-     * string (id), dom node, or Ext.Element.
-     * @param {Boolean} hscroll (optional) False to disable horizontal scroll (defaults to true)
+     * @param {String/HTMLElement/Ext.Element} [container=document.body] The container element
+     * to scroll.  Should be a string (id), dom node, or Ext.Element.
+     * @param {Boolean} [hscroll=true] False to disable horizontal scroll.
      * @return {Ext.dom.Element} this
      */
     scrollIntoView: function(container, hscroll) {
@@ -129,9 +172,16 @@ Ext.dom.Element.override({
     /**
      * Scrolls this element the specified direction. Does bounds checking to make sure the scroll is
      * within this element's scrollable range.
-     * @param {String} direction Possible values are: "l" (or "left"), "r" (or "right"), "t" (or "top", or "up"), "b" (or "bottom", or "down").
+     * @param {String} direction Possible values are:
+     *
+     * - `"l"` (or `"left"`)
+     * - `"r"` (or `"right"`)
+     * - `"t"` (or `"top"`, or `"up"`)
+     * - `"b"` (or `"bottom"`, or `"down"`)
+     *
      * @param {Number} distance How far to scroll the element in pixels
-     * @param {Boolean/Object} animate (optional) true for the default animation or a standard Element animation config object
+     * @param {Boolean/Object} [animate] true for the default animation or a standard Element
+     * animation config object
      * @return {Boolean} Returns true if a scroll was triggered or false if the element
      * was scrolled as far as it could go.
      */

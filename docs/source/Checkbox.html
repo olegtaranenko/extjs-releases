@@ -109,9 +109,9 @@ Ext.define('Ext.form.field.Checkbox', {
     extend: 'Ext.form.field.Base',
     alias: ['widget.checkboxfield', 'widget.checkbox'],
     alternateClassName: 'Ext.form.Checkbox',
-    requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager', 'Ext.layout.component.field.BoxLabelField'],
+    requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager' ],
 
-    componentLayout: 'boxlabelfield',
+    componentLayout: 'field',
 
     childEls: [
 <span id='Ext-form-field-Checkbox-property-boxLabelEl'>        /**
@@ -125,23 +125,80 @@ Ext.define('Ext.form.field.Checkbox', {
     // note: {id} here is really {inputId}, but {cmpId} is available
     fieldSubTpl: [
         '&lt;tpl if=&quot;boxLabel &amp;&amp; boxLabelAlign == \'before\'&quot;&gt;',
-            '&lt;label id=&quot;{cmpId}-boxLabelEl&quot; class=&quot;{boxLabelCls} {boxLabelCls}-{boxLabelAlign}&quot; for=&quot;{id}&quot;&gt;{boxLabel}&lt;/label&gt;',
+            '{beforeBoxLabelTpl}',
+            '&lt;label id=&quot;{cmpId}-boxLabelEl&quot; {boxLabelAttrTpl} class=&quot;{boxLabelCls} {boxLabelCls}-{boxLabelAlign}&quot; for=&quot;{id}&quot;&gt;',
+                '{beforeBoxLabelTextTpl}',
+                '{boxLabel}',
+                '{afterBoxLabelTextTpl}',
+            '&lt;/label&gt;',
+            '{afterBoxLabelTpl}',
         '&lt;/tpl&gt;',
         // Creates not an actual checkbox, but a button which is given aria role=&quot;checkbox&quot; (If ARIA is required) and
         // styled with a custom checkbox image. This allows greater control and consistency in
         // styling, and using a button allows it to gain focus and handle keyboard nav properly.
-        '&lt;input type=&quot;button&quot; id=&quot;{id}&quot;',
+        '&lt;input type=&quot;button&quot; id=&quot;{id}&quot; {inputAttrTpl}',
             '&lt;tpl if=&quot;tabIdx&quot;&gt; tabIndex=&quot;{tabIdx}&quot;&lt;/tpl&gt;',
             '&lt;tpl if=&quot;disabled&quot;&gt; disabled=&quot;disabled&quot;&lt;/tpl&gt;',
             '&lt;tpl if=&quot;fieldStyle&quot;&gt; style=&quot;{fieldStyle}&quot;&lt;/tpl&gt;',
             ' class=&quot;{fieldCls} {typeCls}&quot; autocomplete=&quot;off&quot; hidefocus=&quot;true&quot; /&gt;',
         '&lt;tpl if=&quot;boxLabel &amp;&amp; boxLabelAlign == \'after\'&quot;&gt;',
-            '&lt;label id=&quot;{cmpId}-boxLabelEl&quot; class=&quot;{boxLabelCls} {boxLabelCls}-{boxLabelAlign}&quot; for=&quot;{id}&quot;&gt;{boxLabel}&lt;/label&gt;',
+            '{beforeBoxLabelTpl}',
+            '&lt;label id=&quot;{cmpId}-boxLabelEl&quot; {boxLabelAttrTpl} class=&quot;{boxLabelCls} {boxLabelCls}-{boxLabelAlign}&quot; for=&quot;{id}&quot;&gt;',
+                '{beforeBoxLabelTextTpl}',
+                '{boxLabel}',
+                '{afterBoxLabelTextTpl}',
+            '&lt;/label&gt;',
+            '{afterBoxLabelTpl}',
         '&lt;/tpl&gt;',
         {
             disableFormats: true,
             compiled: true
         }
+    ],
+
+    subTplInsertions: [
+<span id='Ext-form-field-Checkbox-cfg-beforeBoxLabelTpl'>        /**
+</span>         * @cfg {String/Array/Ext.XTemplate} beforeBoxLabelTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * before the box label element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'beforeBoxLabelTpl',
+
+<span id='Ext-form-field-Checkbox-cfg-afterBoxLabelTpl'>        /**
+</span>         * @cfg {String/Array/Ext.XTemplate} afterBoxLabelTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * after the box label element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'afterBoxLabelTpl',
+
+<span id='Ext-form-field-Checkbox-cfg-beforeBoxLabelTextTpl'>        /**
+</span>         * @cfg {String/Array/Ext.XTemplate} beforeBoxLabelTextTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * before the box label text. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'beforeBoxLabelTextTpl',
+
+<span id='Ext-form-field-Checkbox-cfg-afterBoxLabelTextTpl'>        /**
+</span>         * @cfg {String/Array/Ext.XTemplate} afterBoxLabelTextTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * after the box label text. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'afterBoxLabelTextTpl',
+
+<span id='Ext-form-field-Checkbox-cfg-boxLabelAttrTpl'>        /**
+</span>         * @cfg {String/Array/Ext.XTemplate} boxLabelAttrTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * inside the box label element (as attributes). If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'boxLabelAttrTpl',
+
+        // inherited
+        'inputAttrTpl'
     ],
 
     isCheckbox: true,
@@ -219,7 +276,9 @@ Ext.define('Ext.form.field.Checkbox', {
 
 <span id='Ext-form-field-Checkbox-cfg-scope'>    /**
 </span>     * @cfg {Object} scope
-     * An object to use as the scope ('this' reference) of the {@link #handler} function (defaults to this Checkbox).
+     * An object to use as the scope ('this' reference) of the {@link #handler} function.
+     *
+     * Defaults to this Checkbox.
      */
 
     // private overrides
@@ -229,7 +288,7 @@ Ext.define('Ext.form.field.Checkbox', {
     // private
     onRe: /^on$/i,
 
-    initComponent: function(){
+    initComponent: function() {
         this.callParent(arguments);
         this.getManager().add(this);
     },
@@ -257,6 +316,10 @@ Ext.define('Ext.form.field.Checkbox', {
             me.addCls(me.checkedCls);
         }
         return me.callParent();
+    },
+
+    getFieldStyle: function() {
+        return Ext.isObject(this.fieldStyle) ? Ext.DomHelper.generateStyles(this.fieldStyle) : this.fieldStyle ||'';
     },
 
     getSubTplData: function() {
@@ -303,7 +366,7 @@ Ext.define('Ext.form.field.Checkbox', {
 
 <span id='Ext-form-field-Checkbox-method-getSubmitValue'>    /**
 </span>     * Returns the submit value for the checkbox which can be used when submitting forms.
-     * @return {String} If checked the {@link #inputValye} is returned; otherwise the {@link #uncheckedValue}
+     * @return {String} If checked the {@link #inputValue} is returned; otherwise the {@link #uncheckedValue}
      * (or null if the latter is not configured).
      */
     getSubmitValue: function() {
@@ -411,16 +474,6 @@ Ext.define('Ext.form.field.Checkbox', {
             inputEl.dom.disabled = !!readOnly || me.disabled;
         }
         me.callParent(arguments);
-    },
-
-<span id='Ext-form-field-Checkbox-method-getBodyNaturalWidth'>    /**
-</span>     * Calculates and returns the natural width of the bodyEl.
-     */
-    getBodyNaturalWidth: function() {
-        var labelEl = this.boxLabelEl,
-            inputEl = this.inputEl;
-
-        return labelEl.dom.offsetWidth + labelEl.getMargin('lr') + inputEl.dom.offsetWidth + inputEl.getMargin('lr');
     }
 });
 </pre>

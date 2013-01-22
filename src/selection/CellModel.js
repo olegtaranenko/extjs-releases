@@ -1,5 +1,5 @@
 /**
- * @class Ext.selection.CellModel
+ *
  */
 Ext.define('Ext.selection.CellModel', {
     extend: 'Ext.selection.Model',
@@ -132,10 +132,10 @@ Ext.define('Ext.selection.CellModel', {
         if (me.position) {
             me.onCellDeselect(me.position);
         }
+        me.position = pos;
         if (pos) {
             me.onCellSelect(pos);
         }
-        me.position = pos;
     },
 
     /**
@@ -152,27 +152,38 @@ Ext.define('Ext.selection.CellModel', {
     // notify the view that the cell has been selected to update the ui
     // appropriately and bring the cell into focus
     onCellSelect: function(position) {
-        var me = this,
-            store = me.view.getStore(),
-            record = store.getAt(position.row);
-
-        me.doSelect(record);
-        me.primaryView.onCellSelect(position);
-        // TODO: Remove temporary cellFocus call here.
-        me.primaryView.onCellFocus(position);
-        me.fireEvent('select', me, record, position.row, position.column);
+        this.doSelect(this.view.getStore().getAt(position.row));
     },
 
     // notify view that the cell has been deselected to update the ui
     // appropriately
     onCellDeselect: function(position) {
+        this.doDeselect(this.view.getStore().getAt(position.row));
+    },
+    
+    onSelectChange: function(record, isSelected, suppressEvent, commitFn) {
         var me = this,
-            store = me.view.getStore(),
-            record = store.getAt(position.row);
+            store = me.store,
+            pos = me.position,
+            eventName = isSelected ? 'select' : 'deselect',
+            view = me.primaryView;
 
-        me.doDeselect(record);
-        me.primaryView.onCellDeselect(position);
-        me.fireEvent('deselect', me, record, position.row, position.column);
+        if ((suppressEvent || me.fireEvent('before' + eventName, me, record, pos.row, pos.column)) !== false &&
+                commitFn() !== false) {
+
+            if (isSelected) {
+                view.onCellSelect(pos);
+                // TODO: Remove temporary cellFocus call here.
+                view.onCellFocus(pos);
+            } else {
+                view.onCellDeselect(pos);
+                delete me.position;
+            }
+
+            if (!suppressEvent) {
+                me.fireEvent(eventName, me, record, pos.row, pos.column);
+            }
+        }
     },
 
     onKeyTab: function(e, t) {

@@ -16,12 +16,8 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-view-TableChunker'>/**
-</span> * @class Ext.view.TableChunker
- * 
- * Produces optimized XTemplates for chunks of tables to be
+</span> * Produces optimized XTemplates for chunks of tables to be
  * used in grids, trees and other table based widgets.
- *
- * @singleton
  */
 Ext.define('Ext.view.TableChunker', {
     singleton: true,
@@ -80,7 +76,7 @@ Ext.define('Ext.view.TableChunker', {
     },
 
     metaRowTpl: [
-        '&lt;tr class=&quot;' + Ext.baseCSSPrefix + 'grid-row {addlSelector} {[this.embedRowCls()]}&quot; {[this.embedRowAttr()]}&gt;',
+        '&lt;tr class=&quot;' + Ext.baseCSSPrefix + 'grid-row {[this.embedRowCls()]}&quot; {[this.embedRowAttr()]}&gt;',
             '&lt;tpl for=&quot;columns&quot;&gt;',
                 '&lt;td class=&quot;{cls} ' + Ext.baseCSSPrefix + 'grid-cell ' + Ext.baseCSSPrefix + 'grid-cell-{columnId} {{id}-modified} {{id}-tdCls} {[this.firstOrLastCls(xindex, xcount)]}&quot; {{id}-tdAttr}&gt;',
                     '&lt;div{[parent.enableTextSelection ? &quot;&quot; : &quot; unselectable=\'on\'&quot;]} class=&quot;' + Ext.baseCSSPrefix + 'grid-cell-inner{[parent.enableTextSelection ? &quot;&quot; : &quot; ' + Ext.baseCSSPrefix + 'unselectable&quot;]}&quot; style=&quot;text-align: {align}; {{id}-style};&quot;&gt;{{id}}&lt;/div&gt;',

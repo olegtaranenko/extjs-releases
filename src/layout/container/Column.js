@@ -103,21 +103,40 @@ Ext.define('Ext.layout.container.Column', {
         return this.autoSizePolicy;
     },
 
+    beginLayout: function() {
+        this.callParent(arguments);
+        this.innerCt.dom.style.width = '';
+    },
+
     calculate: function (ownerContext) {
+        var me = this,
+            containerSize = me.getContainerSize(ownerContext),
+            state = ownerContext.state;
+
+        if (state.calculatedColumns || (state.calculatedColumns = me.calculateColumns(ownerContext))) {
+            if (me.calculateHeights(ownerContext)) {
+                me.calculateOverflow(ownerContext, containerSize);
+                return;
+            }
+        }
+
+        me.done = false;
+    },
+
+    calculateColumns: function (ownerContext) {
         var me = this,
             containerSize = me.getContainerSize(ownerContext),
             innerCtContext = ownerContext.getEl('innerCt', me),
             items = ownerContext.childItems,
             len = items.length,
             contentWidth = 0,
-            itemMarginWidths = [],
             blocked, availableWidth, i, itemContext, itemMarginWidth, itemWidth;
 
-        // Can never decide upon necessity of horizontal scrollbar (and therefore, narrower content width)
-        // until the component layout has published a height for the target element.
-        if (!ownerContext.autoHeight && !ownerContext.targetContext.hasProp('height')) {
-            me.done = false;
-            return;
+        // Can never decide upon necessity of vertical scrollbar (and therefore, narrower
+        // content width) until the component layout has published a height for the target
+        // element.
+        if (!ownerContext.heightModel.shrinkWrap && !ownerContext.targetContext.hasProp('height')) {
+            return false;
         }
 
         // No parallel measurement, cannot lay out boxes.
@@ -134,9 +153,13 @@ Ext.define('Ext.layout.container.Column', {
         // if they are not ready...
         for (i = 0; i < len; ++i) {
             itemContext = items[i];
-            itemMarginWidth = itemMarginWidths[i] = itemContext.getMarginInfo().width;
 
-            if (itemContext.widthAuthority != 2) { // if (width not managed by this layout)
+            // this is needed below for non-calculated columns, but is also needed in the
+            // next loop for calculated columns... this way we only call getMarginInfo in
+            // this loop and use the marginInfo property in the next...
+            itemMarginWidth = itemContext.getMarginInfo().width;
+
+            if (!itemContext.widthModel.calculated) {
                 itemWidth = itemContext.getProp('width');
                 if (typeof itemWidth != 'number') {
                     itemContext.block(me, 'width');
@@ -147,27 +170,32 @@ Ext.define('Ext.layout.container.Column', {
             }
         }
 
-        if (blocked) {
-            // we registered all the values that block this calculation, so abort now...
-            me.done = false;
-            return;
-        }
+        if (!blocked) {
+            availableWidth = (availableWidth < contentWidth) ? 0 : availableWidth - contentWidth;
 
-        // we have all the required widths and margins to proceed...
-
-        availableWidth = (availableWidth < contentWidth) ? 0 : availableWidth - contentWidth;
-
-        for (i = 0; i < len; ++i) {
-            itemContext = items[i];
-            itemMarginWidth = itemMarginWidths[i];
-
-            if (itemContext.widthAuthority == 2) { // if (width managed by this layout)
-                itemWidth = itemContext.target.columnWidth;
-                itemWidth = Math.floor(itemWidth * availableWidth);
-                itemWidth = itemContext.setWidth(itemWidth - itemMarginWidths[i]); // constrains to min/maxWidth
-                contentWidth += itemWidth + itemMarginWidths[i];
+            for (i = 0; i < len; ++i) {
+                itemContext = items[i];
+                if (itemContext.widthModel.calculated) {
+                    itemMarginWidth = itemContext.marginInfo.width; // always set by above loop
+                    itemWidth = itemContext.target.columnWidth;
+                    itemWidth = Math.floor(itemWidth * availableWidth) - itemMarginWidth;
+                    itemWidth = itemContext.setWidth(itemWidth); // constrains to min/maxWidth
+                    contentWidth += itemWidth + itemMarginWidth;
+                }
             }
+
+            ownerContext.setContentWidth(contentWidth);
         }
+
+        // we registered all the values that block this calculation, so abort now if blocked...
+        return !blocked;
+    },
+
+    calculateHeights: function (ownerContext) {
+        var me = this,
+            items = ownerContext.childItems,
+            len = items.length,
+            blocked, i, itemContext;
 
         // in order for innerCt to have the proper height, all the items must have height
         // correct in the DOM...
@@ -181,21 +209,18 @@ Ext.define('Ext.layout.container.Column', {
             }
         }
 
-        if (blocked) {
-            // we registered all the values that block this calculation, so abort now...
-            me.done = false;
-        } else {
-            ownerContext.setContentSize(contentWidth, me.innerCt.getHeight() + ownerContext.targetContext.getPaddingInfo().height);
-            me.calculateOverflow(ownerContext, containerSize);
+        if (!blocked) {
+            ownerContext.setContentHeight(me.innerCt.getHeight() + ownerContext.targetContext.getPaddingInfo().height);
         }
+
+        return !blocked;
     },
 
     getRenderTarget : function() {
         return this.innerCt;
     }
 
-    // private
-    /*onLayout_: function() {
+    /*onLayout: function() {
         var me = this,
             target = me.getTarget(),
             items = me.getLayoutItems(),

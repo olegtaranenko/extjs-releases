@@ -1,5 +1,4 @@
 /**
- * @class Ext.grid.feature.AbstractSummary
  * A small abstract class that contains the shared behaviour for any summary
  * calculations to be used in the grid.
  */
@@ -14,7 +13,8 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     /* End Definitions */
    
    /**
-    * @cfg {Boolean} showSummaryRow True to show the summary row. Defaults to <tt>true</tt>.
+    * @cfg
+    * True to show the summary row.
     */
     showSummaryRow: true,
     

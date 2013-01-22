@@ -78,38 +78,52 @@ Ext.define('Ext.form.field.Date', {
      * The default date format string which can be overriden for localization support. The format must be valid
      * according to {@link Ext.Date#parse}.
      */
+    //<locale>
     format : "m/d/Y",
+    //</locale>
     /**
      * @cfg {String} altFormats
      * Multiple date formats separated by "|" to try when parsing a user input value and it does not match the defined
      * format.
      */
+    //<locale>
     altFormats : "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j",
+    //</locale>
     /**
      * @cfg {String} disabledDaysText
      * The tooltip to display when the date falls on a disabled day.
      */
+    //<locale>
     disabledDaysText : "Disabled",
+    //</locale>
     /**
      * @cfg {String} disabledDatesText
      * The tooltip text to display when the date falls on a disabled date.
      */
+    //<locale>
     disabledDatesText : "Disabled",
+    //</locale>
     /**
      * @cfg {String} minText
      * The error text to display when the date in the cell is before {@link #minValue}.
      */
+    //<locale>
     minText : "The date in this field must be equal to or after {0}",
+    //</locale>
     /**
      * @cfg {String} maxText
      * The error text to display when the date in the cell is after {@link #maxValue}.
      */
+    //<locale>
     maxText : "The date in this field must be equal to or before {0}",
+    //</locale>
     /**
      * @cfg {String} invalidText
      * The error text to display when the date in the field is invalid.
      */
+    //<locale>
     invalidText : "{0} is not a valid date - it must be in the format {1}",
+    //</locale>
     /**
      * @cfg {String} [triggerCls='x-form-date-trigger']
      * An additional CSS class used to style the trigger button. The trigger will always get the class 'x-form-trigger'
@@ -162,9 +176,18 @@ Ext.define('Ext.form.field.Date', {
 
     /**
      * @cfg {String} submitFormat
-     * The date format string which will be submitted to the server. The format must be valid according to {@link
-     * Ext.Date#parse} (defaults to {@link #format}).
+     * The date format string which will be submitted to the server. The format must be valid according to
+     * {@link Ext.Date#parse}.
+     *
+     * Defaults to {@link #format}.
      */
+    
+    /**
+     * @cfg {Boolean} [useStrict=false]
+     * True to enforce strict date parsing to prevent the default Javascript "date rollover".
+     * See {@link Ext.Date#parse}.
+     */
+    useStrict: false,
 
     // in the absence of a time value, a default value of 12 noon will be used
     // (note: 12 noon was chosen because it steers well clear of all DST timezone changes)
@@ -174,10 +197,14 @@ Ext.define('Ext.form.field.Date', {
 
     matchFieldWidth: false,
     /**
-     * @cfg {Number} startDay
-     * Day index at which the week should begin, 0-based (defaults to Sunday)
+     * @cfg {Number} [startDay=undefined]
+     * Day index at which the week should begin, 0-based.
+     *
+     * Defaults to `0` (Sunday).
      */
+    //<locale>
     startDay: 0,
+    //</locale>
 
     initComponent : function(){
         var me = this,
@@ -396,15 +423,16 @@ Ext.define('Ext.form.field.Date', {
     safeParse : function(value, format) {
         var me = this,
             utilDate = Ext.Date,
-            parsedDate,
-            result = null;
+            result = null,
+            strict = me.useStrict,
+            parsedDate;
 
         if (utilDate.formatContainsHourInfo(format)) {
             // if parse format contains hour information, no DST adjustment is necessary
-            result = utilDate.parse(value, format);
+            result = utilDate.parse(value, format, strict);
         } else {
             // set time to 12 noon, then clear the time
-            parsedDate = utilDate.parse(value + ' ' + me.initTime, format + ' ' + me.initTimeFormat);
+            parsedDate = utilDate.parse(value + ' ' + me.initTime, format + ' ' + me.initTimeFormat, strict);
             if (parsedDate) {
                 result = utilDate.clearTime(parsedDate);
             }
@@ -526,18 +554,18 @@ Ext.define('Ext.form.field.Date', {
 
     /**
      * @cfg {Boolean} grow
-     * Not applicable for Date field.
+     * @private
      */
     /**
      * @cfg {Number} growMin
-     * Not applicable for Date field.
+     * @private
      */
     /**
      * @cfg {Number} growMax
-     * Not applicable for Date field.
+     * @private
      */
     /**
      * @method autoSize
-     * Not applicable for Date field.
+     * @private
      */
 });

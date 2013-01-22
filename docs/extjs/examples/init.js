@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 Ext.ns('Ext.samples');
 
 (function() {
@@ -92,15 +78,14 @@ Ext.onReady(function() {
             c.id = 'sample-' + i;
         }
 
-        var store = Ext.create('Ext.data.JsonStore', {
-            idProperty : 'id',
+        var store = Ext.create('Ext.data.Store', {
             fields     : ['id', 'title', 'items'],
             data       : catalog
         });
 
-        var panel = Ext.create('Ext.Panel', {
+        var panel = Ext.create('Ext.panel.Panel', {
             frame      : false,
-            renderTo   : Ext.get('all-demos'),
+            renderTo   : 'all-demos',
             height     : 300,
             autoScroll : true,
             items      : Ext.create('Ext.samples.SamplePanel', {
@@ -113,7 +98,7 @@ Ext.onReady(function() {
         );
         tpl.overwrite('sample-menu', catalog);
 
-        Ext.select('#sample-spacer').remove();
+        Ext.get('sample-spacer').remove();
 
         var headerEl  = Ext.get('hd'),
             footerEl  = Ext.get('ft'),
@@ -173,5 +158,4 @@ Ext.onReady(function() {
 
     },500));
 });
-
 

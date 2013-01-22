@@ -1,4 +1,8 @@
 /**
+ * Manages certain element-like data prior to rendering. These values are passed
+ * on to the render process. This is currently used to manage the "class" and "style" attributes
+ * of a component's primary el as well as the bodyEl of panels. This allows things like
+ * addBodyCls in Panel to share logic with addCls in AbstractComponent.
  * @private
  */
 Ext.define('Ext.util.ProtoElement', function () {
@@ -43,6 +47,11 @@ Ext.define('Ext.util.ProtoElement', function () {
             delete me.cls;
         },
 
+        /**
+         * Adds class to the element.
+         * @param {String} cls One or more classnames separated with spaces.
+         * @return {Ext.util.ProtoElement} this
+         */
         addCls: function (cls) {
             var me = this,
                 add = splitWords(cls),
@@ -62,10 +71,20 @@ Ext.define('Ext.util.ProtoElement', function () {
             return me;
         },
 
+        /**
+         * True if the element has given class.
+         * @param {String} cls
+         * @return {Boolean}
+         */
         hasCls: function (cls) {
             return cls in this.classMap;
         },
 
+        /**
+         * Removes class from the element.
+         * @param {String} cls One or more classnames separated with spaces.
+         * @return {Ext.util.ProtoElement} this
+         */
         removeCls: function (cls) {
             var me = this,
                 list = me.classList,
@@ -87,6 +106,12 @@ Ext.define('Ext.util.ProtoElement', function () {
             return me;
         },
 
+        /**
+         * Adds styles to the element.
+         * @param {String/Object} prop The style property to be set, or an object of multiple styles.
+         * @param {String} [value] The value to apply to the given property.
+         * @return {Ext.util.ProtoElement} this
+         */
         setStyle: function (prop, value) {
             var me = this,
                 style = me.style || (me.style = {});
@@ -104,9 +129,15 @@ Ext.define('Ext.util.ProtoElement', function () {
             return me;
         },
 
+        /**
+         * Writes style and class properties to given object.
+         * Styles will be written to #styleProp and class names to #clsProp.
+         * @param {Object} to
+         * @return {Object} to
+         */
         writeTo: function (to) {
             var me = this,
-                buf, name, style;
+                style;
 
             if (me.styleFn) {
                 style = Ext.apply({}, me.styleFn());
@@ -116,19 +147,11 @@ Ext.define('Ext.util.ProtoElement', function () {
             }
 
             to[me.clsProp] = me.classList.join(' ');
-            if (style) {
-                if (me.styleIsText) {
-                    buf = [];
-                    for (name in style) {
-                        if (style.hasOwnProperty(name)) {
-                            buf.push(name, ':', style[name], ';');
-                        }
-                    }
-                    style = buf.join('');
-                }
 
-                to[me.styleProp] = style;
+            if (style) {
+                to[me.styleProp] = me.styleIsText ? Ext.DomHelper.generateStyles(style) : style;
             }
+
             return to;
         }
     };

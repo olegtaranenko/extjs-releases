@@ -238,6 +238,9 @@ from : {
  }
  </code></pre>
      */
+    
+    // private
+    frameCount: 0,
 
     // @private
     constructor: function(config) {
@@ -348,6 +351,7 @@ from : {
             delay = me.delay,
             delayStart = me.delayStart,
             delayDelta;
+        
         if (delay) {
             if (!delayStart) {
                 me.delayStart = startTime;
@@ -370,6 +374,7 @@ from : {
                 me.initAttrs();
             }
             me.running = true;
+            me.frameCount = 0;
         }
     },
 
@@ -402,6 +407,8 @@ from : {
                 ret[attr] = propHandlers[attr].set(values, easing);
             }
         }
+        me.frameCount++;
+            
         return ret;
     },
 
@@ -444,6 +451,14 @@ from : {
         me.running = false;
         Ext.fx.Manager.removeAnim(me);
         me.fireEvent('afteranimate', me, me.startTime);
+    },
+    
+    isReady: function() {
+        return this.paused === false && this.running === false && this.iterations > 0;
+    },
+    
+    isRunning: function() {
+        return this.paused === false && this.running === true && this.isAnimator !== true;
     }
 });
 // Set flag to indicate that Fx is available. Class might not be available immediately.

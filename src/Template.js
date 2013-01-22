@@ -198,7 +198,7 @@ Ext.define('Ext.Template', {
      * @method applyTemplate
      * @member Ext.Template
      * Alias for {@link #apply}.
-     * @alias Ext.Template#apply
+     * @inheritdoc Ext.Template#apply
      */
     applyTemplate: function () {
         return this.apply.apply(this, arguments);

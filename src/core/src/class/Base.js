@@ -11,87 +11,7 @@
 (function(flexSetter) {
 
 var noArgs = [],
-    Base = function(){},
-    configNameCache = {};
-
-    function callParent(args) {
-        var method = this.callParent.caller,
-            supr = method.$previous ||
-                    ((method = method.$owner ? method : method.caller) &&
-                            method.$owner.superclass[method.$name]);
-
-        // NOTE: this code is deliberately as few expressions (and no function calls)
-        // as possible so that a debugger can skip over this noise with the minimum number
-        // of steps. Basically, just hit Step Into until you are where you really wanted
-        // to be.
-
-        //<debug error>
-        if (!supr) {
-            method = this.callParent.caller;
-            var parentClass, methodName;
-
-            if (!method.$owner) {
-                if (!method.caller) {
-                    Ext.Error.raise({
-                        sourceClass: Ext.getClassName(this),
-                        sourceMethod: "callParent",
-                        msg: "Attempting to call a protected method from the public scope, which is not allowed"
-                    });
-                }
-
-                method = method.caller;
-            }
-
-            parentClass = method.$owner.superclass;
-            methodName = method.$name;
-
-            if (!(methodName in parentClass)) {
-                Ext.Error.raise({
-                    sourceClass: Ext.getClassName(this),
-                    sourceMethod: methodName,
-                    msg: "this.callParent() was called but there's no such method (" + methodName +
-                            ") found in the parent class (" + (Ext.getClassName(parentClass) || 'Object') + ")"
-                });
-            }
-
-            Ext.Error.raise({
-                sourceClass: Ext.getClassName(this),
-                sourceMethod: (method && method.$name) || 'unknown',
-                msg: 'callParent cannot determine super method'
-            });
-        }
-        //</debug>
-
-        return supr.apply(this, args || noArgs);
-    }
-
-    // this version works the same as callParent on the prototype, but is adjusted
-    // slightly due to static-ness.
-    function callParentStatic(args) {
-        var me = this,
-            method = me.callParent.caller,
-            supr = method.$previous ||
-                    ((method = method.$owner ? method : method.caller) &&
-                            method.$owner.superclass.$class[method.$name]);
-
-        // NOTE: this code is deliberately as few expressions (and no function calls)
-        // as possible so that a debugger can skip over this noise with the minimum number
-        // of steps. Basically, just hit Step Into until you are where you really wanted
-        // to be.
-
-        //<debug error>
-        if (!supr) {
-            // TODO - elaborate on root cause...
-            Ext.Error.raise({
-                sourceClass: me.$className,
-                sourceMethod: (method && method.$name) || 'unknown',
-                msg: 'callParent cannot determine static super method'
-            });
-        }
-        //</debug>
-
-        return supr.apply(me, args || noArgs);
-    }
+    Base = function(){};
 
     // This is the "$previous" method of a hook function on an instance. When called, it
     // calls through the class prototype by the name of the called method.
@@ -127,6 +47,10 @@ var noArgs = [],
             return Ext.create.apply(Ext, [this].concat(Array.prototype.slice.call(arguments, 0)));
         },
 
+        /**
+         * @private
+         * @param config
+         */
         extend: function(parent) {
             var parentPrototype = parent.prototype,
                 basePrototype, prototype, i, ln, name, statics;
@@ -166,14 +90,23 @@ var noArgs = [],
             }
 
             //<feature classSystem.config>
-            prototype.config = new prototype.$configClass;
-            prototype.$configList = prototype.$configList.slice();
-            prototype.$hasConfig = Ext.Object.chain(prototype.$hasConfig);
+            prototype.config = new prototype.configClass;
+            prototype.initConfigList = prototype.initConfigList.slice();
+            prototype.initConfigMap = Ext.clone(prototype.initConfigMap);
+            prototype.configMap = Ext.Object.chain(prototype.configMap);
             //</feature>
         },
 
+        /**
+         * @private
+         * @param config
+         */
         '$onExtended': [],
 
+        /**
+         * @private
+         * @param config
+         */
         triggerExtended: function() {
             var callbacks = this.$onExtended,
                 ln = callbacks.length,
@@ -187,6 +120,10 @@ var noArgs = [],
             }
         },
 
+        /**
+         * @private
+         * @param config
+         */
         onExtended: function(fn, scope) {
             this.$onExtended.push({
                 fn: fn,
@@ -196,25 +133,44 @@ var noArgs = [],
             return this;
         },
 
-        addConfig: function(config) {
+        /**
+         * @private
+         * @param config
+         */
+        addConfig: function(config, fullMerge) {
             var prototype = this.prototype,
-                hasConfig = prototype.$hasConfig,
-                configList = prototype.$configList,
+                configNameCache = Ext.Class.configNameCache,
+                hasConfig = prototype.configMap,
+                initConfigList = prototype.initConfigList,
+                initConfigMap = prototype.initConfigMap,
                 defaultConfig = prototype.config,
-                name;
+                initializedName, name, value;
 
             for (name in config) {
                 if (config.hasOwnProperty(name)) {
                     if (!hasConfig[name]) {
                         hasConfig[name] = true;
-                        configList.push(name);
+                    }
+
+                    value = config[name];
+
+                    initializedName = configNameCache[name].initialized;
+
+                    if (!initConfigMap[name] && value !== null && !prototype[initializedName]) {
+                        initConfigMap[name] = true;
+                        initConfigList.push(name);
                     }
                 }
             }
 
-            Ext.merge(defaultConfig, config);
+            if (fullMerge) {
+                Ext.merge(defaultConfig, config);
+            }
+            else {
+                Ext.mergeIf(defaultConfig, config);
+            }
 
-            prototype.$configClass = Ext.Object.classify(defaultConfig);
+            prototype.configClass = Ext.Object.classify(defaultConfig);
         },
 
         /**
@@ -459,8 +415,6 @@ var noArgs = [],
          *     Ext.define('My.Cat', {
          *         constructor: function() {
          *             alert("I'm a cat!");
-         *
-         *             return this;
          *         }
          *     });
          *
@@ -577,7 +531,17 @@ var noArgs = [],
             return this;
         },
 
-        callParent: callParentStatic,
+        /**
+         * @private
+         */
+        callParent: function(args) {
+            var method;
+
+            // This code is intentionally inlined for the least number of debugger stepping
+            return (method = this.callParent.caller) && (method.$previous ||
+                  ((method = method.$owner ? method : method.caller) &&
+                        method.$owner.superclass.$class[method.$name])).apply(this, args || noArgs);
+        },
 
         //<feature classSystem.mixins>
         /**
@@ -589,19 +553,6 @@ var noArgs = [],
             var mixin = mixinClass.prototype,
                 prototype = this.prototype,
                 key;
-
-            for (key in mixin) {
-                if (mixin.hasOwnProperty(key)) {
-                    if (typeof prototype[key] == 'undefined' && key !== 'mixins' && key != 'mixinId') {
-                        prototype[key] = mixin[key];
-                    }
-                    //<feature classSystem.config>
-                    else if (key === 'config') {
-                        this.addConfig(mixin[key]);
-                    }
-                    //</feature>
-                }
-            }
 
             if (typeof mixin.onClassMixedIn != 'undefined') {
                 mixin.onClassMixedIn.call(mixinClass, this);
@@ -615,6 +566,21 @@ var noArgs = [],
                     prototype.mixins = {};
                 }
             }
+
+            for (key in mixin) {
+                if (key === 'mixins') {
+                    Ext.merge(prototype.mixins, mixin[key]);
+                }
+                else if (typeof prototype[key] == 'undefined' && key != 'mixinId' && key != 'config') {
+                    prototype[key] = mixin[key];
+                }
+            }
+
+            //<feature classSystem.config>
+            if ('config' in mixin) {
+                this.addConfig(mixin.config, false);
+            }
+            //</feature>
 
             prototype.mixins[name] = mixin;
         },
@@ -701,13 +667,17 @@ var noArgs = [],
     });
 
     Base.implement({
+        isInstance: true,
+
         $className: 'Ext.Base',
 
-        $configClass: function(){},
+        configClass: Ext.emptyFn,
 
-        $configList: [],
+        initConfigList: [],
 
-        $hasConfig: {},
+        configMap: {},
+
+        initConfigMap: {},
 
         /**
          * Get the reference to the class from which this object was instantiated. Note that unlike {@link Ext.Base#self},
@@ -729,8 +699,6 @@ var noArgs = [],
          *             alert(this.self.speciesName);   // dependent on 'this'
          *
          *             statics.totalCreated++;
-         *
-         *             return this;
          *         },
          *
          *         clone: function() {
@@ -855,7 +823,41 @@ var noArgs = [],
          * from the current method, for example: `this.callParent(arguments)`
          * @return {Object} Returns the result of calling the parent method
          */
-        callParent: callParent,
+        callParent: function(args) {
+            // NOTE: this code is deliberately as few expressions (and no function calls)
+            // as possible so that a debugger can skip over this noise with the minimum number
+            // of steps. Basically, just hit Step Into until you are where you really wanted
+            // to be.
+            var method,
+                superMethod = (method = this.callParent.caller) && (method.$previous ||
+                        ((method = method.$owner ? method : method.caller) &&
+                                method.$owner.superclass[method.$name]));
+
+            //<debug error>
+            if (!superMethod) {
+                method = this.callParent.caller;
+                var parentClass, methodName;
+
+                if (!method.$owner) {
+                    if (!method.caller) {
+                        throw new Error("Attempting to call a protected method from the public scope, which is not allowed");
+                    }
+
+                    method = method.caller;
+                }
+
+                parentClass = method.$owner.superclass;
+                methodName = method.$name;
+
+                if (!(methodName in parentClass)) {
+                    throw new Error("this.callParent() was called but there's no such method (" + methodName +
+                                ") found in the parent class (" + (Ext.getClassName(parentClass) || 'Object') + ")");
+                }
+            }
+            //</debug>
+
+            return superMethod.apply(this, args || noArgs);
+        },
 
         /**
          * @property {Ext.Class} self
@@ -871,8 +873,6 @@ var noArgs = [],
          *
          *         constructor: function() {
          *             alert(this.self.speciesName); / dependentOL on 'this'
-         *
-         *             return this;
          *         },
          *
          *         clone: function() {
@@ -943,8 +943,6 @@ var noArgs = [],
          *
          *         constructor: function(config) {
          *             this.initConfig(config);
-         *
-         *             return this;
          *         }
          *     });
          *
@@ -959,36 +957,40 @@ var noArgs = [],
          * @return {Object} mixins The mixin prototypes as key - value pairs
          */
         initConfig: function(config) {
-            var configNameCache = Ext.Class.configNameCache,
-                defaultConfig = new this.$configClass,
-                defaultConfigList = this.$configList,
-                emptyFn = Ext.emptyFn,
-                nameMap, i, ln, name, setName, initName, initer;
+            var instanceConfig = config,
+                configNameCache = Ext.Class.configNameCache,
+                defaultConfig = new this.configClass,
+                defaultConfigList = this.initConfigList,
+                hasConfig = this.configMap,
+                nameMap, i, ln, name, initializedName;
 
-            this.initConfig = emptyFn;
+            this.initConfig = Ext.emptyFn;
 
-            if (config) {
-                config = Ext.merge(defaultConfig, config);
+            this.initialConfig = instanceConfig || {};
+
+            this.config = config = (instanceConfig) ? Ext.merge(defaultConfig, config) : defaultConfig;
+
+            if (instanceConfig) {
+                defaultConfigList = defaultConfigList.slice();
+
+                for (name in instanceConfig) {
+                    if (hasConfig[name]) {
+                        if (instanceConfig[name] !== null) {
+                            defaultConfigList.push(name);
+                            this[configNameCache[name].initialized] = false;
+                        }
+                    }
+                }
             }
-            else {
-                config = defaultConfig;
-            }
-
-            this.config = config;
 
             for (i = 0,ln = defaultConfigList.length; i < ln; i++) {
                 name = defaultConfigList[i];
-
                 nameMap = configNameCache[name];
+                initializedName = nameMap.initialized;
 
-                initName = nameMap.init;
-                setName = nameMap.set;
-
-                initer = this[initName];
-
-                if (initer !== emptyFn) {
-                    this[initName] = emptyFn;
-                    initer.call(this, config[name]);
+                if (!this[initializedName]) {
+                    this[initializedName] = true;
+                    this[nameMap.set].call(this, config[name]);
                 }
             }
 
@@ -997,37 +999,52 @@ var noArgs = [],
 
         /**
          * @private
+         * @param config
          */
-        setConfig: function(config) {
+        hasConfig: function(name) {
+            return Boolean(this.configMap[name]);
+        },
+
+        /**
+         * @private
+         */
+        setConfig: function(config, applyIfNotSet) {
             if (!config) {
                 return this;
             }
 
             var configNameCache = Ext.Class.configNameCache,
-                hasConfig = this.$hasConfig,
-                name, value, setName;
+                currentConfig = this.config,
+                hasConfig = this.configMap,
+                initialConfig = this.initialConfig,
+                name, value;
+
+            applyIfNotSet = Boolean(applyIfNotSet);
 
             for (name in config) {
-                if (config.hasOwnProperty(name)) {
-                    if (!hasConfig[name]) {
-                        //<debug warn>
-                        if (name !== 'xtype' && name !== 'xclass') {
-                            Ext.Logger.warn("Ignored unsupported config: '"+name+"' (not listed as a default config of class: '"+Ext.getDisplayName(this)+"')", this);
-                        }
-                        //</debug>
+                if (applyIfNotSet && initialConfig.hasOwnProperty(name)) {
+                    continue;
+                }
 
-                        continue;
-                    }
+                value = config[name];
+                currentConfig[name] = value;
 
-                    value = config[name];
-
-                    setName = configNameCache[name].set;
-
-                    this[setName](value);
+                if (hasConfig[name]) {
+                    this[configNameCache[name].set](value);
                 }
             }
 
             return this;
+        },
+
+        /**
+         * @private
+         * @param name
+         */
+        getConfig: function(name) {
+            var configNameCache = Ext.Class.configNameCache;
+
+            return this[configNameCache[name].get]();
         },
 
         /**
@@ -1045,7 +1062,13 @@ var noArgs = [],
             }
         },
 
-        onConfigUpdate: function(names, callback) {
+        /**
+         * @private
+         * @param names
+         * @param callback
+         * @param scope
+         */
+        onConfigUpdate: function(names, callback, scope) {
             var self = this.self,
                 //<debug>
                 className = self.$className,
@@ -1055,16 +1078,15 @@ var noArgs = [],
 
             names = Ext.Array.from(names);
 
+            scope = scope || this;
+
             for (i = 0,ln = names.length; i < ln; i++) {
                 name = names[i];
                 updaterName = 'update' + Ext.String.capitalize(name);
-                updater = this[updaterName];
+                updater = this[updaterName] || Ext.emptyFn;
                 newUpdater = function() {
-                    if (updater) {
-                        updater.apply(this, arguments);
-                    }
-
-                    this[callback].apply(this, arguments);
+                    updater.apply(this, arguments);
+                    scope[callback].apply(scope, arguments);
                 };
                 newUpdater.$name = updaterName;
                 newUpdater.$owner = self;
@@ -1077,7 +1099,9 @@ var noArgs = [],
         },
         //</feature>
 
-        destroy: function() {}
+        destroy: function() {
+            this.destroy = Ext.emptyFn;
+        }
     });
 
     /**
@@ -1086,8 +1110,6 @@ var noArgs = [],
      *     Ext.define('My.Cat', {
      *         constructor: function() {
      *             alert("I'm a cat!");
-     *
-     *             return this;
      *         }
      *     });
      *
@@ -1113,7 +1135,7 @@ var noArgs = [],
      * @protected
      * @deprecated as of 4.1. Use {@link #callParent} instead.
      */
-    Base.prototype.callOverridden = callParent;
+    Base.prototype.callOverridden = Base.prototype.callParent;
 
     Ext.Base = Base;
 

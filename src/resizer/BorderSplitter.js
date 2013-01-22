@@ -1,6 +1,4 @@
 /**
- * @class Ext.resizer.BorderSplitter
- * @extends Ext.resizer.Splitter
  * Private utility class for Ext.layout.container.Border.
  * @private
  */

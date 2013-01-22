@@ -19,7 +19,8 @@ Ext.define('Ext.chart.Tip', {
             me.tipTimeout = null;
             me.tipConfig = Ext.apply({}, config.tips, {
                 renderer: Ext.emptyFn,
-                constrainPosition: false
+                constrainPosition: true,
+                autoHide: true
             });
             me.tooltip = new Ext.tip.ToolTip(me.tipConfig);
             me.chart.surface.on('mousemove', me.tooltip.onMouseMove, me.tooltip);

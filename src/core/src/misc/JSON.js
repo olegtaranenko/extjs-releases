@@ -159,14 +159,14 @@ Ext.JSON.encodeDate = function(d) {
  * Shorthand for {@link Ext.JSON#encode}
  * @member Ext
  * @method encode
- * @alias Ext.JSON#encode
+ * @inheritdoc Ext.JSON#encode
  */
 Ext.encode = Ext.JSON.encode;
 /**
  * Shorthand for {@link Ext.JSON#decode}
  * @member Ext
  * @method decode
- * @alias Ext.JSON#decode
+ * @inheritdoc Ext.JSON#decode
  */
 Ext.decode = Ext.JSON.decode;
 

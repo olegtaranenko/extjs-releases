@@ -47,6 +47,13 @@ Ext.define('Ext.data.TreeStore', {
     clearOnLoad : true,
 
     /**
+     * @cfg {Boolean} [clearRemovedOnLoad=true]
+     * If `true`, when a node is reloaded, any records in the {@link #removed} record collection that were previously descendants of the node being reloaded will be cleared from the {@link #removed} collection.
+     * Only applicable if {@link #clearOnLoad} is `true`.
+     */
+    clearRemovedOnLoad: true,
+
+    /**
      * @cfg {String} nodeParam
      * The name of the parameter sent to the server which contains the identifier of the node.
      * Defaults to 'node'.
@@ -95,82 +102,88 @@ Ext.define('Ext.data.TreeStore', {
         me.tree = new Ext.data.Tree();
 
         me.relayEvents(me.tree, [
-        /**
-         * @event append
-         * @alias Ext.data.Tree#append
-         */
+            /**
+             * @event append
+             * @inheritdoc Ext.data.Tree#append
+             */
             "append",
 
-        /**
-         * @event remove
-         * @alias Ext.data.Tree#remove
-         */
+            /**
+             * @event remove
+             * @inheritdoc Ext.data.Tree#remove
+             */
             "remove",
 
-        /**
-         * @event move
-         * @alias Ext.data.Tree#move
-         */
+            /**
+             * @event move
+             * @inheritdoc Ext.data.Tree#move
+             */
             "move",
 
-        /**
-         * @event insert
-         * @alias Ext.data.Tree#insert
-         */
+            /**
+             * @event insert
+             * @inheritdoc Ext.data.Tree#insert
+             */
             "insert",
 
-        /**
-         * @event beforeappend
-         * @alias Ext.data.Tree#beforeappend
-         */
+            /**
+             * @event beforeappend
+             * @inheritdoc Ext.data.Tree#beforeappend
+             */
             "beforeappend",
 
-        /**
-         * @event beforeremove
-         * @alias Ext.data.Tree#beforeremove
-         */
+            /**
+             * @event beforeremove
+             * @inheritdoc Ext.data.Tree#beforeremove
+             */
             "beforeremove",
 
-        /**
-         * @event beforemove
-         * @alias Ext.data.Tree#beforemove
-         */
+            /**
+             * @event beforemove
+             * @inheritdoc Ext.data.Tree#beforemove
+             */
             "beforemove",
 
-        /**
-         * @event beforeinsert
-         * @alias Ext.data.Tree#beforeinsert
-         */
+            /**
+             * @event beforeinsert
+             * @inheritdoc Ext.data.Tree#beforeinsert
+             */
             "beforeinsert",
 
-        /**
-         * @event expand
-         * @alias Ext.data.Tree#expand
-         */
+            /**
+             * @event expand
+             * @inheritdoc Ext.data.Tree#expand
+             */
             "expand",
 
-        /**
-         * @event collapse
-         * @alias Ext.data.Tree#collapse
-         */
+            /**
+             * @event collapse
+             * @inheritdoc Ext.data.Tree#collapse
+             */
             "collapse",
 
-        /**
-         * @event beforeexpand
-         * @alias Ext.data.Tree#beforeexpand
-         */
+            /**
+             * @event beforeexpand
+             * @inheritdoc Ext.data.Tree#beforeexpand
+             */
             "beforeexpand",
 
-        /**
-         * @event beforecollapse
-         * @alias Ext.data.Tree#beforecollapse
-         */
+            /**
+             * @event beforecollapse
+             * @inheritdoc Ext.data.Tree#beforecollapse
+             */
             "beforecollapse",
 
-        /**
-         * @event rootchange
-         * @alias Ext.data.Tree#rootchange
-         */
+            /**
+             * @event sort
+             * @inheritdoc Ext.data.Tree#sort
+             */
+            "sort",
+
+            /**
+             * @event rootchange
+             * @inheritdoc Ext.data.Tree#rootchange
+             */
             "rootchange"
         ]);
 
@@ -182,7 +195,8 @@ Ext.define('Ext.data.TreeStore', {
             beforeexpand: me.onBeforeNodeExpand,
             beforecollapse: me.onBeforeNodeCollapse,
             append: me.onNodeAdded,
-            insert: me.onNodeAdded
+            insert: me.onNodeAdded,
+            sort: me.onNodeSort
         });
 
         me.onBeforeSort();
@@ -292,28 +306,44 @@ Ext.define('Ext.data.TreeStore', {
         callback.call(scope || node, node.childNodes);
     },
 
-    onNodeRemove: function(parent, node) {
-        var removed = this.removed;
+    onNodeRemove: function(parent, node, isMove) {
+        var me = this,
+            removed = me.removed;
 
         if (!node.isReplace && Ext.Array.indexOf(removed, node) == -1) {
             removed.push(node);
         }
+
+        if (me.autoSync && !me.autoSyncSuspended && !isMove) {
+            me.sync();
+        }
     },
 
     onNodeAdded: function(parent, node) {
-        var proxy = this.getProxy(),
+        var me = this,
+            proxy = me.getProxy(),
             reader = proxy.getReader(),
             data = node.raw || node.data,
             dataRoot, children;
 
-        Ext.Array.remove(this.removed, node);
+        Ext.Array.remove(me.removed, node);
 
-        if (!node.isLeaf() && !node.isLoaded()) {
+        if (!node.isLeaf()) {
             dataRoot = reader.getRoot(data);
             if (dataRoot) {
-                this.fillNode(node, reader.extractData(dataRoot));
+                me.fillNode(node, reader.extractData(dataRoot));
                 delete data[reader.root];
             }
+        }
+
+        if (me.autoSync && !me.autoSyncSuspended && (node.phantom || node.dirty)) {
+            me.sync();
+        }
+    },
+
+    onNodeSort: function() {
+        if(this.autoSync && !this.autoSyncSuspended) {
+            this.sync();
         }
     },
 
@@ -326,7 +356,7 @@ Ext.define('Ext.data.TreeStore', {
         var me = this;
 
         root = root || {};
-        if (!root.isNode) {
+        if (!root.isModel) {
             // create a default rootNode and create internal data struct.
             Ext.applyIf(root, {
                 id: me.defaultRootId,
@@ -335,8 +365,10 @@ Ext.define('Ext.data.TreeStore', {
             });
             Ext.data.NodeInterface.decorate(me.model);
             root = Ext.ModelManager.create(root, me.model);
+        } else if (root.isModel && !root.isNode) {
+            Ext.data.NodeInterface.decorate(me.model);
         }
-       
+
 
         // Because we have decorated the model with new fields,
         // we need to build new extactor functions on the reader.
@@ -395,7 +427,16 @@ Ext.define('Ext.data.TreeStore', {
         }
 
         if (me.clearOnLoad) {
-            node.removeAll(true);
+            if(me.clearRemovedOnLoad) {
+                // clear from the removed array any nodes that were descendants of the node being reloaded so that they do not get saved on next sync.
+                me.clearRemoved(node);
+            }
+            // temporarily remove the onNodeRemove event listener so that when removeAll is called, the removed nodes do not get added to the removed array
+            me.tree.un('remove', me.onNodeRemove, me);
+            // remove all the nodes
+            node.removeAll(false);
+            // reattach the onNodeRemove listener
+            me.tree.on('remove', me.onNodeRemove, me);
         }
 
         Ext.applyIf(options, {
@@ -410,6 +451,60 @@ Ext.define('Ext.data.TreeStore', {
         return me.callParent([options]);
     },
 
+    /**
+     * Removes all records that used to be descendants of the passed node from the removed array
+     * @private
+     * @param {Ext.data.NodeInterface} node
+     */
+    clearRemoved: function(node) {
+        var me = this,
+            removed = me.removed,
+            id = node.getId(),
+            removedLength = removed.length,
+            i = removedLength,
+            recordsToClear = {},
+            newRemoved = [],
+            removedHash = {},
+            removedNode,
+            targetNode,
+            targetId;
+
+        if(node === me.getRootNode()) {
+            // if the passed node is the root node, just reset the removed array
+            me.removed = [];
+            return;
+        }
+
+        // add removed records to a hash so they can be easily retrieved by id later
+        for(; i--;) {
+            removedNode = removed[i];
+            removedHash[removedNode.getId()] = removedNode;
+        }
+
+        for(i = removedLength; i--;) {
+            removedNode = removed[i];
+            targetNode = removedNode;
+            while(targetNode && targetNode.getId() !== id) {
+                // walk up the parent hierarchy until we find the passed node or until we get to the root node
+                targetId = targetNode.get('parentId');
+                targetNode = targetNode.parentNode || me.getNodeById(targetId) || removedHash[targetId];
+            }
+            if(targetNode) {
+                // removed node was previously a descendant of the passed node - add it to the records to clear from "removed" later
+                recordsToClear[removedNode.getId()] = removedNode;
+            }
+        }
+
+        // create a new removed array containing only the records that are not in recordsToClear
+        for(i = 0; i < removedLength; i++) {
+            removedNode = removed[i];
+            if(!recordsToClear[removedNode.getId()]) {
+                newRemoved.push(removedNode);
+            }
+        }
+
+        me.removed = newRemoved;
+    },
 
     /**
      * Fills a node with a series of child records.
@@ -421,6 +516,8 @@ Ext.define('Ext.data.TreeStore', {
         var me = this,
             ln = records ? records.length : 0,
             i = 0, sortCollection;
+
+        Ext.Array.sort(records, me.sortByIndex);
 
         if (ln && me.sortOnLoad && !me.remoteSort && me.sorters && me.sorters.items) {
             sortCollection = new Ext.util.MixedCollection();
@@ -435,6 +532,17 @@ Ext.define('Ext.data.TreeStore', {
         }
 
         return records;
+    },
+
+    /**
+     * Sorter function for sorting records in index order
+     * @private
+     * @param {Ext.data.NodeInterface} node1
+     * @param {Ext.data.NodeInterface} node2
+     * @return {Number}
+     */
+    sortByIndex: function(node1, node2) {
+        return node1.data.index - node2.data.index;
     },
 
     // inherit docs
@@ -466,89 +574,6 @@ Ext.define('Ext.data.TreeStore', {
         Ext.callback(operation.callback, operation.scope || me, [records, operation, successful]);
     },
 
-    /**
-     * Creates any new records when a write is returned from the server.
-     * @private
-     * @param {Ext.data.Model[]} records The array of new records
-     * @param {Ext.data.Operation} operation The operation that just completed
-     * @param {Boolean} success True if the operation was successful
-     */
-    onCreateRecords: function(records, operation, success) {
-        if (success) {
-            var i = 0,
-                length = records.length,
-                originalRecords = operation.records,
-                parentNode,
-                record,
-                original,
-                index;
-
-            /*
-             * Loop over each record returned from the server. Assume they are
-             * returned in order of how they were sent. If we find a matching
-             * record, replace it with the newly created one.
-             */
-            for (; i < length; ++i) {
-                record = records[i];
-                original = originalRecords[i];
-                if (original) {
-                    parentNode = original.parentNode;
-                    if (parentNode) {
-                        // prevent being added to the removed cache
-                        original.isReplace = true;
-                        parentNode.replaceChild(record, original);
-                        delete original.isReplace;
-                    }
-                    record.phantom = false;
-                }
-            }
-        }
-    },
-
-    /**
-     * Updates any records when a write is returned from the server.
-     * @private
-     * @param {Ext.data.Model[]} records The array of updated records
-     * @param {Ext.data.Operation} operation The operation that just completed
-     * @param {Boolean} success True if the operation was successful
-     */
-    onUpdateRecords: function(records, operation, success) {
-        if (success) {
-            var me = this,
-                i = 0,
-                length = records.length,
-                data = me.data,
-                original,
-                parentNode,
-                record;
-
-            for (; i < length; ++i) {
-                record = records[i];
-                original = me.tree.getNodeById(record.getId());
-                parentNode = original.parentNode;
-                if (parentNode) {
-                    // prevent being added to the removed cache
-                    original.isReplace = true;
-                    parentNode.replaceChild(record, original);
-                    original.isReplace = false;
-                }
-            }
-        }
-    },
-
-    /**
-     * Removes any records when a write is returned from the server.
-     * @private
-     * @param {Ext.data.Model[]} records The array of removed records
-     * @param {Ext.data.Operation} operation The operation that just completed
-     * @param {Boolean} success True if the operation was successful
-     */
-    onDestroyRecords: function(records, operation, success) {
-        if (success) {
-            this.removed = [];
-        }
-    },
-
     // inherit docs
     removeAll: function() {
         this.getRootNode().destroy(true);
@@ -564,6 +589,7 @@ Ext.define('Ext.data.TreeStore', {
         } else {
             me.tree.sort(sorterFn, true);
             me.fireEvent('datachanged', me);
+            me.fireEvent('refresh', me);
         }
         me.fireEvent('sort', me);
     }

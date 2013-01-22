@@ -6,7 +6,7 @@ Ext.dom.AbstractElement.addMethods({
      * Appends the passed element(s) to this element
      * @param {String/HTMLElement/Ext.dom.AbstractElement} el
      * The id of the node, a DOM Node or an existing Element.
-     * @return {Ext.dom.AbstractElement} this
+     * @return {Ext.dom.AbstractElement} This element
      */
     appendChild: function(el) {
         return Ext.get(el).appendTo(this);
@@ -16,7 +16,7 @@ Ext.dom.AbstractElement.addMethods({
      * Appends this element to the passed element
      * @param {String/HTMLElement/Ext.dom.AbstractElement} el The new parent element.
      * The id of the node, a DOM Node or an existing Element.
-     * @return {Ext.dom.AbstractElement} this
+     * @return {Ext.dom.AbstractElement} This element
      */
     appendTo: function(el) {
         Ext.getDom(el).appendChild(this.dom);
@@ -27,7 +27,7 @@ Ext.dom.AbstractElement.addMethods({
      * Inserts this element before the passed element in the DOM
      * @param {String/HTMLElement/Ext.dom.AbstractElement} el The element before which this element will be inserted.
      * The id of the node, a DOM Node or an existing Element.
-     * @return {Ext.dom.AbstractElement} this
+     * @return {Ext.dom.AbstractElement} This element
      */
     insertBefore: function(el) {
         el = Ext.getDom(el);
@@ -39,7 +39,7 @@ Ext.dom.AbstractElement.addMethods({
      * Inserts this element after the passed element in the DOM
      * @param {String/HTMLElement/Ext.dom.AbstractElement} el The element to insert after.
      * The id of the node, a DOM Node or an existing Element.
-     * @return {Ext.dom.AbstractElement} this
+     * @return {Ext.dom.AbstractElement} This element
      */
     insertAfter: function(el) {
         el = Ext.getDom(el);
@@ -110,7 +110,7 @@ Ext.dom.AbstractElement.addMethods({
      * Replaces the passed element with this element
      * @param {String/HTMLElement/Ext.dom.AbstractElement} el The element to replace.
      * The id of the node, a DOM Node or an existing Element.
-     * @return {Ext.dom.AbstractElement} this
+     * @return {Ext.dom.AbstractElement} This element
      */
     replace: function(el) {
         el = Ext.get(el);
@@ -118,30 +118,30 @@ Ext.dom.AbstractElement.addMethods({
         el.remove();
         return this;
     },
-    
+
     /**
      * Replaces this element with the passed element
      * @param {String/HTMLElement/Ext.dom.AbstractElement/Object} el The new element (id of the node, a DOM Node
      * or an existing Element) or a DomHelper config of an element to create
-     * @return {Ext.dom.AbstractElement} this
+     * @return {Ext.dom.AbstractElement} This element
      */
     replaceWith: function(el){
         var me = this;
-            
+
         if(el.nodeType || el.dom || typeof el == 'string'){
             el = Ext.get(el);
             me.dom.parentNode.insertBefore(el, me.dom);
         }else{
             el = Ext.core.DomHelper.insertBefore(me.dom, el);
         }
-        
+
         delete Ext.cache[me.id];
-        Ext.removeNode(me.dom);      
+        Ext.removeNode(me.dom);
         me.id = Ext.id(me.dom = el);
-        Ext.dom.AbstractElement.addToCache(me.isFlyweight ? new Ext.dom.AbstractElement(me.dom) : me);     
+        Ext.dom.AbstractElement.addToCache(me.isFlyweight ? new Ext.dom.AbstractElement(me.dom) : me);
         return me;
     },
-    
+
     /**
      * Creates the passed DomHelper config and appends it to this element or optionally inserts it before the passed child element.
      * @param {Object} config DomHelper element config object.  If no tag is specified (e.g., {tag:'input'}) then a div will be
@@ -177,7 +177,7 @@ Ext.dom.AbstractElement.addMethods({
     /**
      * Inserts an html fragment into this element
      * @param {String} where Where to insert the html in relation to this element - beforeBegin, afterBegin, beforeEnd, afterEnd.
-     * See {@link Ext.core.DomHelper#insertHtml} for details.
+     * See {@link Ext.dom.Helper#insertHtml} for details.
      * @param {String} html The HTML fragment
      * @param {Boolean} [returnEl=false] True to return an Ext.dom.AbstractElement
      * @return {HTMLElement/Ext.dom.AbstractElement} The inserted node (or nearest related if more than 1 inserted)

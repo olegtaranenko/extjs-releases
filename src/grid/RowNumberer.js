@@ -31,11 +31,17 @@ Ext.define('Ext.grid.RowNumberer', {
     width: 23,
 
     /**
-     * @cfg {Boolean} sortable
-     * True if the row number column is sortable (defaults to false).
+     * @cfg {Boolean} [sortable=false]
+     * True if the row number column is sortable.
      * @hide
      */
     sortable: false,
+    
+    /**
+     * @cfg {Boolean} [draggable=false]
+     * False to disable drag-drop reordering of this column.
+     */
+    draggable: false,
 
     align: 'right',
 

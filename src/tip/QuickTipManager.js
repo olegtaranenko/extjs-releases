@@ -117,7 +117,7 @@ Ext.define('Ext.tip.QuickTipManager', function() {
                     return;
                 }
 
-                var tipConfig = Ext.apply({ disabled: disabled }, config),
+                var tipConfig = Ext.apply({ disabled: disabled, id: 'ext-quicktips-tip' }, config),
                     className = tipConfig.className,
                     xtype = tipConfig.xtype;
 
@@ -230,7 +230,7 @@ Ext.define('Ext.tip.QuickTipManager', function() {
 
         /**
          * Alias of {@link #register}.
-         * @alias Ext.tip.QuickTipManager#register
+         * @inheritdoc Ext.tip.QuickTipManager#register
          */
         tips : function(){
             tip.register.apply(tip, arguments);

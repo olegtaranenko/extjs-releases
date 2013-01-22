@@ -666,7 +666,7 @@ Ext.define('Ext.chart.Chart', {
             delayRefresh = this.delayRefresh;
             
         return {
-            datachanged: refresh,
+            refresh: refresh,
             add: delayRefresh,
             remove: delayRefresh,
             update: delayRefresh,

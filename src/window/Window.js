@@ -1,7 +1,7 @@
 /**
  * A specialized panel intended for use as an application window. Windows are floated, {@link #resizable}, and
- * {@link #draggable} by default. Windows can be {@link #maximizable maximized} to fill the viewport, restored to
- * their prior size, and can be {@link #minimize}d.
+ * {@link #cfg-draggable} by default. Windows can be {@link #maximizable maximized} to fill the viewport, restored to
+ * their prior size, and can be {@link #method-minimize}d.
  *
  * Windows can also be linked to a {@link Ext.ZIndexManager} or managed by the {@link Ext.WindowManager} to provide
  * grouping, activation, to front, to back and other application-specific behavior.
@@ -129,6 +129,12 @@ Ext.define('Ext.window.Window', {
     constrainHeader: false,
 
     /**
+     * @cfg {Ext.util.Region/Ext.Element} constrainTo
+     * A {@link Ext.util.Region Region} (or an element from which a Region measurement will be read) which is used
+     * to constrain the window.
+     */
+
+    /**
      * @cfg {Boolean} plain
      * True to render the window body with a transparent background so that it will blend into the framing elements,
      * false to add a lighter background color to visually highlight the body element and separate it more distinctly
@@ -176,7 +182,7 @@ Ext.define('Ext.window.Window', {
      * disallow closing the window.
      *
      * By default, when close is requested by either clicking the close button in the header or pressing ESC when the
-     * Window has focus, the {@link #close} method will be called. This will _{@link Ext.Component#destroy destroy}_ the
+     * Window has focus, the {@link #method-close} method will be called. This will _{@link Ext.Component#method-destroy destroy}_ the
      * Window and its content meaning that it may not be reused.
      *
      * To make closing a Window _hide_ the Window so that it may be reused, set {@link #closeAction} to 'hide'.
@@ -185,19 +191,27 @@ Ext.define('Ext.window.Window', {
 
     /**
      * @cfg {Boolean} hidden
-     * Render this Window hidden. If `true`, the {@link #hide} method will be called internally.
+     * Render this Window hidden. If `true`, the {@link #method-hide} method will be called internally.
      */
     hidden: true,
 
-    // Inherit docs from Component. Windows render to the body on first show.
+    /**
+     * @cfg
+     * @inheritdoc
+     * Windows render to the body on first show.
+     */
     autoRender: true,
 
-    // Inherit docs from Component. Windows hide using visibility.
+    /**
+     * @cfg
+     * @inheritdoc
+     * Windows hide using visibility.
+     */
     hideMode: 'visibility',
 
     /**
-     * @cfg {Boolean} floating
-     * Not applicable for Window. Windows are always floating.
+     * @cfg
+     * @private
      */
     floating: true,
 
@@ -290,7 +304,7 @@ Ext.define('Ext.window.Window', {
         var events = this.stateEvents;
         // push on stateEvents if they don't exist
         Ext.each(['maximize', 'restore', 'resize', 'dragend'], function(event){
-            if (Ext.Array.indexOf(events, event)) {
+            if (Ext.Array.indexOf(events, event) === -1) {
                 events.push(event);
             }
         });
@@ -385,7 +399,6 @@ Ext.define('Ext.window.Window', {
 
     /**
      * @private
-     * @override
      * Override Component.initDraggable.
      * Window uses the header element as the delegate.
      */
@@ -417,7 +430,7 @@ Ext.define('Ext.window.Window', {
 
             /**
              * @property {Ext.util.ComponentDragger} dd
-             * If this Window is configured {@link #draggable}, this property will contain an instance of
+             * If this Window is configured {@link #cfg-draggable}, this property will contain an instance of
              * {@link Ext.util.ComponentDragger} (A subclass of {@link Ext.dd.DragTracker DragTracker}) which handles dragging
              * the Window's DOM Element, and constraining according to the {@link #constrain} and {@link #constrainHeader} .
              *
@@ -432,8 +445,11 @@ Ext.define('Ext.window.Window', {
 
     // private
     onEsc: function(k, e) {
-        e.stopEvent();
-        this.close();
+        // Only process ESC if the FocusManager is not doing it
+        if (!Ext.FocusManager || !Ext.FocusManager.enabled || Ext.FocusManager.focusedCmp === this) {
+            e.stopEvent();
+            this.close();
+        }
     },
 
     // private
@@ -451,7 +467,6 @@ Ext.define('Ext.window.Window', {
 
     /**
      * @private
-     * @override
      * Contribute class-specific tools to the header.
      * Called by Panel's initTools.
      */
@@ -504,19 +519,19 @@ Ext.define('Ext.window.Window', {
 
     /**
      * @private
-     * @override
      * Called when a Component's focusEl receives focus.
      * If there is a valid default focus Component to jump to, focus that,
      * otherwise continue as usual, focus this Component.
      */
     onFocus: function() {
         var me = this,
-            focusDescendant = me.getDefaultFocus();
+            focusDescendant;
 
-        if (focusDescendant !== me) {
-            focusDescendant.focus();
-        } else {
+        // If the FocusManager is enabled, then we must noy jumpt to focus the default focus. We must focus the Window
+        if ((Ext.FocusManager && Ext.FocusManager.enabled) || ((focusDescendant = me.getDefaultFocus()) === me)) {
             me.callParent(arguments);
+        } else {
+            focusDescendant.focus();
         }
     },
 
@@ -597,7 +612,7 @@ Ext.define('Ext.window.Window', {
     },
 
     /**
-     * Placeholder method for minimizing the window. By default, this method simply fires the {@link #minimize} event
+     * Placeholder method for minimizing the window. By default, this method simply fires the {@link #event-minimize} event
      * since the behavior of minimizing a window is application-specific. To implement custom minimize behavior, either
      * the minimize event can be handled or this method can be overridden.
      * @return {Ext.window.Window} this
@@ -757,7 +772,7 @@ Ext.define('Ext.window.Window', {
     },
 
     /**
-     * A shortcut method for toggling between {@link #maximize} and {@link #restore} based on the current maximized
+     * A shortcut method for toggling between {@link #method-maximize} and {@link #method-restore} based on the current maximized
      * state of the window.
      * @return {Ext.window.Window} this
      */

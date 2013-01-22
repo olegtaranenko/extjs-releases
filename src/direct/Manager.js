@@ -212,7 +212,7 @@ Ext.define('Ext.direct.Manager', {
      * @return {Ext.direct.Transaction}
      */
     getTransaction: function(transaction){
-        return transaction.isTransaction ? transaction : this.transactions.get(transaction);
+        return Ext.isObject(transaction) ? transaction : this.transactions.get(transaction);
     },
 
     onProviderData : function(provider, event){
@@ -232,7 +232,31 @@ Ext.define('Ext.direct.Manager', {
             me.fireEvent('exception', event);
         }
         me.fireEvent('event', event, provider);
+    },
+    
+    /**
+     * Parses a direct function. It may be passed in a string format, for example:
+     * "MyApp.Person.read".
+     * @protected
+     * @param {String/Function} fn The direct function
+     * @return {Function} The function to use in the direct call. Null if not found
+     */
+    parseMethod: function(fn){
+        if (Ext.isString(fn)) {
+            var parts = fn.split('.'),
+                i = 0,
+                len = parts.length,
+                current = window;
+                
+            while (current && i < len) {
+                current = current[parts[i]];
+                ++i;
+            }
+            fn = Ext.isFunction(current) ? current : null;
+        }
+        return fn || null;
     }
+    
 }, function(){
     // Backwards compatibility
     Ext.Direct = Ext.direct.Manager;

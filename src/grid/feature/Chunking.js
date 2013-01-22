@@ -1,5 +1,5 @@
 /**
- * @class Ext.grid.feature.Chunking
+ *
  */
 Ext.define('Ext.grid.feature.Chunking', {
     extend: 'Ext.grid.feature.Feature',

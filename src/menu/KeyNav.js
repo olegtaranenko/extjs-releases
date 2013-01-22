@@ -1,11 +1,10 @@
 /**
- * @class Ext.menu.KeyNav
  * @private
  */
 Ext.define('Ext.menu.KeyNav', {
     extend: 'Ext.util.KeyNav',
 
-    requires: ['Ext.focus.FocusManager'],
+    requires: ['Ext.FocusManager'],
     
     constructor: function(menu) {
         var me = this;

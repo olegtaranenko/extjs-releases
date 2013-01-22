@@ -1,8 +1,6 @@
 /**
- * @class Ext.layout.container.Box
- * <p>Base Class for HBoxLayout and VBoxLayout Classes. Generally it should not need to be used directly.</p>
+ * Base Class for HBoxLayout and VBoxLayout Classes. Generally it should not need to be used directly.
  */
-
 Ext.define('Ext.layout.container.Box', {
 
     /* Begin Definitions */
@@ -21,40 +19,29 @@ Ext.define('Ext.layout.container.Box', {
 
     /* End Definitions */
 
-    isBox: true,
-
-    /**
-     * @cfg {Boolean/Number/Object} animate
-     * <p>If truthy, child Component are <i>animated</i> into position whenever the Container
-     * is layed out. If this option is numeric, it is used as the animation duration in milliseconds.</p>
-     * <p>May be set as a property at any time.</p>
-     */
-
     /**
      * @cfg {Object} defaultMargins
-     * <p>If the individual contained items do not have a <tt>margins</tt>
-     * property specified or margin specified via CSS, the default margins from this property will be
-     * applied to each item.</p>
-     * <br><p>This property may be specified as an object containing margins
-     * to apply in the format:</p><pre><code>
-{
-    top: (top margin),
-    right: (right margin),
-    bottom: (bottom margin),
-    left: (left margin)
-}</code></pre>
-     * <p>This property may also be specified as a string containing
-     * space-separated, numeric margin values. The order of the sides associated
-     * with each value matches the way CSS processes margin values:</p>
-     * <div class="mdetail-params"><ul>
-     * <li>If there is only one value, it applies to all sides.</li>
-     * <li>If there are two values, the top and bottom borders are set to the
-     * first value and the right and left are set to the second.</li>
-     * <li>If there are three values, the top is set to the first value, the left
-     * and right are set to the second, and the bottom is set to the third.</li>
-     * <li>If there are four values, they apply to the top, right, bottom, and
-     * left, respectively.</li>
-     * </ul></div>
+     * If the individual contained items do not have a margins property specified or margin specified via CSS, the
+     * default margins from this property will be applied to each item.
+     *
+     * This property may be specified as an object containing margins to apply in the format:
+     *
+     *     {
+     *         top: (top margin),
+     *         right: (right margin),
+     *         bottom: (bottom margin),
+     *         left: (left margin)
+     *     }
+     *
+     * This property may also be specified as a string containing space-separated, numeric margin values. The order of
+     * the sides associated with each value matches the way CSS processes margin values:
+     *
+     *   - If there is only one value, it applies to all sides.
+     *   - If there are two values, the top and bottom borders are set to the first value and the right and left are
+     *     set to the second.
+     *   - If there are three values, the top is set to the first value, the left and right are set to the second,
+     *     and the bottom is set to the third.
+     *   - If there are four values, they apply to the top, right, bottom, and left, respectively.
      */
     defaultMargins: {
         top: 0,
@@ -65,46 +52,49 @@ Ext.define('Ext.layout.container.Box', {
 
     /**
      * @cfg {String} padding
-     * <p>Sets the padding to be applied to all child items managed by this layout.</p>
-     * <p>This property must be specified as a string containing
-     * space-separated, numeric padding values. The order of the sides associated
-     * with each value matches the way CSS processes padding values:</p>
-     * <div class="mdetail-params"><ul>
-     * <li>If there is only one value, it applies to all sides.</li>
-     * <li>If there are two values, the top and bottom borders are set to the
-     * first value and the right and left are set to the second.</li>
-     * <li>If there are three values, the top is set to the first value, the left
-     * and right are set to the second, and the bottom is set to the third.</li>
-     * <li>If there are four values, they apply to the top, right, bottom, and
-     * left, respectively.</li>
-     * </ul></div>
+     * Sets the padding to be applied to all child items managed by this layout.
+     *
+     * This property must be specified as a string containing space-separated, numeric padding values. The order of the
+     * sides associated with each value matches the way CSS processes padding values:
+     *
+     *   - If there is only one value, it applies to all sides.
+     *   - If there are two values, the top and bottom borders are set to the first value and the right and left are
+     *     set to the second.
+     *   - If there are three values, the top is set to the first value, the left and right are set to the second,
+     *     and the bottom is set to the third.
+     *   - If there are four values, they apply to the top, right, bottom, and left, respectively.
      */
     padding: 0,
 
-    // documented in subclasses
+    /**
+     * @cfg {String} pack
+     * Controls how the child items of the container are packed together. Acceptable configuration values for this
+     * property are:
+     *
+     *   - **start** - child items are packed together at **left** side of container (*default**)
+     *   - **center** - child items are packed together at **mid-width** of container
+     *   - **end** - child items are packed together at **right** side of container
+     */
     pack: 'start',
 
     /**
-     * @cfg {String} pack
-     * Controls how the child items of the container are packed together. Acceptable configuration values
-     * for this property are:
-     * <div class="mdetail-params"><ul>
-     * <li><b><tt>start</tt></b> : <b>Default</b><div class="sub-desc">child items are packed together at
-     * <b>left</b> side of container</div></li>
-     * <li><b><tt>center</tt></b> : <div class="sub-desc">child items are packed together at
-     * <b>mid-width</b> of container</div></li>
-     * <li><b><tt>end</tt></b> : <div class="sub-desc">child items are packed together at <b>right</b>
-     * side of container</div></li>
-     * </ul></div>
-     */
-    /**
      * @cfg {Number} flex
-     * This configuration option is to be applied to <b>child <tt>items</tt></b> of the container managed
-     * by this layout. Each child item with a <tt>flex</tt> property will be flexed <b>horizontally</b>
-     * according to each item's <b>relative</b> <tt>flex</tt> value compared to the sum of all items with
-     * a <tt>flex</tt> value specified.  Any child items that have either a <tt>flex = 0</tt> or
-     * <tt>flex = undefined</tt> will not be 'flexed' (the initial size will not be changed).
+     * This configuration option is to be applied to **child items** of the container managed by this layout. Each child
+     * item with a flex property will be flexed **horizontally** according to each item's **relative** flex value
+     * compared to the sum of all items with a flex value specified. Any child items that have either a flex = 0 or flex
+     * = undefined will not be 'flexed' (the initial size will not be changed).
      */
+    flex: undefined,
+    
+    /**
+     * @cfg {String/Ext.Component} stretchMaxPartner
+     * Allows stretchMax calculation to take into account the max perpendicular size (height for HBox layout and width
+     * for VBox layout) of another Box layout when calculating its maximum perpendicular child size.
+     *
+     * If specified as a string, this may be either a known Container ID, or a ComponentQuery selector which is rooted
+     * at this layout's Container (ie, to find a sibling, use `"^>#siblingItemId`).
+     */
+    stretchMaxPartner: undefined,
 
     type: 'box',
     scrollOffset: 0,
@@ -207,6 +197,10 @@ Ext.define('Ext.layout.container.Box', {
         return true;
     },
 
+    isItemShrinkWrap: function (item) {
+        return true;
+    },
+
     // Sort into *descending* order.
     minSizeSortFn: function(a, b) {
         return b.available - a.available;
@@ -245,15 +239,28 @@ Ext.define('Ext.layout.container.Box', {
     },
 
     beginLayout: function (ownerContext) {
-        var me = this;
+        var me = this,
+            smp = me.owner.stretchMaxPartner,
+            style = me.innerCt.dom.style;
 
         // this must happen before callParent to allow the overflow handler to do its work
         // that can effect the childItems collection...
         me.overflowHandler.beginLayout(ownerContext);
 
+        // get the contextItem for our stretchMax buddy:
+        if (typeof smp === 'string') {
+            smp = Ext.getCmp(smp) || me.owner.query(smp)[0];
+        }
+
+        ownerContext.stretchMaxPartner = smp && ownerContext.context.getCmp(smp);
+
         me.callParent(arguments);
 
         ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
+
+        // don't allow sizes burned on to the innerCt to influence measurements:
+        style.width = '';
+        style.height = '';
 
         me.cacheFlexes(ownerContext);
     },
@@ -263,8 +270,8 @@ Ext.define('Ext.layout.container.Box', {
             align = me.align,
             names = me.getNames(),
             pack = me.pack,
-            autoHeightName = 'auto' + names.heightCap,
-            authorityName, childItems, child, i, length;
+            heightModelName = names.height + 'Model',
+            childItems, childContext, i, length, shrinkWrap;
 
         // this must happen before callParent to allow the overflow handler to do its work
         // that can effect the childItems collection...
@@ -272,11 +279,11 @@ Ext.define('Ext.layout.container.Box', {
 
         me.callParent(arguments);
 
-        // Cache several of our string concat/compare results (since autoWidth/Height can
+        // Cache several of our string concat/compare results (since width/heightModel can
         // change if we are invalidated, we cannot do this in beginLayout)
 
-        ownerContext.isAutoParallel      = ownerContext['auto' + names.widthCap];
-        ownerContext.isAutoPerpendicular = ownerContext[autoHeightName];
+        ownerContext.parallelSizeModel      = ownerContext[names.width + 'Model'];
+        ownerContext.perpendicularSizeModel = ownerContext[heightModelName];
 
         ownerContext.boxOptions = {
             align: align = {
@@ -291,21 +298,21 @@ Ext.define('Ext.layout.container.Box', {
         };
 
         // Consider an hbox w/stretch which means "assign all items the container's height".
-        // The spirit of this request is make all items the same height, but when autoHeight
-        // is also requested, the height of the tallest item determines the height. This is
-        // exactly what the stretchmax option does, so we jiggle the flags here to act as
-        // if stretchmax were requested.
+        // The spirit of this request is make all items the same height, but when shrinkWrap
+        // height is also requested, the height of the tallest item determines the height.
+        // This is exactly what the stretchmax option does, so we jiggle the flags here to
+        // act as if stretchmax were requested.
 
-        if (align.stretch && ownerContext.isAutoPerpendicular) {
+        if (align.stretch && ownerContext.perpendicularSizeModel.shrinkWrap) {
             align.stretchmax = true;
             align.stretch = false;
         }
 
         // In our example hbox, packing items to the right (end) or center can only work if
-        // there is a container width. So, if we are autoWidth, we just turn off the pack
+        // there is a container width. So, if we are shrinkWrap, we just turn off the pack
         // options for the run.
 
-        if (ownerContext.isAutoParallel) {
+        if (ownerContext.parallelSizeModel.shrinkWrap) {
             pack.center = pack.end = false;
         }
 
@@ -313,38 +320,38 @@ Ext.define('Ext.layout.container.Box', {
         // ==========
         // This fellow is more interesting than just about any other layout. Consider an
         // hbox w/stretchmax. The idea is to first first allow the children to perform their
-        // natural (autoHeight) layout and then to set the height of all children to the
+        // natural (shrinkWrap) layout and then to set the height of all children to the
         // the maximum height of any child. In terms of layout, this equates to starting
-        // with all children as autoHeight (heightAuthority=0) or fixed (heightAuthority=1).
-        // Then down in calculateStretcMax we flip the autoHeight children to layout-sized
-        // (heightAuthority=2) and set their height to the maxHeight. If we ever have to
+        // with all children as heightModel.shrinkWrap or heightModel.configured.
+        //
+        // Then down in calculateStretcMax we flip the shrinkWrap children to layout-sized
+        // heightModel.calculated and set their height to the maxHeight. If we ever have to
         // start over due to invalidate, we must restart back at the beginning (which is
         // why this logic is not in beginLayout).
 
         if (align.stretchmax) {
-            authorityName = names.height + 'Authority';
             childItems = ownerContext.childItems;
             length = childItems.length;
+            shrinkWrap = me.sizeModels.shrinkWrap;
 
             for (i = 0; i < length; ++i) {
-                child = childItems[i];
-                if (child[authorityName] != 1) { // if (not a configured height)
-                    child[authorityName] = 0;
-                    child[autoHeightName] = true;
+                childContext = childItems[i];
+                if (!childContext[heightModelName].configured) {
+                    childContext[heightModelName] = shrinkWrap;
                 }
             }
         }
     },
 
     /**
-     * This method is called to (re)cache our understanding of flexes. This happens during
-     * beginLayout and may need to be called again if the flexes are changed during the
-     * layout (e.g., like ColumnLayout).
+     * This method is called to (re)cache our understanding of flexes. This happens during beginLayout and may need to
+     * be called again if the flexes are changed during the layout (e.g., like ColumnLayout).
+     * @param {Object} ownerContext
      * @protected
      */
     cacheFlexes: function (ownerContext) {
         var names = this.getNames(),
-            authority = names.width + 'Authority',
+            widthModelName = names.width + 'Model',
             totalFlex = 0,
             childItems = ownerContext.childItems,
             i = childItems.length,
@@ -357,10 +364,10 @@ Ext.define('Ext.layout.container.Box', {
             childContext = childItems[i];
 
             // if the child has a flex it could be "accidental" (typically via "defaults"),
-            // so just check widthAuthority to see if we are the sizing layout. If so, copy
+            // so just check widthModel to see if we are the sizing layout. If so, copy
             // the flex from the item to the contextItem and add it to totalFlex
             //
-            if (childContext[authority] == 2) { // if (sized by this layout)
+            if (childContext[widthModelName].calculated) {
                 child = childContext.target;
                 childContext.flex = flex = child.flex;
                 if (flex) {
@@ -387,44 +394,34 @@ Ext.define('Ext.layout.container.Box', {
         var me = this,
             targetSize = me.getContainerSize(ownerContext),
             names = me.getNames(),
-            widthName = names.width,
             state = ownerContext.state,
             plan = state.boxPlan || (state.boxPlan = {});
 
-        if (ownerContext.isAutoParallel) {
-            //<debug>
-            if (ownerContext.totalFlex) {
-                Ext.Error.raise('Cannot combine flex and auto '+widthName+' in '+me.type);
-            }
-            //</debug>
-        } else if (!targetSize['got' + names.widthCap]) {
-            // If we are autoWidth, we cannot have any flex. Otherwise, we need the parallel
-            // measurement before we can lay out boxes:
-            //ownerContext.block(me, widthName);
+        if (!ownerContext.parallelSizeModel.shrinkWrap && !targetSize['got' + names.widthCap]) {
+            // If we are not widthModel.shrinkWrap, we need the width before we can lay out
+            // boxes:
             me.done = false;
             return;
         }
 
         plan.targetSize = targetSize;
+        plan.scrollParallel = (me.owner.autoScroll || me.owner['overflow' + names.y.toUpperCase()]);
 
         if (!state.parallelDone) {
             state.parallelDone = me.calculateParallel(ownerContext, names, plan);
+        }
+
+        if (!state.perpendicularDone) {
+            state.perpendicularDone = me.calculatePerpendicular(ownerContext, names, plan);
         }
 
         // Fix for left and right docked Components in a dock component layout. This is for docked Headers and docked Toolbars.
         // Older Microsoft browsers do not size a position:absolute element's width to match its content.
         // So in this case, in the publishInnerCtSize method we may need to adjust the size of the owning Container's element explicitly based upon
         // the discovered max width. So here we put a calculatedWidth property in the metadata to facilitate this.
-//        if (me.owner.dock && (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) && !me.owner.width && !me.horizontal) {
-//            plan.isIEVerticalDock = true;
-//            plan.calculatedWidth = plan.maxSize + ownerContext.getPaddingInfo().width + ownerContext.getFramingInfo().width;
-//
-//            // If the owning element is not sized, calculate the available width to center or stretch in based upon maxSize
-//            availHeight = Math.min(availHeight, targetSize.width = maxHeight + padding.left + padding.right);
-//        }
-
-        if (!state.perpendicularDone) {
-            state.perpendicularDone = me.calculatePerpendicular(ownerContext, names, plan);
+        if (me.owner.dock && (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) && !me.owner.width && !me.horizontal) {
+            plan.isIEVerticalDock = true;
+            plan.calculatedWidth = plan.maxSize + ownerContext.getPaddingInfo().width + ownerContext.getBorderInfo().width;
         }
 
         if (!state.parallelDone || !state.perpendicularDone) {
@@ -458,7 +455,7 @@ Ext.define('Ext.layout.container.Box', {
             i, childMargins, remainingWidth, remainingFlex, childContext, flex, flexedWidth,
             contentWidth;
 
-        // Gather the total size taken up by auto/fixed items (non-flexed items),
+        // Gather the total size taken up by non-flexed items:
         for (i = 0; i < childItemsLength; ++i) {
             childContext = childItems[i];
             childMargins = childContext.marginInfo || childContext.getMarginInfo();
@@ -474,8 +471,8 @@ Ext.define('Ext.layout.container.Box', {
         }
         // if we get here, we have all the childWidths for non-flexed items...
 
-        if (ownerContext.isAutoParallel) {
-            plan.availableSpace = nonFlexWidth;
+        if (ownerContext.parallelSizeModel.shrinkWrap) {
+            plan.availableSpace = 0;
             plan.tooNarrow = false;
         } else {
             plan.availableSpace = plan.targetSize[widthName] - nonFlexWidth;
@@ -492,10 +489,13 @@ Ext.define('Ext.layout.container.Box', {
             flex         = childContext.flex;
             flexedWidth  = me.roundFlex((flex / remainingFlex) * remainingWidth);
             flexedWidth  = childContext[setWidthName](flexedWidth); // constrained
+            // for shrinkWrap w/flex, the item will be reduced to minWidth (maybe 0)
+
+            // due to minWidth constraints, it may be that flexedWidth > remainingWidth
 
             contentWidth   += flexedWidth;
             // Remaining space has already had margins subtracted, so just subtract size
-            remainingWidth -= flexedWidth;
+            remainingWidth  = Math.max(0, remainingWidth - flexedWidth); // no negatives!
             remainingFlex  -= flex;
         }
 
@@ -528,7 +528,7 @@ Ext.define('Ext.layout.container.Box', {
 
     calculatePerpendicular: function(ownerContext, names, plan) {
         var me = this,
-            autoHeight = ownerContext.isAutoPerpendicular,
+            heightShrinkWrap = ownerContext.perpendicularSizeModel.shrinkWrap,
             targetSize = plan.targetSize,
             childItems = ownerContext.childItems,
             childItemsLength = childItems.length,
@@ -542,20 +542,31 @@ Ext.define('Ext.layout.container.Box', {
             top = padding[topName],
             availHeight = targetSize[heightName] - top - padding[names.bottom],
             align = ownerContext.boxOptions.align,
-            isStretch    = align.stretch, // never true if autoHeight (see beginLayoutCycle)
+            isStretch    = align.stretch, // never true if heightShrinkWrap (see beginLayoutCycle)
             isStretchMax = align.stretchmax,
             isCenter     = align.center,
             maxHeight = 0,
-            childTop, i, childHeight, childMargins, diff, height, childContext;
+            childTop, i, childHeight, childMargins, diff, height, childContext,
+            stretchMaxPartner,
+            scrollbarHeight,
+            stretchMaxChildren;
 
-        if (isStretch || (isCenter && !autoHeight)) {
+        if (isStretch || (isCenter && !heightShrinkWrap)) {
             if (isNaN(availHeight)) {
                 return false;
             }
         }
 
+        // If the intention is to horizontally scroll height-fitted child components, but the container is too narrow,
+        // then we must allow for the parallel scrollbar to intrude into the perpendicular dimension
+        if (isStretch && plan.scrollParallel && plan.tooNarrow) {
+            scrollbarHeight = Ext.getScrollbarSize().height;
+            availHeight -= scrollbarHeight;
+            plan.targetSize[heightName] -= scrollbarHeight;
+        }
+
         if (isStretch) {
-            height = availHeight; // never autoHeight...
+            height = availHeight; // never heightShrinkWrap...
         } else {
             for (i = 0; i < childItemsLength; i++) {
                 childContext = childItems[i];
@@ -564,17 +575,33 @@ Ext.define('Ext.layout.container.Box', {
 
                 // Max perpendicular measurement (used for stretchmax) must take the min perpendicular size of each child into account in case any fall short.
                 if (isNaN(maxHeight = mmax(maxHeight, childHeight + childMargins[heightName], childContext.target['min' + heightNameCap]||0))) {
-                    return false; // autoHeight || isCenter || isStretchMax ??
+                    return false; // heightShrinkWrap || isCenter || isStretchMax ??
+                }
+            }
+
+            // If we are associated with another box layout, grab its maxChildHeight
+            stretchMaxPartner = ownerContext.stretchMaxPartner;
+            if (stretchMaxPartner) {
+                // Publish maxChildHeight as soon as it has been calculated for our partner:
+                ownerContext.setProp('maxChildHeight', maxHeight);
+                stretchMaxChildren = stretchMaxPartner.childItems;
+                // Only wait for maxChildHeight if our partner has visible items:
+                if (stretchMaxChildren && stretchMaxChildren.length) {
+                    maxHeight = mmax(maxHeight, stretchMaxPartner.getProp('maxChildHeight'));
+                    if (isNaN(maxHeight)) {
+                        return false;
+                    }
                 }
             }
 
             plan.maxSize = maxHeight;
-            ownerContext['setContent' + heightNameCap](maxHeight + me.padding[heightName] + ownerContext.targetContext.getPaddingInfo()[heightName]);
+            ownerContext['setContent' + heightNameCap](maxHeight + me.padding[heightName] +
+                ownerContext.targetContext.getPaddingInfo()[heightName]);
 
             if (isStretchMax) {
                 height = maxHeight;
             } else if (isCenter) {
-                height = autoHeight ? maxHeight : mmax(availHeight, maxHeight);
+                height = heightShrinkWrap ? maxHeight : mmax(availHeight, maxHeight);
 
                 // When calculating a centered position within the content box of the innerCt,
                 // the width of the borders must be subtracted from the size to yield the
@@ -606,29 +633,30 @@ Ext.define('Ext.layout.container.Box', {
     },
 
     calculateStretchMax: function (ownerContext, names, plan) {
-        var heightAuthorityName = names.height + 'Authority',
-            autoHeightName = 'auto' + names.heightCap,
+        var me = this,
+            calculated = me.sizeModels.calculated,
+            heightModelName = names.height + 'Model',
             heightName = names.height,
             widthName = names.width,
             childItems = ownerContext.childItems,
             length = childItems.length,
             height = plan.maxSize,
-            onInvalidateChild = this.onInvalidateChild,
-            childContext, props, i;
+            onInvalidateChild = me.onInvalidateChild,
+            childContext, props, i, childHeight;
 
         for (i = 0; i < length; ++i) {
             childContext = childItems[i];
 
-            if (childContext[autoHeightName]) { // if (not a configured height)
+            if (childContext[heightModelName].shrinkWrap) {
                 props = childContext.props;
+                childHeight = height - childContext.getMarginInfo()[heightName];
 
-                if (props[heightName] != height) { // if (wrong height)
-                    // Change the childItem from autoHeight to "set by ownerCt". To allow
+                if (childHeight != props[heightName]) { // if (wrong height)
+                    // Change the childItem from shrinkWrap to "set by ownerCt". To allow
                     // the child's component layout to course-correct (like dock layout
                     // does for a collapsed panel), we must make these changes here before
                     // invalidating the child:
-                    childContext[heightAuthorityName] = 2;
-                    childContext[autoHeightName] = false;
+                    childContext[heightModelName] = calculated;
 
                     // When we invalidate a child, since we won't be around to size and
                     // position it, we include a callback that will be run following the
@@ -636,10 +664,11 @@ Ext.define('Ext.layout.container.Box', {
                     // we can read the results of all that from the childContext props.
                     childContext.invalidate({
                         callback: onInvalidateChild,
-                        layout: this,
+                        layout: me,
                         // passing this data avoids a 'scope' and its Function.bind
                         childWidth: props[widthName],
-                        childHeight: height,
+                        // subtract margins from the maximum value
+                        childHeight: childHeight,
                         childX: props.x,
                         childY: props.y,
                         names: names
@@ -661,8 +690,8 @@ Ext.define('Ext.layout.container.Box', {
         childContext.setProp('x', options.childX);
         childContext.setProp('y', options.childY);
 
-        if (!childContext['auto' + heightCapName]) {
-            // We need to respect a child that is still autoHeight (such as a collapsed
+        if (childContext[names.height + 'Model'].calculated) {
+            // We need to respect a child that is still not calculated (such as a collapsed
             // panel)...
             childContext['set' + heightCapName](options.childHeight);
         }
@@ -674,7 +703,6 @@ Ext.define('Ext.layout.container.Box', {
 
     publishInnerCtSize: function(ownerContext, reservedSpace) {
         var me = this,
-            autoHeight = ownerContext.isAutoPerpendicular,
             names = me.getNames(),
             heightName = names.height,
             widthName = names.width,
@@ -685,7 +713,7 @@ Ext.define('Ext.layout.container.Box', {
             targetSize = plan.targetSize,
             height = targetSize[heightName],
             innerCtContext = ownerContext.innerCtContext,
-            innerCtWidth = (ownerContext.isAutoParallel
+            innerCtWidth = (ownerContext.parallelSizeModel.shrinkWrap || (plan.tooNarrow && plan.scrollParallel)
                     ? ownerContext.props['content' + names.widthCap]
                     : targetSize[widthName]) - (reservedSpace || 0),
             innerCtHeight;
@@ -696,7 +724,7 @@ Ext.define('Ext.layout.container.Box', {
             innerCtHeight = plan.maxSize + padding[names.top] + padding[names.bottom] +
                                     innerCtContext.getBorderInfo()[heightName];
 
-            if (!autoHeight && align.center) {
+            if (!ownerContext.perpendicularSizeModel.shrinkWrap && align.center) {
                 innerCtHeight = Math.max(height, innerCtHeight);
             }
         }
@@ -709,11 +737,14 @@ Ext.define('Ext.layout.container.Box', {
             me.done = false;
         }
 
-        // If a calculated width has been found (and this only happens for auto-width vertical
-        // docked Components in old Microsoft browsers) then, if the Component has not assumed
-        // the size of its content, set it to do so.
+        // If a calculated width has been found (this only happens for widthModel.shrinkWrap
+        // vertical docked Components in old Microsoft browsers) then, if the Component has
+        // not assumed the size of its content, set it to do so.
+        // 
+        // We MUST pass the dirty flag to get that into the DOM, and because we are a Container
+        // layout, and not really supposed to perform sizing, we must also use the force flag.
         if (plan.calculatedWidth && (dock == 'left' || dock == 'right')) {
-            ownerContext.setWidth(plan.calculatedWidth);
+            ownerContext.setWidth(plan.calculatedWidth, true, true);
         }
     },
 
@@ -756,34 +787,6 @@ Ext.define('Ext.layout.container.Box', {
         me.overflowHandler = Ext.create('Ext.layout.container.boxOverflow.' + handlerType, me, handler);
     },
 
-    /**
-     * @private
-     * This should be called after onLayout of any BoxLayout subclass. If the target's overflow is not set to 'hidden',
-     * we need to lay out a second time because the scrollbars may have modified the height and width of the layout
-     * target. Having a Box layout inside such a target is therefore not recommended.
-     * @param {Object} previousTargetSize The size and height of the layout target before we just laid out
-     * @param {Ext.container.Container} container The container
-     * @param {Ext.Element} target The target element
-     * @return True if the layout overflowed, and was reflowed in a secondary onLayout call.
-     */
-    handleTargetOverflow: function(previousTargetSize) {
-        var me = this,
-            target = me.getTarget(),
-            overflow = target.getStyle('overflow'),
-            newTargetSize;
-
-        if (overflow && overflow != 'hidden' && !me.adjustmentPass) {
-            newTargetSize = me.getLayoutTargetSize();
-            if (newTargetSize.width != previousTargetSize.width || newTargetSize.height != previousTargetSize.height) {
-                me.adjustmentPass = true;
-                me.onLayout();
-                return true;
-            }
-        }
-
-        delete me.adjustmentPass;
-    },
-
     // private
     isValidParent : function(item, target, position) {
         // Note: Box layouts do not care about order within the innerCt element because it's an absolutely positioning layout
@@ -792,16 +795,17 @@ Ext.define('Ext.layout.container.Box', {
         return (itemEl && this.innerCt && itemEl.parentNode === this.innerCt.dom) || false;
     },
 
-    getItemFlexDimension: function () {
-        var names = this.getNames();
-        return names.height;
-    },
-
     // Overridden method from AbstractContainer.
     // Used in the base AbstractLayout.beforeLayout method to render all items into.
     getRenderTarget: function() {
         return this.innerCt;
     },
+
+    //<debug>
+    calculateChildBox: Ext.deprecated(),
+    calculateChildBoxes: Ext.deprecated(),
+    updateChildBoxes: Ext.deprecated(),
+    //</debug>
 
     /**
      * @private

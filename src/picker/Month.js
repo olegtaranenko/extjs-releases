@@ -39,12 +39,16 @@ Ext.define('Ext.picker.Month', {
     /**
      * @cfg {String} okText The text to display on the ok button.
      */
+    //<locale>
     okText: 'OK',
+    //</locale>
 
     /**
      * @cfg {String} cancelText The text to display on the cancel button.
      */
+    //<locale>
     cancelText: 'Cancel',
+    //</locale>
 
     /**
      * @cfg {String} [baseCls='x-monthpicker']

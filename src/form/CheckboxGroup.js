@@ -30,7 +30,7 @@
  *         items:[{
  *             xtype: 'checkboxgroup',
  *             fieldLabel: 'Two Columns',
- *             // Arrange radio buttons into two columns, distributed vertically
+ *             // Arrange checkboxes into two columns, distributed vertically
  *             columns: 2,
  *             vertical: true,
  *             items: [
@@ -54,7 +54,7 @@ Ext.define('Ext.form.CheckboxGroup', {
 
     /**
      * @cfg {String} name
-     * Not applicable for CheckboxGroup.
+     * @private
      */
 
     /**
@@ -98,7 +98,9 @@ Ext.define('Ext.form.CheckboxGroup', {
      * @cfg {String} blankText
      * Error text to display if the {@link #allowBlank} validation fails
      */
+    //<locale>
     blankText : "You must select at least one item in this group",
+    //</locale>
 
     // private
     defaultType : 'checkboxfield',
@@ -188,7 +190,7 @@ Ext.define('Ext.form.CheckboxGroup', {
     /**
      * @private Convenience function which calls the given function for every checkbox in the group
      * @param {Function} fn The function to call
-     * @param {Object} scope (Optional) scope object
+     * @param {Object} [scope] scope object
      */
     eachBox: function(fn, scope) {
         Ext.Array.forEach(this.getBoxes(), fn, scope || this);
@@ -235,17 +237,18 @@ Ext.define('Ext.form.CheckboxGroup', {
         me.preventMark = preventMark;
         me.unsetActiveError();
         if (hadError) {
-            me.doComponentLayout();
+            me.updateLayout();
         }
     },
 
-    // private override
-    resetOriginalValue: function() {
-        // Defer resetting of originalValue until after all sub-checkboxes have been reset so we get
-        // the correct data from getValue()
-        Ext.defer(function() {
-            this.callParent();
-        }, 1, this);
+    resetOriginalValue: function(){
+        var me = this;
+        
+        me.eachBox(function(box){
+            box.resetOriginalValue();
+        });
+        me.originalValue = me.getValue();
+        me.checkDirty();
     },
 
 
@@ -390,7 +393,7 @@ Ext.define('Ext.form.CheckboxGroup', {
         }
         if (isValid !== wasValid) {
             me.fireEvent('validitychange', me, isValid);
-            me.doComponentLayout();
+            me.updateLayout();
         }
 
         return isValid;

@@ -133,7 +133,8 @@ Ext.define('Ext.chart.series.Radar', {
             field = me.field || me.yField,
             surface = chart.surface,
             chartBBox = chart.chartBBox,
-            rendererAttributes,
+            seriesIdx = me.seriesIdx,
+            colorArrayStyle = me.colorArrayStyle,
             centerX, centerY,
             items,
             radius,
@@ -153,14 +154,24 @@ Ext.define('Ext.chart.series.Radar', {
             aggregate = !(axis && axis.maximum);
 
         me.setBBox();
-
+        
         maxValue = aggregate? 0 : (axis.maximum || 0);
-
+        
         Ext.apply(seriesStyle, me.style || {});
 
         //if the store is empty then there's nothing to draw
-        if (!store || !store.getCount()) {
+        if (!store || !store.getCount() || me.seriesIsHidden) {
+            me.hide();
+            me.items = [];
+            if (me.radar) {
+                me.radar.hide(true);
+            }
+            me.radar = null;
             return;
+        }
+        
+        if(!seriesStyle['stroke']){
+            seriesStyle['stroke'] = colorArrayStyle[seriesIdx % colorArrayStyle.length];
         }
 
         me.unHighlightItem();
@@ -201,6 +212,7 @@ Ext.define('Ext.chart.series.Radar', {
             items.push({
                 sprite: false, //TODO(nico): add markers
                 point: [centerX + x, centerY + y],
+                storeItem: record,
                 series: me
             });
         });
@@ -245,14 +257,15 @@ Ext.define('Ext.chart.series.Radar', {
             chart = me.chart,
             surface = chart.surface,
             markerStyle = Ext.apply({}, me.markerStyle || {}),
-            endMarkerStyle = Ext.apply(markerStyle, me.markerConfig),
+            endMarkerStyle = Ext.apply(markerStyle, me.markerConfig, {
+                fill: me.colorArrayStyle[me.seriesIdx % me.colorArrayStyle.length]
+            }),
             items = me.items,
             type = endMarkerStyle.type,
             markerGroup = me.markerGroup,
             centerX = me.centerX,
             centerY = me.centerY,
             item, i, l, marker;
-
         delete endMarkerStyle.type;
 
         for (i = 0, l = items.length; i < l; i++) {
@@ -272,6 +285,7 @@ Ext.define('Ext.chart.series.Radar', {
             else {
                 marker.show();
             }
+            item.sprite = marker;
             if (chart.resizing) {
                 marker.setAttributes({
                     x: 0,

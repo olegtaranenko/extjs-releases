@@ -20,7 +20,7 @@
  *         },
  *         renderTo: Ext.getBody()
  *     });
- * 
+ *
  * If the container has multiple items, all of the items will all be equally sized. This is usually not
  * desired, so to avoid this, place only a **single** item in the container. This sizing of all items
  * can be used to provide a background {@link Ext.Img image} that is "behind" another item
@@ -42,32 +42,28 @@ Ext.define('Ext.layout.container.Fit', {
    
     /**
      * @cfg {Object} defaultMargins
-     * <p>If the individual contained items do not have a <tt>margins</tt>
-     * property specified or margin specified via CSS, the default margins from this property will be
-     * applied to each item.</p>
-     * <br><p>This property may be specified as an object containing margins
-     * to apply in the format:</p><pre><code>
-{
-    top: (top margin),
-    right: (right margin),
-    bottom: (bottom margin),
-    left: (left margin)
-}</code></pre>
-     * <p>This property may also be specified as a string containing
-     * space-separated, numeric margin values. The order of the sides associated
-     * with each value matches the way CSS processes margin values:</p>
-     * <div class="mdetail-params"><ul>
-     * <li>If there is only one value, it applies to all sides.</li>
-     * <li>If there are two values, the top and bottom borders are set to the
-     * first value and the right and left are set to the second.</li>
-     * <li>If there are three values, the top is set to the first value, the left
-     * and right are set to the second, and the bottom is set to the third.</li>
-     * <li>If there are four values, they apply to the top, right, bottom, and
-     * left, respectively.</li>
-     * </ul></div>
-     * <p>Defaults to:</p><pre><code>
-     * {top:0, right:0, bottom:0, left:0}
-     * </code></pre>
+     * If the individual contained items do not have a margins property specified or margin specified via CSS, the
+     * default margins from this property will be applied to each item.
+     *
+     * This property may be specified as an object containing margins to apply in the format:
+     *
+     *     {
+     *         top: (top margin),
+     *         right: (right margin),
+     *         bottom: (bottom margin),
+     *         left: (left margin)
+     *     }
+     *
+     * This property may also be specified as a string containing space-separated, numeric margin values. The order of
+     * the sides associated with each value matches the way CSS processes margin values:
+     *
+     *   - If there is only one value, it applies to all sides.
+     *   - If there are two values, the top and bottom borders are set to the first value and the right and left are
+     *     set to the second.
+     *   - If there are three values, the top is set to the first value, the left and right are set to the second,
+     *     and the bottom is set to the third.
+     *   - If there are four values, they apply to the top, right, bottom, and left, respectively.
+     *
      */
     defaultMargins: {
         top: 0,
@@ -78,71 +74,113 @@ Ext.define('Ext.layout.container.Fit', {
 
     manageMargins: true,
 
-    // layout only controls dimensions which IT has controlled.
-    // That calculation has to be determined at run time by examining the ownerCt's isFixedWidth()/isFixedHeight() methods
-    sizePolicy: {
-        setsWidth: -1,
-        setsHeight: -1
+    sizePolicies: {
+        0: { setsWidth: 0, setsHeight: 0 },
+        1: { setsWidth: 1, setsHeight: 0 },
+        2: { setsWidth: 0, setsHeight: 1 },
+        3: { setsWidth: 1, setsHeight: 1 }
     },
 
     getItemSizePolicy: function (item) {
-        return this.sizePolicy;
+        // this layout's sizePolicy is derived from its owner's sizeModel:
+        var sizeModel = this.owner.getSizeModel(),
+            mode = (sizeModel.width.shrinkWrap ? 0 : 1) |
+                   (sizeModel.height.shrinkWrap ? 0 : 2);
+
+       return this.sizePolicies[mode];
     },
 
     // @private
-    calculate : function(ownerContext) {
+    calculate : function (ownerContext) {
         var me = this,
             childItems = ownerContext.childItems,
             length = childItems.length,
-            targetSize = me.getContainerSize(ownerContext),
-            contentSize = { width: 0, height: 0 },
+            info = {
+                contentWidth: 0,
+                contentHeight: 0,
+                length: length,
+                ownerContext: ownerContext,
+                targetSize: me.getContainerSize(ownerContext)
+            },
             i;
 
         for (i = 0; i < length; ++i) {
-            me.fitItem(ownerContext, childItems[i], targetSize, contentSize);
+            info.index = i;
+            me.fitItem(childItems[i], info);
         }
 
-        if (!ownerContext.setContentSize(contentSize.width, contentSize.height)) {
+        if (!ownerContext.setContentSize(info.contentWidth, info.contentHeight)) {
             me.done = false;
         }
     },
 
-    fitItem: function(ownerContext, itemContext, targetSize, contentSize) {
-        var me = this,
-            margins = itemContext.getMarginInfo(),
-            needed = 0,
-            got = 0;
+    fitItem: function (itemContext, info) {
+        var me = this;
 
-        // Attempt to set only dimensions that are being controlled, not autosized dimensions
-        if (ownerContext.autoWidth) {
-            contentSize.width = Math.max(contentSize.width, itemContext.getProp('width'));
-        } else {
-            needed = 1;
-            if (targetSize.gotWidth) {
-                got = 1;
-                itemContext.setWidth(targetSize.width - margins.width);
-            }
-        }
+        info.margins = itemContext.getMarginInfo();
+        info.needed = info.got = 0;
 
-        if (ownerContext.autoHeight) {
-            contentSize.height = Math.max(contentSize.height, itemContext.getProp('height'));
-        } else {
-            ++needed;
-            if (targetSize.gotHeight) {
-                ++got;
-                itemContext.setHeight(targetSize.height - margins.height);
-            }
-        }
-
-        // Adjust position to account for configured margins
-        if (margins.left || margins.top) {
-            itemContext.setProp('x', margins.left);
-            itemContext.setProp('y', margins.top);
-        }
+        me.fitItemWidth(itemContext, info);
+        me.fitItemHeight(itemContext, info);
 
         // If not all required dimensions have been satisfied, we're not done.
-        if (got != needed) {
+        if (info.got != info.needed) {
             me.done = false;
         }
+    },
+
+    fitItemWidth: function (itemContext, info) {
+        // Attempt to set only dimensions that are being controlled, not shrinkWrap dimensions
+        if (info.ownerContext.widthModel.shrinkWrap) {
+            info.contentWidth = Math.max(info.contentWidth, itemContext.getProp('width'));
+        } else if (itemContext.widthModel.calculated) {
+            ++info.needed;
+            if (info.targetSize.gotWidth) {
+                ++info.got;
+                this.setItemWidth(itemContext, info);
+            }
+        }
+
+        this.positionItemX(itemContext, info);
+    },
+
+    fitItemHeight: function (itemContext, info) {
+        if (info.ownerContext.heightModel.shrinkWrap) {
+            info.contentHeight = Math.max(info.contentHeight, itemContext.getProp('height'));
+        } else if (itemContext.heightModel.calculated) {
+            ++info.needed;
+            if (info.targetSize.gotHeight) {
+                ++info.got;
+                this.setItemHeight(itemContext, info);
+            }
+        }
+
+        this.positionItemY(itemContext, info);
+    },
+
+    positionItemX: function (itemContext, info) {
+        var margins = info.margins;
+
+        // Adjust position to account for configured margins or if we have multiple items
+        // (all items should overlap):
+        if (info.index || margins.left) {
+            itemContext.setProp('x', margins.left);
+        }
+    },
+
+    positionItemY: function (itemContext, info) {
+        var margins = info.margins;
+
+        if (info.index || margins.top) {
+            itemContext.setProp('y', margins.top);
+        }
+    },
+
+    setItemHeight: function (itemContext, info) {
+        itemContext.setHeight(info.targetSize.height - info.margins.height);
+    },
+
+    setItemWidth: function (itemContext, info) {
+        itemContext.setWidth(info.targetSize.width - info.margins.width);
     }
 });

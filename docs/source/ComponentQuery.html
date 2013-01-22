@@ -244,27 +244,21 @@ Ext.define('Ext.ComponentQuery', {
             method: filterFnPattern
         }];
 
-<span id='Ext-ComponentQuery-Query'>    /**
-</span>     * @class Ext.ComponentQuery.Query
-     * @private
-     */
+    // Internal class Ext.ComponentQuery.Query
     cq.Query = Ext.extend(Object, {
         constructor: function(cfg) {
             cfg = cfg || {};
             Ext.apply(this, cfg);
         },
 
-<span id='Ext-ComponentQuery-Query-method-execute'>        /**
-</span>         * @private
-         * Executes this Query upon the selected root.
-         * The root provides the initial source of candidate Component matches which are progressively
-         * filtered by iterating through this Query's operations cache.
-         * If no root is provided, all registered Components are searched via the ComponentManager.
-         * root may be a Container who's descendant Components are filtered
-         * root may be a Component with an implementation of getRefItems which provides some nested Components such as the
-         * docked items within a Panel.
-         * root may be an array of candidate Components to filter using this Query.
-         */
+        // Executes this Query upon the selected root.
+        // The root provides the initial source of candidate Component matches which are progressively
+        // filtered by iterating through this Query's operations cache.
+        // If no root is provided, all registered Components are searched via the ComponentManager.
+        // root may be a Container who's descendant Components are filtered
+        // root may be a Component with an implementation of getRefItems which provides some nested Components such as the
+        // docked items within a Panel.
+        // root may be an array of candidate Components to filter using this Query.
         execute : function(root) {
             var operations = this.operations,
                 i = 0,

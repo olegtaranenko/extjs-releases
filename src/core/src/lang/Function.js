@@ -3,6 +3,7 @@
  *
  * A collection of useful static methods to deal with function callbacks
  * @singleton
+ * @alternateClassName Ext.util.Functions
  */
 Ext.Function = {
 
@@ -130,12 +131,17 @@ Ext.Function = {
      */
     pass: function(fn, args, scope) {
         if (!Ext.isArray(args)) {
-            args = Ext.Array.clone(args);
+            if (typeof args == 'string') {
+                args = [args];
+            } else {
+                args = Ext.Array.clone(args);
+            }
         }
 
         return function() {
-            args.push.apply(args, arguments);
-            return fn.apply(scope || this, args);
+            var fnArgs = [].concat(args);
+            fnArgs.push.apply(fnArgs, arguments);
+            return fn.apply(scope || this, fnArgs);
         };
     },
 
@@ -267,8 +273,8 @@ Ext.Function = {
      * if a number the args are inserted at the specified position
      * @return {Number} The timeout id that can be used with clearTimeout
      */
-    defer: function(fn, millis, obj, args, appendArgs) {
-        fn = Ext.Function.bind(fn, obj, args, appendArgs);
+    defer: function(fn, millis, scope, args, appendArgs) {
+        fn = Ext.Function.bind(fn, scope, args, appendArgs);
         if (millis > 0) {
             return setTimeout(fn, millis);
         }
@@ -331,7 +337,7 @@ Ext.Function = {
         var timerId;
 
         return function() {
-            var callArgs = args || Array.prototype.slice(arguments),
+            var callArgs = args || Array.prototype.slice.call(arguments, 0),
                 me = scope || this;
 
             if (timerId) {
@@ -457,20 +463,20 @@ Ext.Function = {
 /**
  * @method
  * @member Ext
- * @alias Ext.Function#defer
+ * @inheritdoc Ext.Function#defer
  */
 Ext.defer = Ext.Function.alias(Ext.Function, 'defer');
 
 /**
  * @method
  * @member Ext
- * @alias Ext.Function#pass
+ * @inheritdoc Ext.Function#pass
  */
 Ext.pass = Ext.Function.alias(Ext.Function, 'pass');
 
 /**
  * @method
  * @member Ext
- * @alias Ext.Function#bind
+ * @inheritdoc Ext.Function#bind
  */
 Ext.bind = Ext.Function.alias(Ext.Function, 'bind');

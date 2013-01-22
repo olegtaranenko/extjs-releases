@@ -27,7 +27,7 @@ Ext.define('Ext.container.AbstractContainer', {
      * positioned, typically a layout manager **must** be specified through
      * the `layout` configuration option.
      *
-     * The sizing and positioning of child {@link #items} is the responsibility of
+     * The sizing and positioning of child {@link #cfg-items} is the responsibility of
      * the Container's layout manager which creates and manages the type of layout
      * you have in mind.  For example:
      *
@@ -84,6 +84,18 @@ Ext.define('Ext.container.AbstractContainer', {
      *     Additional layout specific configuration properties. For complete
      *     details regarding the valid config options for each layout type, see the
      *     layout class corresponding to the `layout` specified.
+     *
+     * # Configuring the default layout type
+     *
+     *     If a certain Container class has a default layout (For example a {@link Ext.toolbar.Toolbar Toolbar}
+     *     with a default `Box` layout), then to simply configure the default layout,
+     *     use an object, but without the `type` property:
+     *
+     *
+     *     xtype: 'toolbar',
+     *     layout: {
+     *         pack: 'center'
+     *     }
      */
 
     /**
@@ -140,7 +152,7 @@ Ext.define('Ext.container.AbstractContainer', {
     /**
      * @cfg {Object/Function} defaults
      * This option is a means of applying default settings to all added items whether added
-     * through the {@link #items} config or via the {@link #add} or {@link #insert} methods.
+     * through the {@link #cfg-items} config or via the {@link #method-add} or {@link #insert} methods.
      *
      * Defaults are applied to both config objects and instantiated components conditionally
      * so as not to override existing properties in the item (see {@link Ext#applyIf}).
@@ -242,8 +254,10 @@ Ext.define('Ext.container.AbstractContainer', {
             'beforeremove',
             /**
              * @event add
-             * @bubbles
              * Fires after any {@link Ext.Component} is added or inserted into the container.
+             * 
+             * **This event bubbles:** 'add' will also be fired when Component is added to any of
+             * the child containers or their childern or ...
              * @param {Ext.container.Container} this
              * @param {Ext.Component} component The component that was added
              * @param {Number} index The index at which the component was added to the container's items collection
@@ -251,8 +265,10 @@ Ext.define('Ext.container.AbstractContainer', {
             'add',
             /**
              * @event remove
-             * @bubbles
              * Fires after any {@link Ext.Component} is removed from the container.
+             *
+             * **This event bubbles:** 'remove' will also be fired when Component is removed from any of
+             * the child containers or their children or ...
              * @param {Ext.container.Container} this
              * @param {Ext.Component} component The component that was removed
              */
@@ -284,6 +300,17 @@ Ext.define('Ext.container.AbstractContainer', {
 
             me.add(items);
         }
+    },
+
+    /**
+     * @private
+     * Returns the focus holder element associated with this Container. By default, this is the Container's target
+     * element. Subclasses which use embedded focusable elements (such as Window and Button) should override this for use
+     * by the {@link #focus} method.
+     * @returns {Ext.Element} the focus holding element.
+     */
+    getFocusEl: function() {
+        return this.getTargetEl();
     },
 
     finishRenderChildren: function () {
@@ -335,7 +362,8 @@ Ext.define('Ext.container.AbstractContainer', {
     getLayout : function() {
         var me = this;
         if (!me.layout || !me.layout.isLayout) {
-            me.setLayout(Ext.layout.Layout.create(me.layout, 'autocontainer'));
+            // Pass any configured in layout property, defaulting to the prototype's layout property, falling back to Auto.
+            me.setLayout(Ext.layout.Layout.create(me.layout, me.self.prototype.layout || 'autocontainer'));
         }
 
         return me.layout;
@@ -445,7 +473,7 @@ Ext.define('Ext.container.AbstractContainer', {
      * - Fires the {@link #beforeadd} event before adding.
      * - The Container's {@link #defaults default config values} will be applied
      *   accordingly (see `{@link #defaults}` for details).
-     * - Fires the `{@link #add}` event after the component has been added.
+     * - Fires the `{@link #event-add}` event after the component has been added.
      *
      * ## Notes:
      *
@@ -468,6 +496,8 @@ Ext.define('Ext.container.AbstractContainer', {
      *     // ({@link #defaultType} for {@link Ext.toolbar.Toolbar Toolbar} is 'button')
      *     tb.add([{text:'Button 1'}, {text:'Button 2'}]);
      *
+     * To inject components between existing ones, use the {@link #insert} method.
+     *
      * ## Warning:
      *
      * Components directly managed by the BorderLayout layout manager may not be removed
@@ -476,7 +506,7 @@ Ext.define('Ext.container.AbstractContainer', {
      *
      * @param {Ext.Component[]/Ext.Component...} component
      * Either one or more Components to add or an Array of Components to add.
-     * See `{@link #items}` for additional information.
+     * See `{@link #cfg-items}` for additional information.
      *
      * @return {Ext.Component[]/Ext.Component} The Components that were added.
      */
@@ -544,7 +574,7 @@ Ext.define('Ext.container.AbstractContainer', {
 
     /**
      * Inserts a Component into this Container at a specified index. Fires the
-     * {@link #beforeadd} event before inserting, then fires the {@link #add}
+     * {@link #beforeadd} event before inserting, then fires the {@link #event-add}
      * event after the Component has been inserted.
      *
      * @param {Number} index The index at which the Component will be inserted
@@ -590,26 +620,28 @@ Ext.define('Ext.container.AbstractContainer', {
 
     // @private
     onBeforeAdd : function(item) {
-        var me = this;
+        var me = this,
+            border = item.border;
 
         if (item.ownerCt) {
             item.ownerCt.remove(item, false);
         }
 
         if (me.border === false || me.border === 0) {
-            item.border = (item.border === true);
+            // If the parent has no border, only use an explicitly defined border
+            item.border = Ext.isDefined(border) && border !== false && border !== 0;
         }
     },
 
     /**
      * Removes a component from this container.  Fires the {@link #beforeremove} event
-     * before removing, then fires the {@link #remove} event after the component has
+     * before removing, then fires the {@link #event-remove} event after the component has
      * been removed.
      *
      * @param {Ext.Component/String} component The component reference or id to remove.
      *
      * @param {Boolean} [autoDestroy] True to automatically invoke the removed Component's
-     * {@link Ext.Component#destroy} function.
+     * {@link Ext.Component#method-destroy} function.
      *
      * Defaults to the value of this Container's {@link #autoDestroy} config.
      *
@@ -663,7 +695,7 @@ Ext.define('Ext.container.AbstractContainer', {
     /**
      * Removes all components from this container.
      * @param {Boolean} [autoDestroy] True to automatically invoke the removed
-     * Component's {@link Ext.Component#destroy} function.
+     * Component's {@link Ext.Component#method-destroy} function.
      * Defaults to the value of this Container's {@link #autoDestroy} config.
      * @return {Ext.Component[]} Array of the removed components
      */
@@ -777,7 +809,7 @@ Ext.define('Ext.container.AbstractContainer', {
     },
 
     /**
-     * Examines this container's {@link #items} **property** and gets a direct child
+     * Examines this container's {@link #property-items} **property** and gets a direct child
      * component of this container.
      *
      * @param {String/Number} comp This parameter may be any of the following:
@@ -785,7 +817,7 @@ Ext.define('Ext.container.AbstractContainer', {
      * - a **String** : representing the {@link Ext.Component#itemId itemId}
      *   or {@link Ext.Component#id id} of the child component.
      * - a **Number** : representing the position of the child component
-     *   within the {@link #items} **property**
+     *   within the {@link #property-items} **property**
      *
      * For additional information see {@link Ext.util.MixedCollection#get}.
      *
@@ -835,6 +867,16 @@ Ext.define('Ext.container.AbstractContainer', {
             }
         }
         return out;
+    },
+    
+    /**
+     * Finds a component at any level under this container matching the id/itemId.
+     * This is a shorthand for calling ct.down('#' + id);
+     * @param {String} id The id to find
+     * @return {Ext.Component} The matching id, null if not found
+     */
+    queryById: function(id){
+        return this.down('#' + id);
     },
 
     /**
@@ -888,12 +930,12 @@ Ext.define('Ext.container.AbstractContainer', {
         return this.query(selector)[0] || null;
     },
 
-    //@private
+    // @private
     // Enable all immediate children that was previously disabled
     // Override enable because onEnable only gets called when rendered
     enable: function() {
         this.callParent(arguments);
-        Ext.Array.each(this.query('[isFormField]'), function(item) {
+        Ext.Array.forEach(this.getChildItemsToDisable(), function(item) {
             if (item.resetDisable) {
                 item.enable();
             }
@@ -905,12 +947,22 @@ Ext.define('Ext.container.AbstractContainer', {
     // Override disable because onDisable only gets called when rendered
     disable: function() {
         this.callParent(arguments);
-        Ext.Array.each(this.query('[isFormField]'), function(item) {
+        Ext.Array.forEach(this.getChildItemsToDisable(), function(item) {
             if (item.resetDisable !== false && !item.disabled) {
                 item.disable();
                 item.resetDisable = true;
             }
         });
+    },
+    
+    /**
+     * Gets a list of child components to enable/disable when the container is
+     * enabled/disabled
+     * @private
+     * @return {Ext.Component[]} Items to be enabled/disabled
+     */
+    getChildItemsToDisable: function(){
+        return this.query('[isFormField]');
     },
 
     /**

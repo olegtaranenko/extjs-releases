@@ -44,7 +44,8 @@ Ext.define('Ext.grid.column.Date', {
     /**
      * @cfg {String} format
      * A formatting string as used by {@link Ext.Date#format} to format a Date for this Column.
-     * This defaults to the default date from {@link Ext.Date#defaultFormat} which itself my be overridden
+     *
+     * Defaults to the default date from {@link Ext.Date#defaultFormat} which itself my be overridden
      * in a locale file.
      */
 

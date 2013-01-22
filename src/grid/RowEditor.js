@@ -7,12 +7,10 @@
 // - layout issues when changing sizes/width while hidden (layout bug)
 
 /**
- * @class Ext.grid.RowEditor
- *
  * Internal utility class used to provide row editing functionality. For developers, they should use
  * the RowEditing plugin to use this functionality with a grid.
  *
- * @ignore
+ * @private
  */
 Ext.define('Ext.grid.RowEditor', {
     extend: 'Ext.form.Panel',
@@ -22,10 +20,18 @@ Ext.define('Ext.grid.RowEditor', {
         'Ext.util.KeyNav'
     ],
 
+    //<locale>
     saveBtnText  : 'Update',
+    //</locale>
+    //<locale>
     cancelBtnText: 'Cancel',
+    //</locale>
+    //<locale>
     errorsText: 'Errors',
+    //</locale>
+    //<locale>
     dirtyText: 'You need to commit or cancel your changes',
+    //</locale>
 
     lastScrollLeft: 0,
     lastScrollTop: 0,
@@ -73,6 +79,7 @@ Ext.define('Ext.grid.RowEditor', {
             me.setField(me.fields);
             delete me.fields;
         }
+        me.hasFields = true;
 
         form = me.getForm();
         form.trackResetOnLoad = true;
@@ -253,7 +260,7 @@ Ext.define('Ext.grid.RowEditor', {
                     '<div class="{baseCls}-bc"></div>',
                     '{%this.renderContainer(out,values)%}'
                 ],
-
+                width: 200,
                 renderTo: me.el,
                 baseCls: btnsCss,
                 layout: {
@@ -261,6 +268,7 @@ Ext.define('Ext.grid.RowEditor', {
                     align: 'middle'
                 },
                 defaults: {
+                    flex: 1,
                     margins: '0 1 0 1'
                 },
                 items: [{
@@ -350,11 +358,10 @@ Ext.define('Ext.grid.RowEditor', {
                         afteranimate: function() {
                             invalidateScroller();
                             y = row.getXY()[1] - 5;
-                            me.el.setY(y);
                         }
                     }
                 };
-                me.animate(animObj);
+                me.el.animate(animObj);
             } else {
                 me.el.setY(y);
                 invalidateScroller();
@@ -388,7 +395,8 @@ Ext.define('Ext.grid.RowEditor', {
 
         // Remove field/column from our mapping, which will fire the event to
         // remove the field from our container
-        me.columns.removeKey(field.id);
+        me.columns.removeAtKey(field.id);
+        Ext.destroy(field);
     },
 
     setField: function(column) {
@@ -403,24 +411,34 @@ Ext.define('Ext.grid.RowEditor', {
         // Get a default display field if necessary
         field = column.getEditor(null, {
             xtype: 'displayfield',
-            // Default display fields will not return values. This is done because
+            // Override Field's implementation so that the default display fields will not return values. This is done because
             // the display field will pick up column renderers from the grid.
             getModelData: function() {
                 return null;
             }
         });
         field.margins = '0 0 0 2';
-        field.setWidth(column.getDesiredWidth() - 2);
         me.mon(field, 'change', me.onFieldChange, me);
+        
+        if (me.isVisible() && me.context) {
+            if (field.is('displayfield')) {
+                me.renderColumnData(field, me.context.record, column);
+            } else {
+                field.suspendEvents();
+                field.setValue(me.context.record.get(column.dataIndex));
+                field.resumeEvents();
+            }
+        }
 
         // Maintain mapping of fields-to-columns
         // This will fire events that maintain our container items
+        
         me.columns.add(field.id, column);
         if (column.hidden) {
             me.onColumnHide(column);
-        }
-        if (me.isVisible() && me.context) {
-            me.renderColumnData(field, me.context.record);
+        } else if (me.hasFields) {
+            // Setting after initial render
+            me.onColumnShow(column);
         }
     },
 
@@ -451,22 +469,26 @@ Ext.define('Ext.grid.RowEditor', {
         }, me);
     },
 
-    renderColumnData: function(field, record) {
+    renderColumnData: function(field, record, activeColumn) {
         var me = this,
             grid = me.editingPlugin.grid,
             headerCt = grid.headerCt,
             view = grid.view,
             store = view.store,
-            column = me.columns.get(field.id),
-            value = record.get(column.dataIndex);
+            column = activeColumn || me.columns.get(field.id),
+            value = record.get(column.dataIndex),
+            renderer = column.editRenderer || column.renderer,
+            metaData,
+            rowIdx,
+            colIdx;
 
         // honor our column's renderer (TemplateHeader sets renderer for us!)
-        if (column.renderer) {
-            var metaData = { tdCls: '', style: '' },
-                rowIdx = store.indexOf(record),
-                colIdx = headerCt.getHeaderIndex(column);
+        if (renderer) {
+            metaData = { tdCls: '', style: '' };
+            rowIdx = store.indexOf(record);
+            colIdx = headerCt.getHeaderIndex(column);
 
-            value = column.renderer.call(
+            value = renderer.call(
                 column.scope || headerCt.ownerCt,
                 value,
                 metaData,
@@ -662,5 +684,10 @@ Ext.define('Ext.grid.RowEditor', {
         }, me);
 
         return dirtyText + '<ul>' + errors.join('') + '</ul>';
+    },
+    
+    beforeDestroy: function(){
+        Ext.destroy(this.floatingButtons, this.tooltip);
+        this.callParent();    
     }
 });

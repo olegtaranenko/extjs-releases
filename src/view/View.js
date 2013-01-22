@@ -369,6 +369,11 @@ Ext.define('Ext.view.View', {
             'unhighlightitem'
         );
     },
+
+    getFocusEl: function() {
+        return this.getTargetEl();
+    },
+
     // private
     afterRender: function(){
         var me = this,
@@ -600,17 +605,31 @@ Ext.define('Ext.view.View', {
             delete me.highlightedItem;
         }
     },
+    
+    onUpdate: function(store, record){
+        var me = this,
+            node = me.getNode(record),
+            newNode = me.callParent(arguments),
+            highlighted = me.highlightedItem;
+            
+        if (highlighted && highlighted === node) {
+            delete me.highlightedItem;
+            if (newNode) {
+                me.highlightItem(newNode);
+            }
+        }
+    },
 
     refresh: function() {
         this.clearHighlight();
         this.callParent(arguments);
         this.refreshHeight();
-        
     },
     
     refreshHeight: function(){
-        if (!this.isFixedHeight()) {
-            this.doComponentLayout();
+        var sizeModel = this.getSizeModel();
+        if (sizeModel.height.shrinkWrap) {
+            this.updateLayout();
         }
     }
 });

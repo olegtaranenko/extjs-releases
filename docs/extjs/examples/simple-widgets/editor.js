@@ -1,26 +1,8 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 Ext.require([
     'Ext.Editor',
     'Ext.form.Panel',
     'Ext.form.field.ComboBox',
-    'Ext.form.field.Date',
-    'Ext.data.Store',
-    'Ext.data.proxy.Ajax',
-    'Ext.data.reader.Json',
-    'Ext.data.writer.Json'
+    'Ext.form.field.Date'
 ]);
 
 Ext.onReady(function(){
@@ -30,8 +12,10 @@ Ext.onReady(function(){
         height: 400,
         title: 'User Details',
         defaultType: 'textfield',
-        bodyStyle: 'padding: 10px;',
-        labelWidth: 90,
+        bodyPadding: 10,
+        defaults: {
+            labelWidth: 100
+        },
         items: [{
             fieldLabel: 'First Name',
             name: 'firstname'
@@ -57,7 +41,7 @@ Ext.onReady(function(){
                 }, height = form.child('textfield').getHeight();
 
                 var labelEditor = Ext.create('Ext.Editor', Ext.apply({
-                    width: 100,
+                    width: 140,
                     height: height,
                     offsets: [0, 2],
                     alignment: 'l-l',
@@ -73,8 +57,9 @@ Ext.onReady(function(){
                         name: 'labelfield',
                         allowBlank: false,
                         xtype: 'textfield',
-                        width: 90,
-                        selectOnFocus: true
+                        selectOnFocus: true,
+                        maxLength: 20,
+                        enforceMaxLength: true
                     }
                 }, cfg));
                 form.body.on('dblclick', function(e, t){
@@ -86,7 +71,7 @@ Ext.onReady(function(){
                 });
 
                 var titleEditor = Ext.create('Ext.Editor', Ext.apply({
-                    alignment: 'bl-bl?',
+                    alignment: 'bl-l',
                     offsets: [0, 10],
                     field: {
                         width: 130,
@@ -116,4 +101,3 @@ Ext.onReady(function(){
         }
     });
 });
-

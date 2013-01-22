@@ -1,10 +1,6 @@
 /**
- * @class Ext.view.TableChunker
- * 
  * Produces optimized XTemplates for chunks of tables to be
  * used in grids, trees and other table based widgets.
- *
- * @singleton
  */
 Ext.define('Ext.view.TableChunker', {
     singleton: true,
@@ -63,7 +59,7 @@ Ext.define('Ext.view.TableChunker', {
     },
 
     metaRowTpl: [
-        '<tr class="' + Ext.baseCSSPrefix + 'grid-row {addlSelector} {[this.embedRowCls()]}" {[this.embedRowAttr()]}>',
+        '<tr class="' + Ext.baseCSSPrefix + 'grid-row {[this.embedRowCls()]}" {[this.embedRowAttr()]}>',
             '<tpl for="columns">',
                 '<td class="{cls} ' + Ext.baseCSSPrefix + 'grid-cell ' + Ext.baseCSSPrefix + 'grid-cell-{columnId} {{id}-modified} {{id}-tdCls} {[this.firstOrLastCls(xindex, xcount)]}" {{id}-tdAttr}>',
                     '<div{[parent.enableTextSelection ? "" : " unselectable=\'on\'"]} class="' + Ext.baseCSSPrefix + 'grid-cell-inner{[parent.enableTextSelection ? "" : " ' + Ext.baseCSSPrefix + 'unselectable"]}" style="text-align: {align}; {{id}-style};">{{id}}</div>',

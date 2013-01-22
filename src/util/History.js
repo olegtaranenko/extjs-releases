@@ -1,16 +1,16 @@
 /**
- * @class Ext.util.History
- *
  * History management component that allows you to register arbitrary tokens that signify application
  * history state on navigation actions.  You can then handle the history {@link #change} event in order
  * to reset your application UI to the appropriate state when the user navigates forward or backward through
  * the browser history stack.
  *
  * ## Initializing
+ *
  * The {@link #init} method of the History object must be called before using History. This sets up the internal
  * state and must be the first thing called before using History.
  *
  * ## Setup
+ *
  * The History object requires elements on the page to keep track of the browser history. For older versions of IE,
  * an IFrame is required to do the tracking. For other browsers, a hidden field can be used. The History object will
  * uses these if they are on the page before the {@link #init} method is called. Otherwise, it will create the
@@ -20,8 +20,6 @@
  *         <input type="hidden" id="x-history-field" />
  *         <iframe id="x-history-frame"></iframe>
  *     </form>
- *
- * @singleton
  */
 Ext.define('Ext.util.History', {
     singleton: true,
@@ -31,9 +29,8 @@ Ext.define('Ext.util.History', {
     },
 
     /**
-     * @cfg {Boolean} useTopWindow True to use `window.top.location.hash` (the default) or
-     * false to use `window.location.hash`.
-     * @markdown
+     * @cfg {Boolean} useTopWindow
+     * True to use `window.top.location.hash` or false to use `window.location.hash`.
      */
     useTopWindow: true,
 
@@ -156,23 +153,22 @@ Ext.define('Ext.util.History', {
     },
 
     /**
-     * The id of the hidden field required for storing the current history token.
-     * @type String
      * @property
+     * The id of the hidden field required for storing the current history token.
      */
     fieldId: Ext.baseCSSPrefix + 'history-field',
     /**
-     * The id of the iframe required by IE to manage the history stack.
-     * @type String
      * @property
+     * The id of the iframe required by IE to manage the history stack.
      */
     iframeId: Ext.baseCSSPrefix + 'history-frame',
 
     /**
-     * Initialize the global History instance.
-     * @param {Function} onReady (optional) A callback function that will be called once the history
+     * Initializes the global History instance.
+     * @param {Function} [onReady] A callback function that will be called once the history
      * component is fully initialized.
-     * @param {Object} scope (optional) The scope (`this` reference) in which the callback is executed. Defaults to the browser window.
+     * @param {Object} [scope] The scope (`this` reference) in which the callback is executed.
+     * Defaults to the browser window.
      */
     init: function (onReady, scope) {
         var me = this,

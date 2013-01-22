@@ -11,7 +11,7 @@ Ext.define('Ext.view.BoundList', {
      * @cfg {Number} pageSize
      * If greater than `0`, a {@link Ext.toolbar.Paging} is displayed at the bottom of the list and store
      * queries will execute with page {@link Ext.data.Operation#start start} and
-     * {@link Ext.data.Operation#limit limit} parameters. Defaults to `0`.
+     * {@link Ext.data.Operation#limit limit} parameters.
      */
     pageSize: 0,
 
@@ -39,7 +39,7 @@ Ext.define('Ext.view.BoundList', {
     ],
 
     renderTpl: [
-        '<div id="{id}-listEl" class="list-ct" style="overflow:auto"></div>' +
+        '<div id="{id}-listEl" class="{baseCls}-list-ct" style="overflow:auto"></div>' +
         '{%this.renderToolbar(out, values)%}', {
 
             disableFormats: true,
@@ -53,37 +53,41 @@ Ext.define('Ext.view.BoundList', {
             }
         }
     ],
+
     /**
      * @cfg {String/Ext.XTemplate} tpl
      * A String or Ext.XTemplate instance to apply to inner template.
      *
-     * {@link Ext.view.BoundList} is used for the dropdown list of {@link Ext.form.field.ComboBox}. To customize the template you can do this:<pre><code>
-     * Ext.create('Ext.form.field.ComboBox', {
-     *     fieldLabel   : 'State',
-     *     queryMode    : 'local',
-     *     displayField : 'text',
-     *     valueField   : 'abbr',
-     *     store        : Ext.create('StateStore', {
-     *         fields : ['abbr', 'text'],
-     *         data   : [
-     *             {"abbr":"AL", "name":"Alabama"},
-     *             {"abbr":"AK", "name":"Alaska"},
-     *             {"abbr":"AZ", "name":"Arizona"}
-     *             //...
-     *         ]
-     *     }),
-     *     listConfig : {
-     *         tpl : '<tpl for="."><div class="x-combo-list-item">{abbr}</div></tpl>'
-     *     }
-     * });
-     * </code></pre>
-     * Defaults to: <pre><code>
+     * {@link Ext.view.BoundList} is used for the dropdown list of {@link Ext.form.field.ComboBox}.
+     * To customize the template you can do this:
+     *
+     *     Ext.create('Ext.form.field.ComboBox', {
+     *         fieldLabel   : 'State',
+     *         queryMode    : 'local',
+     *         displayField : 'text',
+     *         valueField   : 'abbr',
+     *         store        : Ext.create('StateStore', {
+     *             fields : ['abbr', 'text'],
+     *             data   : [
+     *                 {"abbr":"AL", "name":"Alabama"},
+     *                 {"abbr":"AK", "name":"Alaska"},
+     *                 {"abbr":"AZ", "name":"Arizona"}
+     *                 //...
+     *             ]
+     *         }),
+     *         listConfig : {
+     *             tpl : '<tpl for="."><div class="x-combo-list-item">{abbr}</div></tpl>'
+     *         }
+     *     });
+     *
+     * Defaults to:
+     *
      *     Ext.create('Ext.XTemplate',
-                '<ul><tpl for=".">',
-                    '<li role="option" class="' + itemCls + '">' + me.getInnerTpl(me.displayField) + '</li>',
-                '</tpl></ul>'
-            );
-     * </code></pre>
+     *         '<ul><tpl for=".">',
+     *             '<li role="option" class="' + itemCls + '">' + me.getInnerTpl(me.displayField) + '</li>',
+     *         '</tpl></ul>'
+     *     );
+     *
      */
 
     initComponent: function() {
@@ -118,6 +122,24 @@ Ext.define('Ext.view.BoundList', {
         me.callParent();
     },
 
+    /**
+     * @private
+     * Boundlist-specific implementation of the up ComponentQuery method.
+     * This links first to the owning input field so that the FocusManager, when receiving notification of a hide event,
+     * can find a focusable parent.
+     */
+    up: function(selector) {
+        var result = this.pickerField;
+        if (selector) {
+            for (; result; result = result.ownerCt) {
+                if (Ext.ComponentQuery.is(result, selector)) {
+                    return result;
+                }
+            }
+        }
+        return result;
+    },
+
     createPagingToolbar: function() {
         return Ext.widget('pagingtoolbar', {
             id: this.id + '-paging-toolbar',
@@ -137,6 +159,18 @@ Ext.define('Ext.view.BoundList', {
         if (toolbar) {
             toolbar.finishRender();
         }
+    },
+    
+    refresh: function(){
+        var me = this,
+            toolbar = me.pagingToolbar;
+        
+        me.callParent();
+        // The view removes the targetEl from the DOM before updating the template
+        // Ensure the toolbar goes to the end
+        if (me.rendered && toolbar && !me.preserveScrollOnRefresh) {
+            me.el.appendChild(toolbar.el);
+        }  
     },
 
     bindStore : function(store, initial) {

@@ -170,7 +170,7 @@ Ext.define('Ext.draw.Color', {
             return digits[1] + '#' + ("000000" + rgb.toString(16)).slice(-6);
         }
         else {
-            return '';
+            return color;
         }
     },
 

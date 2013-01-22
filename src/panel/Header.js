@@ -7,7 +7,6 @@ Ext.define('Ext.panel.Header', {
     alias: 'widget.header',
 
     isHeader       : true,
-    focusable      : false,
     defaultType    : 'tool',
     indicateDrag   : false,
     weight         : -1,
@@ -29,6 +28,8 @@ Ext.define('Ext.panel.Header', {
 
     headingTpl: '<span id="{id}-textEl" class="{cls}-text {cls}-text-{ui}">{title}</span>',
 
+    shrinkWrap: 3,
+
     /**
      * @cfg {String} title
      * The title text to display.
@@ -36,7 +37,12 @@ Ext.define('Ext.panel.Header', {
 
     /**
      * @cfg {String} iconCls
-     * CSS class for icon in header. Used for displaying an icon to the left of a title.
+     * CSS class for an icon in the header. Used for displaying an icon to the left of a title.
+     */
+    
+    /**
+     * @cfg {String} icon
+     * Path to image for an icon in the header. Used for displaying an icon to the left of a title.
      */
 
     initComponent: function() {
@@ -62,7 +68,7 @@ Ext.define('Ext.panel.Header', {
         }
 
         // Add Icon
-        if (!Ext.isEmpty(me.iconCls)) {
+        if (!Ext.isEmpty(me.iconCls) || !Ext.isEmpty(me.icon)) {
             me.initIconCmp();
             me.items.push(me.iconCmp);
         }
@@ -119,7 +125,7 @@ Ext.define('Ext.panel.Header', {
                     }
                 },
                 // this is a bit of a cheat: we are not selecting an element of titleCmp
-                // but rather of titleCmp.items[0] (so we cannot use childEls)
+                // but rather of titleCmp.items[0]
                 childEls  : [
                     { name: 'textEl', select: '.' + me.baseCls + '-text' }
                 ]
@@ -161,17 +167,23 @@ Ext.define('Ext.panel.Header', {
     },
 
     initIconCmp: function() {
-        var me = this;
+        var me = this,
+            cfg = {
+                width: 15,
+                height: 15,
+                focusable: false,
+                src: Ext.BLANK_IMAGE_URL,
+                cls: [me.baseCls + '-icon', me.iconCls],
+                id: me.id + '-iconEl',
+                iconCls: me.iconCls
+            };
+            
+        if (!Ext.isEmpty(me.icon)) {
+            delete cfg.iconCls;
+            cfg.src = me.icon;
+        }
         
-        me.iconCmp = new Ext.Img({
-            width: 15,
-            height: 15,
-            focusable: false,
-            src: Ext.BLANK_IMAGE_URL,
-            cls: [me.baseCls + '-icon', me.iconCls],
-            id: me.id + '-iconEl',
-            iconCls: me.iconCls
-        });
+        me.iconCmp = new Ext.Img(cfg);
     },
 
     afterRender: function() {
@@ -307,6 +319,10 @@ Ext.define('Ext.panel.Header', {
         }
     },
 
+    getFocusEl: function() {
+        return this.el;
+    },
+
     getTargetEl: function() {
         return this.body || this.frameBody || this.el;
     },
@@ -337,8 +353,8 @@ Ext.define('Ext.panel.Header', {
                     }, true);
                     me.titleCmp.autoSizeSurface();
                 } else {
-                    me.title = title || '&#160;';
-                    me.titleCmp.textEl.update(me.title);
+                    me.title = title;
+                    me.titleCmp.textEl.update(me.title || '&#160;');
                 }
             } else {
                 me.titleCmp.on({
@@ -349,14 +365,44 @@ Ext.define('Ext.panel.Header', {
                 });
             }
         } else {
-            me.on({
-                render: function() {
-                    me.layout.layout();
-                    me.setTitle(title);
-                },
-                single: true
-            });
+            me.title = title;
         }
+    },
+
+    /**
+     * @private
+     * Used when shrink wrapping a Panel to either content width or header width.
+     * This returns the minimum width required to display the header, icon and tools.
+     * **This is only intended for use with horizontal headers.**
+     */
+    getMinWidth: function() {
+        var me = this,
+            textEl = me.titleCmp.textEl.dom,
+            result,
+            tools = me.tools,
+            l, i;
+
+        // Measure text width as inline element so it doesn't stretch
+        textEl.style.display = 'inline';
+        result = textEl.offsetWidth;
+        textEl.style.display = '';
+
+        // Add tools width
+        if (tools && (l = tools.length)) {
+            for (i = 0; i < l; i++) {
+                if (tools[i].el) {
+                    result += tools[i].el.dom.offsetWidth;
+                }
+            }
+        }
+
+        // Add iconWidth
+        if (me.iconCmp) {
+            result += me.iconCmp.el.dom.offsetWidth;
+        }
+
+        // Return with some space between title and tools/end of header.
+        return result + 10;
     },
 
     /**
@@ -384,6 +430,30 @@ Ext.define('Ext.panel.Header', {
             }
         }
     },
+    
+    /**
+     * Sets the image path that provides the icon image for this header.  This method will replace any existing
+     * icon if one has already been set.
+     * @param {String} icon The new icon path
+     */
+    setIcon: function(icon) {
+        var me = this,
+            isEmpty = !icon || !icon.length,
+            iconCmp = me.iconCmp;
+        
+        me.icon = icon;
+        if (!me.iconCmp && !isEmpty) {
+            me.initIconCmp();
+            me.insert(0, me.iconCmp);
+        } else if (iconCmp) {
+            if (isEmpty) {
+                me.iconCmp.destroy();
+                delete me.iconCmp;
+            } else {
+                iconCmp.setSrc(me.icon);
+            }
+        }
+    },
 
     /**
      * Add a tool to the header
@@ -395,7 +465,7 @@ Ext.define('Ext.panel.Header', {
 
     /**
      * @private
-     * Set up the tools.&lt;tool type> link in the owning Panel.
+     * Set up the `tools.<tool type>` link in the owning Panel.
      * Bind the tool to its owning Panel.
      * @param component
      * @param index

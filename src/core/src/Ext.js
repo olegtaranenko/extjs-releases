@@ -73,6 +73,16 @@ var Ext = Ext || {};
     }, Ext.buildSettings || {});
 
     Ext.apply(Ext, {
+
+        /**
+         * @property {String} [name='Ext']
+         * <p>The name of the property in the global namespace (The <code>window</code> in browser environments) which refers to the current instance of Ext.</p>
+         * <p>This is usually <code>"Ext"</code>, but if a sandboxed build of ExtJS is being used, this will be an alternative name.</p>
+         * <p>If code is being generated for use by <code>eval</code> or to create a <code>new Function</code>, and the global instance
+         * of Ext must be referenced, this is the name that should be built into the code.</p>
+         */
+        name: Ext.sandboxName || 'Ext',
+
         /**
          * A reusable empty function
          */
@@ -477,7 +487,9 @@ var Ext = Ext || {};
                 if (type == 'function') {
                     // In Safari, NodeList/HTMLCollection both return "function" when using typeof, so we need
                     // to explicitly check them here.
-                    checkLength = value instanceof NodeList || value instanceof HTMLCollection;
+                    if (Ext.isSafari) {
+                        checkLength = value instanceof NodeList || value instanceof HTMLCollection;
+                    }
                 } else {
                     checkLength = true;
                 }
@@ -579,7 +591,7 @@ var Ext = Ext || {};
                 ln = args.length;
                 if (ln > 0) {
                     ln--;
-                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                    args[ln] = 'var Ext=window.' + Ext.name + ';' + args[ln];
                 }
             }
             idx = args.join('');
@@ -601,7 +613,7 @@ var Ext = Ext || {};
                 ln = args.length;
                 if (ln > 0) {
                     ln--;
-                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                    args[ln] = 'var Ext=window.' + Ext.name + ';' + args[ln];
                 }
             }
      
@@ -612,12 +624,26 @@ var Ext = Ext || {};
          * @property
          * @private
          */
+        globalEval: ('execScript' in global) ? function(code) {
+            global.execScript(code)
+        } : function(code) {
+            (function(){
+                eval(code);
+            })();
+        },
+
+        /**
+         * @private
+         * @property
+         */
         Logger: {
             verbose: emptyFn,
             log: emptyFn,
             info: emptyFn,
             warn: emptyFn,
-            error: emptyFn,
+            error: function(message) {
+                throw new Error(message);
+            },
             deprecate: emptyFn
         }
     });
@@ -626,7 +652,7 @@ var Ext = Ext || {};
      * Old alias to {@link Ext#typeOf}
      * @deprecated 4.0.0 Use {@link Ext#typeOf} instead
      * @method
-     * @alias Ext#typeOf
+     * @inheritdoc Ext#typeOf
      */
     Ext.type = Ext.typeOf;
 

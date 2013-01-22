@@ -96,50 +96,50 @@ Ext.define('Ext.perf.Monitor', {
                 /*xtplCompile: {
                     'Ext.XTemplateCompiler': 'compile'
                 },*/
-                doInsert: {
-                    'Ext.Template': 'doInsert'
-                },
-                applyOut: {
-                    'Ext.XTemplate': 'applyOut'
-                },
+//                doInsert: {
+//                    'Ext.Template': 'doInsert'
+//                },
+//                applyOut: {
+//                    'Ext.XTemplate': 'applyOut'
+//                },
                 render: {
                     'Ext.AbstractComponent': 'render'
                 },
-                fnishRender: {
-                    'Ext.AbstractComponent': 'finishRender'
-                },
-                renderSelectors: {
-                    'Ext.AbstractComponent': 'applyRenderSelectors'
-                },
-                compAddCls: {
-                    'Ext.AbstractComponent': 'addCls'
-                },
-                compRemoveCls: {
-                    'Ext.AbstractComponent': 'removeCls'
-                },
-                getStyle: {
-                    'Ext.core.Element': 'getStyle'
-                },
-                setStyle: {
-                    'Ext.core.Element': 'setStyle'
-                },
-                addCls: {
-                    'Ext.core.Element': 'addCls'
-                },
-                removeCls: {
-                    'Ext.core.Element': 'removeCls'
-                },
-                measure: {
-                    'Ext.layout.component.Component': 'measureAutoDimensions'
-                },
+//                fnishRender: {
+//                    'Ext.AbstractComponent': 'finishRender'
+//                },
+//                renderSelectors: {
+//                    'Ext.AbstractComponent': 'applyRenderSelectors'
+//                },
+//                compAddCls: {
+//                    'Ext.AbstractComponent': 'addCls'
+//                },
+//                compRemoveCls: {
+//                    'Ext.AbstractComponent': 'removeCls'
+//                },
+//                getStyle: {
+//                    'Ext.core.Element': 'getStyle'
+//                },
+//                setStyle: {
+//                    'Ext.core.Element': 'setStyle'
+//                },
+//                addCls: {
+//                    'Ext.core.Element': 'addCls'
+//                },
+//                removeCls: {
+//                    'Ext.core.Element': 'removeCls'
+//                },
+//                measure: {
+//                    'Ext.layout.component.Component': 'measureAutoDimensions'
+//                },
+//                moveItem: {
+//                    'Ext.layout.Layout': 'moveItem'
+//                },
+//                layoutFlush: {
+//                    'Ext.layout.Context': 'flush'
+//                },
                 layout: {
                     'Ext.layout.Context': 'run'
-                },
-                moveItem: {
-                    'Ext.layout.Layout': 'moveItem'
-                },
-                layoutFlush: {
-                    'Ext.layout.Context': 'flush'
                 }
             };
         }

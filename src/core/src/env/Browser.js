@@ -85,27 +85,31 @@ Ext.define('Ext.env.Browser', {
 
     /**
      * @property {String} name
-     * Read-only - the full name of the current browser
-     * Possible values are: IE, Firefox, Safari, Chrome, Opera and Other
+     * The full name of the current browser
+     * Possible values are: IE, Firefox, Safari, Chrome, Opera and Other.
+     * @readonly
      */
     name: null,
 
     /**
      * @property {Ext.Version} version
-     * Read-only, refer to {@link Ext.Version}
+     * Refer to {@link Ext.Version}.
+     * @readonly
      */
     version: null,
 
     /**
      * @property {String} engineName
-     * Read-only - the full name of the current browser's engine
-     * Possible values are: WebKit, Gecko, Presto, Trident and Other
+     * The full name of the current browser's engine.
+     * Possible values are: WebKit, Gecko, Presto, Trident and Other.
+     * @readonly
      */
     engineName: null,
 
     /**
      * @property {String} engineVersion
-     * Read-only, refer to {@link Ext.Version}
+     * Refer to {@link Ext.Version}.
+     * @readonly
      */
     engineVersion: null,
 

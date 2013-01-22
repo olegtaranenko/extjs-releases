@@ -92,9 +92,9 @@ Ext.define('Ext.form.field.Checkbox', {
     extend: 'Ext.form.field.Base',
     alias: ['widget.checkboxfield', 'widget.checkbox'],
     alternateClassName: 'Ext.form.Checkbox',
-    requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager', 'Ext.layout.component.field.BoxLabelField'],
+    requires: ['Ext.XTemplate', 'Ext.form.CheckboxManager' ],
 
-    componentLayout: 'boxlabelfield',
+    componentLayout: 'field',
 
     childEls: [
         /**
@@ -108,23 +108,80 @@ Ext.define('Ext.form.field.Checkbox', {
     // note: {id} here is really {inputId}, but {cmpId} is available
     fieldSubTpl: [
         '<tpl if="boxLabel && boxLabelAlign == \'before\'">',
-            '<label id="{cmpId}-boxLabelEl" class="{boxLabelCls} {boxLabelCls}-{boxLabelAlign}" for="{id}">{boxLabel}</label>',
+            '{beforeBoxLabelTpl}',
+            '<label id="{cmpId}-boxLabelEl" {boxLabelAttrTpl} class="{boxLabelCls} {boxLabelCls}-{boxLabelAlign}" for="{id}">',
+                '{beforeBoxLabelTextTpl}',
+                '{boxLabel}',
+                '{afterBoxLabelTextTpl}',
+            '</label>',
+            '{afterBoxLabelTpl}',
         '</tpl>',
         // Creates not an actual checkbox, but a button which is given aria role="checkbox" (If ARIA is required) and
         // styled with a custom checkbox image. This allows greater control and consistency in
         // styling, and using a button allows it to gain focus and handle keyboard nav properly.
-        '<input type="button" id="{id}"',
+        '<input type="button" id="{id}" {inputAttrTpl}',
             '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
             '<tpl if="disabled"> disabled="disabled"</tpl>',
             '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
             ' class="{fieldCls} {typeCls}" autocomplete="off" hidefocus="true" />',
         '<tpl if="boxLabel && boxLabelAlign == \'after\'">',
-            '<label id="{cmpId}-boxLabelEl" class="{boxLabelCls} {boxLabelCls}-{boxLabelAlign}" for="{id}">{boxLabel}</label>',
+            '{beforeBoxLabelTpl}',
+            '<label id="{cmpId}-boxLabelEl" {boxLabelAttrTpl} class="{boxLabelCls} {boxLabelCls}-{boxLabelAlign}" for="{id}">',
+                '{beforeBoxLabelTextTpl}',
+                '{boxLabel}',
+                '{afterBoxLabelTextTpl}',
+            '</label>',
+            '{afterBoxLabelTpl}',
         '</tpl>',
         {
             disableFormats: true,
             compiled: true
         }
+    ],
+
+    subTplInsertions: [
+        /**
+         * @cfg {String/Array/Ext.XTemplate} beforeBoxLabelTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * before the box label element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'beforeBoxLabelTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} afterBoxLabelTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * after the box label element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'afterBoxLabelTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} beforeBoxLabelTextTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * before the box label text. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'beforeBoxLabelTextTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} afterBoxLabelTextTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * after the box label text. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'afterBoxLabelTextTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} boxLabelAttrTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * inside the box label element (as attributes). If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'boxLabelAttrTpl',
+
+        // inherited
+        'inputAttrTpl'
     ],
 
     isCheckbox: true,
@@ -202,7 +259,9 @@ Ext.define('Ext.form.field.Checkbox', {
 
     /**
      * @cfg {Object} scope
-     * An object to use as the scope ('this' reference) of the {@link #handler} function (defaults to this Checkbox).
+     * An object to use as the scope ('this' reference) of the {@link #handler} function.
+     *
+     * Defaults to this Checkbox.
      */
 
     // private overrides
@@ -212,7 +271,7 @@ Ext.define('Ext.form.field.Checkbox', {
     // private
     onRe: /^on$/i,
 
-    initComponent: function(){
+    initComponent: function() {
         this.callParent(arguments);
         this.getManager().add(this);
     },
@@ -240,6 +299,10 @@ Ext.define('Ext.form.field.Checkbox', {
             me.addCls(me.checkedCls);
         }
         return me.callParent();
+    },
+
+    getFieldStyle: function() {
+        return Ext.isObject(this.fieldStyle) ? Ext.DomHelper.generateStyles(this.fieldStyle) : this.fieldStyle ||'';
     },
 
     getSubTplData: function() {
@@ -286,7 +349,7 @@ Ext.define('Ext.form.field.Checkbox', {
 
     /**
      * Returns the submit value for the checkbox which can be used when submitting forms.
-     * @return {String} If checked the {@link #inputValye} is returned; otherwise the {@link #uncheckedValue}
+     * @return {String} If checked the {@link #inputValue} is returned; otherwise the {@link #uncheckedValue}
      * (or null if the latter is not configured).
      */
     getSubmitValue: function() {
@@ -394,15 +457,5 @@ Ext.define('Ext.form.field.Checkbox', {
             inputEl.dom.disabled = !!readOnly || me.disabled;
         }
         me.callParent(arguments);
-    },
-
-    /**
-     * Calculates and returns the natural width of the bodyEl.
-     */
-    getBodyNaturalWidth: function() {
-        var labelEl = this.boxLabelEl,
-            inputEl = this.inputEl;
-
-        return labelEl.dom.offsetWidth + labelEl.getMargin('lr') + inputEl.dom.offsetWidth + inputEl.getMargin('lr');
     }
 });

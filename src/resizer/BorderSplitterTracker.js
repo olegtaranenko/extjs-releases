@@ -1,6 +1,4 @@
 /**
- * @class Ext.resizer.BorderSplitterTracker
- * @extends Ext.dd.DragTracker
  * Private utility class for Ext.BorderSplitter.
  * @private
  */

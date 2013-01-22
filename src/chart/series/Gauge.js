@@ -149,7 +149,7 @@ Ext.define('Ext.chart.series.Gauge', {
         };
     },
     
-    //@private updates some onbefore render parameters.
+    // @private updates some onbefore render parameters.
     initialize: function() {
         var me = this,
             store = me.chart.getChartStore();
@@ -290,7 +290,9 @@ Ext.define('Ext.chart.series.Gauge', {
         }
         
         //if not store or store is empty then there's nothing to draw
-        if (!store || !store.getCount()) {
+        if (!store || !store.getCount() || me.seriesIsHidden) {
+            me.hide();
+            me.items = [];
             return;
         }
         
@@ -449,7 +451,20 @@ Ext.define('Ext.chart.series.Gauge', {
     },
 
     isItemInPoint: function(x, y, item, i) {
-        return false;
+        var me = this,
+            cx = me.centerX,
+            cy = me.centerY,
+            abs = Math.abs,
+            dx = abs(x - cx),
+            dy = abs(y - cy),
+            startAngle = item.startAngle,
+            endAngle = item.endAngle,
+            rho = Math.sqrt(dx * dx + dy * dy),
+            angle = Math.atan2(y - cy, x - cx) / me.rad;
+
+        //Only trigger events for the filled portion of the Gauge.
+        return (i === 0) && (angle >= startAngle && angle < endAngle && 
+                             rho >= item.startRho && rho <= item.endRho);
     },
     
     // @private shows all elements in the series.

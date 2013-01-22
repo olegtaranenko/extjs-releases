@@ -1,6 +1,4 @@
 /**
- * @class Ext.selection.CheckboxModel
- *
  * A selection model that renders a column of checkboxes that can be toggled to
  * select or deselect rows. The default mode for this selection model is MULTI.
  *
@@ -14,7 +12,7 @@ Ext.define('Ext.selection.CheckboxModel', {
     /**
      * @cfg {String} mode
      * Modes of selection.
-     * Valid values are SINGLE, SIMPLE, and MULTI. Defaults to 'MULTI'
+     * Valid values are SINGLE, SIMPLE, and MULTI.
      */
     mode: 'MULTI',
 
@@ -28,14 +26,14 @@ Ext.define('Ext.selection.CheckboxModel', {
     injectCheckbox: 0,
 
     /**
-     * @cfg {Boolean} checkOnly <tt>true</tt> if rows can only be selected by clicking on the
-     * checkbox column.
+     * @cfg {Boolean} checkOnly
+     * True if rows can only be selected by clicking on the checkbox column.
      */
     checkOnly: false,
     
     /**
-     * @cfg {Boolean} showHeaderCheckbox <tt>false</tt> to not display the header checkbox at the top of the column.
-     * Defaults to <tt>true</tt>.
+     * @cfg {Boolean} showHeaderCheckbox
+     * False to not display the header checkbox at the top of the column.
      */
     showHeaderCheckbox: true,
 
@@ -53,7 +51,7 @@ Ext.define('Ext.selection.CheckboxModel', {
             // if we have a locked header, only hook up to the first
             view.headerCt.on('headerclick', me.onHeaderClick, me);
             me.addCheckbox(true);
-            me.mon(view.ownerCt, 'reconfigure', me.addCheckbox, me);
+            me.mon(view.ownerCt, 'reconfigure', me.onReconfigure, me);
         }
     },
 
@@ -90,6 +88,19 @@ Ext.define('Ext.selection.CheckboxModel', {
 
         if (initial !== true) {
             view.refresh();
+        }
+    },
+
+    /**
+     * Handles the grid's reconfigure event.  Adds the checkbox header if the columns have been reconfigured.
+     * @private
+     * @param {Ext.panel.Table} grid
+     * @param {Ext.data.Store} store
+     * @param {Object[]} columns
+     */
+    onReconfigure: function(grid, store, columns) {
+        if(columns) {
+            this.addCheckbox();
         }
     },
 
@@ -153,8 +164,13 @@ Ext.define('Ext.selection.CheckboxModel', {
             dataIndex: '',
             cls: showCheck ? Ext.baseCSSPrefix + 'column-header-checkbox ' : '',
             renderer: Ext.Function.bind(me.renderer, me),
+            editRenderer: me.editRenderer || me.renderEmpty,
             locked: me.hasLockedHeader()
         };
+    },
+    
+    renderEmpty: function(){
+        return '&#160;';    
     },
 
     /**

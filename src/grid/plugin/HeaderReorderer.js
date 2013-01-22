@@ -1,5 +1,4 @@
 /**
- * @class Ext.grid.plugin.HeaderReorderer
  * @private
  */
 Ext.define('Ext.grid.plugin.HeaderReorderer', {

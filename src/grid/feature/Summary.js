@@ -1,6 +1,4 @@
 /**
- * @class Ext.grid.feature.Summary
- * 
  * This feature is used to place a summary row at the bottom of the grid. If using a grouping, 
  * see {@link Ext.grid.feature.GroupingSummary}. There are 2 aspects to calculating the summaries, 
  * calculation and rendering.

@@ -110,17 +110,6 @@ Ext.define('Ext.layout.container.Card', {
      */
     deferredRender : false,
 
-    beforeLayout: function() {
-        var me = this;
-        me.getActiveItem();
-        if (me.activeItem && me.deferredRender) {
-            me.renderItems([me.activeItem], me.getRenderTarget());
-            return true;
-        } else {
-            return me.callParent(arguments);
-        }
-    },
-
     getRenderTree: function () {
         var me = this;
         me.getActiveItem();
@@ -129,7 +118,7 @@ Ext.define('Ext.layout.container.Card', {
         } else {
             return me.callParent(arguments);
         }
-   },
+    },
 
     renderChildren: function () {
         var me = this,
@@ -140,27 +129,6 @@ Ext.define('Ext.layout.container.Card', {
         } else if (active) {
             // ensure the active item is configured for the layout
             me.renderItems([active], me.getRenderTarget());
-        }
-    },
-
-    onLayout: function() {
-        var me = this,
-            activeItem = me.activeItem,
-            items = me.getVisibleItems(),
-            ln = items.length,
-            targetBox = me.getTargetBox(),
-            i, item;
-
-        for (i = 0; i < ln; i++) {
-            item = items[i];
-            me.setItemBox(item, targetBox);
-        }
-
-        if (!me.firstActivated && activeItem) {
-            if (activeItem.fireEvent('beforeactivate', activeItem) !== false) {
-                activeItem.fireEvent('activate', activeItem);
-            }
-            me.firstActivated = true;
         }
     },
 
@@ -320,12 +288,9 @@ Ext.define('Ext.layout.container.Card', {
         if (newCard && oldCard != newCard) {
             // If the card has not been rendered yet, now is the time to do so.
             if (!newCard.rendered) {
-                me.configureItem(newCard, 0);
                 me.renderItem(newCard, me.getRenderTarget(), owner.items.length);
                 me.afterRenderItem(newCard);
             }
-
-            me.activeItem = newCard;
 
             // Fire the beforeactivate and beforedeactivate events on the cards
             if (newCard.fireEvent('beforeactivate', newCard, oldCard) === false) {
@@ -348,6 +313,8 @@ Ext.define('Ext.layout.container.Card', {
             if (newCard.hidden) {
                 newCard.show();
             }
+
+            me.activeItem = newCard;
 
             me.owner.resumeLayouts(true);
 

@@ -55,8 +55,9 @@ Ext.define('Ext.grid.column.Action', {
 
     /**
      * @cfg {String} icon
-     * The URL of an image to display as the clickable element in the column. Defaults to
-     * `{@link Ext#BLANK_IMAGE_URL Ext.BLANK_IMAGE_URL}`.
+     * The URL of an image to display as the clickable element in the column.
+     *
+     * Defaults to `{@link Ext#BLANK_IMAGE_URL}`.
      */
     /**
      * @cfg {String} iconCls
@@ -69,7 +70,7 @@ Ext.define('Ext.grid.column.Action', {
      * @cfg {Ext.view.Table} handler.view The owning TableView.
      * @cfg {Number} handler.rowIndex The row index clicked on.
      * @cfg {Number} handler.colIndex The column index clicked on.
-     * @cfg {Object} handler.item The clicked item (or this Column if multiple {@link #items} were not configured).
+     * @cfg {Object} handler.item The clicked item (or this Column if multiple {@link #cfg-items} were not configured).
      * @cfg {Event} handler.e The click event.
      */
     /**
@@ -179,8 +180,8 @@ Ext.define('Ext.grid.column.Action', {
             meta.tdCls += ' ' + Ext.baseCSSPrefix + 'action-col-cell';
             for (i = 0; i < l; i++) {
                 item = items[i];
-                item.disable = Ext.Function.bind(me.disableAction, me, [i]);
-                item.enable = Ext.Function.bind(me.enableAction, me, [i]);
+                item.disable = Ext.Function.bind(me.disableAction, me, [i], 0);
+                item.enable = Ext.Function.bind(me.enableAction, me, [i], 0);
                 v += '<img alt="' + (item.altText || me.altText) + '" src="' + (item.icon || Ext.BLANK_IMAGE_URL) +
                     '" class="' + Ext.baseCSSPrefix + 'action-col-icon ' + Ext.baseCSSPrefix + 'action-col-' + String(i) + ' ' + (item.disabled ? Ext.baseCSSPrefix + 'item-disabled' : ' ') +
                     ' ' + (Ext.isFunction(item.getClass) ? item.getClass.apply(item.scope||me.scope||me, arguments) : (me.iconCls || '')) + '"' +
@@ -192,8 +193,10 @@ Ext.define('Ext.grid.column.Action', {
 
     /**
      * Enables this ActionColumn's action at the specified index.
+     * @param {Number/Ext.grid.column.Action} index
+     * @param {Boolean} [silent=false]
      */
-    enableAction: function(index) {
+    enableAction: function(index, silent) {
         var me = this;
 
         if (!index) {
@@ -203,12 +206,17 @@ Ext.define('Ext.grid.column.Action', {
         }
         me.items[index].disabled = false;
         me.up('tablepanel').el.select('.' + Ext.baseCSSPrefix + 'action-col-' + index).removeCls(me.disabledCls);
+        if (!silent) {
+            me.fireEvent('enable', me);
+        }
     },
 
     /**
      * Disables this ActionColumn's action at the specified index.
+     * @param {Number/Ext.grid.column.Action} index
+     * @param {Boolean} [silent=false]
      */
-    disableAction: function(index) {
+    disableAction: function(index, silent) {
         var me = this;
 
         if (!index) {
@@ -218,6 +226,9 @@ Ext.define('Ext.grid.column.Action', {
         }
         me.items[index].disabled = true;
         me.up('tablepanel').el.select('.' + Ext.baseCSSPrefix + 'action-col-' + index).addCls(me.disabledCls);
+        if (!silent) {
+            me.fireEvent('disable', me);
+        }
     },
 
     destroy: function() {

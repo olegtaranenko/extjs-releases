@@ -88,14 +88,12 @@ Ext.define('Ext.form.field.Picker', {
 
         // Add handlers for keys to expand/collapse the picker
         me.keyNav = new Ext.util.KeyNav(me.inputEl, {
-            down: function() {
-                if (!me.isExpanded) {
-                    // Don't call expand() directly as there may be additional processing involved before
-                    // expanding, e.g. in the case of a ComboBox query.
-                    me.onTriggerClick();
-                }
+            down: me.onDownArrow,
+            esc: {
+                handler: me.onEsc,
+                scope: me,
+                defaultEventAction: false
             },
-            esc: me.collapse,
             scope: me,
             forceKeyDown: true
         });
@@ -111,6 +109,22 @@ Ext.define('Ext.form.field.Picker', {
         }
     },
 
+    // private
+    onEsc: function(e) {
+        // Only stop the ESC key event if it's not going to bubble up to the FocusManager
+        if (!Ext.FocusManager || !Ext.FocusManager.enabled) {
+            e.stopEvent();
+        }
+        this.collapse();
+    },
+
+    onDownArrow: function(e) {
+        if (!this.isExpanded) {
+            // Don't call expand() directly as there may be additional processing involved before
+            // expanding, e.g. in the case of a ComboBox query.
+            this.onTriggerClick();
+        }
+    },
 
     /**
      * Expands this field's picker dropdown.
@@ -155,7 +169,7 @@ Ext.define('Ext.form.field.Picker', {
         if (me.isExpanded) {
             if (me.matchFieldWidth) {
                 // Auto the height (it will be constrained by min and max width) unless there are no records to display.
-                picker.setSize(me.bodyEl.getWidth(), picker.getHeight());
+                picker.setWidth(me.bodyEl.getWidth());
             }
             if (picker.isFloating()) {
                 me.doAlign();

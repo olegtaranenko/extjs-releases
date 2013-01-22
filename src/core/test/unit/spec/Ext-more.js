@@ -272,11 +272,7 @@ describe("Ext-more", function() {
 
             it("should remove a dom element from document", function(){
                 Ext.removeNode(el.dom);
-               if (!Ext.isIE) {
-                    expect(el.dom.parentNode).toBe(null);
-               } else {
-                   expect(el.dom.parentNode.innerHTML).toBe(undefined);
-               }
+                 expect(!el.dom.parentNode).toBe(true);
             });
 
             it("should delete the cache reference", function() {

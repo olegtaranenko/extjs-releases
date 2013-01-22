@@ -375,8 +375,11 @@ Ext.define('Ext.chart.series.Scatter', {
 
         //if the store is empty then there's nothing to be rendered
         if (!store || !store.getCount()) {
+            me.hide();
+            me.items = [];
             return;
         }
+
 
         me.unHighlightItem();
         me.cleanHighlights();

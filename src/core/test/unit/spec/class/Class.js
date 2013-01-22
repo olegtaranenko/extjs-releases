@@ -5,14 +5,14 @@ describe("Ext.Class", function() {
     beforeEach(function() {
         window.My = {
             awesome: {
-                Class: function(){console.log(11)},
-                Class1: function(){console.log(12)},
-                Class2: function(){console.log(13)}
+                Class: function(){},
+                Class1: function(){},
+                Class2: function(){}
             },
             cool: {
-                AnotherClass: function(){console.log(21)},
-                AnotherClass1: function(){console.log(22)},
-                AnotherClass2: function(){console.log(23)}
+                AnotherClass: function(){},
+                AnotherClass1: function(){},
+                AnotherClass2: function(){}
             }
         };
     });
@@ -421,14 +421,22 @@ describe("Ext.Class", function() {
             afterEach(function () {
                 var classes = Ext.ClassManager.classes,
                     alternateToName = Ext.ClassManager.maps.alternateToName;
-
-                delete Ext.global.Foo;
+                try {
+                    delete Ext.global.Foo;
+                } catch (e) {
+                    Ext.global.Foo = null;
+                }
                 obj = null;
 
                 Ext.each(['Foo.SingletonOverride', 'Foo.Singleton', 'Foo.SomeClassOverride', 'Foo.SomeClass'],
                     function (className) {
-                        delete classes[className];
-                        delete alternateToName[className];
+                        try {
+                            delete classes[className];
+                            delete alternateToName[className];
+                        } catch(e) {
+                            classes[className] = null;
+                            alternateToName[className] = null;
+                        }
                     });
             });
 

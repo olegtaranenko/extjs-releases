@@ -34,6 +34,7 @@ Ext.define('Ext.dom.AbstractElement', {
         get: function(el) {
             var me = this,
                 El = Ext.dom.Element,
+                cache,
                 extEl,
                 dom,
                 id;
@@ -43,15 +44,31 @@ Ext.define('Ext.dom.AbstractElement', {
             }
 
             if (typeof el == "string") { // element id
+                if (el == Ext.windowId) {
+                    return El.get(window);
+                } else if (el == Ext.documentId) {
+                    return El.get(document);
+                }
+                
+                cache = Ext.cache[el];
+                // This code is here to catch the case where we've got a reference to a document of an iframe
+                // It getElementById will fail because it's not part of the document, so if we're skipping
+                // GC it means it's a window/document object that isn't the default window/document, which we have
+                // already handled above
+                if (cache && cache.skipGarbageCollection) {
+                    extEl = cache.el;
+                    return extEl;
+                }
+                
                 if (!(dom = document.getElementById(el))) {
                     return null;
                 }
 
-                if (Ext.cache[el] && Ext.cache[el].el) {
-                    extEl = Ext.cache[el].el;
+                if (cache && cache.el) {
+                    extEl = cache.el;
                     extEl.dom = dom;
                 } else {
-                    extEl = me.addToCache(new El(dom));
+                    extEl = new El(dom);
                 }
                 return extEl;
             } else if (el.tagName) { // dom element
@@ -62,11 +79,11 @@ Ext.define('Ext.dom.AbstractElement', {
                     extEl = Ext.cache[id].el;
                     extEl.dom = el;
                 } else {
-                    extEl = me.addToCache(new El(el));
+                    extEl = new El(el);
                 }
                 return extEl;
             } else if (el instanceof me) {
-                if (el != me.docEl) {
+                if (el != me.docEl && el != me.winEl) {
                     // refresh dom element in case no longer valid,
                     // catch case where it hasn't been appended
                     el.dom = document.getElementById(el.id) || el.dom;
@@ -76,15 +93,23 @@ Ext.define('Ext.dom.AbstractElement', {
                 return el;
             } else if (Ext.isArray(el)) {
                 return me.select(el);
-            } else if (el == document) {
+            } else if (el === document) {
                 // create a bogus element object representing the document object
                 if (!me.docEl) {
                     me.docEl = Ext.Object.chain(El.prototype);
                     me.docEl.dom = document;
-                    document.documentElement.id = me.docEl.id = Ext.id(document);
+                    me.docEl.id = Ext.id(document);
                     me.addToCache(me.docEl);
                 }
                 return me.docEl;
+            } else if (el === window) {
+                if (!me.winEl) {
+                    me.winEl = Ext.Object.chain(El.prototype);
+                    me.winEl.dom = window;
+                    me.winEl.id = Ext.id(window);
+                    me.addToCache(me.winEl);
+                }
+                return me.winEl;
             }
             return null;
         },
@@ -111,6 +136,9 @@ Ext.define('Ext.dom.AbstractElement', {
                 return null;
             }
             var c = Ext.cache[el.id].data;
+            if (!c) {
+                c = Ext.cache[el.id].data = {};
+            }
             if (arguments.length == 2) {
                 return c[key];
             } else {
@@ -229,7 +257,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     },
 
     constructor: function(element, forceNew) {
-        var dom = typeof element == 'string'
+        var me = this,
+            dom = typeof element == 'string'
                 ? document.getElementById(element)
                 : element,
             id;
@@ -248,13 +277,15 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property {HTMLElement} dom
          * The DOM element
          */
-        this.dom = dom;
+        me.dom = dom;
 
         /**
          * @property {String} id
          * The DOM element ID
          */
-        this.id = id || Ext.id(dom);
+        me.id = id || Ext.id(dom);
+
+        me.self.addToCache(me);
     },
 
     /**
@@ -446,7 +477,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     },
 
     getVisibilityMode: function() {
-        var data = this.$cache.data,
+        var data = (this.$cache || this).data,
             mode = data.visibilityMode;
 
         if (mode === undefined) {
@@ -456,8 +487,11 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         return mode;
     },
 
+    /**
+     * Use this to change the visisbiliy mode between {@link #VISIBILITY}, {@link #DISPLAY} or {@link #OFFSETS}.
+     */
     setVisibilityMode: function(mode) {
-        this.$cache.data.visibilityMode = mode;
+        (this.$cache || this).data.visibilityMode = mode;
         return this;
     }
 }, function() {
@@ -490,7 +524,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     /**
      * @member Ext
      * @method get
-     * @alias Ext.dom.Element#get
+     * @inheritdoc Ext.dom.Element#get
      */
     Ext.get = function(el) {
         return Ext.dom.Element.get(el);
@@ -517,7 +551,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         /**
          * Gets the globally shared flyweight Element, with the passed node as the active element. Do not store a reference
          * to this element - the dom node can be overwritten by other code. {@link Ext#fly} is alias for
-         * {@link Ext.dom.Element#fly}.
+         * {@link Ext.dom.AbstractElement#fly}.
          *
          * Use this to make one-time references to DOM elements which are not going to be accessed again either by
          * application code, or by Ext's classes. If accessing an element which will be processed regularly, then {@link
@@ -531,7 +565,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @static
          */
         fly: function(el, named) {
-            var ret = null,
+            var fly = null,
                 _flyweights = AbstractElement._flyweights;
 
             named = named || '_global';
@@ -539,18 +573,18 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
             el = Ext.getDom(el);
 
             if (el) {
-                ret = _flyweights[named] || (_flyweights[named] = new AbstractElement.Fly());
-                ret.dom = el;
+                fly = _flyweights[named] || (_flyweights[named] = new AbstractElement.Fly());
+                fly.dom = el;
+                fly.data = {};
             }
-
-            return ret;
+            return fly;
         }
     });
 
     /**
      * @member Ext
      * @method fly
-     * @alias Ext.dom.Element#fly
+     * @inheritdoc Ext.dom.AbstractElement#fly
      */
     Ext.fly = function() {
         return AbstractElement.fly.apply(AbstractElement, arguments);
@@ -560,7 +594,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         /**
          * @method destroy
          * @member Ext.dom.AbstractElement
-         * @alias Ext.dom.AbstractElement#remove
+         * @inheritdoc Ext.dom.AbstractElement#remove
          * Alias to {@link #remove}.
          */
         proto.destroy = proto.remove;

@@ -116,6 +116,11 @@ Ext.define('Ext.tab.Bar', {
         if (tab === me.previousTab) {
             me.previousTab = null;
         }
+        
+        if (tab === me.activeTab) {
+            me.activeTab = null;
+        }
+        
         if (me.items.getCount() === 0) {
             me.activeTab = null;
         }
@@ -123,9 +128,15 @@ Ext.define('Ext.tab.Bar', {
     },
 
     afterComponentLayout : function(width) {
-        var me = this;
+        var me = this,
+            tab = me.activeTab;
+            
         me.callParent(arguments);
         me.strip.setWidth(width);
+        
+        if (tab && me.rendered) {
+            me.layout.overflowHandler.scrollToItem(tab);
+        }
     },
 
     // @private
@@ -207,9 +218,6 @@ Ext.define('Ext.tab.Bar', {
         }
         tab.activate();
 
-        if (me.rendered) {
-            tab.el.scrollIntoView(me.layout.getRenderTarget());
-        }
         me.activeTab = tab;
         me.fireEvent('change', me, tab, tab.card);
     }

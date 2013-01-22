@@ -342,7 +342,7 @@ Ext.define('Ext.draw.engine.Vml', {
         if (scrubbedAttrs.stroke || scrubbedAttrs['stroke-opacity'] || scrubbedAttrs.fill) {
             me.setStroke(sprite, scrubbedAttrs);
         }
-        
+
         //set styles
         style = spriteAttr.style;
         if (style) {
@@ -431,7 +431,11 @@ Ext.define('Ext.draw.engine.Vml', {
                         fillEl.angle = angle;
                         fillEl.type = "gradient";
                         fillEl.method = "sigma";
-                        fillEl.colors.value = gradient.colors;
+                        if (fillEl.colors) {
+                            fillEl.colors.value = gradient.colors;
+                        } else {
+                            fillEl.colors = gradient.colors;
+                        }
                     }
                     // Otherwise treat it as an image
                     else {
@@ -474,6 +478,7 @@ Ext.define('Ext.draw.engine.Vml', {
                 // VML does NOT support a gradient stroke :(
                 strokeEl.color = Ext.draw.Color.toHex(params.stroke);
             }
+            strokeEl.dashstyle = params["stroke-dasharray"] ? "dash" : "solid";
             strokeEl.joinstyle = params["stroke-linejoin"];
             strokeEl.endcap = params["stroke-linecap"] || "round";
             strokeEl.miterlimit = params["stroke-miterlimit"] || 8;
@@ -545,7 +550,7 @@ Ext.define('Ext.draw.engine.Vml', {
             }
 
             me.setText(sprite, params.text);
-            
+
             if (vml.textpath.string) {
                 me.span.innerHTML = String(vml.textpath.string).replace(/</g, "&#60;").replace(/&/g, "&#38;").replace(/\n/g, "<br>");
             }
@@ -573,7 +578,7 @@ Ext.define('Ext.draw.engine.Vml', {
         sprite.bbox.transform = null;
         sprite.dirtyFont = false;
     },
-    
+
     setText: function(sprite, text) {
         sprite.vml.textpath.string = Ext.htmlDecode(text);
     },
@@ -614,16 +619,6 @@ Ext.define('Ext.draw.engine.Vml', {
         }
     },
 
-    setViewBox: function(x, y, width, height) {
-        this.callParent(arguments);
-        this.viewBox = {
-            x: x,
-            y: y,
-            width: width,
-            height: height
-        };
-        this.applyViewBox();
-    },
 
     /**
      * @private Using the current viewBox property and the surface's width and height, calculate the
@@ -635,9 +630,10 @@ Ext.define('Ext.draw.engine.Vml', {
             width = me.width,
             height = me.height;
         me.callParent();
+
         if (viewBox && (width || height)) {
             me.items.each(function(item) {
-                me.transform(item);
+                me.applyTransformations(item);
             });
         }
     },
@@ -741,6 +737,9 @@ Ext.define('Ext.draw.engine.Vml', {
 
     transform: function(sprite) {
         var me = this,
+            bbox = me.getBBox(sprite, true),
+            cx = bbox.x + bbox.width * 0.5,
+            cy = bbox.y + bbox.height * 0.5,
             matrix = new Ext.draw.Matrix(),
             transforms = sprite.transformations,
             transformsLength = transforms.length,
@@ -756,6 +755,7 @@ Ext.define('Ext.draw.engine.Vml', {
             skew = sprite.skew,
             shift = me.viewBoxShift,
             deltaX, deltaY, transform, type, compensate, y, fill, newAngle,zoomScaleX, zoomScaleY, newOrigin, offset;
+
 
         for (; i < transformsLength; i++) {
             transform = transforms[i];
@@ -775,8 +775,7 @@ Ext.define('Ext.draw.engine.Vml', {
         }
 
         if (shift) {
-            matrix.add(1, 0, 0, 1, shift.dx, shift.dy);
-            matrix.prepend(1 / shift.scale, 0, 0, 1 / shift.scale, 0, 0);
+            matrix.prepend(shift.scale, 0, 0, shift.scale, shift.dx * shift.scale, shift.dy * shift.scale);
         }
 
         sprite.matrix = matrix;
@@ -785,6 +784,7 @@ Ext.define('Ext.draw.engine.Vml', {
         // Hide element while we transform
 
         if (sprite.type != "image" && skew) {
+            skew.origin = "0,0";
             // matrix transform via VML skew
             skew.matrix = matrix.toString();
             // skew.offset = '32767,1' OK

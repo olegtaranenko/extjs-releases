@@ -69,10 +69,16 @@ Ext.define('Ext.form.field.HtmlEditor', {
 
     fieldSubTpl: [
         '{%this.renderToolbar(out, values)%}',
-        '<textarea id="{cmpId}-textareaEl" name="{name}" tabIndex="-1" class="{textareaCls}" style="{size}" autocomplete="off">',
+        '{beforeTextAreaTpl}',
+        '<textarea id="{cmpId}-textareaEl" name="{name}" tabIndex="-1" {inputAttrTpl}',
+                 ' class="{textareaCls}" style="{size}" autocomplete="off">',
             '{value}',
         '</textarea>',
-        '<iframe id="{cmpId}-iframeEl" name="{iframeName}" frameBorder="0" style="overflow:auto;{size}" src="{iframeSrc}"></iframe>',
+        '{afterTextAreaTpl}',
+        '{beforeIFrameTpl}',
+        '<iframe id="{cmpId}-iframeEl" name="{iframeName}" frameBorder="0" {iframeAttrTpl}',
+               ' style="overflow:auto;{size}" src="{iframeSrc}"></iframe>',
+        '{afterIFrameTpl}',
         {
             disableFormats: true,
 
@@ -81,6 +87,51 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 Ext.DomHelper.generateMarkup(values.$comp.toolbar.getRenderTree(), out);
             }
         }
+    ],
+
+    subTplInsertions: [
+        /**
+         * @cfg {String/Array/Ext.XTemplate} beforeTextAreaTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * before the textarea element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'beforeTextAreaTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} afterTextAreaTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * after the textarea element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'afterTextAreaTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} beforeIFrameTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * before the iframe element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'beforeIFrameTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} afterIFrameTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * after the iframe element. If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'afterIFrameTpl',
+
+        /**
+         * @cfg {String/Array/Ext.XTemplate} iframeAttrTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * inside the iframe element (as attributes). If an `XTemplate` is used, the component's
+         * {@link Ext.form.field.Base#getSubTplData subTpl data} serves as the context.
+         */
+        'iframeAttrTpl',
+
+        // inherited
+        'inputAttrTpl'
     ],
 
     /**
@@ -127,7 +178,9 @@ Ext.define('Ext.form.field.HtmlEditor', {
      * @cfg {String} createLinkText
      * The default text for the create link prompt
      */
+    //<locale>
     createLinkText : 'Please enter the URL for the link:',
+    //</locale>
     /**
      * @cfg {String} [defaultLinkValue='http://']
      * The default value for the create link prompt
@@ -147,8 +200,10 @@ Ext.define('Ext.form.field.HtmlEditor', {
     defaultFont: 'tahoma',
     /**
      * @cfg {String} defaultValue
-     * A default value to be put into the editor to resolve focus issues (defaults to (Non-breaking space) in Opera
-     * and IE6, ​(Zero-width space) in all other browsers).
+     * A default value to be put into the editor to resolve focus issues.
+     *
+     * Defaults to (Non-breaking space) in Opera and IE6,
+     * (Zero-width space) in all other browsers.
      */
     defaultValue: (Ext.isOpera || Ext.isIE6) ? '&#160;' : '&#8203;',
 
@@ -425,7 +480,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
         
         // Everything starts disabled.
         for (i = 0; i < items.length; i++) {
-            if (items[i].id !== 'sourceedit') {
+            if (items[i].itemId !== 'sourceedit') {
                 items[i].disabled = true;
             }
         }
@@ -573,7 +628,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
             value       : this.value,
             iframeName  : Ext.id(),
             iframeSrc   : Ext.SSL_SECURE_URL,
-            size        : 'height:100px;'
+            size        : 'height:100px;width:100%'
         };
     },
 
@@ -649,7 +704,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
 
     /**
      * Toggles the editor between standard and source edit mode.
-     * @param {Boolean} sourceEditMode (optional) True for source edit, false for standard
+     * @param {Boolean} [sourceEditMode] True for source edit, false for standard
      */
     toggleSourceEdit: function(sourceEditMode) {
         var me = this,
@@ -745,7 +800,8 @@ Ext.define('Ext.form.field.HtmlEditor', {
      */
     syncValue : function(){
         var me = this,
-            body, html, bodyStyle, match;
+            body, changed, html, bodyStyle, match, oldValue;
+
         if (me.initialized) {
             body = me.getEditorBody();
             html = body.innerHTML;
@@ -758,8 +814,18 @@ Ext.define('Ext.form.field.HtmlEditor', {
             }
             html = me.cleanHtml(html);
             if (me.fireEvent('beforesync', me, html) !== false) {
-                me.textareaEl.dom.value = html;
+                if (me.textareaEl.dom.value != html) {
+                    me.textareaEl.dom.value = html;
+                    changed = true;
+                }
+
                 me.fireEvent('sync', me, html);
+
+                if (changed) {
+                    // we have to guard this to avoid infinite recursion because getValue
+                    // calls this method...
+                    me.checkChange();
+                }
             }
         }
     },
@@ -1030,7 +1096,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
             for (var i = 0, l = arguments.length, name; i < l; i++) {
                 name = arguments[i];
                 btns[name].toggle(doc.queryCommandState(name));
-            };
+            }
         }
         if(me.enableFormat){
             updateButtons('bold', 'italic', 'underline');
@@ -1071,7 +1137,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
      * Executes a Midas editor command directly on the editor document. For visual commands, you should use
      * {@link #relayCmd} instead. **This should only be called after the editor is initialized.**
      * @param {String} cmd The Midas command
-     * @param {String/Boolean} value (optional) The value to pass to the command (defaults to null)
+     * @param {String/Boolean} [value=null] The value to pass to the command
      */
     execCmd : function(cmd, value){
         var me = this,
@@ -1224,6 +1290,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
      *         },
      *         ...
      */
+    //<locale>
     buttonTips : {
         bold : {
             title: 'Bold (Ctrl+B)',
@@ -1296,70 +1363,67 @@ Ext.define('Ext.form.field.HtmlEditor', {
             cls: Ext.baseCSSPrefix + 'html-editor-tip'
         }
     }
+    //</locale>
 
     // hide stuff that is not compatible
     /**
      * @event blur
-     * Not applicable for HtmlEditor.
-     */
-    /**
-     * @event change
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @event focus
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @event specialkey
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} fieldCls
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} focusCls
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} autoCreate
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} inputType
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} invalidCls
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} invalidText
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} msgFx
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {Boolean} allowDomMove
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} applyTo
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} readOnly
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @cfg {String} tabIndex
-     * Not applicable for HtmlEditor.
+     * @private
      */
     /**
      * @method validate
-     * Not applicable for HtmlEditor.
+     * @private
      */
 });

@@ -44,6 +44,8 @@ Ext.dom.AbstractElement.override({
         return [xy[0] + extraX, xy[1] + extraY];
     },
 
+    alignToRe: /^([a-z]+)-([a-z]+)(\?)?$/,
+
     /**
      * Gets the x,y coordinates to align this element with another element. See {@link Ext.dom.Element#alignTo} for more info on the
      * supported position values.
@@ -52,7 +54,8 @@ Ext.dom.AbstractElement.override({
      * @param {Array} [offsets=[0,0]] Offset the positioning by [x, y]
      * @return {Array} [x, y]
      */
-    getAlignToXY: function(el, position, offsets) {
+    getAlignToXY: function(el, position, offsets, local) {
+        local = !!local;
         el = Ext.get(el);
 
         //<debug>
@@ -71,7 +74,7 @@ Ext.dom.AbstractElement.override({
         position = position.toLowerCase();
 
         var me = this,
-            matches = position.match(/^([a-z]+)-([a-z]+)(\?)?$/),
+            matches = position.match(this.alignToRe),
             dw = window.innerWidth,
             dh = window.innerHeight,
             p1 = "",
@@ -102,7 +105,7 @@ Ext.dom.AbstractElement.override({
         //Subtract the aligned el's internal xy from the target's offset xy
         //plus custom offset to get the aligned el's new offset xy
         a1 = me.getAnchorXY(p1, true);
-        a2 = el.getAnchorXY(p2, false);
+        a2 = el.getAnchorXY(p2, local);
 
         x = a2[0] - a1[0] + offsets[0];
         y = a2[1] - a1[1] + offsets[1];

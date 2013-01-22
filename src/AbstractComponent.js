@@ -45,15 +45,21 @@ Ext.define('Ext.AbstractComponent', {
 
         layoutSuspendCount: 0,
 
+        cancelLayout: function(comp) {
+            var context = this.runningLayoutContext || this.pendingLayouts;
+
+            if (context) {
+                context.cancelComponent(comp);
+            }
+        },
+
         flushLayouts: function () {
             var me = this,
                 context = me.pendingLayouts;
 
-            this.pendingLayouts = null;
-
-            if (context) {
+            if (context && context.invalidQueue.length) {
+                me.pendingLayouts = null;
                 me.runningLayoutContext = context;
-                ++me.layoutSuspendCount;
 
                 context.hookMethods({
                     runComplete: function () {
@@ -61,9 +67,8 @@ Ext.define('Ext.AbstractComponent', {
                         // finishedLayout calls because they call afterComponentLayout
                         // which can re-enter by calling doLayout/doComponentLayout.
                         me.runningLayoutContext = null;
-                        --me.layoutSuspendCount;
 
-                        return this.callParent();
+                        return this.callParent(); // not "me" here!
                     }
                 });
 
@@ -86,54 +91,19 @@ Ext.define('Ext.AbstractComponent', {
         updateLayout: function (comp, defer) {
             var me = this,
                 running = me.runningLayoutContext,
-                pending,
-                standaloneContext;
+                pending;
 
             if (running) {
-                // If it's a child, or it is already part of the running Context, queue it for another calculate
-                if (comp.ownerCt || this.isRunning(comp)) {
-                    running.queueInvalidate(comp); // TODO bad if comp was not in at the start
-                }
-                // A standalone Component must lay itself out alone.
-                else {
-                    standaloneContext = new Ext.layout.Context();
-                    standaloneContext.queueInvalidate(comp);
-                    standaloneContext.run();
-                }
+                running.queueInvalidate(comp);
             } else {
                 pending = me.pendingLayouts || (me.pendingLayouts = new Ext.layout.Context());
                 pending.queueInvalidate(comp);
 
-                if (!defer && !comp.suspendLayout && !me.layoutSuspendCount) {
+                if (!defer && !me.layoutSuspendCount && !comp.isLayoutSuspended()) {
                     me.flushLayouts();
                 }
             }
-        },
-
-        /**
-         * @private
-         * Returns <code>true</code> is the passed Component is part of the currently running global layout Context.
-         */
-        isRunning: function(comp) {
-            var contextItem;
-            if (this.runningLayoutContext && (contextItem = this.runningLayoutContext.items[comp.id]) && contextItem.target === comp) {
-                return true;
-            }
-        },
-
-        cancelLayout: function(comp) {
-            var i = 0,
-                len,
-                pendingLayouts = this.pendingLayouts;
-            if (pendingLayouts) {
-                pendingLayouts = pendingLayouts.invalidQueue;
-                for (len = pendingLayouts.length; i < len; i++) {
-                    if (pendingLayouts[i].item.target === comp) {
-                        return Ext.Array.erase(pendingLayouts, i, 1);
-                    }
-                }
-            }
-         }
+        }
     },
 
     /* End Definitions */
@@ -144,7 +114,7 @@ Ext.define('Ext.AbstractComponent', {
         return ++Ext.AbstractComponent.AUTO_ID;
     },
 
-    deferLayout: false,
+    deferLayouts: false,
 
     /**
      * @cfg {String} id
@@ -182,7 +152,7 @@ Ext.define('Ext.AbstractComponent', {
      *         {@link Ext.Component#height height}: 300,
      *         {@link #renderTo}: document.body,
      *         {@link Ext.container.Container#layout layout}: 'auto',
-     *         {@link Ext.container.Container#items items}: [
+     *         {@link Ext.container.Container#cfg-items items}: [
      *             {
      *                 itemId: 'p1',
      *                 {@link Ext.panel.Panel#title title}: 'Panel 1',
@@ -207,9 +177,10 @@ Ext.define('Ext.AbstractComponent', {
     /**
      * @property {Ext.Container} ownerCt
      * This Component's owner {@link Ext.container.Container Container} (is set automatically
-     * when this Component is added to a Container). Read-only.
+     * when this Component is added to a Container).
      *
      * **Note**: to access items within the Container see {@link #itemId}.
+     * @readonly
      */
 
     /**
@@ -380,7 +351,8 @@ Ext.define('Ext.AbstractComponent', {
 
     /**
      * @property {Object} frameSize
-     * Read-only property indicating the width of any framing elements which were added within the encapsulating element
+     * @readonly
+     * Indicates the width of any framing elements which were added within the encapsulating element
      * to provide graphical, rounded borders. See the {@link #frame} config.
      *
      * This is an object containing the frame width in pixels for all four sides of the Component containing the
@@ -556,7 +528,7 @@ Ext.define('Ext.AbstractComponent', {
     uiCls: [],
 
     /**
-     * @cfg {String} style
+     * @cfg {String/Object} style
      * A custom style specification to be applied to this component's Element. Should be a valid argument to
      * {@link Ext.Element#applyStyles}.
      *
@@ -630,7 +602,8 @@ Ext.define('Ext.AbstractComponent', {
 
     /**
      * @property {Boolean} draggable
-     * Read-only property indicating whether or not the component can be dragged
+     * Indicates whether or not the component can be dragged.
+     * @readonly
      */
     draggable: false,
 
@@ -675,7 +648,7 @@ Ext.define('Ext.AbstractComponent', {
      *
      * The specified HTML element used will not participate in any **`{@link Ext.container.Container#layout layout}`**
      * scheme that the Component may use. It is just HTML. Layouts operate on child
-     * **`{@link Ext.container.Container#items items}`**.
+     * **`{@link Ext.container.Container#cfg-items items}`**.
      *
      * Add either the `x-hidden` or the `x-hide-display` CSS class to prevent a brief flicker of the content before it
      * is rendered to the panel.
@@ -742,18 +715,14 @@ Ext.define('Ext.AbstractComponent', {
      * @cfg {Boolean/String/HTMLElement/Ext.Element} autoRender
      * This config is intended mainly for non-{@link #floating} Components which may or may not be shown. Instead of using
      * {@link #renderTo} in the configuration, and rendering upon construction, this allows a Component to render itself
-     * upon first _{@link #show}_. If {@link #floating} is true, the value of this config is omited as if it is `true`.
+     * upon first _{@link #method-show}_. If {@link #floating} is true, the value of this config is omited as if it is `true`.
      *
      * Specify as `true` to have this Component render to the document body upon first show.
      *
      * Specify as an element, or the ID of an element to have this Component render to a specific element upon first
      * show.
-     *
-     * **This defaults to `true` for the {@link Ext.window.Window Window} class.**
      */
     autoRender: false,
-
-    needsLayout: false,
 
     // @private
     allowDomMove: true,
@@ -769,7 +738,8 @@ Ext.define('Ext.AbstractComponent', {
 
     /**
      * @property {Boolean} rendered
-     * Read-only property indicating whether or not the component has been rendered.
+     * Indicates whether or not the component has been rendered.
+     * @readonly
      */
     rendered: false,
 
@@ -780,6 +750,23 @@ Ext.define('Ext.AbstractComponent', {
      */
     componentLayoutCounter: 0,
 
+    /**
+     * @cfg {Boolean/Number} [shrinkWrap=2]
+     *
+     * If this property is a number, it is interpreted as follows:
+     *
+     *   - 0: Neither width nor height depend on content. This is equivalent to `false`.
+     *   - 1: Width depends on content (shrink wraps), but height does not.
+     *   - 2: Height depends on content (shrink wraps), but width does not. The default.
+     *   - 3: Both width and height depend on content (shrink wrap). This is equivalent to `true`.
+     *
+     * In CSS terms, shrink-wrap width is analogous to an inline-block element as opposed
+     * to a block-level element. Some container layouts always shrink-wrap their children,
+     * effectively ignoring this property (e.g., {@link Ext.layout.container.HBox},
+     * {@link Ext.layout.container.VBox}, {@link Ext.layout.component.Dock}).
+     */
+    shrinkWrap: 2,
+
     weight: 0,
 
     /**
@@ -789,6 +776,14 @@ Ext.define('Ext.AbstractComponent', {
      * override this property to false since they want to implement custom disable logic.
      */
     maskOnDisable: true,
+
+    /**
+     * @property {Boolean} [_isLayoutRoot=false]
+     * Setting this property to `true` causes the {@link #isLayoutRoot} method to return
+     * `true` and stop the search for the top-most component for a layout.
+     * @protected
+     */
+    _isLayoutRoot: false,
 
     /**
      * Creates new Component.
@@ -919,14 +914,14 @@ Ext.define('Ext.AbstractComponent', {
             'afterrender',
             /**
              * @event beforedestroy
-             * Fires before the component is {@link #destroy}ed. Return false from an event handler to stop the
-             * {@link #destroy}.
+             * Fires before the component is {@link #method-destroy}ed. Return false from an event handler to stop the
+             * {@link #method-destroy}.
              * @param {Ext.Component} this
              */
             'beforedestroy',
             /**
              * @event destroy
-             * Fires after the component is {@link #destroy}ed.
+             * Fires after the component is {@link #method-destroy}ed.
              * @param {Ext.Component} this
              */
             'destroy',
@@ -1047,12 +1042,13 @@ Ext.define('Ext.AbstractComponent', {
      */
     getState: function() {
         var me = this,
-            state = null;
+            state = null,
+            sizeModel = me.getSizeModel();
 
-        if (me.getWidthAuthority() == 1) {
+        if (sizeModel.width.configured) {
             state = me.addPropertyToState(state, 'width');
         }
-        if (me.getHeightAuthority() == 1) {
+        if (sizeModel.height.configured) {
             state = me.addPropertyToState(state, 'height');
         }
 
@@ -1071,16 +1067,19 @@ Ext.define('Ext.AbstractComponent', {
      * @protected
      */
     addPropertyToState: function (state, propName, value) {
+        var me = this,
+            len = arguments.length;
+        
         // If the property is inherited, it is a default and we don't want to save it to
-        // the state.
-        if (this.hasOwnProperty(propName)) {
-            if (arguments.length < 3) {
-                value = this[propName];
+        // the state, however if we explicitly specify a value, always save it
+        if (len == 3 || me.hasOwnProperty(propName)) {
+            if (len < 3) {
+                value = me[propName];
             }
 
             // If the property has the same value as was initially configured, again, we
             // don't want to save it.
-            if (value !== this.initialConfig[propName]) {
+            if (value !== me.initialConfig[propName]) {
                 (state || (state = {}))[propName] = value;
             }
         }
@@ -1124,7 +1123,6 @@ Ext.define('Ext.AbstractComponent', {
                 var clearWidth = !Ext.isNumber(me.width),
                     clearHeight = !Ext.isNumber(me.height);
 
-                me.componentLayout.childrenChanged = true;
                 me.setSize(w, h, me.ownerCt);
                 me.el.setSize(curWidth, curHeight);
                 if (clearWidth) {
@@ -1138,19 +1136,12 @@ Ext.define('Ext.AbstractComponent', {
         return me.mixins.animate.animate.apply(me, arguments);
     },
 
+    onHide: function() {
+        this.updateLayout({ isRoot: false });
+    },
+
     onShow : function() {
-        // Layout if needed.
-        // The needsLayout flag is set if we are rendered as standalone and hidden, such as a ToolTip or Window.
-        // Upon first show, the Component needs its first layout which finishes a lot of expensive rendering tasks
-        // such as making floating and setting position.
-        if (this.needsLayout) {
-            if (this.ownerCt) {
-                this.ownerCt.onContentSizeChange(true, true);
-            } else {
-                this.updateLayout();
-            }
-            this.needsLayout = false;
-        }
+        this.updateLayout({ isRoot: false });
     },
 
     constructPlugin: function(plugin) {
@@ -1213,6 +1204,13 @@ Ext.define('Ext.AbstractComponent', {
         me.floatingItems.register(cmp);
     },
 
+    unregisterFloatingItem: function(cmp) {
+        var me = this;
+        if (me.floatingItems) {
+            me.floatingItems.unregister(cmp);
+        }
+    },
+
     layoutSuspendCount: 0,
 
     suspendLayouts: function () {
@@ -1225,15 +1223,15 @@ Ext.define('Ext.AbstractComponent', {
         }
     },
 
-    resumeLayouts: function (flush) {
+    resumeLayouts: function (flushOptions) {
         var me = this;
         if (!me.rendered) {
             return;
         }
         if (! --me.layoutSuspendCount) {
             me.suspendLayout = false;
-            if (flush) {
-                me.updateLayout();
+            if (flushOptions && !me.isLayoutSuspended()) {
+                me.updateLayout(flushOptions);
             }
         }
     },
@@ -1541,16 +1539,25 @@ Ext.define('Ext.AbstractComponent', {
      */
     initStyles: function(targetEl) {
         var me = this,
-            Element = Ext.Element;
+            Element = Ext.Element,
+            padding = me.padding,
+            margin = me.margin,
+            x = me.x,
+            y = me.y,
+            width, height;
 
         // Convert the padding, margin and border properties from a space seperated string
         // into a proper style string
-        if (me.padding !== undefined) {
-            targetEl.setStyle('padding', Element.unitizeBox((me.padding === true) ? 5 : me.padding));
+        if (padding !== undefined) {
+            targetEl.setStyle('padding', Element.unitizeBox((padding === true) ? 5 : padding));
         }
 
-        if (me.margin !== undefined) {
-            targetEl.setStyle('margin', Element.unitizeBox((me.margin === true) ? 5 : me.margin));
+        if (margin !== undefined) {
+            targetEl.setStyle('margin', Element.unitizeBox((margin === true) ? 5 : margin));
+        }
+        
+        if (me.border !== undefined) {
+            me.setBorder(me.border, targetEl);
         }
 
         // initComponent, beforeRender, or event handlers may have set the style or cls property since the protoEl was set up
@@ -1564,33 +1571,25 @@ Ext.define('Ext.AbstractComponent', {
             delete me.style;
         }
 
-        // We need to remember these to avoid writing them during the initial layout:
-        var lastBox = null;
-        if (me.x !== undefined) {
-            targetEl.setStyle('left', me.x + 'px');
-            lastBox = lastBox || {};
-            lastBox.x = me.x;
+        if (x !== undefined) {
+            targetEl.setStyle('left', x + 'px');
         }
-        if (me.y !== undefined) {
-            targetEl.setStyle('top', me.y + 'px');
-            lastBox = lastBox || {};
-            lastBox.y = me.y;
+        if (y !== undefined) {
+            targetEl.setStyle('top', y + 'px');
         }
         if (!me.getFrameInfo()) {
+            width = me.width;
+            height = me.height;
+
             // framed components need their width/height to apply to the frame, which is
             // best handled in layout at present
-            if (typeof me.width == 'number') {
-                targetEl.setStyle('width', me.width + 'px');
-                lastBox = lastBox || {};
-                lastBox.width = me.width;
+            if (typeof width == 'number') {
+                targetEl.setStyle('width', width + 'px');
             }
-            if (typeof me.height == 'number') {
-                targetEl.setStyle('height', me.height + 'px');
-                lastBox = lastBox || {};
-                lastBox.height = me.height;
+            if (typeof height == 'number') {
+                targetEl.setStyle('height', height + 'px');
             }
         }
-        me.lastBox = lastBox;
     },
 
     // @private
@@ -1598,11 +1597,11 @@ Ext.define('Ext.AbstractComponent', {
         var me = this,
             afterRenderEvents = me.afterRenderEvents,
             el,
-            focusEl = me.getFocusEl(),
             property,
             fn = function(listeners){
                 me.mon(el, listeners);
             };
+
         if (afterRenderEvents) {
             for (property in afterRenderEvents) {
                 if (afterRenderEvents.hasOwnProperty(property)) {
@@ -1614,37 +1613,81 @@ Ext.define('Ext.AbstractComponent', {
             }
         }
 
-        // All Components may be focusable, not only "form" type elements, but also
+        // This will add focus/blur listeners to the getFocusEl() element if that is naturally focusable.
+        // If *not* naturally focusable, then the FocusManager must be enabled to get it to listen for focus so that
+        // the FocusManager can track and highlight focus.
+        me.addFocusListener();
+    },
+    
+    /**
+     * @private
+     * <p>Sets up the focus listener on this Component's {@link #getFocusEl focusEl} if it has one.</p>
+     * <p>Form Components which must implicitly participate in tabbing order usually have a naturally focusable
+     * element as their {@link #getFocusEl focusEl}, and it is the DOM event of that recieving focus which drives
+     * the Component's onFocus handling, and the DOM event of it being blurred which drives the onBlur handling.</p>
+     * <p>If the {@link #getFocusEl focusEl} is <b>not</b> naturally focusable, then the listeners are only added
+     * if the {@link Ext.FocusManager FocusManager} is enabled.</p>
+     */
+    addFocusListener: function() {
+        var me = this,
+            focusEl = me.getFocusEl(),
+            needsTabIndex;
+
+        // All Containers may be focusable, not only "form" type elements, but also
         // Panels, Toolbars, Windows etc.
         // Usually, the <DIV> element they will return as their focusEl will not be able to recieve focus
         // However, if the FocusManager is invoked, its non-default navigation handlers (invoked when
         // tabbing/arrowing off of certain Components) may explicitly focus a Panel or Container or FieldSet etc.
         // Add listeners to the focus and blur events on the focus element
+
+        // If this Component returns a focusEl, we might need to add a focus listener to it.
         if (focusEl) {
-            focusEl.on({
-                focus: me.onFocus,
-                blur: me.onBlur,
-                scope: me
-            });
+
+            // getFocusEl might return a Component if a Container wishes to delegate focus to a descendant.
+            // Window can do this via its defaultFocus configuration which can reference a Button.
+            if (focusEl.isComponent) {
+                return focusEl.addFocusListener();
+            }
+
+            // If the focusEl is naturally focusable, then we always need a focus listener to drive the Component's
+            // onFocus handling.
+            // If *not* naturally focusable, then we only need the focus listener if the FocusManager is enabled.
+            needsTabIndex = focusEl.needsTabIndex();
+            if (!me.focusListenerAdded && (!needsTabIndex || Ext.FocusManager.enabled)) {
+                if (needsTabIndex) {
+                    focusEl.dom.tabIndex = -1;
+                }
+                focusEl.on({
+                    focus: me.onFocus,
+                    blur: me.onBlur,
+                    scope: me
+                });
+                me.focusListenerAdded = true;
+            }
         }
     },
 
     /**
      * @private
-     * Returns the focus holder element associated with this Component. By default, this is the Component's encapsulating
-     * element. Subclasses which use embedded focusable elements (such as Window and Button) should override this for use
-     * by the {@link #focus} method.
-     * @returns {Ext.Element} the focus holing element.
+     * <p>Returns the focus holder element associated with this Component. At the Component base class level, this function returns <code>undefined</code>.</p>
+     * <p>Subclasses which use embedded focusable elements (such as Window, Field and Button) should override this for use by the {@link #focus} method.</p>
+     * <p>Containers which need to participate in the {@link Ext.FocusManager FocusManager}'s navigation and Container focusing scheme also
+     * need to return a focusEl, although focus is only listened for in this case if the {@link Ext.FocusManager FocusManager} is {@link Ext.FocusManager#enable enable}d.</p>
+     * @returns {undefined} <code>undefined</code> because raw Components cannot by default hold focus.
      */
-    getFocusEl: function() {
-        return this.el;
-    },
+    getFocusEl: Ext.emptyFn,
 
     isFocusable: function(c) {
         var me = this,
             focusEl;
-        if ((me.focusable !== false) && me.rendered && !me.destroying && !me.isDestroyed && !me.disabled && me.isVisible(true)) {
-            focusEl = me.getFocusEl();
+        if ((me.focusable !== false) && (focusEl = me.getFocusEl()) && me.rendered && !me.destroying && !me.isDestroyed && !me.disabled && me.isVisible(true)) {
+
+            // getFocusEl might return a Component if a Container wishes to delegate focus to a descendant.
+            // Window can do this via its defaultFocus configuration which can reference a Button.
+            if (focusEl.isComponent) {
+                return focusEl.isFocusable();
+            }
+
             return focusEl && focusEl.dom && focusEl.isVisible();
         }
     },
@@ -1904,6 +1947,35 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
+     * @private
+     * Returns the CSS style object which will set the Component's scroll styles. This must be applied
+     * to the {@link #getTargetEl target element}.
+     */
+    getOverflowStyle: function() {
+        var me = this,
+            result = null;
+
+        if (typeof me.autoScroll == 'boolean') {
+            result = {
+                overflow: me.autoScroll ? 'auto' : ''
+            };
+        } else if (me.overflowX !== undefined || me.overflowY !== undefined) {
+            result = {
+                'overflow-x':  (me.overflowX||''),
+                'overflow-y':  (me.overflowY||'')
+            };
+        }
+
+        // The scrollable container element must be non-statically positioned or IE6/7 will make
+        // positioned children stay in place rather than scrolling with the rest of the content
+        if (result && (Ext.isIE6 || Ext.isIE7)) {
+            result.position = 'relative';
+        }
+
+        return result;
+    },
+
+    /**
      * Tests whether or not this Component is of a specific xtype. This can test whether this Component is descended
      * from the xtype (default) or whether it is directly of the xtype specified (shallow = true).
      *
@@ -2100,9 +2172,9 @@ Ext.define('Ext.AbstractComponent', {
         }
 
         me.disabled = true;
-        delete me.resetDisable;
 
         if (silent !== true) {
+            delete me.resetDisable;
             me.fireEvent('disable', me);
         }
 
@@ -2112,7 +2184,7 @@ Ext.define('Ext.AbstractComponent', {
     // @private
     onEnable: function() {
         if (this.maskOnDisable) {
-            this.el.dom.disabled = true;
+            this.el.dom.disabled = false;
             this.unmask();
         }
     },
@@ -2167,7 +2239,7 @@ Ext.define('Ext.AbstractComponent', {
 
     /**
      * Adds a CSS class to the top level element representing this component.
-     * @param {String} cls The CSS class name to add
+     * @param {String/String[]} cls The CSS class name to add
      * @return {Ext.Component} Returns the Component to allow method chaining.
      */
     addCls : function(cls) {
@@ -2179,9 +2251,8 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * Adds a CSS class to the top level element representing this component.
-     * @param {String} cls The CSS class name to add
-     * @return {Ext.Component} Returns the Component to allow method chaining.
+     * @inheritdoc Ext.AbstractComponent#addCls
+     * @deprecated 4.1 Use {@link #addCls} instead.
      */
     addClass : function() {
         return this.addCls.apply(this, arguments);
@@ -2202,7 +2273,7 @@ Ext.define('Ext.AbstractComponent', {
 
     /**
      * Removes a CSS class from the top level element representing this component.
-     * @param {String} cls The CSS class name to remove
+     * @param {String/String[]} cls The CSS class name to remove
      * @returns {Ext.Component} Returns the Component to allow method chaining.
      */
     removeCls : function(cls) {
@@ -2355,7 +2426,6 @@ Ext.define('Ext.AbstractComponent', {
     // @private
     beforeDestroy : Ext.emptyFn,
     // @private
-    // @private
     onResize : Ext.emptyFn,
 
     /**
@@ -2397,211 +2467,196 @@ Ext.define('Ext.AbstractComponent', {
 
         // If not rendered, all we need to is set the properties.
         // The initial layout will set the size
-        if (me.rendered) {
-            if (!me.isVisible()) {
-                // If an ownerCt is hidden, add my reference onto the layoutOnShow stack.  Set the needsLayout flag.
-                if (me.hiddenAncestor) {
-                    me.hiddenAncestor.needsLayout = true;
-                } else {
-                    me.needsLayout = true; // TODO why do we need this anymore????
-                }
-                return me;
-            }
-            me.updateLayout();
+        if (me.rendered && me.isVisible()) {
+
+            // If we are changing size, then we are not the root.
+            me.updateLayout({
+                isRoot: false
+            });
         }
 
         return me;
     },
 
-    onContentSizeChange: function(widthChange, heightChange) {
+    /**
+     * Determines whether this Component is the root of a layout. This returns `true` if
+     * this component can run its layout without assistance from or impact on its owner.
+     * If this component cannot run its layout given these restrictions, `false` is returned
+     * and its owner will be considered as the next candidate for the layout root.
+     *
+     * Setting the {@link #_isLayoutRoot} property to `true` causes this method to always
+     * return `true`. This may be useful when updating a layout of a Container which shrink
+     * wraps content, and you know that it will not change size, and so can safely be the
+     * topmost participant in the layout run.
+     * @protected
+     */
+    isLayoutRoot: function() {
         var me = this,
-            widthAuthority, heightAuthority,
-            callOwner = 0;
+            ownerLayout = me.ownerLayout;
 
-        if (me.ownerCt) {
-            if (widthChange) {
-                widthAuthority = me.getWidthAuthority();
-                if (widthAuthority === 1 || widthAuthority === 2) {
-                    widthChange = false;
-                } else {
-                    // Our width may be affected by the width change, so the ownerCt must be informed
-                    ++callOwner;
-                }
-            }
-            if (heightChange) {
-                heightAuthority = me.getHeightAuthority();
-                if (heightAuthority === 1 || heightAuthority === 2) {
-                    heightChange = false;
-                } else {
-                    // Our height may be affected by the height change, so the ownerCt must be informed
-                    ++callOwner;
-                }
-            }
-            if (callOwner) {
-                me.ownerCt.onContentSizeChange(widthChange, heightChange);
-                return;
-            }
+        // Return true if we have been explicitly flagged as the layout root, or if we are floating.
+        // Sometimes floating Components get an ownerCt ref injected into them which is *not* a true ownerCt, merely
+        // an upward link for reference purposes. For example a grid column menu is linked to the
+        // owning header via an ownerCt reference.
+        if (!ownerLayout || me._isLayoutRoot || me.floating) {
+            return true;
         }
-        me.updateLayout();
+
+        return ownerLayout.isItemLayoutRoot(me);
     },
 
-    updateLayout: function(defer) {
-        var comp = this;
-        
-        if (!comp.rendered) {
+    /**
+     * Returns true if layout is suspended for this component. This can come from direct
+     * suspension of this component's layout activity ({@link #suspendLayouts}) or if one
+     * of this component's containers is suspended.
+     *
+     * @return {Boolean} True layout of this component is suspended.
+     */
+    isLayoutSuspended: function () {
+        var comp = this,
+            ownerLayout;
+
+        while (comp) {
+            if (comp.layoutSuspendCount || comp.suspendLayout) {
+                return true;
+            }
+
+            ownerLayout = comp.ownerLayout;
+            if (!ownerLayout) {
+                break;
+            }
+
+            // TODO - what about suspending a Layout instance?
+
+            // this works better than ownerCt since ownerLayout means "is managed by" in
+            // the proper sense... some floating components have ownerCt but won't have an
+            // ownerLayout
+            comp = ownerLayout.owner;
+        }
+
+        return false;
+    },
+
+    /**
+     * Updates this component's layout. If this update effects this components {@link #ownerCt},
+     * that component's `updateLayout` method will be called to perform the layout instead.
+     * Otherwise, just this component (and its child items) will layout.
+     *
+     * @param {Object} options An object with layout options.
+     * @param {Boolean} options.defer True if this layout should be deferred.
+     * @param {Boolean} options.isRoot True if this layout should be the root of the layout.
+     */
+    updateLayout: function (options) {
+        var me = this,
+            defer,
+            isRoot = options && options.isRoot;
+
+        if (!me.rendered || me.layoutSuspendCount || me.suspendLayout) {
             return;
         }
 
-        if (!arguments.length) {
-            defer = comp.deferLayout;
+        if (me.hidden) {
+            Ext.AbstractComponent.cancelLayout(me);
+        } else if (typeof isRoot != 'boolean') {
+            isRoot = me.isLayoutRoot();
         }
-        while (comp.ownerCt && !(comp.isFixedWidth() && comp.isFixedHeight())) {
-            comp = comp.ownerCt;
-            if (!comp.deferLayout) {
-                defer = false;
+
+        // if we aren't the root, see if our ownerLayout will handle it...
+        if (isRoot || !me.ownerLayout || !me.ownerLayout.onContentChange(me)) {
+            // either we are the root or our ownerLayout doesn't care
+            if (!me.isLayoutSuspended()) {
+                // we aren't suspended (knew that), but neither is any of our ownerCt's...
+                defer = (options && options.hasOwnProperty('defer')) ? options.defer : me.deferLayouts;
+                Ext.AbstractComponent.updateLayout(me, defer);
             }
         }
-
-        // If hidden, set flag to lay out next time we get shown
-        if (comp.hidden) {
-            comp.needsLayout = true;
-        } else {
-            Ext.AbstractComponent.updateLayout(comp, defer);
-        }
-    },
-
-    isFixedWidth: function() {
-        var authority = this.getWidthAuthority();
-        return authority > 0;
-    },
-
-    isFixedHeight: function() {
-        var authority = this.getHeightAuthority();
-        return authority > 0;
     },
 
     /**
-     * Returns a value indicating the source of this component's width.
-     *   * 0 the width is "auto" (determined by content).
-     *   * 1 the width is defined by this component's configuration (typically the {@link #width}
-     *      property).
-     *   * 2 the width is determined by this component's {@link #ownerCt}.
-     *   * 3 the width is determined by this component's {@link #ownerCt}, but that value is
-     *      influenced by the measured "auto" width.
+     * Returns an object that describes how this component's width and height is managed. These
+     * objects are shared and should not be modified.
+     *
+     * @return {Object} The size model for this component.
+     * @return {Object} return.width The width aspect of this component's size model.
+     * @return {Boolean} return.width.auto True if width is either natural or shrinkWrap (not fixed).
+     * @return {Boolean} return.width.calculated True if width is calculated by a layout.
+     * @return {Boolean} return.width.configured True if width is specified on this component.
+     * @return {Boolean} return.width.fixed True if width is either calculated or configured.
+     * @return {Boolean} return.width.natural True if width is determined by CSS and does not depend on content.
+     * @return {Boolean} return.width.shrinkWrap True if width is determined by content.
+     * @return {Object} return.height The height aspect of this component's size model.
+     * @return {Boolean} return.height.auto True if height is either natural or shrinkWrap (not fixed).
+     * @return {Boolean} return.height.calculated True if height is calculated by a layout.
+     * @return {Boolean} return.height.configured True if height is specified on this component.
+     * @return {Boolean} return.height.fixed True if height is either calculated or configured.
+     * @return {Boolean} return.height.natural True if height is determined by CSS and does not depend on content.
+     * @return {Boolean} return.height.shrinkWrap True if height is determined by content.
      */
-    getWidthAuthority: function() {
+    getSizeModel: function (ownerCtSizeModel) {
         var me = this,
-            ret = 0,
-            ownerWidthAuthority, policy;
+            Layout = Ext.layout.Layout.prototype,
+            models = Layout.sizeModels,
+            heightModel, ownerLayout, policy, shrinkWrap, widthModel;
 
         if (typeof me.width == 'number') {
-            ret = 1;
-        } else if (me.ownerLayout) {
-            policy = me.ownerLayout.getItemSizePolicy(me);
-
-            switch (policy.setsWidth) {
-                //case 0:
-                //    ret = 0; // this is the default value of ret
-                //    break;
-                case 1:
-                    ret = policy.readsWidth ? 3 : 2;
-                    break;
-                case -1: // see Fit and Card layout
-                    ownerWidthAuthority = me.ownerCt.getWidthAuthority();
-                    // if our ownerCt is auto (0), then we are auto (0)... otherwise, we will
-                    // be sized by the ownerCt (2)...
-                    if (ownerWidthAuthority == 3) {
-                        ret = 3; // ???
-                    } else if (ownerWidthAuthority) {
-                        ret = 2;
-                    }
-                    break;
-            }
+            widthModel = models.configured;
         }
-
-        return ret;
-    },
-
-    /**
-     * Returns a value indicating the source of this component's height.
-     *   * 0 the height is "auto" (determined by content).
-     *   * 1 the height is defined by this component's configuration (typically the {@link #height}
-     *      property).
-     *   * 2 the height is determined by this component's {@link #ownerCt}.
-     *   * 3 the height is determined by this component's {@link #ownerCt}, but that value is
-     *      influenced by the measured "auto" height.
-     */
-    getHeightAuthority: function() {
-        var me = this,
-            ret = 0,
-            ownerHeightAuthority, policy;
-
         if (typeof me.height == 'number') {
-            ret = 1;
-        } else if (me.ownerLayout) {
-            policy = me.ownerLayout.getItemSizePolicy(me);
+            heightModel = models.configured;
+        }
 
-            switch (policy.setsHeight) {
-                //case 0:
-                //    ret = 0; // this is the default value of ret
-                //    break;
-                case 1:
-                    ret = policy.readsHeight ? 3 : 2;
-                    break;
-                case -1: // see Fit and Card layout
-                    ownerHeightAuthority = me.ownerCt.getHeightAuthority();
-                    // if our ownerCt is auto (0), then we are auto (0)... otherwise, we will
-                    // be sized by the ownerCt (2)...
-                    if (ownerHeightAuthority == 3) {
-                        ret = 3; // ???
-                    } else if (ownerHeightAuthority) {
-                        ret = 2;
+        if (!widthModel || !heightModel) {
+            if (me.floating) {
+                policy = Layout.autoSizePolicy;
+                shrinkWrap = 3;
+            } else {
+                if (!(ownerLayout = me.ownerLayout)) {
+                    policy = Layout.autoSizePolicy;
+                    shrinkWrap = me.shrinkWrap;
+                } else {
+                    policy = ownerLayout.getItemSizePolicy(me);
+                    shrinkWrap = ownerLayout.isItemShrinkWrap(me);
+                }
+                
+                shrinkWrap = (shrinkWrap === true) ? 3 : (shrinkWrap || 0); // false->0, true->3
+                
+                if (shrinkWrap !== 3) {
+                    if (!ownerCtSizeModel) {
+                        ownerCtSizeModel = me.ownerCt && me.ownerCt.getSizeModel();
                     }
-                    break;
+                    if (ownerCtSizeModel) {
+                        shrinkWrap |= (ownerCtSizeModel.width.shrinkWrap ? 1 : 0) | (ownerCtSizeModel.height.shrinkWrap ? 2 : 0);
+                    }
+                }
+            }
+
+            if (!widthModel) {
+                if (!policy.setsWidth) {
+                    widthModel = (shrinkWrap & 1) ? models.shrinkWrap : models.natural;
+                } else if (policy.readsWidth) {
+                    widthModel = (shrinkWrap & 1) ? models.calculatedFromShrinkWrap : 
+                                    models.calculatedFromNatural;
+                } else {
+                    widthModel = models.calculated;
+                }
+            }
+
+            if (!heightModel) {
+                if (!policy.setsHeight) {
+                    heightModel = (shrinkWrap & 2) ? models.shrinkWrap : models.natural;
+                } else if (policy.readsHeight) {
+                    heightModel = (shrinkWrap & 2) ? models.calculatedFromShrinkWrap : 
+                                    models.calculatedFromNatural;
+                } else {
+                    heightModel = models.calculated;
+                }
             }
         }
 
-        return ret;
-    },
-
-    setCalculatedSize : function(width, height, callingContainer) {
-        var me = this,
-            layoutCollection;
-// TODO remove this - obsolete in new layout scheme
-        // support for standard size objects
-        if (Ext.isObject(width)) {
-            callingContainer = width.ownerCt;
-            height = width.height;
-            width  = width.width;
-        }
-
-        // Constrain within configured maxima
-        if (Ext.isNumber(width)) {
-            width = Ext.Number.constrain(width, me.minWidth, me.maxWidth);
-        }
-        if (Ext.isNumber(height)) {
-            height = Ext.Number.constrain(height, me.minHeight, me.maxHeight);
-        }
-
-        if (!me.rendered || !me.isVisible()) {
-            // If an ownerCt is hidden, add my reference onto the layoutOnShow stack.  Set the needsLayout flag.
-            // TODO Abe remove this since not needed in 4.1
-//            if (me.hiddenAncestor) {
-//                layoutCollection = me.hiddenAncestor.layoutOnShow;
-//                layoutCollection.remove(me);
-//                layoutCollection.add(me);
-//            }
-//            me.needsLayout = {
-//                width: width,
-//                height: height,
-//                isSetSize: false,
-//                ownerCt: callingContainer
-//            };
-            return me;
-        }
-        me.doComponentLayout(width, height, false, callingContainer);
-
-        return me;
+        return {
+            width: widthModel,
+            height: heightModel
+        };
     },
 
     isDescendant: function(ancestor) {
@@ -2694,11 +2749,28 @@ Ext.define('Ext.AbstractComponent', {
             // Convert position WRT RTL
             pos = me.convertPosition(pos);
 
-            // Must use Element's method to set element position because, if it is a Layer (floater), it may need to sync a shadow
-            me.el.setLeftTop(pos.left, pos.top);
-            me.afterSetPosition(pos.left, pos.top);
+            if (animate) {
+                me.stopAnimation();
+                me.animate(Ext.apply({
+                    duration: 1000,
+                    listeners: {
+                        afteranimate: Ext.Function.bind(me.afterSetPosition, me, [pos.left, pos.top])
+                    },
+                    to: pos
+                }, animate));
+            } else {
+                // Must use Element's methods to set element position because, if it is a Layer (floater), it may need to sync a shadow
+                // We must also only set the properties which are defined because Element.setLeftTop autos any undefined coordinates
+                if (pos.left !== undefined && pos.top !== undefined) {
+                    me.el.setLeftTop(pos.left, pos.top);
+                } else if (pos.left !== undefined) {
+                    me.el.setLeft(pos.left);
+                } else if (pos.top !==undefined) {
+                    me.el.setTop(pos.top);
+                }
+                me.afterSetPosition(pos.left, pos.top);
+            }
         }
-
         return me;
     },
 
@@ -2844,41 +2916,6 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * This method allows you to show or hide a LoadMask on top of this component.
-     *
-     * @param {Boolean/Object/String} load True to show the default LoadMask, a config object that will be passed to the
-     * LoadMask constructor, or a message String to show. False to hide the current LoadMask.
-     * @param {Boolean} [targetEl=false] True to mask the targetEl of this Component instead of the `this.el`. For example,
-     * setting this to true on a Panel will cause only the body to be masked.
-     * @return {Ext.LoadMask} The LoadMask instance that has just been shown.
-     */
-    setLoading : function(load, targetEl) {
-        var me = this,
-            config;
-
-        if (me.rendered) {
-            if (load !== false && !me.collapsed) {
-                if (Ext.isObject(load)) {
-                    config = load;
-                }
-                else if (Ext.isString(load)) {
-                    config = {msg: load};
-                }
-                else {
-                    config = {};
-                }
-                me.loadMask = me.loadMask || new Ext.LoadMask(targetEl ? me.getTargetEl() : me, config);
-                me.loadMask.show();
-            } else if (me.loadMask) {
-                Ext.destroy(me.loadMask);
-                me.loadMask = null;
-            }
-        }
-
-        return me.loadMask;
-    },
-
-    /**
      * Sets the dock position of this component in its parent panel. Note that this only has effect if this item is part
      * of the dockedItems collection of a parent that has a DockLayout (note that any Panel has a DockLayout by default)
      * @param {Object} dock The dock position.
@@ -2893,6 +2930,33 @@ Ext.define('Ext.AbstractComponent', {
             me.ownerCt.doComponentLayout();
         }
         return me;
+    },
+    
+    /**
+     * 
+     * @param {String/Number} border The border, see {@link #border}. If a falsey value is passed
+     * the border will be removed.
+     */
+    setBorder: function(border, /* private */ targetEl) {
+        var me = this,
+            initial = !!targetEl;
+            
+        if (me.rendered || initial) {
+            if (!initial) {
+                targetEl = me.el;
+            }
+            
+            if (!border) {
+                border = 0;
+            } else {
+                border = Ext.Element.unitizeBox((border === true) ? 1 : border);
+            }
+            targetEl.setStyle('border-width', border);
+            if (!initial) {
+                me.updateLayout();
+            }
+        }
+        me.border = border;
     },
 
     onDestroy : function() {

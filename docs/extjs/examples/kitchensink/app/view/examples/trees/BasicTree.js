@@ -16,7 +16,7 @@ Ext.define('KitchenSink.view.examples.trees.BasicTree', {
             rootVisible: false,
             lines: false,
             useArrows: false,
-            store: Ext.create('KitchenSink.store.TreeStore')
+            store: 'TreeStore'
         },
 
         style: 'background:transparent',
@@ -53,6 +53,6 @@ Ext.define('KitchenSink.view.examples.trees.BasicTree', {
                     lines: true
                 }
             ]
-        },
+        }
     ]
 });

@@ -325,7 +325,30 @@
             return this;
         },
 
-        configNameCache: {}
+        configNameCache: {},
+
+        getConfigNameMap: function(name) {
+            var cache = this.configNameCache,
+                map = cache[name],
+                capitalizedName;
+
+            if (!map) {
+                capitalizedName = name.charAt(0).toUpperCase() + name.substr(1);
+
+                map = cache[name] = {
+                    internal: name,
+                    initialized: '_is' + capitalizedName + 'Initialized',
+                    apply: 'apply' + capitalizedName,
+                    update: 'update' + capitalizedName,
+                    'set': 'set' + capitalizedName,
+                    'get': 'get' + capitalizedName,
+                    doSet : 'doSet' + capitalizedName,
+                    changeEvent: name.toLowerCase() + 'change'
+                }
+            }
+
+            return map;
+        }
     });
 
     /**
@@ -444,61 +467,55 @@
      */
     ExtClass.registerPreprocessor('config', function(Class, data) {
         var config = data.config,
-            configNameCache = ExtClass.configNameCache,
-            prototype = Class.prototype,
-            emptyFn = Ext.emptyFn;
+            prototype = Class.prototype;
 
         delete data.config;
 
-        Ext.Object.each(config, function(name) {
-            var capitalizedName, customIniter, customGetter;
-
-            if (!configNameCache[name]) {
-                capitalizedName = name.charAt(0).toUpperCase() + name.substr(1);
-
-                configNameCache[name] = {
-                    internal: '_' + name,
-                    apply: 'apply' + capitalizedName,
-                    update: 'update' + capitalizedName,
-                    'set': 'set' + capitalizedName,
-                    'get': 'get' + capitalizedName,
-                    init: 'init' + capitalizedName
-                };
-            }
-            var nameMap = configNameCache[name],
+        Ext.Object.each(config, function(name, value) {
+            var nameMap = ExtClass.getConfigNameMap(name),
                 internalName = nameMap.internal,
+                initializedName = nameMap.initialized,
                 applyName = nameMap.apply,
                 updateName = nameMap.update,
                 setName = nameMap.set,
                 getName = nameMap.get,
-                initName = nameMap.init,
-                optimizedGetter;
+                hasOwnSetter = (setName in prototype) || data.hasOwnProperty(setName),
+                hasOwnApplier = (applyName in prototype) || data.hasOwnProperty(applyName),
+                hasOwnUpdater = (updateName in prototype) || data.hasOwnProperty(updateName),
+                optimizedGetter, customGetter;
 
-            if (!(setName in prototype) && !data.hasOwnProperty(setName)) {
+            if (value === null || (!hasOwnSetter && !hasOwnApplier && !hasOwnUpdater)) {
+                prototype[internalName] = value;
+                prototype[initializedName] = true;
+            }
+            else {
+                prototype[initializedName] = false;
+            }
+
+            if (!hasOwnSetter) {
                 data[setName] = function(value) {
                     var oldValue = this[internalName],
                         applier = this[applyName],
-                        updater = this[updateName],
-                        initer = this[initName];
+                        updater = this[updateName];
 
-                    if (initer !== emptyFn) {
-                        this[initName] = emptyFn;
+                    if (!this[initializedName]) {
+                        this[initializedName] = true;
                     }
 
-                    if (typeof applier == 'function') {
+                    if (applier) {
                         value = applier.call(this, value, oldValue);
                     }
 
                     if (typeof value != 'undefined') {
                         this[internalName] = value;
 
-                        if (typeof updater == 'function' && value !== oldValue && !(value === null && oldValue === undefined)) {
+                        if (updater && value !== oldValue) {
                             updater.call(this, value, oldValue);
                         }
                     }
 
                     return this;
-                };
+                }
             }
 
             if (!(getName in prototype) || data.hasOwnProperty(getName)) {
@@ -510,16 +527,17 @@
                     };
                 }
                 else {
-                    optimizedGetter = new Function('return this.'+internalName);
+                    optimizedGetter = function() {
+                        return this[internalName];
+                    };
                 }
 
                 data[getName] = function() {
-                    var initer = this[initName],
-                        currentGetter;
+                    var currentGetter;
 
-                    if (initer !== emptyFn) {
-                        this[initName] = emptyFn;
-                        initer.call(this, this.config[name]);
+                    if (!this[initializedName]) {
+                        this[initializedName] = true;
+                        this[setName](this.config[name]);
                     }
 
                     currentGetter = this[getName];
@@ -534,29 +552,15 @@
                     return optimizedGetter.apply(this, arguments);
                 };
             }
-
-            if (data.hasOwnProperty(initName)) {
-                customIniter = data[initName];
-                data[initName] = function(value) {
-                    this[initName] = emptyFn;
-                    customIniter.call(this, value);
-                };
-            }
-            else if (!(initName in prototype)) {
-                data[initName] = function(value) {
-                    this[initName] = emptyFn;
-                    this[setName](value);
-                };
-            }
         });
 
-        Class.addConfig(config);
+        Class.addConfig(config, true);
     });
     //</feature>
 
     //<feature classSystem.mixins>
     /**
-     * @cfg {Object} mixins
+     * @cfg {String[]/Object} mixins
      * List of classes to mix into this class. For example:
      *
      *     Ext.define('CanSing', {
@@ -566,12 +570,29 @@
      *     });
      *
      *     Ext.define('Musician', {
-     *          extend: 'Person',
+     *          mixins: ['CanSing']
+     *     })
      *
+     * In this case the Musician class will get a `sing` method from CanSing mixin.
+     *
+     * But what if the Musician already has a `sing` method? Or you want to mix
+     * in two classes, both of which define `sing`?  In such a cases it's good
+     * to define mixins as an object, where you assign a name to each mixin:
+     *
+     *     Ext.define('Musician', {
      *          mixins: {
      *              canSing: 'CanSing'
+     *          },
+     * 
+     *          sing: function() {
+     *              // delegate singing operation to mixin
+     *              this.mixins.canSing.sing.call(this);
      *          }
      *     })
+     *
+     * In this case the `sing` method of Musician will overwrite the
+     * mixed in `sing` method. But you can access the original mixed in method
+     * through special `mixins` property.
      */
     ExtClass.registerPreprocessor('mixins', function(Class, data, hooks) {
         var mixins = data.mixins,

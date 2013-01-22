@@ -1,6 +1,4 @@
 /**
- * @class Ext.grid.feature.GroupingSummary
- * 
  * This feature adds an aggregate summary row at the bottom of each group that is provided
  * by the {@link Ext.grid.feature.Grouping} feature. There are two aspects to the summary:
  *
@@ -184,8 +182,9 @@ Ext.define('Ext.grid.feature.GroupingSummary', {
         }
 
         /**
-         * @cfg {String} [remoteRoot=undefined]  The name of the property which contains the Array of
-         * summary objects. It allows to use server-side calculated summaries.
+         * @cfg {String} [remoteRoot=undefined]
+         * The name of the property which contains the Array of summary objects.
+         * It allows to use server-side calculated summaries.
          */
         if (me.remoteRoot && reader.rawData) {
             // reset reader root and rebuild extractors to extract summaries data

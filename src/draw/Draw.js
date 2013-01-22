@@ -925,7 +925,7 @@ Ext.define('Ext.draw.Draw', {
         };
     },
 
-    snapEnds: function (from, to, stepsMax) {
+    snapEnds: function (from, to, stepsMax, prettyNumbers) {
         if (Ext.isDate(from)) {
             return this.snapEndsByDate(from, to, stepsMax);
         }
@@ -943,20 +943,26 @@ Ext.define('Ext.draw.Draw', {
             topWeight = 1e9,
             ln = interval.length;
         cur = from = Math.floor(from / m) * m;
-        for (i = 0; i < ln; i++) {
-            value = interval[i][0];
-            weight = (value - modulo) < 0 ? 1e6 : (value - modulo) / interval[i][1];
-            if (weight < topWeight) {
-                topValue = value;
-                topWeight = weight;
+        
+        if(prettyNumbers){
+            for (i = 0; i < ln; i++) {
+                value = interval[i][0];
+                weight = (value - modulo) < 0 ? 1e6 : (value - modulo) / interval[i][1];
+                if (weight < topWeight) {
+                    topValue = value;
+                    topWeight = weight;
+                }
             }
+            step = Math.floor(step * Math.pow(10, -level)) * Math.pow(10, level) + topValue * Math.pow(10, level - 2);
+            while (cur < to) {
+                cur += step;
+                stepCount++;
+            }
+            to = +cur.toFixed(10);
+        }else{
+            stepCount = stepsMax;
         }
-        step = Math.floor(step * Math.pow(10, -level)) * Math.pow(10, level) + topValue * Math.pow(10, level - 2);
-        while (cur < to) {
-            cur += step;
-            stepCount++;
-        }
-        to = +cur.toFixed(10);
+        
         return {
             from: from,
             to: to,

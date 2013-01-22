@@ -51,14 +51,13 @@ var store = new Ext.data.XmlStore({
     &#60/Items>
 &#60/ItemSearchResponse>
  * </code></pre>
- * An object literal of this form could also be used as the {@link #data} config option.</p>
+ * An object literal of this form could also be used as the {@link #cfg-data} config option.</p>
  * <p><b>Note:</b> This class accepts all of the configuration options of
  * <b>{@link Ext.data.reader.Xml XmlReader}</b>.</p>
  * @xtype xmlstore
  */
 Ext.define('Ext.data.XmlStore', {
     extend: 'Ext.data.Store',
-    alternateClassName: 'Ext.data.XmlStore',
     alias: 'store.xml',
 
     constructor: function(config){

@@ -1,6 +1,4 @@
 /**
- * @class Ext.grid.feature.Grouping
- * 
  * This feature allows to display the grid rows aggregated into groups as specified by the {@link Ext.data.Store#groupers}
  * specified on the Store. The group will show the title for the group name and then the appropriate records for the group
  * underneath. The groups can also be expanded and collapsed.
@@ -118,7 +116,7 @@ Ext.define('Ext.grid.feature.Grouping', {
      *           }
      *       )
      */
-    groupHeaderTpl: 'Group: {name}',
+    groupHeaderTpl: '{columnName}: {name}',
 
     /**
      * @cfg {Number} depthToIndent
@@ -130,31 +128,41 @@ Ext.define('Ext.grid.feature.Grouping', {
     hdCollapsedCls: Ext.baseCSSPrefix + 'grid-group-hd-collapsed',
 
     /**
-     * @cfg {String} groupByText Text displayed in the grid header menu for grouping by header.
+     * @cfg
+     * Text displayed in the grid header menu for grouping by header.
      */
+    //<locale>
     groupByText : 'Group By This Field',
+    //</locale>
     /**
-     * @cfg {String} showGroupsText Text displayed in the grid header for enabling/disabling grouping.
+     * @cfg
+     * Text displayed in the grid header for enabling/disabling grouping.
      */
+    //<locale>
     showGroupsText : 'Show in Groups',
+    //</locale>
 
     /**
-     * @cfg {Boolean} hideGroupedHeader<tt>true</tt> to hide the header that is currently grouped.
+     * @cfg
+     * True to hide the header that is currently grouped.
      */
     hideGroupedHeader : false,
 
     /**
-     * @cfg {Boolean} startCollapsed <tt>true</tt> to start all groups collapsed
+     * @cfg
+     * True to start all groups collapsed.
      */
     startCollapsed : false,
 
     /**
-     * @cfg {Boolean} enableGroupingMenu <tt>true</tt> to enable the grouping control in the header menu
+     * @cfg
+     * True to enable the grouping control in the header menu.
      */
     enableGroupingMenu : true,
 
     /**
-     * @cfg {Boolean} enableNoGroups <tt>true</tt> to allow the user to turn off grouping
+     * @cfg
+     * True  to allow the user to turn off grouping.
      */
     enableNoGroups : true,
     
@@ -265,13 +273,14 @@ Ext.define('Ext.grid.feature.Grouping', {
             groupclick: me.onGroupClick,
             rowfocus: me.onRowFocus
         });
-        view.store.on('groupchange', me.onGroupChange, me);
-
-        me.pruneGroupedHeader();
+        view.mon(view.store, 'groupchange', me.onGroupChange, me);
 
         if (me.enableGroupingMenu) {
             me.injectGroupingMenu();
         }
+
+        me.pruneGroupedHeader();
+
         me.lastGroupField = me.getGroupField();
         me.block();
         me.onGroupChange();
@@ -370,20 +379,23 @@ Ext.define('Ext.grid.feature.Grouping', {
      * @private
      */
     pruneGroupedHeader: function() {
-        var me         = this,
-            view       = me.view,
-            store      = view.store,
-            groupField = me.getGroupField(),
-            headerCt   = view.headerCt,
-            header     = headerCt.down('header[dataIndex=' + groupField + ']');
+        var me = this,
+            header = me.getGroupedHeader();
 
-        if (header) {
+        if (me.hideGroupedHeader && header) {
             if (me.prunedHeader) {
                 me.prunedHeader.show();
             }
             me.prunedHeader = header;
             header.hide();
         }
+    },
+    
+    getGroupedHeader: function(){
+        var groupField = this.getGroupField(),
+            headerCt = this.view.headerCt;
+            
+        return groupField ? headerCt.down('[dataIndex=' + groupField + ']') : null;
     },
 
     getGroupField: function(){
@@ -494,7 +506,9 @@ Ext.define('Ext.grid.feature.Grouping', {
     onGroupChange: function(){
         var me = this,
             field = me.getGroupField(),
-            menuItem;
+            menuItem,
+            visibleGridColumns,
+            groupingByLastVisibleColumn;
             
         if (me.hideGroupedHeader) {
             if (me.lastGroupField) {
@@ -504,8 +518,13 @@ Ext.define('Ext.grid.feature.Grouping', {
                 }
             }
             if (field) {
+                visibleGridColumns = me.view.headerCt.getVisibleGridColumns();
+
+                // See if we are being asked to group by the sole remaining visible column.
+                // If so, then do not hide that column.
+                groupingByLastVisibleColumn = ((visibleGridColumns.length === 1) && (visibleGridColumns[0].dataIndex == field));
                 menuItem = me.getMenuItem(field);
-                if (menuItem) {
+                if (menuItem && !groupingByLastVisibleColumn) {
                     menuItem.setChecked(false);
                 }
             }
@@ -593,10 +612,18 @@ Ext.define('Ext.grid.feature.Grouping', {
         var me = this,
             children = group.children,
             rows = group.rows = [],
-            view = me.view;
+            view = me.view,
+            header = me.getGroupedHeader(),
+            groupField = me.getGroupField(),
+            index = -1,
+            rec;
+            
         group.viewId = view.id;
 
         Ext.Array.each(records, function(record, idx) {
+            if (record.get(groupField) == group.name) {
+                index = idx;
+            }
             if (Ext.Array.indexOf(children, record) != -1) {
                 rows.push(Ext.apply(preppedRecords[idx], {
                     depth: 1
@@ -605,6 +632,12 @@ Ext.define('Ext.grid.feature.Grouping', {
         });
         delete group.children;
         group.fullWidth = fullWidth;
+        group.columnName = header ? header.text : groupField;
+        group.rawName = group.name;
+        // Here we get the rendered value of the column
+        if (header && index > -1) {
+            group.name = preppedRecords[index][header.id];
+        }
         if (me.collapsedState[view.id + '-gp-' + group.name]) {
             group.collapsedCls = me.collapsedCls;
             group.hdCollapsedCls = me.hdCollapsedCls;

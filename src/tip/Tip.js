@@ -6,17 +6,20 @@
  */
 Ext.define('Ext.tip.Tip', {
     extend: 'Ext.panel.Panel',
-    requires: [ 'Ext.layout.component.Tip' ],
+
     alternateClassName: 'Ext.Tip',
+
     /**
      * @cfg {Boolean} [closable=false]
      * True to render a close tool button into the tooltip header.
      */
     /**
      * @cfg {Number} width
-     * Width in pixels of the tip (defaults to auto).  Width will be ignored if it
+     * Width in pixels of the tip.  Width will be ignored if it
      * exceeds the bounds of {@link #minWidth} or {@link #maxWidth}.  The maximum
      * supported value is 500.
+     * 
+     * Defaults to auto.
      */
     /**
      * @cfg {Number} minWidth
@@ -48,7 +51,6 @@ Ext.define('Ext.tip.Tip', {
      */
     constrainPosition : true,
 
-    // @inherited
     frame: false,
 
     // private panel overrides
@@ -61,21 +63,20 @@ Ext.define('Ext.tip.Tip', {
         constrain: true
     },
     focusOnToFront: false,
-    componentLayout: 'tip',
 
     /**
      * @cfg {String} closeAction
      * The action to take when the close header tool is clicked:
      *
-     * - **{@link #destroy}** : {@link #destroy remove} the window from the DOM and
-     *   {@link Ext.Component#destroy destroy} it and all descendant Components. The
-     *   window will <b>not</b> be available to be redisplayed via the {@link #show} method.
+     * - **{@link #method-destroy}** : {@link #method-remove remove} the window from the DOM and
+     *   {@link Ext.Component#method-destroy destroy} it and all descendant Components. The
+     *   window will **not** be available to be redisplayed via the {@link #method-show} method.
      *
-     * - **{@link #hide}** : **Default.** {@link #hide} the window by setting visibility
+     * - **{@link #method-hide}** : **Default.** {@link #method-hide} the window by setting visibility
      *   to hidden and applying negative offsets. The window will be available to be
-     *   redisplayed via the {@link #show} method.
+     *   redisplayed via the {@link #method-show} method.
      *
-     * **Note:** This behavior has changed! setting *does* affect the {@link #close} method
+     * **Note:** This behavior has changed! setting *does* affect the {@link #method-close} method
      * which will invoke the approriate closeAction.
      */
     closeAction: 'hide',
@@ -136,7 +137,6 @@ Ext.define('Ext.tip.Tip', {
 
     /**
      * @private
-     * @override
      * Set Tip draggable using base Component's draggability
      */
     initDraggable : function(){

@@ -1,8 +1,6 @@
 /**
- * @class Ext.layout.component.field.Slider
  * @private
  */
-
 Ext.define('Ext.layout.component.field.Slider', {
 
     /* Begin Definitions */
@@ -15,32 +13,33 @@ Ext.define('Ext.layout.component.field.Slider', {
 
     type: 'sliderfield',
 
-    sizeBodyContents: function(width, height, ownerContext) {
-        var me = this,
-            owner = me.owner,
-            thumbs = owner.thumbs,
-            length = thumbs.length,
-            endElContextItem = ownerContext.getEl('endEl'),
-            endElPad = endElContextItem.getPaddingInfo(),
-            inputContextItem = ownerContext.getEl('inputEl'),
-            inputPad = inputContextItem.getPaddingInfo(),
-            innerElContextItem = ownerContext.getEl('innerEl'),
-            i = 0;
+    beginLayout: function(ownerContext) {
+        this.callParent(arguments);
 
-        /*
-         * If we happen to be animating during a resize, the position of the thumb will likely be off
-         * when the animation stops. As such, just stop any animations before syncing the thumbs.
-         */
-        for(; i < length; ++i) {
-            thumbs[i].el.stopAnimation();
-        }
+        ownerContext.endElContext   = ownerContext.getEl('endEl');
+        ownerContext.innerElContext = ownerContext.getEl('innerEl');
+        ownerContext.bodyElContext  = ownerContext.getEl('bodyEl');
+    },
 
-        if (owner.vertical) {
-            innerElContextItem.setHeight(height - inputPad.top - endElPad.bottom);
+    publishInnerHeight: function (ownerContext, height) {
+        var innerHeight = height - this.measureLabelErrorHeight(ownerContext),
+            endElPad,
+            inputPad;
+        if (this.owner.vertical) {
+            endElPad = ownerContext.endElContext.getPaddingInfo();
+            inputPad = ownerContext.inputContext.getPaddingInfo();
+            ownerContext.innerElContext.setHeight(innerHeight - inputPad.height - endElPad.height);
         } else {
-            innerElContextItem.setWidth(width - inputPad.left - endElPad.right);
+            ownerContext.bodyElContext.setHeight(innerHeight);
         }
+    },
 
-        owner.syncThumbs();
+    publishInnerWidth: function (ownerContext, width) {
+        if (!this.owner.vertical) {
+            var endElPad = ownerContext.endElContext.getPaddingInfo(),
+                inputPad = ownerContext.inputContext.getPaddingInfo();
+
+            ownerContext.innerElContext.setWidth(width - inputPad.left - endElPad.right - ownerContext.labelContext.getProp('width'));
+        }
     }
 });

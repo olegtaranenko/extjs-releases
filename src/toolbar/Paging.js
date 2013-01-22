@@ -7,7 +7,7 @@
  * which the server needs to interpret and then respond with the appropriate data.
  *
  * Ext.toolbar.Paging is a specialized toolbar that is bound to a {@link Ext.data.Store} and provides automatic
- * paging control. This Component {@link Ext.data.Store#load load}s blocks of data into the {@link #store} by passing
+ * paging control. This Component {@link Ext.data.Store#method-load load}s blocks of data into the {@link #store} by passing
  * parameters used for paging criteria.
  *
  * {@img Ext.toolbar.Paging/Ext.toolbar.Paging.png Ext.toolbar.Paging component}
@@ -132,19 +132,25 @@ Ext.define('Ext.toolbar.Paging', {
      * formatted using the braced numbers {0}-{2} as tokens that are replaced by the values for start, end and total
      * respectively. These tokens should be preserved when overriding this string if showing those values is desired.
      */
+    //<locale>
     displayMsg : 'Displaying {0} - {1} of {2}',
+    //</locale>
 
     /**
      * @cfg {String} emptyMsg
      * The message to display when no records are found.
      */
+    //<locale>
     emptyMsg : 'No data to display',
+    //</locale>
 
     /**
      * @cfg {String} beforePageText
      * The text displayed before the input item.
      */
+    //<locale>
     beforePageText : 'Page',
+    //</locale>
 
     /**
      * @cfg {String} afterPageText
@@ -152,42 +158,54 @@ Ext.define('Ext.toolbar.Paging', {
      * {0} as a token that is replaced by the number of total pages. This token should be preserved when overriding this
      * string if showing the total page count is desired.
      */
+    //<locale>
     afterPageText : 'of {0}',
+    //</locale>
 
     /**
      * @cfg {String} firstText
      * The quicktip text displayed for the first page button.
      * **Note**: quick tips must be initialized for the quicktip to show.
      */
+    //<locale>
     firstText : 'First Page',
+    //</locale>
 
     /**
      * @cfg {String} prevText
      * The quicktip text displayed for the previous page button.
      * **Note**: quick tips must be initialized for the quicktip to show.
      */
+    //<locale>
     prevText : 'Previous Page',
+    //</locale>
 
     /**
      * @cfg {String} nextText
      * The quicktip text displayed for the next page button.
      * **Note**: quick tips must be initialized for the quicktip to show.
      */
+    //<locale>
     nextText : 'Next Page',
+    //</locale>
 
     /**
      * @cfg {String} lastText
      * The quicktip text displayed for the last page button.
      * **Note**: quick tips must be initialized for the quicktip to show.
      */
+    //<locale>
     lastText : 'Last Page',
+    //</locale>
 
     /**
      * @cfg {String} refreshText
      * The quicktip text displayed for the Refresh button.
      * **Note**: quick tips must be initialized for the quicktip to show.
      */
+    //<locale>
     refreshText : 'Refresh',
+    //</locale>
 
     /**
      * @cfg {Number} inputItemWidth
@@ -233,6 +251,8 @@ Ext.define('Ext.toolbar.Paging', {
             keyNavEnabled: false,
             selectOnFocus: true,
             submitValue: false,
+            // mark it as not a field so the form will not catch it when getting fields
+            isFormField: false,
             width: me.inputItemWidth,
             margins: '-1 2 3 2',
             listeners: {

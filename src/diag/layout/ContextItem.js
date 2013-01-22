@@ -5,8 +5,13 @@ Ext.define('Ext.diag.layout.ContextItem', {
 
     override: 'Ext.layout.ContextItem',
 
+    requires: [
+        'Ext.layout.Context',
+        'Ext.diag.layout.Context'
+    ],
+
     addBlock: function (name, layout, propName) {
-        //Ext.log(this.id,'.',propName,' ',name,': ',layout.owner.id,':',layout.type);
+        //Ext.log(this.id,'.',propName,' ',name,': ',this.getLayoutName(layout));
         (layout.blockedBy || (layout.blockedBy = {}))[
             this.id+'.'+propName+(name.substring(0,3)=='dom' ? ':dom' : '')] = 1;
 
@@ -33,21 +38,51 @@ Ext.define('Ext.diag.layout.ContextItem', {
     addTrigger: function (propName, inDom) {
         var name = inDom ? 'domTriggers' : 'triggers',
             layout = this.context.currentLayout,
-            result = this.callParent(arguments);
+            result = this.callParent(arguments),
+            triggers;
 
-        //Ext.log(this.id,'.',propName,' ',name,' ',layout.owner.id,':',layout.type);
+        //Ext.log(this.id,'.',propName,' ',name,' ',this.getLayoutName(layout));
 
         if (result) {
-            (layout.triggeredBy || (layout.triggeredBy = {}))[
+            triggers = this.context.triggersByLayoutId;
+            (triggers[layout.id] || (triggers[layout.id] = {}))[
                 this.id+'.'+propName+(inDom ? ':dom' : '')] = {
                     item: this,
                     name: propName
                 };
         } else {
-            //console.log(me.target.el.dom, (' ' + layout.type + '/' + me.id + ' is asking for the ' + propName + ' which it is supposed to provide'));
+            //console.log(me.target.el.dom, (' ' + this.getLayoutName(layout) + 
+            //' is asking for the ' + propName + ' which it is supposed to provide'));
         }
 
         return result;
+    },
+
+    checkAuthority: function (prop) {
+        var me = this,
+            model = me[prop + 'Model'], // not me.sizeModel[prop] since it is immutable
+            layout = me.context.currentLayout,
+            ok;
+
+        if (layout == me.target.ownerLayout) {
+            // the ownerLayout is only allowed to set calculated dimensions
+            ok = model.calculated;
+        } else if (layout.isComponentLayout) {
+            // the component's componentLayout (normally) is only allowed to set auto or
+            // configured dimensions. The exception is when a component is run w/o its
+            // ownerLayout in the picture (isTopLevel), someone must publish the lastBox
+            // values and that lucky layout is the componentLayout (kinda had to be since
+            // the ownerLayout is not running)
+            ok = me.isTopLevel || model.auto || model.configured;
+        }
+
+        if (!ok) {
+            var setBy = me.getLayoutName(layout);
+
+            Ext.Error.raise({
+                msg: setBy + ' cannot set ' + prop
+            });
+        }
     },
 
     clearBlocks: function (name, propName) {
@@ -66,23 +101,43 @@ Ext.define('Ext.diag.layout.ContextItem', {
     },
 
     doInvalidate: function () {
-        //Ext.log('doInvalidate: ', this.id);
+        if (this.context.logOn.doInvalidate) {
+            Ext.log('doInvalidate: ', this.id);
+        }
         return this.callParent(arguments);
     },
 
     getEl: function (el) {
         var child = this.callParent(arguments);
         if (child && child !== this && child.parent !== this) {
-            //debugger;
+            Ext.Error.raise({
+                msg: 'Got element from wrong component'
+            });
         }
         return child;
     },
 
+    init: function () {
+        var me = this;
+
+        me.callParent(arguments);
+
+        if (this.context.logOn.initItem) {
+            Ext.log(me.id, ' consumers: content=', me.consumersContentWidth,'/',me.consumersContentHeight,
+                ', container=', me.consumersContainerWidth,'/',me.consumersContainerHeight,
+                ', size=', me.consumersWidth,'/',me.consumersHeight);
+        }
+    },
+
     invalidate: function () {
         if (this.wrapsComponent) {
-            //Ext.log('invalidate: ', this.id);
+            if (this.context.logOn.invalidate) {
+                Ext.log('invalidate: ', this.id);
+            }
         } else {
-            //debugger;
+            Ext.Error.raise({
+                msg: 'Cannot invalidate an element contextItem'
+            });
         }
         return this.callParent(arguments);
     },
@@ -90,7 +145,7 @@ Ext.define('Ext.diag.layout.ContextItem', {
     setProp: function (propName, value, dirty) {
         var me = this,
             layout = me.context.currentLayout,
-            setBy = layout.owner.id + '<' + layout.type + '>',
+            setBy = me.getLayoutName(layout),
             fullName = me.id + '.' + propName,
             setByProps;
 
@@ -103,10 +158,31 @@ Ext.define('Ext.diag.layout.ContextItem', {
             }
         }
 
-        if (typeof value != 'undefined' && !isNaN(value) && me.props[propName] !== value) {
-            //Ext.log('set ', fullName, ' = ', value, ' (', dirty, ')');
+        if (me.context.logOn.setProp) {
+            if (typeof value != 'undefined' && !isNaN(value) && me.props[propName] !== value) {
+                Ext.log('set ', fullName, ' = ', value, ' (', dirty, ')');
+            }
+        }
+
+        return this.callParent(arguments);
+    },
+
+    setHeight: function (height, dirty, /* private */force) {
+        if (!force && this.wrapsComponent) {
+            this.checkAuthority('height');
+        }
+
+        return this.callParent(arguments);
+    },
+
+    setWidth: function (width, dirty, /* private */force) {
+        if (!force && this.wrapsComponent) {
+            this.checkAuthority('width');
         }
 
         return this.callParent(arguments);
     }
+},
+function () {
+    this.prototype.getLayoutName = Ext.layout.Context.prototype.getLayoutName;
 });

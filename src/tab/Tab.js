@@ -46,13 +46,16 @@ Ext.define('Ext.tab.Tab', {
 
     /**
      * @cfg {String} closeText
-     * The accessible text label for the close button link; only used when {@link #closable} = true.
+     * The accessible text label for the close button link; only used when {@link #cfg-closable} = true.
      */
+    //<locale>
     closeText: 'Close Tab',
+    //</locale>
 
     /**
      * @property {Boolean} active
-     * Read-only property indicating that this tab is currently active. This is NOT a public configuration.
+     * Indicates that this tab is currently active. This is NOT a public configuration.
+     * @readonly
      */
     active: false,
 
@@ -301,6 +304,7 @@ Ext.define('Ext.tab.Tab', {
         me.card = card;
         me.setText(me.title || card.title);
         me.setIconCls(me.iconCls || card.iconCls);
+        me.setIcon(me.icon || card.icon);
     },
 
     /**

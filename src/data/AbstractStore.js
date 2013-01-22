@@ -12,7 +12,7 @@
  * given a {@link Ext.data.Model Model} that represents the type of data in the Store. It also expects to be given a
  * {@link Ext.data.proxy.Proxy Proxy} that handles the loading of data into the Store.
  *
- * AbstractStore provides a few helpful methods such as {@link #load} and {@link #sync}, which load and save data
+ * AbstractStore provides a few helpful methods such as {@link #method-load} and {@link #sync}, which load and save data
  * respectively, passing the requests through the configured {@link #proxy}. Both built-in Store subclasses add extra
  * behavior to each of these functions. Note also that each AbstractStore subclass has its own way of storing data -
  * in {@link Ext.data.Store} the data is saved as a flat {@link Ext.util.MixedCollection MixedCollection}, whereas in
@@ -58,7 +58,7 @@ Ext.define('Ext.data.AbstractStore', {
      * after creation. If the value of autoLoad is an Object, this Object will be passed to the store's load method.
      * Defaults to false.
      */
-    autoLoad: false,
+    autoLoad: undefined,
 
     /**
      * @cfg {Boolean} autoSync
@@ -182,6 +182,13 @@ Ext.define('Ext.data.AbstractStore', {
          * records, or updating the data in existing records
          * @param {Ext.data.Store} this The data store
          */
+        
+        /**
+         * @event refresh
+         * Fires when the data cache has changed in a bulk manner (e.g., it has been sorted, filtered, etc.) and a
+         * widget that is using this Store as a Record cache should refresh its view.
+         * @param {Ext.data.Store} this The data store
+         */
 
         /**
          * @event beforeload
@@ -267,7 +274,7 @@ Ext.define('Ext.data.AbstractStore', {
         }
 
         // <debug>
-        if (!me.model) {
+        if (!me.model && me.useModelWarning !== false) {
             if (Ext.isDefined(Ext.global.console)) {
                 Ext.global.console.warn('Store defined with no model. You may have mistyped the model name.');
             }
@@ -405,13 +412,11 @@ Ext.define('Ext.data.AbstractStore', {
         if (success) {
             me.fireEvent('write', me, operation);
             me.fireEvent('datachanged', me);
+            me.fireEvent('refresh', me);
         }
         //this is a callback that would have been passed to the 'create', 'update' or 'destroy' function and is optional
         Ext.callback(operation.callback, operation.scope || me, [records, operation, success]);
     },
-    
-    // may be implemented by store subclasses
-    onProxyRead: Ext.emptyFn,
     
     // may be implemented by store subclasses
     onCreateRecords: Ext.emptyFn,
@@ -419,8 +424,18 @@ Ext.define('Ext.data.AbstractStore', {
     // may be implemented by store subclasses
     onUpdateRecords: Ext.emptyFn,
     
-    // may be implemented by store subclasses
-    onDestroyRecords: Ext.emptyFn,
+    /**
+     * Removes any records when a write is returned from the server.
+     * @private
+     * @param {Ext.data.Model[]} records The array of removed records
+     * @param {Ext.data.Operation} operation The operation that just completed
+     * @param {Boolean} success True if the operation was successful
+     */
+    onDestroyRecords: function(records, operation, success) {
+        if (success) {
+            this.removed = [];
+        }
+    },
 
     //tells the attached proxy to destroy the given records
     destroy: function(options) {
@@ -468,6 +483,7 @@ Ext.define('Ext.data.AbstractStore', {
         me.resumeEvents();
 
         me.fireEvent('datachanged', me);
+        me.fireEvent('refresh', me);
     },
 
     onBatchException: function(batch, operation) {
@@ -504,6 +520,16 @@ Ext.define('Ext.data.AbstractStore', {
         return [];
     },
 
+    /**
+     * Gets all {@link Ext.data.Model records} added or updated since the last commit. Note that the order of records
+     * returned is not deterministic and does not indicate the order in which records were modified. Note also that
+     * removed records are not included (use {@link #getRemovedRecords} for that).
+     * @return {Ext.data.Model[]} The added and updated Model instances
+     */
+    getModifiedRecords : function(){
+        return [].concat(this.getNewRecords(), this.getUpdatedRecords());
+    },
+    
     /**
      * @private
      * Filter function for updated records.
@@ -656,7 +682,7 @@ Ext.define('Ext.data.AbstractStore', {
         
         return me;
     },
-
+    
     /**
      * @private
      * Returns an object which is passed in as the listeners argument to proxy.batch inside this.sync.
@@ -721,10 +747,20 @@ Ext.define('Ext.data.AbstractStore', {
      * @param {String[]} modifiedFieldNames Array of field names changed during edit.
      */
     afterEdit : function(record, modifiedFieldNames) {
-        var me = this;
+        var me = this,
+            i, shouldSync;
 
-        if (me.autoSync) {
-            me.sync();
+        if (me.autoSync && !me.autoSyncSuspended) {
+            for(i = modifiedFieldNames.length; i--;) {
+                // only sync if persistent fields were modified
+                if(record.fields.get(modifiedFieldNames[i]).persist) {
+                    shouldSync = true;
+                    break;
+                }
+            }
+            if(shouldSync) {
+                me.sync();
+            }
         }
 
         me.fireEvent('update', me, record, Ext.data.Model.EDIT, modifiedFieldNames);
@@ -789,6 +825,7 @@ Ext.define('Ext.data.AbstractStore', {
         } else {
             me.data.sortBy(sorterFn);
             me.fireEvent('datachanged', me);
+            me.fireEvent('refresh', me);
         }
     },
 
@@ -817,5 +854,20 @@ Ext.define('Ext.data.AbstractStore', {
      */
     isLoading: function() {
         return !!this.loading;
+    },
+
+    /**
+     * Suspends automatically syncing the Store with its Proxy.  Only applicable if {@link #autoSync} is `true`
+     */
+    suspendAutoSync: function() {
+        this.autoSyncSuspended = true;
+    },
+
+    /**
+     * Resumes automatically syncing the Store with its Proxy.  Only applicable if {@link #autoSync} is `true`
+     */
+    resumeAutoSync: function() {
+        this.autoSyncSuspended = false;
     }
+
 });

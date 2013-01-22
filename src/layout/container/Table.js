@@ -18,7 +18,7 @@
  * simply add each panel (or "cell") that you want to include along with any span attributes specified as the special
  * config properties of rowspan and colspan which work exactly like their HTML counterparts. Rather than explicitly
  * creating and nesting rows and columns as you would in HTML, you simply specify the total column count in the
- * layoutConfig and start adding panels in their natural order from left to right, top to bottom. The layout will
+ * layout config and start adding panels in their natural order from left to right, top to bottom. The layout will
  * automatically figure out, based on the column count, rowspans and colspans, how to position each panel within the
  * table. Just like with HTML tables, your rowspans and colspans must add up correctly in your overall layout or you'll
  * end up with missing and/or extra cells! Example usage:
@@ -73,10 +73,6 @@ Ext.define('Ext.layout.container.Table', {
 
     type: 'table',
 
-    // Table layout is a self-sizing layout. When an item of for example, a dock layout, the Panel must expand to accommodate
-    // a table layout. See in particular AbstractDock::onLayout for use of this flag.
-    autoSize: true,
-
     clearEl: true, // Base class will not create it if already truthy. Not needed in tables.
 
     targetCls: Ext.baseCSSPrefix + 'table-layout-ct',
@@ -106,13 +102,13 @@ Ext.define('Ext.layout.container.Table', {
     /**
      * @cfg {Object} trAttrs
      * An object containing properties which are added to the {@link Ext.DomHelper DomHelper} specification used to
-     * create the layout's <tr> elements.
+     * create the layout's `<tr>` elements.
      */
 
     /**
      * @cfg {Object} tdAttrs
      * An object containing properties which are added to the {@link Ext.DomHelper DomHelper} specification used to
-     * create the layout's <td> elements.
+     * create the layout's `<td>` elements.
      */
 
     itemSizePolicy: {
@@ -221,8 +217,20 @@ Ext.define('Ext.layout.container.Table', {
         if (!ownerContext.hasDomProp('containerChildrenDone')) {
             this.done = false;
         } else {
-            var table = this.owner.getTargetEl().child('table', true);
-            ownerContext.setContentSize(table.offsetWidth, table.offsetHeight);
+            var targetContext = ownerContext.targetContext,
+                widthShrinkWrap = ownerContext.widthModel.shrinkWrap,
+                heightShrinkWrap = ownerContext.heightModel.shrinkWrap,
+                shrinkWrap = heightShrinkWrap || widthShrinkWrap,
+                table = shrinkWrap && targetContext.el.child('table', true),
+                targetPadding = shrinkWrap && targetContext.getPaddingInfo();
+
+            if (widthShrinkWrap) {
+                ownerContext.setContentWidth(table.offsetWidth + targetPadding.width, true);
+            }
+
+            if (heightShrinkWrap) {
+                ownerContext.setContentHeight(table.offsetHeight + targetPadding.height, true);
+            }
         }
     },
 
@@ -232,6 +240,10 @@ Ext.define('Ext.layout.container.Table', {
             Ext.Array.forEach(this.getLayoutItems(), function(item) {
                 Ext.fly(item.el.dom.parentNode).setWidth(item.getWidth());
             });
+        }
+        if (Ext.isIE6 || (Ext.isIEQuirks)) {
+            // Fixes an issue where the table won't paint
+            this.owner.getTargetEl().child('table').repaint();
         }
     },
 

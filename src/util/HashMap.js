@@ -120,7 +120,7 @@ Ext.define('Ext.util.HashMap', {
     },
 
     /**
-     * Adds an item to the collection. Fires the {@link #add} event when complete.
+     * Adds an item to the collection. Fires the {@link #event-add} event when complete.
      * @param {String} key <p>The key to associate with the item, or the new item.</p>
      * <p>If a {@link #getKey} implementation was specified for this HashMap,
      * or if the key of the stored items is in a property called <tt><b>id</b></tt>,
@@ -153,7 +153,7 @@ Ext.define('Ext.util.HashMap', {
 
     /**
      * Replaces an item in the hash. If the key doesn't exist, the
-     * {@link #add} method will be used.
+     * {@link #method-add} method will be used.
      * @param {String} key The key of the item.
      * @param {Object} value The new value for the item.
      * @return {Object} The new value of the item.

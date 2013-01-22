@@ -1,6 +1,4 @@
 /**
- * @class Ext.layout.container.Absolute
- *
  * This is a layout that inherits the anchoring of {@link Ext.layout.container.Anchor} and adds the
  * ability for x/y positioning using the standard x and y component config options.
  *
@@ -12,8 +10,8 @@
  *         title: 'Absolute Layout',
  *         width: 300,
  *         height: 275,
- *         layout:'absolute',
- *         layoutConfig: {
+ *         layout: {
+ *             type: 'absolute',
  *             // layout-specific configs go here
  *             //itemCls: 'x-abs-layout-item',
  *         },
@@ -62,6 +60,14 @@ Ext.define('Ext.layout.container.Absolute', {
     targetCls: Ext.baseCSSPrefix + 'abs-layout-ct',
     itemCls: Ext.baseCSSPrefix + 'abs-layout-item',
 
+    /**
+     * @cfg {Boolean} ignoreOnContentChange
+     * True indicates that changes to one item in this layout do not effect the layout in
+     * general. This may need to be set to false if {@link Ext.AbstractComponent#autoScroll}
+     * is enabled for the container.
+     */
+    ignoreOnContentChange: true,
+
     type: 'absolute',
 
     // private
@@ -78,6 +84,14 @@ Ext.define('Ext.layout.container.Absolute', {
             y = childContext.getStyle('top');
 
         return value - y + padding.top;
+    },
+
+    isItemLayoutRoot: function (item) {
+        return this.ignoreOnContentChange || this.callParent(arguments);
+    },
+
+    isItemShrinkWrap: function (item) {
+        return true;
     },
 
     // private
@@ -104,5 +118,12 @@ Ext.define('Ext.layout.container.Absolute', {
 
     isItemBoxParent: function (itemContext) {
         return true;
+    },
+
+    onContentChange: function () {
+        if (this.ignoreOnContentChange) {
+            return false;
+        }
+        return this.callParent(arguments);
     }
 });

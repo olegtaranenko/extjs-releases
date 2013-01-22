@@ -42,7 +42,9 @@ Ext.define('Ext.grid.column.Number', {
      * @cfg {String} format
      * A formatting string as used by {@link Ext.util.Format#number} to format a numeric value for this Column.
      */
+    //<locale>
     format : '0,000.00',
+    //</locale>
 
     constructor: function(cfg) {
         this.callParent(arguments);

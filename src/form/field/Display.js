@@ -53,8 +53,7 @@ Ext.define('Ext.form.field.Display', {
 
     /**
      * @cfg {Boolean} htmlEncode
-     * false to skip HTML-encoding the text when rendering it. This might be useful if you want to
-     * include tags in the field's innerHTML rather than rendering them as string literals per the default logic.
+     * True to escape HTML in text when rendering it.
      */
     htmlEncode: false,
     
@@ -74,6 +73,10 @@ Ext.define('Ext.form.field.Display', {
     initEvents: Ext.emptyFn,
 
     submitValue: false,
+    
+    isDirty: function(){
+        return false;
+    },
 
     isValid: function() {
         return true;
@@ -116,34 +119,35 @@ Ext.define('Ext.form.field.Display', {
     },
         
     getSubTplData: function() {
-        var me = this;
-        me.callParent(arguments);
-        me.subTplData.value = me.getDisplayValue();
-        return me.subTplData;
+        var ret = this.callParent(arguments);
+
+        ret.value = this.getDisplayValue();
+
+        return ret;
     }
 
     /**
      * @cfg {String} inputType
-     * Not applicable for Display field.
+     * @private
      */
     /**
      * @cfg {Boolean} disabled
-     * Not applicable for Display field.
+     * @private
      */
     /**
      * @cfg {Boolean} readOnly
-     * Not applicable for Display field.
+     * @private
      */
     /**
      * @cfg {Boolean} validateOnChange
-     * Not applicable for Display field.
+     * @private
      */
     /**
      * @cfg {Number} checkChangeEvents
-     * Not applicable for Display field.
+     * @private
      */
     /**
      * @cfg {Number} checkChangeBuffer
-     * Not applicable for Display field.
+     * @private
      */
 });

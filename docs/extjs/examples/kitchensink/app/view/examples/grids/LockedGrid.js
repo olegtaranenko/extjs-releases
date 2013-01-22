@@ -1,6 +1,6 @@
 Ext.define('KitchenSink.view.examples.grids.LockedGrid', {
     extend: 'KitchenSink.view.examples.Example',
-
+    
     items: [
         {
             xtype: 'grid',
@@ -10,7 +10,7 @@ Ext.define('KitchenSink.view.examples.grids.LockedGrid', {
             width: 500,
             height: 400,
             
-            store: Ext.create('KitchenSink.store.Restaurants'),
+            store: 'Restaurants',
             
             columns: [
                 {

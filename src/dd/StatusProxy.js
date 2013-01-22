@@ -1,7 +1,6 @@
 /**
- * @class Ext.dd.StatusProxy
- * A specialized floating Component that supports a drop status icon, {@link Ext.Layer} styles and auto-repair.  This is the
- * default drag proxy used by all Ext.dd components.
+ * A specialized floating Component that supports a drop status icon, {@link Ext.Layer} styles
+ * and auto-repair.  This is the default drag proxy used by all Ext.dd components.
  */
 Ext.define('Ext.dd.StatusProxy', {
     extend: 'Ext.Component',
@@ -18,7 +17,7 @@ Ext.define('Ext.dd.StatusProxy', {
 
     /**
      * Creates new StatusProxy.
-     * @param {Object} config (optional) Config object.
+     * @param {Object} [config] Config object.
      */
     constructor: function(config) {
         var me = this;
@@ -37,13 +36,13 @@ Ext.define('Ext.dd.StatusProxy', {
     },
 
     /**
-     * @cfg {String} [dropAllowed="x-dd-drop-ok"]
+     * @cfg {String} dropAllowed
      * The CSS class to apply to the status element when drop is allowed.
      */
     dropAllowed : Ext.baseCSSPrefix + 'dd-drop-ok',
 
     /**
-     * @cfg {String} [dropNotAllowed="x-dd-drop-nodrop"]
+     * @cfg {String} dropNotAllowed
      * The CSS class to apply to the status element when drop is not allowed.
      */
     dropNotAllowed : Ext.baseCSSPrefix + 'dd-drop-nodrop',
@@ -105,7 +104,8 @@ Ext.define('Ext.dd.StatusProxy', {
 
     /**
      * Hides the proxy
-     * @param {Boolean} clear True to reset the status and clear the ghost contents, false to preserve them
+     * @param {Boolean} clear True to reset the status and clear the ghost contents,
+     * false to preserve them
      */
     hide : function(clear) {
         this.callParent();
@@ -131,11 +131,12 @@ Ext.define('Ext.dd.StatusProxy', {
     },
 
     /**
-     * Causes the proxy to return to its position of origin via an animation.  Should be called after an
-     * invalid drop operation by the item being dragged.
+     * Causes the proxy to return to its position of origin via an animation.
+     * Should be called after an invalid drop operation by the item being dragged.
      * @param {Number[]} xy The XY position of the element ([x, y])
      * @param {Function} callback The function to call after the repair is complete.
-     * @param {Object} scope The scope (<code>this</code> reference) in which the callback function is executed. Defaults to the browser window.
+     * @param {Object} scope The scope (`this` reference) in which the callback function is executed.
+     * Defaults to the browser window.
      */
     repair : function(xy, callback, scope) {
         var me = this;

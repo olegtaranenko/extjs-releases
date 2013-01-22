@@ -1,5 +1,4 @@
 /**
- * @class Ext.dd.DropTarget
  * A simple class that provides the basic implementation needed to make any element a drop target that can have
  * draggable items dropped onto it.  The drop has no effect until an implementation of notifyDrop is provided.
  */
@@ -35,12 +34,12 @@ Ext.define('Ext.dd.DropTarget', {
      * The CSS class applied to the drop target element while the drag source is over it.
      */
     /**
-     * @cfg {String} [dropAllowed="x-dd-drop-ok"]
+     * @cfg {String} dropAllowed
      * The CSS class returned to the drag source when drop is allowed.
      */
     dropAllowed : Ext.baseCSSPrefix + 'dd-drop-ok',
     /**
-     * @cfg {String} [dropNotAllowed="x-dd-drop-nodrop"]
+     * @cfg {String} dropNotAllowed
      * The CSS class returned to the drag source when drop is not allowed.
      */
     dropNotAllowed : Ext.baseCSSPrefix + 'dd-drop-nodrop',

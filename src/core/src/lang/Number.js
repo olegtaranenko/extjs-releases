@@ -109,7 +109,7 @@ Ext.Number.from('abc', 1); // returns 1
  * @deprecated 4.0.0 Please use {@link Ext.Number#from} instead.
  * @member Ext
  * @method num
- * @alias Ext.Number#from
+ * @inheritdoc Ext.Number#from
  */
 Ext.num = function() {
     return Ext.Number.from.apply(this, arguments);

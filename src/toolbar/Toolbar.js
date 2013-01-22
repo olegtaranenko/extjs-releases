@@ -1,7 +1,8 @@
 /**
- * Basic Toolbar class. Although the {@link Ext.container.Container#defaultType defaultType} for Toolbar is {@link Ext.button.Button button}, Toolbar
- * elements (child items for the Toolbar container) may be virtually any type of Component. Toolbar elements can be created explicitly via their
- * constructors, or implicitly via their xtypes, and can be {@link #add}ed dynamically.
+ * Basic Toolbar class. Although the {@link Ext.container.Container#defaultType defaultType} for
+ * Toolbar is {@link Ext.button.Button button}, Toolbar elements (child items for the Toolbar container)
+ * may be virtually any type of Component. Toolbar elements can be created explicitly via their
+ * constructors, or implicitly via their xtypes, and can be {@link #method-add}ed dynamically.
  *
  * ## Some items have shortcut strings for creation:
  *
@@ -41,7 +42,8 @@
  *         ]
  *     });
  *
- * Toolbars have {@link #enable} and {@link #disable} methods which when called, will enable/disable all items within your toolbar.
+ * Toolbars have {@link #method-enable} and {@link #method-disable} methods which when called, will
+ * enable/disable all items within your toolbar.
  *
  *     @example
  *     Ext.create('Ext.toolbar.Toolbar', {
@@ -101,7 +103,8 @@
  *         items   : [enableBtn, disableBtn]
  *     });
  *
- * Adding items to and removing items from a toolbar is as simple as calling the {@link #add} and {@link #remove} methods. There is also a {@link #removeAll} method
+ * Adding items to and removing items from a toolbar is as simple as calling the {@link #method-add}
+ * and {@link #method-remove} methods. There is also a {@link #removeAll} method
  * which remove all items within the toolbar.
  *
  *     @example
@@ -180,7 +183,7 @@
  *
  * @constructor
  * Creates a new Toolbar
- * @param {Object/Object[]} config A config object or an array of buttons to <code>{@link #add}</code>
+ * @param {Object/Object[]} config A config object or an array of buttons to {@link #method-add}
  * @docauthor Robert Dougan <rob@sencha.com>
  */
 Ext.define('Ext.toolbar.Toolbar', {
@@ -313,18 +316,21 @@ Ext.define('Ext.toolbar.Toolbar', {
      * Adds element(s) to the toolbar -- this function takes a variable number of
      * arguments of mixed type and adds them to the toolbar.
      *
-     * **Note**: See the notes within {@link Ext.container.Container#add}.
+     * **Note**: See the notes within {@link Ext.container.Container#method-add}.
      *
      * @param {Object...} args The following types of arguments are all valid:
+     *
      *  - `{@link Ext.button.Button config}`: A valid button config object
      *  - `HtmlElement`: Any standard HTML element
      *  - `Field`: Any form field
      *  - `Item`: Any subclass of {@link Ext.toolbar.Item}
      *  - `String`: Any generic string (gets wrapped in a {@link Ext.toolbar.TextItem}).
-     *  Note that there are a few special strings that are treated differently as explained next.
-     *  - `'-'`: Creates a separator element
-     *  - `' '`: Creates a spacer element
-     *  - `'->'`: Creates a fill element
+     *
+     *    Note that there are a few special strings that are treated differently as explained next:
+     *
+     *      - `'-'`: Creates a separator element
+     *      - `' '`: Creates a spacer element
+     *      - `'->'`: Creates a fill element
      *
      * @method add
      */
@@ -404,17 +410,17 @@ Ext.define('Ext.toolbar.Toolbar', {
     // private
     onAdd: function(component) {
         this.callParent(arguments);
-
         this.trackMenu(component);
-        if (this.disabled) {
-            component.disable();
-        }
     },
-
+    
     // private
     onRemove: function(c) {
         this.callParent(arguments);
         this.trackMenu(c, true);
+    },
+    
+    getChildItemsToDisable: function() {
+        return this.items.getRange();   
     },
 
     // private

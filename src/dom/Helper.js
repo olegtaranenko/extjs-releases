@@ -312,7 +312,7 @@ Ext.define('Ext.dom.Helper', {
 
     /**
      * Alias for {@link #markup}.
-     * @alias Ext.dom.AbstractHelper#markup
+     * @inheritdoc Ext.dom.AbstractHelper#markup
      */
     createHtml: function(spec) {
         return this.markup(spec);

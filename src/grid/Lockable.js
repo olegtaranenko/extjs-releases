@@ -1,5 +1,4 @@
 /**
- * @class Ext.grid.Lockable
  * @private
  *
  * Lockable is a private mixin which injects lockable behavior into any
@@ -59,13 +58,17 @@ Ext.define('Ext.grid.Lockable', {
 
     /**
      * @cfg {Number} scrollDelta
-     * Number of pixels to scroll when scrolling the locked section with mousewheel. Defaults to 40.
+     * Number of pixels to scroll when scrolling the locked section with mousewheel.
      */
     scrollDelta: 40,
 
     // i8n text
+    //<locale>
     unlockText: 'Unlock',
+    //</locale>
+    //<locale>
     lockText: 'Lock',
+    //</locale>
 
     determineXTypeToCreate: function() {
         var me = this,
@@ -115,7 +118,10 @@ Ext.define('Ext.grid.Lockable', {
                 scroll: false,
                 selModel: selModel,
                 border: false,
-                cls: Ext.baseCSSPrefix + 'grid-inner-locked'
+                cls: Ext.baseCSSPrefix + 'grid-inner-locked',
+                isLayoutRoot: function() {
+                    return false;
+                }
             },
             normalGrid = {
                 xtype: xtype,
@@ -123,7 +129,10 @@ Ext.define('Ext.grid.Lockable', {
                 scrollerOwner: false,
                 enableAnimations: false,
                 selModel: selModel,
-                border: false
+                border: false,
+                isLayoutRoot: function() {
+                    return false;
+                }
             },
             i = 0,
             columns,
@@ -137,6 +146,8 @@ Ext.define('Ext.grid.Lockable', {
         // copy appropriate configurations to the respective
         // aggregated tablepanel instances and then delete them
         // from the master tablepanel.
+        Ext.copyTo(normalGrid, me, me.bothCfgCopy);
+        Ext.copyTo(lockedGrid, me, me.bothCfgCopy);
         Ext.copyTo(normalGrid, me, me.normalCfgCopy);
         Ext.copyTo(lockedGrid, me, me.lockedCfgCopy);
         for (; i < me.normalCfgCopy.length; i++) {
@@ -301,8 +312,16 @@ Ext.define('Ext.grid.Lockable', {
         }
         return {
             lockedWidth: lockedWidth,
-            locked: lockedHeaders,
-            normal: normalHeaders
+            locked: {
+                items: lockedHeaders,
+                itemId: 'lockedHeaderCt',
+                stretchMaxPartner: '^^>>#normalHeaderCt'
+            },
+            normal: {
+                items: normalHeaders,
+                itemId: 'normalHeaderCt',
+                stretchMaxPartner: '^^>>#lockedHeaderCt'
+            }
         };
     },
 
@@ -449,8 +468,10 @@ Ext.define('Ext.grid.Lockable', {
         this.syncRowHeights();
     },
 
-    // match the rowheights to the biggest rowheight on either
-    // side
+    /**
+     * Synchronizes the row heights between the locked and non locked portion of the grid for each
+     * row. If one row is smaller than the other, the height will be increased to match the larger one.
+     */
     syncRowHeights: function() {
         var me = this,
             lockedHeights = me.lockedHeights,
@@ -543,8 +564,10 @@ Ext.define('Ext.grid.Lockable', {
     /**
      * Locks the activeHeader as determined by which menu is open OR a header
      * as specified.
-     * @param {Ext.grid.column.Column} header (Optional) Header to unlock from the locked section. Defaults to the header which has the menu open currently.
-     * @param {Number} toIdx (Optional) The index to move the unlocked header to. Defaults to appending as the last item.
+     * @param {Ext.grid.column.Column} [header] Header to unlock from the locked section.
+     * Defaults to the header which has the menu open currently.
+     * @param {Number} [toIdx] The index to move the unlocked header to.
+     * Defaults to appending as the last item.
      * @private
      */
     lock: function(activeHd, toIdx) {
@@ -563,16 +586,16 @@ Ext.define('Ext.grid.Lockable', {
             delete activeHd.flex;
         }
 
+        Ext.suspendLayouts();
         normalHCt.remove(activeHd, false);
-        lockedHCt.suspendLayouts();
         activeHd.locked = true;
         if (Ext.isDefined(toIdx)) {
             lockedHCt.insert(toIdx, activeHd);
         } else {
             lockedHCt.add(activeHd);
         }
-        lockedHCt.resumeLayouts();
         me.syncLockedSection();
+        Ext.resumeLayouts(true);
 
         me.fireEvent('lockcolumn', me, activeHd);
     },
@@ -588,9 +611,19 @@ Ext.define('Ext.grid.Lockable', {
     // headerCt
     syncLockedWidth: function() {
         var me = this,
-            width = me.lockedGrid.headerCt.getFullWidth(true);
-        me.lockedGrid.setWidth(width);
-        me.doComponentLayout();
+            locked = me.lockedGrid,
+            width = locked.headerCt.getFullWidth(true);
+            
+        me.suspendLayouts();
+        if (width > 0) {
+            locked.setWidth(width);
+            locked.show();
+        } else {
+            locked.hide();
+        }
+        me.resumeLayouts(true);
+        
+        return width > 0;
     },
 
     onLockedHeaderResize: function() {
@@ -625,8 +658,9 @@ Ext.define('Ext.grid.Lockable', {
     /**
      * Unlocks the activeHeader as determined by which menu is open OR a header
      * as specified.
-     * @param {Ext.grid.column.Column} header (Optional) Header to unlock from the locked section. Defaults to the header which has the menu open currently.
-     * @param {Number} toIdx (Optional) The index to move the unlocked header to. Defaults to 0.
+     * @param {Ext.grid.column.Column} [header] Header to unlock from the locked section.
+     * Defaults to the header which has the menu open currently.
+     * @param {Number} [toIdx=0] The index to move the unlocked header to.
      * @private
      */
     unlock: function(activeHd, toIdx) {
@@ -634,19 +668,26 @@ Ext.define('Ext.grid.Lockable', {
             normalGrid = me.normalGrid,
             lockedGrid = me.lockedGrid,
             normalHCt  = normalGrid.headerCt,
-            lockedHCt  = lockedGrid.headerCt;
+            lockedHCt  = lockedGrid.headerCt,
+            refreshLocked = false;
 
         if (!Ext.isDefined(toIdx)) {
             toIdx = 0;
         }
         activeHd = activeHd || lockedHCt.getMenu().activeHeader;
 
+        Ext.suspendLayouts();
         lockedHCt.remove(activeHd, false);
-        me.syncLockedWidth();
-        me.lockedGrid.getView().refresh();
+        if (me.syncLockedWidth()) {
+            refreshLocked = true;
+        }
         activeHd.locked = false;
         normalHCt.insert(toIdx, activeHd);
+        if (refreshLocked) {
+            me.lockedGrid.getView().refresh();
+        }
         me.normalGrid.getView().refresh();
+        Ext.resumeLayouts(true);
 
         me.fireEvent('unlockcolumn', me, activeHd);
     },
@@ -720,13 +761,15 @@ Ext.define('Ext.grid.Lockable', {
             normalGrid = me.normalGrid;
 
         if (columns) {
+            Ext.suspendLayouts();
             lockedGrid.headerCt.removeAll();
             normalGrid.headerCt.removeAll();
 
             columns = me.processColumns(columns);
             lockedGrid.setWidth(columns.lockedWidth);
-            lockedGrid.headerCt.add(columns.locked);
-            normalGrid.headerCt.add(columns.normal);
+            lockedGrid.headerCt.add(columns.locked.items);
+            normalGrid.headerCt.add(columns.normal.items);
+            Ext.resumeLayouts(true);
         }
 
         if (store) {

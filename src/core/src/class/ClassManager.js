@@ -372,6 +372,7 @@
             var parts = [],
                 rewrites = this.namespaceRewrites,
                 root = global,
+                name = namespace,
                 rewrite, from, to, i, ln;
 
             for (i = 0, ln = rewrites.length; i < ln; i++) {
@@ -379,8 +380,8 @@
                 from = rewrite.from;
                 to = rewrite.to;
 
-                if (namespace === from || namespace.substring(0, from.length) === from) {
-                    namespace = namespace.substring(from.length);
+                if (name === from || name.substring(0, from.length) === from) {
+                    name = name.substring(from.length);
 
                     if (typeof to != 'string') {
                         root = to;
@@ -394,7 +395,7 @@
 
             parts.push(root);
 
-            parts = parts.concat(namespace.split('.'));
+            parts = parts.concat(name.split('.'));
 
             if (this.enableNamespaceParseCache) {
                 cache[namespace] = parts;
@@ -925,20 +926,26 @@
          * @param length
          */
         getInstantiator: function(length) {
-            var instantiators = this.instantiators;
+            var instantiators = this.instantiators,
+                instantiator;
 
-            if (!instantiators[length]) {
+            instantiator = instantiators[length];
+
+            if (!instantiator) {
                 var i = length,
                     args = [];
 
                 for (i = 0; i < length; i++) {
-                    args.push('a['+i+']');
+                    args.push('a[' + i + ']');
                 }
 
-                instantiators[length] = new Function('c', 'a', 'return new c('+args.join(',')+')');
+                instantiator = instantiators[length] = new Function('c', 'a', 'return new c(' + args.join(',') + ')');
+                //<debug>
+                instantiator.displayName = "Ext.ClassManager.instantiate" + length;
+                //</debug>
             }
 
-            return instantiators[length];
+            return instantiator;
         },
 
         /**
@@ -1242,7 +1249,7 @@
          *
          * @param {String} [name] The class name or alias. Can be specified as `xclass`
          * property if only one object parameter is specified.
-         * @param {Object...} args Additional arguments after the name will be passed to
+         * @param {Object...} [args] Additional arguments after the name will be passed to
          * the class' constructor.
          * @return {Object} instance
          * @member Ext
@@ -1481,17 +1488,15 @@
          *     Ext.namespace('Company', 'Company.data');
          *
          *     // equivalent and preferable to the above syntax
-         *     Ext.namespace('Company.data');
+         *     Ext.ns('Company.data');
          *
          *     Company.Widget = function() { ... };
          *
          *     Company.data.CustomStore = function(config) { ... };
          *
-         * @param {String} namespace1
-         * @param {String} namespace2
-         * @param {String} etc
-         * @return {Object} The namespace object. (If multiple arguments are passed, this will be the last namespace created)
-         * @function
+         * @param {String...} namespaces
+         * @return {Object} The namespace object.
+         * (If multiple arguments are passed, this will be the last namespace created)
          * @member Ext
          * @method namespace
          */
@@ -1507,7 +1512,8 @@
     Ext.createWidget = Ext.widget;
 
     /**
-     * Convenient alias for {@link Ext#namespace Ext.namespace}
+     * Convenient alias for {@link Ext#namespace Ext.namespace}.
+     * @inheritdoc Ext#namespace
      * @member Ext
      * @method ns
      */

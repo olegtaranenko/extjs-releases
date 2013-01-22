@@ -144,6 +144,11 @@ Ext.EventManager = {
         // Document already loaded, let's just fire it
         if (Ext.isReady) {
             readyEvent.fire();
+        } else if (document.readyState == 'complete') {
+            // The document is loaded but not Ext.isReady
+            // This can often mean the script was loaded after the document
+            // Is ready, so fire the doc ready event anyway.
+            me.fireDocReady();
         } else {
             me.bindReadyEvent();
         }
@@ -482,12 +487,12 @@ Ext.EventManager = {
         return function wrap(e, args) {
             // Compile the implementation upon first firing
             if (!gen) {
-                f = ['if(!Ext) {return;}'];
+                f = ['if(!' + Ext.name + ') {return;}'];
 
                 if(options.buffer || options.delay || options.freezeEvent) {
-                    f.push('e = new Ext.EventObjectImpl(e, ' + (options.freezeEvent ? 'true' : 'false' ) + ');');
+                    f.push('e = new ' + Ext.name + '.EventObjectImpl(e, ' + (options.freezeEvent ? 'true' : 'false' ) + ');');
                 } else {
-                    f.push('e = Ext.EventObject.setEvent(e);');
+                    f.push('e = ' + Ext.name + '.EventObject.setEvent(e);');
                 }
 
                 if (options.delegate) {
@@ -721,10 +726,12 @@ Ext.EventManager = {
      * @param {Boolean}  options Options object as passed to {@link Ext.Element#addListener}
      */
     onWindowResize: function(fn, scope, options){
-        var resize = this.resizeEvent;
+        var me = this,
+            resize = me.resizeEvent;
+            
         if(!resize){
-            this.resizeEvent = resize = new Ext.util.Event();
-            this.on(window, 'resize', this.fireResize, this, {buffer: 100});
+            me.resizeEvent = resize = new Ext.util.Event();
+            me.on(window, 'resize', me.fireResize, me, {buffer: 100});
         }
         resize.addListener(fn, scope, options);
     },
@@ -752,16 +759,28 @@ Ext.EventManager = {
      * @param {Object}   scope    The scope of handler
      */
     removeResizeListener: function(fn, scope){
-        if (this.resizeEvent) {
-            this.resizeEvent.removeListener(fn, scope);
+        var resize = this.resizeEvent;
+        if (resize) {
+            resize.removeListener(fn, scope);
         }
     },
 
-    onWindowUnload: function() {
-        var unload = this.unloadEvent;
+    /**
+     * Adds a listener to be notified when the browser window is unloaded.
+     * @param {Function} fn      The handler function the window unload event invokes.
+     * @param {Object}   scope   The scope (<code>this</code> reference) in which the handler function executes. Defaults to the browser window.
+     * @param {Boolean}  options Options object as passed to {@link Ext.Element#addListener}
+     */
+    onWindowUnload: function(fn, scope, options) {
+        var me = this,
+            unload = me.unloadEvent;
+            
         if (!unload) {
-            this.unloadEvent = unload = new Ext.util.Event();
-            this.addListener(window, 'unload', this.fireUnload, this);
+            me.unloadEvent = unload = new Ext.util.Event();
+            me.addListener(window, 'unload', me.fireUnload, me);
+        }
+        if (fn) {
+            unload.addListener(fn, scope, options);
         }
     },
 
@@ -772,7 +791,7 @@ Ext.EventManager = {
     fireUnload: function() {
         // wrap in a try catch, could have some problems during unload
         try {
-            this.removeUnloadListener();
+            this.unloadEvent.fire();
             // Work around FF3 remembering the last scroll position when refreshing the grid and then losing grid view
             if (Ext.isGecko3) {
                 var gridviews = Ext.ComponentQuery.query('gridview'),
@@ -785,6 +804,7 @@ Ext.EventManager = {
             // Purge all elements in the cache
             var el,
                 cache = Ext.cache;
+                
             for (el in cache) {
                 if (cache.hasOwnProperty(el)) {
                     Ext.EventManager.removeAll(el);
@@ -799,9 +819,10 @@ Ext.EventManager = {
      * @param {Function} fn        The method the event invokes
      * @param {Object}   scope    The scope of handler
      */
-    removeUnloadListener: function(){
-        if (this.unloadEvent) {
-            this.removeListener(window, 'unload', this.fireUnload);
+    removeUnloadListener: function(fn, scope){
+        var unload = this.unloadEvent;
+        if (unload) {
+            unload.removeListener(fn, scope);
         }
     },
 

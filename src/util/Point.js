@@ -87,7 +87,7 @@ Ext.define('Ext.util.Point', {
     /**
      * @method
      * Alias for {@link #translateBy}
-     * @alias Ext.util.Region#translateBy
+     * @inheritdoc Ext.util.Region#translateBy
      */
     this.prototype.translate = Ext.util.Region.prototype.translateBy;
 });

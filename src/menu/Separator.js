@@ -26,81 +26,81 @@ Ext.define('Ext.menu.Separator', {
 
     /**
      * @cfg {String} activeCls
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Boolean} canActivate
-     * Not applicable for Separator.
+     * @private
      */
     canActivate: false,
 
     /**
      * @cfg {Boolean} clickHideDelay
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Boolean} destroyMenu
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Boolean} disabledCls
-     * Not applicable for Separator.
+     * @private
      */
 
     focusable: false,
 
     /**
      * @cfg {String} href
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {String} hrefTarget
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Boolean} hideOnClick
-     * Not applicable for Separator.
+     * @private
      */
     hideOnClick: false,
 
     /**
      * @cfg {String} icon
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {String} iconCls
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Object} menu
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {String} menuAlign
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Number} menuExpandDelay
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Number} menuHideDelay
-     * Not applicable for Separator.
+     * @private
      */
 
     /**
      * @cfg {Boolean} plain
-     * Not applicable for Separator.
+     * @private
      */
     plain: true,
 
@@ -112,7 +112,7 @@ Ext.define('Ext.menu.Separator', {
 
     /**
      * @cfg {String} text
-     * Not applicable for Separator.
+     * @private
      */
     text: '&#160;',
 

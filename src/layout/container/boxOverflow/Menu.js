@@ -1,5 +1,4 @@
 /**
- * @class Ext.layout.container.boxOverflow.Menu
  * @private
  */
 Ext.define('Ext.layout.container.boxOverflow.Menu', {
@@ -13,14 +12,12 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
     /* End Definitions */
 
     /**
-     * @cfg {String} afterCtCls
-     * CSS class added to the afterCt element. This is the element that holds any special items such as scrollers,
-     * which must always be present at the rightmost edge of the Container
+     * @cfg {String} triggerButtonCls
+     * CSS class added to the Button which shows the overflow menu.
      */
 
     /**
-     * @property noItemsMenuText
-     * @type String
+     * @property {String} noItemsMenuText
      * HTML fragment to render into the toolbar overflow menu if there are no items to display
      */
     noItemsMenuText : '<div class="' + Ext.baseCSSPrefix + 'toolbar-no-items">(None)</div>',
@@ -30,10 +27,9 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
 
         me.callParent(arguments);
 
-        me.afterCtCls = me.afterCtCls || Ext.baseCSSPrefix + 'box-menu-' + layout.getNames().right;
+        me.triggerButtonCls = me.triggerButtonCls || Ext.baseCSSPrefix + 'box-menu-' + layout.getNames().right;
         /**
-         * @property menuItems
-         * @type Array
+         * @property {Array} menuItems
          * Array of all items that are currently hidden and should go into the dropdown menu
          */
         me.menuItems = [];
@@ -44,7 +40,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
 
         // Before layout, we need to re-show all items which we may have hidden due to a
         // previous overflow...
-        this.clearOverflow();
+        this.clearOverflow(ownerContext);
     },
 
     beginLayoutCycle: function (ownerContext, firstCycle) {
@@ -53,7 +49,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
         if (!firstCycle) {
             // if we are being re-run, we need to clear any overflow from the last run and
             // recache the childItems collection
-            this.clearOverflow();
+            this.clearOverflow(ownerContext);
 
             this.layout.cacheChildItems(ownerContext);
         }
@@ -71,8 +67,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
 
         /**
          * @private
-         * @property menu
-         * @type Ext.menu.Menu
+         * @property {Ext.menu.Menu} menu
          * The expand menu - holds items for every item that cannot be shown
          * because the container is currently not large enough.
          */
@@ -85,26 +80,22 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
 
         /**
          * @private
-         * @property menuTrigger
-         * @type Ext.button.Button
+         * @property {Ext.button.Button} menuTrigger
          * The expand button which triggers the overflow menu to be shown
          */
         me.menuTrigger = new Ext.button.Button({
             id      : oid + '-menu-trigger',
-            style   : 'display:none',
+            cls     : Ext.layout.container.Box.prototype.innerCls + ' ' + me.triggerButtonCls,
             hidden  : true,
             ownerCt : layout.owner, // To enable the Menu to ascertain a valid zIndexManager owner in the same tree
+            ownerLayout: layout,
             iconCls : Ext.baseCSSPrefix + layout.owner.getXType() + '-more-icon',
             ui      : layout.owner instanceof Ext.toolbar.Toolbar ? 'default-toolbar' : 'default',
             menu    : me.menu,
             getSplitCls: function() { return '';}
         });
 
-        return {
-            id  : oid + '-overflow-el',
-            cls : Ext.layout.container.Box.prototype.innerCls + ' ' + me.afterCtCls,
-            cn  : me.menuTrigger.getRenderTree()
-        };
+        return me.menuTrigger.getRenderTree();
     },
     
     getOverflowCls: function() {
@@ -119,7 +110,6 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
             plan = ownerContext.state.boxPlan,
             posArgs = [null, null];
 
-        me.captureChildElements();
         me.showTrigger(ownerContext);
 
         // Center the menuTrigger button.
@@ -128,21 +118,18 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
         me.menuTrigger.setPosition.apply(me.menuTrigger, posArgs);
 
         return {
-            reservedSpace: me.afterCt[methodName]()
+            reservedSpace: me.menuTrigger[methodName]()
         };
     },
 
     /**
+     * Finishes the render operation of the trigger Button.
      * @private
-     * Captures reference to the the afterCt element and finishes the render operation of the trigger Button.
      */
     captureChildElements: function() {
-        var me = this,
-            el = me.layout.owner.el;
-
-        if (!me.afterCt) {
-            me.afterCt = el.getById(me.layout.owner.id + '-overflow-el');
-            me.menuTrigger.finishRender();
+        var menuTrigger = this.menuTrigger;
+        if (menuTrigger.rendering) {
+            menuTrigger.finishRender();
         }
     },
 
@@ -152,16 +139,29 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
      * Also called as an interceptor to the layout's onLayout method to reshow
      * previously hidden overflowing items.
      */
-    clearOverflow: function() {
+    clearOverflow: function(ownerContext) {
         var me = this,
             items = me.menuItems,
+            item,
             i = 0,
-            length = items.length;
+            length = items.length,
+            owner = me.layout.owner;
 
+        owner.suspendLayouts();
+        me.captureChildElements();
         me.hideTrigger();
+        owner.resumeLayouts();
+
         for (; i < length; i++) {
-            items[i].show();
+            item = items[i];
+
+            // What we are doing here is preventing the layout bubble from invalidating our
+            // owner component. We need just the button to be added to the layout run.
+            item.suspendLayouts();
+            item.show();
+            item.resumeLayouts({ isRoot: true });
         }
+
         items.length = 0;
     },
 
@@ -173,6 +173,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
     showTrigger: function(ownerContext) {
         var me = this,
             layout = me.layout,
+            owner = layout.owner,
             names = layout.getNames(),
             startProp = names.x,
             sizeProp = names.width,
@@ -180,11 +181,19 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
             available = plan.targetSize[sizeProp],
             childItems = ownerContext.childItems,
             len = childItems.length,
+            menuTrigger = me.menuTrigger,
             childContext,
             comp, i, props;
 
-        me.menuTrigger.show();
-        available -= me.afterCt.dom.offsetWidth;
+        // We don't want the menuTrigger.show to cause owner's layout to be invalidated, so
+        // we force just the button to be invalidated and added to the current run.
+        menuTrigger.suspendLayouts();
+        menuTrigger.show();
+        menuTrigger.resumeLayouts({ isRoot: true });
+
+        available -= me.menuTrigger.getWidth();
+
+        owner.suspendLayouts();
 
         // Hide all items which are off the end, and store them to allow them to be restored
         // before each layout operation.
@@ -196,17 +205,19 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
                 comp = childContext.target;
                 me.menuItems.push(comp);
                 comp.hide();
-                // TODO - we need a way to abort the layout for the now hidden child...
             }
         }
+
+        owner.resumeLayouts();
     },
 
     /**
      * @private
      */
     hideTrigger: function() {
-        if (this.menuTrigger !== undefined) {
-            this.menuTrigger.hide();
+        var menuTrigger = this.menuTrigger;
+        if (menuTrigger) {
+            menuTrigger.hide();
         }
     },
 

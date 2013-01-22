@@ -1,4 +1,4 @@
-describe("Ext.core.DomHelper", function(){
+xdescribe("Ext.core.DomHelper", function(){
     
     var TestHelper = {
         dom:{

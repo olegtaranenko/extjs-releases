@@ -6,21 +6,27 @@ Ext.define('Ext.perf.Accumulator', function () {
     var currentFrame = null,
         formatTpl;
 
+    // lazy init on first request for timestamp (avoids infobar in IE until needed)
     var getTimestamp = function () {
-        return new Date().getTime();
-    };
-
-    if (window.ActiveXObject) {
-        try {
-            // the above technique is not very accurate for small intervals...
-            var toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
-            getTimestamp = function () {
-                return toolbox.milliseconds;
-            };
-        } catch (e) {
-            // ignore
+        getTimestamp = function () {
+            return new Date().getTime();
         }
-    }
+
+        if (window.ActiveXObject) {
+            try {
+                // the above technique is not very accurate for small intervals...
+                var toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
+                getTimestamp = function () {
+                    return toolbox.milliseconds;
+                };
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        Ext.perf.getTimestamp = Ext.perf.Accumulator.getTimestamp = getTimestamp;
+        return getTimestamp();
+    };
 
     function adjustSet (set, time) {
         set.sum += time;

@@ -114,8 +114,9 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
      * @param {String} dropPosition `"before"`, `"after"` or `"append"` depending on whether the mouse is above or below
      * the midline of the node, or the node is a branch node which accepts new child nodes.
      */
-
+    //<locale>
     dragText : '{0} selected node{1}',
+    //</locale>
 
     /**
      * @cfg {Boolean} allowParentInsert

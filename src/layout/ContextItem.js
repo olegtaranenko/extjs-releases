@@ -17,7 +17,7 @@
  *
  * Whenever any call to {@link #getProp}, {@link #getDomProp}, {@link #hasProp} or
  * {@link #hasDomProp} is made, the current layout is automatically registered as being
- * dependent on that property is the appropriate state. Any changes to the property will
+ * dependent on that property in the appropriate state. Any changes to the property will
  * trigger the layout and it will be queued in the {@link Ext.layout.Context}.
  *
  * Triggers, once added, remain for the entire layout. Any changes to the property will
@@ -26,42 +26,10 @@
 Ext.define('Ext.layout.ContextItem', {
     
     requires: ['Ext.layout.ClassList'],
-    
-    authorityMap: {
-        // "auto" (determined by content).
-        0: { auto: true, fixed: false },
 
-        // defined by this component's configuration (typically the width/height property).
-        1: { auto: false, fixed: true },
-
-        // determined by ownerCt.
-        2: { auto: false, fixed: true },
-
-        // determined by ownerCt, but influenced by the measured "auto" size.
-        3: { auto: true, fixed: true }
-    },
-
-    /**
-     * @property {Boolean} autoHeight
-     * True if this item's natural height needs to be determined. This result may be set
-     * as the final height or just used by the ownerCt layout to determine it (e.g., in an
-     * hbox layout w/stretchmax).
-     * 
-     * This only applies when wrapping a component (not an element).
-     * @readonly
-     */
-    autoHeight: false,
-
-    /**
-     * @property {Boolean} autoWidth
-     * True if this item's natural width needs to be determined. This result may be set
-     * as the final width or just used by the ownerCt layout to determine it (e.g., in a
-     * vbox layout w/stretchmax).
-     * 
-     * This only applies when wrapping a component (not an element).
-     * @readonly
-     */
-    autoWidth: false,
+    heightModel: null,
+    widthModel: null,
+    sizeModel: null,
 
     boxChildren: null,
 
@@ -82,6 +50,13 @@ Ext.define('Ext.layout.ContextItem', {
 
     isTopLevel: false,
 
+    consumersContentHeight: 0,
+    consumersContentWidth: 0,
+    consumersContainerHeight: 0,
+    consumersContainerWidth: 0,
+    consumersHeight: 0,
+    consumersWidth: 0,
+
     ownerCtContext: null,
 
     remainingChildLayouts: 0,
@@ -98,12 +73,13 @@ Ext.define('Ext.layout.ContextItem', {
     constructor: function (config) {
         var me = this,
             target = config.target, // target must come in as a config
-            mapped;
+            el, sizeModel;
 
         Ext.apply(me, config);
-        me.id = me.el.id;
 
-        me.lastBox = target.lastBox;
+        el = me.el;
+        me.id = el.id;
+        me.lastBox = el.lastBox;
 
         // These hold collections of layouts that are either blocked or triggered by sets
         // to our properties (either ASAP or after flushing to the DOM). All of them have
@@ -138,16 +114,12 @@ Ext.define('Ext.layout.ContextItem', {
         me.styles = {};
 
         if (target.isComponent) {
-            target.lastBox = me.props;
-
             me.wrapsComponent = true;
             me.cacheKey = target.$className + '|' + target.el.dom.className;
 
-            mapped = me.authorityMap[me.heightAuthority = target.getHeightAuthority()];
-            me.autoHeight = mapped.auto;
-
-            mapped = me.authorityMap[me.widthAuthority = target.getWidthAuthority()];
-            me.autoWidth = mapped.auto;
+            me.sizeModel = sizeModel = target.getSizeModel(me.ownerCtContext && me.ownerCtContext.sizeModel);
+            me.widthModel = sizeModel.width;
+            me.heightModel = sizeModel.height;
 
             // NOTE: hasRawContent defaults to true...
 
@@ -170,15 +142,21 @@ Ext.define('Ext.layout.ContextItem', {
      */
     init: function (ownerCtContext) {
         var me = this,
-            boxParent;
+            boxParent, widthModel;
 
         if (ownerCtContext) {
             me.ownerCtContext = ownerCtContext;
             me.isBoxParent = me.target.ownerLayout.isItemBoxParent(me);
 
-            boxParent = ownerCtContext.isBoxParent ? ownerCtContext : ownerCtContext.boxParent;
-            if (boxParent) {
-                boxParent.addBoxChild(me);
+            widthModel = me.widthModel;
+
+            if (widthModel.shrinkWrap) {
+                boxParent = ownerCtContext.isBoxParent ? ownerCtContext : ownerCtContext.boxParent;
+                if (boxParent) {
+                    boxParent.addBoxChild(me);
+                }
+            } else if (widthModel.natural) {
+                me.boxParent = ownerCtContext;
             }
         } else {
             me.isTopLevel = true;
@@ -245,14 +223,18 @@ Ext.define('Ext.layout.ContextItem', {
 
     addBoxChild: function (boxChildItem) {
         var me = this,
-            children;
+            children,
+            widthModel = boxChildItem.widthModel;
 
         boxChildItem.boxParent = this;
 
-        // Children that are autoWidth (regardless of autoHeight) that measure the DOM (by
-        // virtue of hasRawContent), need to wait for their "box parent" to be sized. If
-        // they measure too early, they will be wrong results.
-        boxChildItem.measuresBox = boxChildItem.autoWidth && boxChildItem.hasRawContent;
+        // Children that are widthModel.auto (regardless of heightModel) that measure the
+        // DOM (by virtue of hasRawContent), need to wait for their "box parent" to be sized.
+        // If they measure too early, they will be wrong results. In the widthModel.shrinkWrap
+        // case, the boxParent "crushes" the child. In the case of widthModel.natural, the
+        // boxParent's width is likely a key part of the child's width (e.g., "50%" or just
+        // normal block-level behavior of 100% width)
+        boxChildItem.measuresBox = widthModel.shrinkWrap ? boxChildItem.hasRawContent : widthModel.natural;
 
         if (boxChildItem.measuresBox) {
             children = me.boxChildren;
@@ -276,23 +258,9 @@ Ext.define('Ext.layout.ContextItem', {
         var me = this,
             collection = inDom ? me.domTriggers : me.triggers,
             layout = me.context.currentLayout,
-            triggers = collection[propName] || (collection[propName] = {}),
-            rejectAuthValue;
+            triggers = collection[propName] || (collection[propName] = {});
 
         if (!triggers[layout.id]) {
-/* Test if the calling layout is allowed to ask for the dimension
-            if (me.wrapsComponent && (propName === 'width' || propName === 'height')) {
-                
-                // My component layout asking for width/height
-                if (layout === me.target.componentLayout) {
-                    rejectAuthValue = 0;
-                } else if (layout === me.target.ownerLayout) {
-                    rejectAuthValue = 2;
-                }
-                if (me[propName + 'Authority'] === rejectAuthValue) {
-                    return false;
-                }
-            } */
             triggers[layout.id] = layout;
             ++layout.triggerCount;
 
@@ -456,7 +424,8 @@ Ext.define('Ext.layout.ContextItem', {
     doInvalidate: function (full) {
         var me = this,
             oldProps = me.props,
-            oldDirty = me.dirty;
+            oldDirty = me.dirty,
+            ownerLayout = me.target.ownerLayout;
 
         delete me.dirty;
         me.props = {};
@@ -467,19 +436,26 @@ Ext.define('Ext.layout.ContextItem', {
 
         // If we had dirty properties and we are not fully invalidating, we need to recover
         // some of thos values...
-        if (oldDirty && me.wrapsComponent && !full) {
+        if (me.wrapsComponent && !full) {
             // these are almost always calculated by the ownerCt (we might need to track
             // this at some point more carefully):
             me.recoverProp('x', oldProps, oldDirty);
             me.recoverProp('y', oldProps, oldDirty);
 
             // if these are calculated by the ownerCt, don't trash them:
-            if (me.widthAuthority > 1) {
+            if (me.widthModel.calculated) {
                 me.recoverProp('width', oldProps, oldDirty);
             }
-            if (me.heightAuthority > 1) {
+            if (me.heightModel.calculated) {
                 me.recoverProp('height', oldProps, oldDirty);
             }
+        }
+
+        if (ownerLayout && ownerLayout.manageMargins) {
+            me.recoverProp('margin-top', oldProps, oldDirty);
+            me.recoverProp('margin-right', oldProps, oldDirty);
+            me.recoverProp('margin-bottom', oldProps, oldDirty);
+            me.recoverProp('margin-left', oldProps, oldDirty);
         }
     },
 
@@ -515,7 +491,8 @@ Ext.define('Ext.layout.ContextItem', {
         var me = this,
             dirty = me.dirty,
             state = me.state,
-            target = me.target;
+            target = me.target,
+            targetEl = me.el;
 
         me.dirtyCount = 0;
 
@@ -526,13 +503,13 @@ Ext.define('Ext.layout.ContextItem', {
 
         // Set any queued DOM attributes
         if ('attributes' in me) {
-            target.set(me.attributes);
+            targetEl.set(me.attributes);
             delete me.attributes;
         }
 
-        // Set any queued DOM attributes
+        // Set any queued DOM HTML content
         if ('innerHTML' in me) {
-            target.innerHTML = me.innerHTML;
+            targetEl.innerHTML = me.innerHTML;
             delete me.innerHTML;
         }
 
@@ -560,7 +537,7 @@ Ext.define('Ext.layout.ContextItem', {
         // Only animate if the Component has been previously layed out: first layout should not animate
         if (animateFrom) {
             target = me.target;
-            targetAnim = target.layout.animate;
+            targetAnim = target.layout && target.layout.animate;
             if (targetAnim) {
                 duration = Ext.isNumber(targetAnim) ? targetAnim : targetAnim.duration;
             }
@@ -588,10 +565,14 @@ Ext.define('Ext.layout.ContextItem', {
 
             // If any values have changed, kick off animation from the cached old values to the new values
             if (changeCount) {
-
                 // It'a Panel being collapsed. rollback, and then fix the class name string
                 if (me.isCollapsingOrExpanding === 1) {
                     target.componentLayout.undoLayout(me);
+                }
+
+                // Otherwise, undo just the animated properties so the animation can proceed from the old layout.
+                else {
+                    me.writeProps(anim.from, true);
                 }
                 me.el.animate(anim);
                 
@@ -599,9 +580,9 @@ Ext.define('Ext.layout.ContextItem', {
                     afteranimate: function() {
                         if (me.isCollapsingOrExpanding === 1) {
                             target.componentLayout.redoLayout(me);
-                            target.afterCollapse();
+                            target.afterCollapse(true);
                         } else if (me.isCollapsingOrExpanding === 2) {
-                            target.afterExpand();
+                            target.afterExpand(true);
                         }
                     }
                 });
@@ -640,17 +621,15 @@ Ext.define('Ext.layout.ContextItem', {
      */
     getEl: function (nameOrEl, owner) {
         var me = this,
-            cacheKey, src, el, elContext;
+            src, el, elContext;
 
         if (nameOrEl) {
             if (nameOrEl.dom) {
                 el = nameOrEl;
             } else {
                 src = me.target;
-//                cacheKey = src.$className;
                 if (owner) {
                     src = owner;
-//                    cacheKey += '|' + src.$className;
                 }
 
                 el = src[nameOrEl];
@@ -660,18 +639,10 @@ Ext.define('Ext.layout.ContextItem', {
                         return this; // comp.getTarget() often returns comp.el
                     }
                 }
-
-//                if (el) {
-//                    cacheKey += '|' + nameOrEl + el.dom.className;
-//                }
-                // ex:
-                //      Ext.form.field.Text|inputEl
-                //      Ext.panel.Panel|Ext.layout.container.HBox|innerCt
             }
 
             if (el) {
                 elContext = me.context.getEl(me, el);
-                //elContext.cacheKey = cacheKey || null;
             }
         }
 
@@ -688,7 +659,7 @@ Ext.define('Ext.layout.ContextItem', {
 
     /**
      * Gets the "frame" information for the element as an object with left, top, right and
-     * bottom properties holding border+padding size in pixels. This object is calculated
+     * bottom properties holding border+framing size in pixels. This object is calculated
      * on first request and is cached.
      * @return {Object}
      */
@@ -699,16 +670,15 @@ Ext.define('Ext.layout.ContextItem', {
 
         if (!info) {
             frame = me.getFraming();
-            padding = me.getPaddingInfo();
             border = me.getBorderInfo();
             
             me.frameInfo = info = {
-                top   : frame.top    + padding.top    + border.top,
-                right : frame.right  + padding.right  + border.right,
-                bottom: frame.bottom + padding.bottom + border.bottom,
-                left  : frame.left   + padding.left   + border.left,
-                width : frame.width  + padding.width  + border.width,
-                height: frame.height + padding.height + border.height
+                top   : frame.top    + border.top,
+                right : frame.right  + border.right,
+                bottom: frame.bottom + border.bottom,
+                left  : frame.left   + border.left,
+                width : frame.width  + border.width,
+                height: frame.height + border.height
             };
         }
 
@@ -929,6 +899,18 @@ Ext.define('Ext.layout.ContextItem', {
         }
     },
 
+    onBoxMeasured: function () {
+        var boxParent = this.boxParent,
+            state = this.state;
+
+        if (boxParent && boxParent.widthModel.shrinkWrap && !state.boxMeasured && this.measuresBox) {
+            // since an autoWidth boxParent is holding a width on itself to allow each
+            // child to measure
+            state.boxMeasured = 1; // best to only call once per child
+            boxParent.boxChildMeasured();
+        }
+    },
+
     parseMargins: function (margins, defaultMargins) {
         if (margins === true) {
             margins = 5;
@@ -969,7 +951,7 @@ Ext.define('Ext.layout.ContextItem', {
         if (propName in oldProps) {
             props[propName] = oldProps[propName];
 
-            if (propName in oldDirty) {
+            if (oldDirty && propName in oldDirty) {
                 dirty = me.dirty || (me.dirty = {});
                 dirty[propName] = oldDirty[propName];
             }
@@ -1019,10 +1001,9 @@ Ext.define('Ext.layout.ContextItem', {
             me.setProp('y', box.top);
         }
 
-        // if width/heightAuthority says we should not be setting these, the appropriate
-        // calls will be null operations... otherwise, we must set these values, so what
-        // we have in box is what we go with (undefined, NaN and no change are handled at
-        // a lower level):
+        // if sizeModel says we should not be setting these, the appropriate calls will be
+        // null operations... otherwise, we must set these values, so what we have in box
+        // is what we go with (undefined, NaN and no change are handled at a lower level):
         me.setSize(box.width, box.height);
     },
 
@@ -1144,25 +1125,21 @@ Ext.define('Ext.layout.ContextItem', {
      * @param {Number} height The height.
      * @param {Boolean} [dirty=true] Specifies if the value is currently in the DOM. A
      * value of `false` indicates that the value is already in the DOM.
-     * @param {Boolean} [force=false] True to ignore heightAuthority
      * @return {Number} The actual height after constraining.
      */
-    setHeight: function (height, dirty, force) {
+    setHeight: function (height, dirty /*, private {Boolean} force */) {
         var me = this,
             comp = me.target,
-            frameBody, frameInfo;
+            frameBody, frameInfo, padding;
 
+        if (height < 0) {
+            height = 0;
+        }
         if (!me.wrapsComponent) {
             if (!me.setProp('height', height, dirty)) {
                 return NaN;
             }
         } else {
-            //<debug>
-            if (!(force || me.checkAuthority(me.heightAuthority))) {
-                return NaN;
-            }
-            //</debug>
-
             height = Ext.Number.constrain(height, comp.minHeight || 0, comp.maxHeight);
             if (!me.setProp('height', height, dirty)) {
                 return NaN
@@ -1171,7 +1148,8 @@ Ext.define('Ext.layout.ContextItem', {
             frameBody = me.frameBodyContext;
             if (frameBody){
                 frameInfo = me.getFrameInfo();
-                frameBody.setHeight(height - frameInfo.height, dirty);
+                padding = me.getPaddingInfo();
+                frameBody.setHeight(height - frameInfo.height - padding.height, dirty);
             }
 
             // Attempting to publish the height of a non CSS3 framed Header resulted in 20
@@ -1193,25 +1171,21 @@ Ext.define('Ext.layout.ContextItem', {
      * @param {Number} width The width.
      * @param {Boolean} [dirty=true] Specifies if the value is currently in the DOM. A
      * value of `false` indicates that the value is already in the DOM.
-     * @param {Boolean} [force=false] True to ignore widthAuthority
      * @return {Number} The actual width after constraining.
      */
-    setWidth: function (width, dirty, force) {
+    setWidth: function (width, dirty /*, private {Boolean} force */) {
         var me = this,
             comp = me.target,
-            frameBody, frameInfo;
+            frameBody, frameInfo, padding;
 
+        if (width < 0) {
+            width = 0;
+        }
         if (!me.wrapsComponent) {
             if (me.setProp('width', width, dirty)) {
                 return NaN;
             }
         } else {
-            //<debug>
-            if (!(force || me.checkAuthority(me.widthAuthority))) {
-                return NaN;
-            }
-            //</debug>
-
             width = Ext.Number.constrain(width, comp.minWidth || 0, comp.maxWidth);
             if (!me.setProp('width', width, dirty)) {
                 return NaN;
@@ -1221,7 +1195,8 @@ Ext.define('Ext.layout.ContextItem', {
             frameBody = me.frameBodyContext;
             if (frameBody) {
                 frameInfo = me.getFrameInfo();
-                frameBody.setWidth(width - frameInfo.width, dirty);
+                padding = me.getPaddingInfo();
+                frameBody.setWidth(width - frameInfo.width - padding.width, dirty);
             }
 
             /*if (owner.frameMC) {
@@ -1233,19 +1208,6 @@ Ext.define('Ext.layout.ContextItem', {
 
         return width;
     },
-    
-    // <debug>
-    checkAuthority: function(authorityValue) {
-        var me = this,
-            comp = me.target;
-
-        if (me.context.currentLayout == comp.ownerLayout) {
-            return authorityValue >= 2;
-        } else if (me.context.currentLayout.isComponentLayout) {
-            return authorityValue < 2;
-        }
-    },
-    // </debug>
 
     setSize: function (width, height) {
         this.setWidth(width);
@@ -1288,6 +1250,14 @@ Ext.define('Ext.layout.ContextItem', {
     },
 
     writeProps: function(dirtyProps, silent) {
+        
+        if (!(dirtyProps && typeof dirtyProps == 'object')) {
+            //<debug warn>
+            Ext.Logger.warn('writeProps expected dirtyProps to be an object');
+            //</debug>
+            return;
+        }
+        
         var me = this,
             el = me.el,
             styles = {},
@@ -1306,7 +1276,8 @@ Ext.define('Ext.layout.ContextItem', {
             width = dirtyProps.width,
             height = dirtyProps.height,
             isBorderBox = me.isBorderBoxValue,
-            target = me.target;
+            target = me.target,
+            max = Math.max;
 
         // Process non-style properties:
         if ('displayed' in dirtyProps) {
@@ -1362,12 +1333,12 @@ Ext.define('Ext.layout.ContextItem', {
             }
             //</debug>
             if (width) {
-                width = parseInt(width, 10) - (me.borderInfo.width + me.paddingInfo.width);
+                width = max(parseInt(width, 10) - (me.borderInfo.width + me.paddingInfo.width), 0);
                 styles.width = width + 'px';
                 ++styleCount;
             }
             if (height) {
-                height = parseInt(height, 10) - (me.borderInfo.height + me.paddingInfo.height);
+                height = max(parseInt(height, 10) - (me.borderInfo.height + me.paddingInfo.height), 0);
                 styles.height = height + 'px';
                 ++styleCount;
             }

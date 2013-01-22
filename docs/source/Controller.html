@@ -212,6 +212,24 @@ Ext.define('Ext.app.Controller', {
      * 
      */
 
+<span id='Ext-app-Controller-cfg-refs'>    /**
+</span>     * @cfg {Object[]} refs
+     * Array of configs to build up references to views on page. For example:
+     * 
+     *     Ext.define(&quot;MyApp.controller.Foo&quot;, {
+     *         extend: &quot;Ext.app.Controller&quot;,
+     *         refs: [
+     *             {
+     *                 ref: 'list',
+     *                 selector: 'grid'
+     *             }
+     *         ],
+     *     });
+     * 
+     * This will add method `getList` to the controller which will internally use
+     * Ext.ComponentQuery to reference the grid component on page.
+     */
+
     onClassExtended: function(cls, data, hooks) {
         var className = Ext.getClassName(cls),
             match = className.match(/^(.*)\.controller\./);

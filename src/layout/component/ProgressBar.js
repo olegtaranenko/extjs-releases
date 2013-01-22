@@ -1,8 +1,6 @@
 /**
- * @class Ext.layout.component.ProgressBar
  * @private
  */
-
 Ext.define('Ext.layout.component.ProgressBar', {
 
     /* Begin Definitions */

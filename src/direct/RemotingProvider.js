@@ -165,15 +165,17 @@ TestAction.multiply(
             method;
             
         for (action in actions) {
-            cls = namespace[action];
-            if (!cls) {
-                cls = namespace[action] = {};
-            }
-            methods = actions[action];
-            
-            for (i = 0, len = methods.length; i < len; ++i) {
-                method = new Ext.direct.RemotingMethod(methods[i]);
-                cls[method.name] = this.createHandler(action, method);
+            if (actions.hasOwnProperty(action)) {
+                cls = namespace[action];
+                if (!cls) {
+                    cls = namespace[action] = {};
+                }
+                methods = actions[action];
+                
+                for (i = 0, len = methods.length; i < len; ++i) {
+                    method = new Ext.direct.RemotingMethod(methods[i]);
+                    cls[method.name] = this.createHandler(action, method);
+                }
             }
         }
     },
@@ -242,7 +244,8 @@ TestAction.multiply(
      * @param {Ext.direct.Event} event The event
      */
     runCallback: function(transaction, event){
-        var funcName = event.status ? 'success' : 'failure',
+        var success = !!event.status,
+            funcName = success ? 'success' : 'failure',
             callback,
             result;
         
@@ -251,10 +254,10 @@ TestAction.multiply(
             result = Ext.isDefined(event.result) ? event.result : event.data;
         
             if (Ext.isFunction(callback)) {
-                callback(result, event);
+                callback(result, event, success);
             } else {
-                Ext.callback(callback[funcName], callback.scope, [result, event]);
-                Ext.callback(callback.callback, callback.scope, [result, event]);
+                Ext.callback(callback[funcName], callback.scope, [result, event, success]);
+                Ext.callback(callback.callback, callback.scope, [result, event, success]);
             }
         }
     },

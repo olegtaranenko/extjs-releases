@@ -17,20 +17,16 @@ Ext.define('Ext.chart.Highlight', {
      */
     highlight: false,
 
-    highlightCfg : null,
+    highlightCfg : {
+        fill: '#fdd',
+        "stroke-width": 5,
+        stroke: '#f55'
+    },
 
     constructor: function(config) {
         if (config.highlight) {
             if (config.highlight !== true) { //is an object
-                this.highlightCfg = Ext.apply({}, config.highlight);
-            }
-            else {
-                this.highlightCfg = {
-                    fill: '#fdd',
-                    radius: 20,
-                    lineWidth: 5,
-                    stroke: '#f55'
-                };
+                this.highlightCfg = Ext.merge(this.highlightCfg, config.highlight);
             }
         }
     },
@@ -46,7 +42,7 @@ Ext.define('Ext.chart.Highlight', {
         
         var me = this,
             sprite = item.sprite,
-            opts = me.highlightCfg,
+            opts = Ext.merge({}, me.highlightCfg, me.highlight),
             surface = me.chart.surface,
             animate = me.chart.animate,
             p, from, to, pi;
@@ -114,7 +110,7 @@ Ext.define('Ext.chart.Highlight', {
         var me = this,
             items = me.items,
             len = items.length,
-            opts = me.highlightCfg,
+            opts = Ext.merge({}, me.highlightCfg, me.highlight),
             animate = me.chart.animate,
             i = 0,
             obj, p, sprite;

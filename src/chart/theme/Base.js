@@ -79,7 +79,6 @@ Ext.define('Ext.chart.theme.Base', {
             },
             marker: {
                 stroke: '#555',
-                fill: '#000',
                 radius: 3,
                 size: 3
             },

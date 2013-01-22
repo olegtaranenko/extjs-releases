@@ -453,7 +453,7 @@ Ext.define('Ext.data.Model', {
         /**
          * Asynchronously loads a model instance by id. Sample usage:
          *
-         *     MyApp.User = Ext.define('User', {
+         *     Ext.define('MyApp.User', {
          *         extend: 'Ext.data.Model',
          *         fields: [
          *             {name: 'id', type: 'int'},
@@ -474,7 +474,7 @@ Ext.define('Ext.data.Model', {
          *         }
          *     });
          *
-         * @param {Number} id The id of the model to load
+         * @param {Number/String} id The id of the model to load
          * @param {Object} config (optional) config object containing success, failure and callback functions, plus
          * optional scope
          * @static
@@ -610,13 +610,15 @@ Ext.define('Ext.data.Model', {
 
     /**
      * @property {Boolean} editing
-     * Internal flag used to track whether or not the model instance is currently being edited. Read-only.
+     * Internal flag used to track whether or not the model instance is currently being edited.
+     * @readonly
      */
     editing : false,
 
     /**
      * @property {Boolean} dirty
-     * True if this Record has been modified. Read-only.
+     * True if this Record has been modified.
+     * @readonly
      */
     dirty : false,
 
@@ -697,8 +699,8 @@ Ext.define('Ext.data.Model', {
      * @event idchanged
      * Fired when this model's id changes
      * @param {Ext.data.Model} this
-     * @param {Number} oldId The old id
-     * @param {Number} newId The new id
+     * @param {Number/String} oldId The old id
+     * @param {Number/String} newId The new id
      */
 
     // id, raw and convertedData not documented intentionally, meant to be used internally.
@@ -717,9 +719,8 @@ Ext.define('Ext.data.Model', {
 
 
         /**
+         * @property {Number/String} internalId
          * An internal unique ID for each Model instance, used to identify Models that don't have an ID yet
-         * @property internalId
-         * @type String/Number
          * @private
          */
         me.internalId = (id || id === 0) ? id : Ext.data.Model.id(me);
@@ -961,37 +962,39 @@ Ext.define('Ext.data.Model', {
             changed;
         if (me.editing) {
             me.editing = false;
-            changed = me.dirty || me.changedWhileEditing(); // me.dirty???
+            if(!modifiedFieldNames) {
+                modifiedFieldNames = me.getModifiedFieldNames();
+            }
+            changed = me.dirty || modifiedFieldNames.length > 0;
             delete me.modifiedSave;
             delete me.dataSave;
             delete me.dirtySave;
             if (changed && silent !== true) {
-                me.afterEdit();
+                me.afterEdit(modifiedFieldNames);
             }
         }
     },
 
     /**
-     * Checks if the underlying data has changed during an edit. This doesn't necessarily
-     * mean the record is dirty, however we still need to notify the store since it may need
-     * to update any views.
+     * Gets the names of all the fields that were modified during an edit
      * @private
-     * @return {Boolean} True if the underlying data has changed during an edit.
+     * @return {String[]} An array of modified field names
      */
-    changedWhileEditing: function(){
+    getModifiedFieldNames: function(){
         var me = this,
             saved = me.dataSave,
             data = me[me.persistenceProperty],
+            modified = [],
             key;
 
         for (key in data) {
             if (data.hasOwnProperty(key)) {
                 if (!me.isEqual(data[key], saved[key])) {
-                    return true;
+                    modified.push(key);
                 }
             }
         }
-        return false; 
+        return modified; 
     },
 
     /**
@@ -1203,6 +1206,10 @@ Ext.define('Ext.data.Model', {
         var me     = this,
             action = me.phantom ? 'create' : 'update',
             scope  = options.scope || me,
+            stores = me.stores,
+            i = 0,
+            storeCount,
+            store,
             args,
             operation,
             callback;
@@ -1217,11 +1224,13 @@ Ext.define('Ext.data.Model', {
         callback = function(operation) {
             args = [me, operation];
             if (operation.wasSuccessful()) {
-                Ext.callback(options.success, scope, args);
-                Ext.each(me.stores, function(store) {
+                for(storeCount = stores.length; i < storeCount; i++) {
+                    store = stores[i];
                     store.fireEvent('write', store, operation);
                     store.fireEvent('datachanged', store);
-                });
+                    // Not firing refresh here, since it's a single record
+                }
+                Ext.callback(options.success, scope, args);
             } else {
                 Ext.callback(options.failure, scope, args);
             }
@@ -1244,6 +1253,10 @@ Ext.define('Ext.data.Model', {
 
         var me     = this,
             scope  = options.scope || me,
+            stores = me.stores,
+            i = 0,
+            storeCount,
+            store,
             args,
             operation,
             callback;
@@ -1257,11 +1270,14 @@ Ext.define('Ext.data.Model', {
         callback = function(operation) {
             args = [me, operation];
             if (operation.wasSuccessful()) {
-                Ext.callback(options.success, scope, args);
-                Ext.each(me.stores, function(store) {
+                for(storeCount = stores.length; i < storeCount; i++) {
+                    store = stores[i];
                     store.fireEvent('write', store, operation);
                     store.fireEvent('datachanged', store);
-                });
+                    // Not firing refresh here, since it's a single record
+                }
+                me.clearListeners();
+                Ext.callback(options.success, scope, args);
             } else {
                 Ext.callback(options.failure, scope, args);
             }
@@ -1274,7 +1290,7 @@ Ext.define('Ext.data.Model', {
 
     /**
      * Returns the unique ID allocated to this model instance as defined by {@link #idProperty}.
-     * @return {Number} The id
+     * @return {Number/String} The id
      */
     getId: function() {
         return this.get(this.idProperty);
@@ -1289,10 +1305,11 @@ Ext.define('Ext.data.Model', {
 
     /**
      * Sets the model instance's id field to the given id.
-     * @param {Number} id The new id
+     * @param {Number/String} id The new id
      */
     setId: function(id) {
         this.set(this.idProperty, id);
+        this.phantom  = !(id || id === 0);
     },
 
     /**
@@ -1343,7 +1360,8 @@ Ext.define('Ext.data.Model', {
      * @private
      * Helper function used by afterEdit, afterReject and afterCommit. Calls the given method on the
      * {@link Ext.data.Store store} that this instance has {@link #join joined}, if any. The store function
-     * will always be called with the model instance as its single argument.
+     * will always be called with the model instance as its single argument. If this model is joined to 
+     * a Ext.data.NodeStore, then this method calls the given method on the NodeStore and the associated Ext.data.TreeStore
      * @param {String} fn The function to call on the store
      */
     callStore: function(fn) {
@@ -1351,13 +1369,18 @@ Ext.define('Ext.data.Model', {
             stores = this.stores,
             i = 0,
             len = stores.length,
-            store;
+            store, treeStore;
 
         args[0] = this;
         for (; i < len; ++i) {
             store = stores[i];
-            if (store !== undefined && typeof store[fn] == "function") {
+            if (store && typeof store[fn] == "function") {
                 store[fn].apply(store, args);
+            }
+            // if the record is bound to a NodeStore call the TreeStore's method as well
+            treeStore = store.treeStore;
+            if (treeStore && typeof treeStore[fn] == "function") {
+                treeStore[fn].apply(treeStore, args);
             }
         }
     },

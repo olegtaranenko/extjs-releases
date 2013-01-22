@@ -30,14 +30,12 @@ Ext.define('Ext.layout.container.Container', {
      */
 
     /**
-     * @cfg {Number} manageOverflow
+     * @cfg {Number} [manageOverflow=0]
      * One of the following values:
      *
      *  - 0 if the layout should ignore overflow.
      *  - 1 if the layout should be rerun if scrollbars are needed.
      *  - 2 if the layout should also correct padding when overflowed.
-     *
-     * The default is 0 or unmanaged.
      */
     manageOverflow: 0,
 
@@ -81,6 +79,11 @@ Ext.define('Ext.layout.container.Container', {
         '{%this.renderBody(out,values)%}'
     ],
 
+    usesContainerHeight: true,
+    usesContainerWidth: true,
+    usesHeight: true,
+    usesWidth: true,
+
     constructor: function () {
         this.callParent(arguments);
         this.mixins.elementCt.constructor.call(this);
@@ -107,10 +110,20 @@ Ext.define('Ext.layout.container.Container', {
         this.cacheChildItems(ownerContext);
     },
 
-    beginLayoutCycle: function (ownerContext) {
-        var padEl = this.overflowPadderEl;
+    beginLayoutCycle: function (ownerContext, firstCycle) {
+        var me = this,
+            padEl = me.overflowPadderEl;
 
-        this.callParent(arguments);
+        me.callParent(arguments);
+
+        if (firstCycle) {
+            if (me.usesContainerHeight) {
+                ++ownerContext.consumersContainerHeight;
+            }
+            if (me.usesContainerWidth) {
+                ++ownerContext.consumersContainerWidth;
+            }
+        }
 
         if (padEl) {
             padEl.setStyle('display', 'none');
@@ -140,8 +153,9 @@ Ext.define('Ext.layout.container.Container', {
 
     calculateContentSize: function (ownerContext, dimensions) {
         var me = this,
-            containerDimensions = (dimensions || 0) |
-                   ((ownerContext.autoWidth ? 1 : 0) | (ownerContext.autoHeight ? 2 : 0)),
+            containerDimensions = (dimensions || 0) | me.manageOverflow |
+                   ((ownerContext.widthModel.shrinkWrap ? 1 : 0) |
+                    (ownerContext.heightModel.shrinkWrap ? 2 : 0)),
             calcWidth = (containerDimensions & 1) || undefined,
             calcHeight = (containerDimensions & 2) || undefined,
             childItems = ownerContext.childItems,
@@ -240,8 +254,7 @@ Ext.define('Ext.layout.container.Container', {
      * @param {Object} containerSize
      * @param {Number} dimensions A bit mask for the overflow managed dimensions. The 0-bit
      * is for `width` and the 1-bit is for `height`. In other words, a value of 1 would be
-     * only `width`, 2 would be only `height` and 3 would be both. If not provided, the
-     * non-auto dimensions are returned.
+     * only `width`, 2 would be only `height` and 3 would be both.
      */
     calculateOverflow: function (ownerContext, containerSize, dimensions) {
         var me = this,
@@ -298,13 +311,13 @@ Ext.define('Ext.layout.container.Container', {
                 state.overflowState = scrollbars;
 
                 if (typeof dimensions == 'number') {
-                    scrollbars &= dimensions; // ignore dimensions that have no effect
+                    scrollbars &= ~dimensions; // ignore dimensions that have no effect
                 }
 
                 if (scrollbars) {
                     overflowAdjust = {
-                        width:  (xauto && (scrollbars & 1)) ? scrollbarSize.width : 0,
-                        height: (yauto && (scrollbars & 2)) ? scrollbarSize.height : 0
+                        width:  (xauto && (scrollbars & 2)) ? scrollbarSize.width : 0,
+                        height: (yauto && (scrollbars & 1)) ? scrollbarSize.height : 0
                     };
 
                     // We can have 0-sized scrollbars (new Mac OS) and so don't invalidate
@@ -471,13 +484,13 @@ Ext.define('Ext.layout.container.Container', {
      * @private
      * Called for every layout in the layout context after all the layouts have been finally flushed
      */
-    notifyOwner: function(ownerContext) {
+    notifyOwner: function() {
         this.owner.afterLayout(this);
     },
 
     /**
      * Returns the container size (that of the target). Only the fixed-sized dimensions can
-     * be returned because the auto-sized dimensions are based on the contentWidth/Height
+     * be returned because the shrinkWrap dimensions are based on the contentWidth/Height
      * as determined by the container layout.
      *
      * If the {@link #calculateOverflow} method is used and if {@link #manageOverflow} is
@@ -485,10 +498,6 @@ Ext.define('Ext.layout.container.Container', {
      * 
      * @param {Ext.layout.ContextItem} ownerContext The owner's context item.
      * @param {Boolean} [inDom=false] True if the container size must be in the DOM.
-     * @param {Number} [dimensions] A bit mask for the desired container dimensions. The 0-bit
-     * is for `width` and the 1-bit is for `height`. In other words, a value of 1 would be
-     * only `width`, 2 would be only `height` and 3 would be both. If not provided, the
-     * non-auto dimensions are returned.
      * @return {Object} The size
      * @return {Number} return.width The width
      * @return {Number} return.height The height
@@ -501,44 +510,42 @@ Ext.define('Ext.layout.container.Container', {
         // for our results! If we call it and don't need it, the layout manager will think
         // we depend on it and will schedule us again should it change.
 
-        var me = this,
-            target = me.getTarget(),
-            targetContext = ownerContext.getEl(target),
+        var targetContext = ownerContext.targetContext,
             frameInfo = targetContext.getFrameInfo(),
+            padding = targetContext.getPaddingInfo(),
             got = 0,
             needed = 0,
             overflowAdjust = ownerContext.state.overflowAdjust,
             gotWidth, gotHeight, width, height;
 
-        // In an autoWidth/Height case, we must not ask for any of the auto dimensions
+        // In an shrinkWrap width/height case, we must not ask for any of these dimensions
         // because they will be determined by contentWidth/Height which is calculated by
         // this layout...
 
-        // Attempt to get only dimensions that are being controlled, not autosized dimensions.
         // Fit/Card layouts are able to set just the width of children, allowing child's
         // resulting height to autosize the Container.
         // See examples/tabs/tabs.html for an example of this.
 
-        if (!ownerContext.autoWidth) {
+        if (!ownerContext.widthModel.shrinkWrap) {
             ++needed;
             width = inDom ? targetContext.getDomProp('width') : targetContext.getProp('width');
             gotWidth = (typeof width == 'number');
             if (gotWidth) {
                 ++got;
-                width -= frameInfo.width;
+                width -= frameInfo.width + padding.width;
                 if (overflowAdjust) {
                     width -= overflowAdjust.width;
                 }
             }
         }
 
-        if (!ownerContext.autoHeight) {
+        if (!ownerContext.heightModel.shrinkWrap) {
             ++needed;
             height = inDom ? targetContext.getDomProp('height') : targetContext.getProp('height');
             gotHeight = (typeof height == 'number');
             if (gotHeight) {
                 ++got;
-                height -= frameInfo.height;
+                height -= frameInfo.height + padding.height;
                 if (overflowAdjust) {
                     height -= overflowAdjust.height;
                 }
@@ -627,7 +634,16 @@ Ext.define('Ext.layout.container.Container', {
     },
 
     getRenderTree: function () {
-        return this.getItemsRenderTree(this.getLayoutItems());
+        var result,
+            items = this.owner.items,
+            itemsGen,
+            renderCfgs = {};
+        
+        do {
+            itemsGen = items.generation;
+            result = this.getItemsRenderTree(this.getLayoutItems(), renderCfgs);
+        } while (items.generation !== itemsGen);
+        return result;
     },
 
     getScrollbarsNeeded: function (width, height, contentWidth, contentHeight) {

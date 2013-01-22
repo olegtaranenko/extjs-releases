@@ -62,7 +62,7 @@ Ext.define('Ext.grid.plugin.Editing', {
              *     grid.on('edit', function(editor, e) {
              *         // commit the changes right after editing finished
              *         e.record.commit();
-             *     };
+             *     });
              *
              * @param {Ext.grid.plugin.Editing} editor
              * @param {Object} e An edit event with the following properties:
@@ -119,7 +119,26 @@ Ext.define('Ext.grid.plugin.Editing', {
              * - view - The grid view (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
              * - store - The grid store (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
              */
-            'validateedit'
+            'validateedit',
+            /**
+             * @event canceledit
+             * Fires when the user started editing but then cancelled the edit.
+             * @param {Ext.grid.plugin.Editing} editor
+             * @param {Object} e An edit event with the following properties:
+             * 
+             * - grid - The grid
+             * - record - The record that was edited
+             * - field - The field name that was edited
+             * - value - The value being set
+             * - row - The grid table row
+             * - column - The grid {@link Ext.grid.column.Column Column} defining the column that was edited.
+             * - rowIdx - The row index that was edited
+             * - colIdx - The column index that was edited
+             * - view - The grid view
+             * - store - The grid store
+             */
+            'canceledit'
+
         );
         me.mixins.observable.constructor.call(me);
         // TODO: Deprecated, remove in 5.0
@@ -143,23 +162,30 @@ Ext.define('Ext.grid.plugin.Editing', {
              * @event beforeedit
              * Forwarded event from Ext.grid.plugin.Editing.
              * @member Ext.panel.Table
-             * @alias Ext.grid.plugin.Editing#beforeedit
+             * @inheritdoc Ext.grid.plugin.Editing#beforeedit
              */
             'beforeedit',
             /**
              * @event edit
              * Forwarded event from Ext.grid.plugin.Editing.
              * @member Ext.panel.Table
-             * @alias Ext.grid.plugin.Editing#edit
+             * @inheritdoc Ext.grid.plugin.Editing#edit
              */
             'edit',
             /**
              * @event validateedit
              * Forwarded event from Ext.grid.plugin.Editing.
              * @member Ext.panel.Table
-             * @alias Ext.grid.plugin.Editing#validateedit
+             * @inheritdoc Ext.grid.plugin.Editing#validateedit
              */
-            'validateedit'
+            'validateedit',
+            /**
+             * @event canceledit
+             * Forwarded event from Ext.grid.plugin.Editing.
+             * @member Ext.panel.Table
+             * @inheritdoc Ext.grid.plugin.Editing#canceledit
+             */
+            'canceledit'
         ]);
         // Marks the grid as editable, so that the SelectionModel
         // can make appropriate decisions during navigation
@@ -257,11 +283,11 @@ Ext.define('Ext.grid.plugin.Editing', {
             if (Ext.isString(field)) {
                 field = { xtype: field };
             }
-            if (Ext.isObject(field) && !field.isFormField) {
+            if (!field.isFormField) {
                 field = Ext.ComponentManager.create(field, this.defaultFieldXType);
-                columnHeader.field = field;
             }
-
+            columnHeader.field = field;
+ 
             Ext.apply(field, {
                 name: columnHeader.dataIndex
             });
@@ -402,33 +428,26 @@ Ext.define('Ext.grid.plugin.Editing', {
         var me = this,
             grid = me.grid,
             store = grid.store,
-            rowIdx,
-            colIdx,
             view = grid.getView(),
-            tableView,
-            value;
+            node = view.getNode(record),
+            rowIdx, colIdx, tableView, node, value;
 
-        // If they'd passed numeric row, column indices, look them up.
-        if (Ext.isNumber(record)) {
-            rowIdx = record;
-            record = store.getAt(rowIdx);
-        } else {
-            if (store.indexOf) {
-                // Regular Stores have an indexOf method
-                rowIdx = store.indexOf(record);
-            } else {
-                // TreeStores don't have the indexOf method, so we have to use the view to find the row index
-                // Lockable grids have a Ext.grid.LockingView, which wraps a Ext.view.Table.
-                // Use the wrapped table view since the LockingView does not have an indexOf method
-                tableView = columnHeader.ownerCt.lockableInjected ? (columnHeader.locked ? view.lockedView : view.normalView) : view;
-                rowIdx = tableView.indexOf(tableView.getNode(record));
-            }
-        }
         if (Ext.isNumber(columnHeader)) {
+            // look up column header if numeric column index was passed
             colIdx = columnHeader;
             columnHeader = grid.headerCt.getHeaderAtIndex(colIdx);
         } else {
             colIdx = columnHeader.getIndex();
+        }
+
+        view = columnHeader.ownerCt.lockableInjected ? (columnHeader.locked ? view.lockedView : view.normalView) : view;
+
+        if (Ext.isNumber(record)) {
+            // look up record if numeric row index was passed
+            rowIdx = record;
+            record = view.getRecord(node);
+        } else {
+            rowIdx = view.indexOf(node);
         }
 
         value = record.get(columnHeader.dataIndex);
@@ -448,7 +467,10 @@ Ext.define('Ext.grid.plugin.Editing', {
      * Cancels any active edit that is in progress.
      */
     cancelEdit: function() {
-        this.editing = false;
+        var me = this;
+
+        me.editing = false;
+        me.fireEvent('canceledit', me, me.context);
     },
 
     /**

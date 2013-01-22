@@ -42,15 +42,21 @@ Ext.define('Ext.tree.View', {
     toggleOnDblClick: true,
 
     stripeRows: false,
+    
+    // fields that will trigger a change in the ui that aren't likely to be bound to a column
+    uiFields: ['expanded', 'loaded', 'checked', 'expandable', 'leaf', 'icon', 'iconCls', 'loading'],
 
     initComponent: function() {
-        var me = this;
+        var me = this,
+            treeStore = me.panel.getStore();
         
         if (me.initialConfig.animate === undefined) {
             me.animate = Ext.enableFx;
         }
         
         me.store = new Ext.data.NodeStore({
+            autoLoad: treeStore.autoLoad,
+            treeStore: treeStore,
             recursive: true,
             rootVisible: me.rootVisible,
             listeners: {
@@ -102,6 +108,14 @@ Ext.define('Ext.tree.View', {
             click: me.onCheckboxChange
         });
     },
+    
+    afterComponentLayout: function(){
+        this.callParent(arguments);
+        var stretcher = this.stretcher;
+        if (stretcher) {
+            stretcher.setWidth((this.getWidth() - Ext.getScrollbarSize().width));
+        }
+    },
 
     processUIEvent: function(e) {
         // If the clicked node is part of an animation, ignore the click.
@@ -121,9 +135,6 @@ Ext.define('Ext.tree.View', {
         var me = this;        
         me.store.setNode(node);
         me.node = node;
-        if (!me.rootVisible) {
-            node.expand();
-        }
     },
 
     onCheckboxChange: function(e, t) {
@@ -197,22 +208,48 @@ Ext.define('Ext.tree.View', {
         };
     },
 
-    getAnimWrap: function(parent) {
+    /**
+     * @private
+     * Returns the animation wrapper element for the specified parent node, used to wrap the child nodes as
+     * they slide up or down during expand/collapse.
+     * 
+     * @param parent The parent node to be expanded or collapsed
+     * 
+     * @param [bubble=true] If the passed parent node does not already have a wrap element created, by default
+     * this function will bubble up to each parent node looking for a valid wrap element to reuse, returning 
+     * the first one it finds. This is the appropriate behavior, e.g., for the collapse direction, so that the
+     * entire expanded set of branch nodes can collapse as a single unit.
+     * 
+     * However for expanding each parent node should instead always create its own animation wrap if one 
+     * doesn't exist, so that its children can expand independently of any other nodes -- this is crucial 
+     * when executing the "expand all" behavior. If multiple nodes attempt to reuse the same ancestor wrap
+     * element concurrently during expansion it will lead to problems as the first animation to complete will
+     * delete the wrap el out from under other running animations. For that reason, when expanding you should
+     * always pass `bubble: false` to be on the safe side.
+     * 
+     * If the passed parent has no wrap (or there is no valid ancestor wrap after bubbling), this function 
+     * will return null and the calling code should then call {@link createAnimWrap} if needed.
+     * 
+     * @return {Ext.Element} The wrapping element as created in {@link createAnimWrap}, or null
+     */
+    getAnimWrap: function(parent, bubble) {
         if (!this.animate) {
             return null;
         }
-
-        var wraps = this.animWraps,
-            wrap;
-        // We are checking to see which parent is having the animation wrap
-        while (parent) {
-            wrap = wraps[parent.getId()];
-            if (wrap) {
-                return wrap;
+        
+        var parent = parent,
+            wraps = this.animWraps,
+            wrap = wraps[parent.internalId];
+        
+        if (bubble !== false) {
+            while (!wrap && parent) {
+                parent = parent.parentNode;
+                if (parent) {
+                    wrap = wraps[parent.internalId];
+                }
             }
-            parent = parent.parentNode;
         }
-        return null;
+        return wrap;
     },
 
     doAdd: function(nodes, records, index) {
@@ -316,9 +353,9 @@ Ext.define('Ext.tree.View', {
         }
 
         if (me.getNode(parent)) {
-            animWrap = me.getAnimWrap(parent);
+            animWrap = me.getAnimWrap(parent, false);
             if (!animWrap) {
-                animWrap = me.animWraps[parent.getId()] = me.createAnimWrap(parent);
+                animWrap = me.animWraps[parent.internalId] = me.createAnimWrap(parent);
                 animWrap.animateEl.setHeight(0);
             }
             else if (animWrap.collapsing) {
@@ -336,7 +373,7 @@ Ext.define('Ext.tree.View', {
             queue = me.animQueue,
             id = parent.getId(),
             node = me.getNode(parent),
-            index = me.indexOf(node),
+            index = node ? me.indexOf(node) : -1,
             animWrap,
             animateEl, 
             targetEl;        
@@ -345,7 +382,12 @@ Ext.define('Ext.tree.View', {
             me.ensureSingleExpand(parent);
         }
         
-        animWrap = me.getAnimWrap(parent);
+        // The item is not visible yet
+        if (index === -1) {
+            return;
+        }
+        
+        animWrap = me.getAnimWrap(parent, false);
 
         if (!animWrap) {
             me.fireEvent('afteritemexpand', parent, index, node);
@@ -366,7 +408,7 @@ Ext.define('Ext.tree.View', {
                     // Move all the nodes out of the anim wrap to their proper location
                     animWrap.el.insertSibling(targetEl.query(me.itemSelector), 'before');
                     animWrap.el.remove();
-                    delete me.animWraps[animWrap.record.getId()];
+                    delete me.animWraps[animWrap.record.internalId];
                     delete queue[id];
                 }
             },
@@ -389,7 +431,7 @@ Ext.define('Ext.tree.View', {
         if (me.getNode(parent)) {
             animWrap = me.getAnimWrap(parent);
             if (!animWrap) {
-                animWrap = me.animWraps[parent.getId()] = me.createAnimWrap(parent, index);
+                animWrap = me.animWraps[parent.internalId] = me.createAnimWrap(parent, index);
             }
             else if (animWrap.expanding) {
                 // If we collapse this node while it is still expanding then we
@@ -433,7 +475,7 @@ Ext.define('Ext.tree.View', {
                 scope: me,
                 lastframe: function() {
                     animWrap.el.remove();
-                    delete me.animWraps[animWrap.record.getId()];
+                    delete me.animWraps[animWrap.record.internalId];
                     delete queue[id];
                 }             
             },
@@ -484,9 +526,9 @@ Ext.define('Ext.tree.View', {
     /**
      * Expands a record that is loaded in the view.
      * @param {Ext.data.Model} record The record to expand
-     * @param {Boolean} deep (optional) True to expand nodes all the way down the tree hierarchy.
-     * @param {Function} callback (optional) The function to run after the expand is completed
-     * @param {Object} scope (optional) The scope of the callback function.
+     * @param {Boolean} [deep] True to expand nodes all the way down the tree hierarchy.
+     * @param {Function} [callback] The function to run after the expand is completed
+     * @param {Object} [scope] The scope of the callback function.
      */
     expand: function(record, deep, callback, scope) {
         return record.expand(deep, callback, scope);
@@ -495,9 +537,9 @@ Ext.define('Ext.tree.View', {
     /**
      * Collapses a record that is loaded in the view.
      * @param {Ext.data.Model} record The record to collapse
-     * @param {Boolean} deep (optional) True to collapse nodes all the way up the tree hierarchy.
-     * @param {Function} callback (optional) The function to run after the collapse is completed
-     * @param {Object} scope (optional) The scope of the callback function.
+     * @param {Boolean} [deep] True to collapse nodes all the way up the tree hierarchy.
+     * @param {Function} [callback] The function to run after the collapse is completed
+     * @param {Object} [scope] The scope of the callback function.
      */
     collapse: function(record, deep, callback, scope) {
         return record.collapse(deep, callback, scope);
@@ -558,6 +600,10 @@ Ext.define('Ext.tree.View', {
                 }
             });
         }
+    },
+    
+    shouldUpdateCell: function(changedFieldNames, fieldName){
+        return Ext.Array.contains(this.uiFields, fieldName) || this.callParent();
     },
 
     /**

@@ -143,7 +143,7 @@ Ext.define('Ext.util.Observable', {
         me.events = me.events || {};
         if (me.listeners) {
             me.on(me.listeners);
-            delete me.listeners;
+            me.listeners = null; //change the prototype in case any are set there.
         }
 
         if (me.bubbleEvents) {
@@ -298,48 +298,65 @@ Ext.define('Ext.util.Observable', {
     },
 
     /**
-     * Appends an event handler to this object.
+     * Appends an event handler to this object.  For example:
      *
-     * @param {String} eventName The name of the event to listen for. May also be an object who's property names are
-     * event names.
-     * @param {Function} fn The method the event invokes.  Will be called with arguments given to
-     * {@link #fireEvent} plus the `options` parameter described below.
-     * @param {Object} [scope] The scope (`this` reference) in which the handler function is executed. **If
-     * omitted, defaults to the object which fired the event.**
+     *     myGridPanel.on("mouseover", this.onMouseOver, this);
+     *
+     * The method also allows for a single argument to be passed which is a config object
+     * containing properties which specify multiple events. For example:
+     *
+     *     myGridPanel.on({
+     *         cellClick: this.onCellClick,
+     *         mouseover: this.onMouseOver,
+     *         mouseout: this.onMouseOut,
+     *         scope: this // Important. Ensure "this" is correct during handler execution
+     *     });
+     *
+     * One can also specify options for each event handler separately:
+     *
+     *     myGridPanel.on({
+     *         cellClick: {fn: this.onCellClick, scope: this, single: true},
+     *         mouseover: {fn: panel.onMouseOver, scope: panel}
+     *     });
+     *
+     * @param {String/Object} eventName The name of the event to listen for.
+     * May also be an object who's property names are event names.
+     *
+     * @param {Function} [fn] The method the event invokes.  Will be called with arguments
+     * given to {@link #fireEvent} plus the `options` parameter described below.
+     *
+     * @param {Object} [scope] The scope (`this` reference) in which the handler function is
+     * executed. **If omitted, defaults to the object which fired the event.**
+     *
      * @param {Object} [options] An object containing handler configuration.
      *
-     * **Note:** Unlike in ExtJS 3.x, the options object will also be passed as the last argument to every event handler.
+     * **Note:** Unlike in ExtJS 3.x, the options object will also be passed as the last
+     * argument to every event handler.
      *
      * This object may contain any of the following properties:
      *
-     * - **scope** : Object
+     * @param {Object} options.scope
+     *   The scope (`this` reference) in which the handler function is executed. **If omitted,
+     *   defaults to the object which fired the event.**
      *
-     *   The scope (`this` reference) in which the handler function is executed. **If omitted, defaults to the object
-     *   which fired the event.**
-     *
-     * - **delay** : Number
-     *
+     * @param {Number} options.delay
      *   The number of milliseconds to delay the invocation of the handler after the event fires.
      *
-     * - **single** : Boolean
-     *
+     * @param {Boolean} options.single
      *   True to add a handler to handle just the next firing of the event, and then remove itself.
      *
-     * - **buffer** : Number
+     * @param {Number} options.buffer
+     *   Causes the handler to be scheduled to run in an {@link Ext.util.DelayedTask} delayed
+     *   by the specified number of milliseconds. If the event fires again within that time,
+     *   the original handler is _not_ invoked, but the new handler is scheduled in its place.
      *
-     *   Causes the handler to be scheduled to run in an {@link Ext.util.DelayedTask} delayed by the specified number of
-     *   milliseconds. If the event fires again within that time, the original handler is _not_ invoked, but the new
-     *   handler is scheduled in its place.
+     * @param {Ext.util.Observable} options.target
+     *   Only call the handler if the event was fired on the target Observable, _not_ if the event
+     *   was bubbled up from a child Observable.
      *
-     * - **target** : Observable
-     *
-     *   Only call the handler if the event was fired on the target Observable, _not_ if the event was bubbled up from a
-     *   child Observable.
-     *
-     * - **element** : String
-     *
-     *   **This option is only valid for listeners bound to {@link Ext.Component Components}.** The name of a Component
-     *   property which references an element to add a listener to.
+     * @param {String} options.element
+     *   **This option is only valid for listeners bound to {@link Ext.Component Components}.**
+     *   The name of a Component property which references an element to add a listener to.
      *
      *   This option is useful during Component construction to add DOM event listeners to elements of
      *   {@link Ext.Component Components} which will exist only after the Component is rendered.
@@ -362,25 +379,6 @@ Ext.define('Ext.util.Observable', {
      *     myPanel.on('hide', this.handleClick, this, {
      *         single: true,
      *         delay: 100
-     *     });
-     *
-     * **Attaching multiple handlers in 1 call**
-     *
-     * The method also allows for a single argument to be passed which is a config object containing properties which
-     * specify multiple events. For example:
-     *
-     *     myGridPanel.on({
-     *         cellClick: this.onCellClick,
-     *         mouseover: this.onMouseOver,
-     *         mouseout: this.onMouseOut,
-     *         scope: this // Important. Ensure "this" is correct during handler execution
-     *     });
-     *
-     * One can also specify options for each event handler separately:
-     *
-     *     myGridPanel.on({
-     *         cellClick: {fn: this.onCellClick, scope: this, single: true},
-     *         mouseover: {fn: panel.onMouseOver, scope: panel}
      *     });
      *
      */
@@ -517,16 +515,15 @@ Ext.define('Ext.util.Observable', {
     /**
      * Adds the specified events to the list of events which this Observable may fire.
      *
-     * @param {Object/String} o Either an object with event names as properties with a value of `true` or the first
-     * event name string if multiple event names are being passed as separate parameters. Usage:
+     * @param {Object/String...} eventNames Either an object with event names as properties with
+     * a value of `true`. For example:
      *
      *     this.addEvents({
      *         storeloaded: true,
      *         storecleared: true
      *     });
      *
-     * @param {String...} more (optional) Additional event names if multiple event names are being passed as separate
-     * parameters. Usage:
+     * Or any number of event names as separate parameters. For example:
      *
      *     this.addEvents('storeloaded', 'storecleared');
      *
@@ -595,9 +592,22 @@ Ext.define('Ext.util.Observable', {
     /**
      * Relays selected events from the specified Observable as if the events were fired by `this`.
      *
+     * For example if you are extending Grid, you might decide to forward some events from store.
+     * So you can do this inside your initComponent:
+     *
+     *     this.relayEvents(this.getStore(), ['load']);
+     *
+     * The grid instance will then have an observable 'load' event which will be passed the
+     * parameters of the store's load event and any function fired with the grid's load event
+     * would have access to the grid using the `this` keyword.
+     *
      * @param {Object} origin The Observable whose events this object is to relay.
      * @param {String[]} events Array of event names to relay.
-     * @param {String} [prefix] A common prefix to attach to the event names
+     * @param {String} [prefix] A common prefix to attach to the event names. For example:
+     *
+     *     this.relayEvents(this.getStore(), ['load', 'clear'], 'store');
+     *
+     * Now the grid will forward 'load' and 'clear' events of store as 'storeload' and 'storeclear'.
      */
     relayEvents : function(origin, events, prefix) {
         prefix = prefix || '';
@@ -695,25 +705,25 @@ Ext.define('Ext.util.Observable', {
         /**
          * @method
          * Shorthand for {@link #addListener}.
-         * @alias Ext.util.Observable#addListener
+         * @inheritdoc Ext.util.Observable#addListener
          */
         on: 'addListener',
         /**
          * @method
          * Shorthand for {@link #removeListener}.
-         * @alias Ext.util.Observable#removeListener
+         * @inheritdoc Ext.util.Observable#removeListener
          */
         un: 'removeListener',
         /**
          * @method
          * Shorthand for {@link #addManagedListener}.
-         * @alias Ext.util.Observable#addManagedListener
+         * @inheritdoc Ext.util.Observable#addManagedListener
          */
         mon: 'addManagedListener',
         /**
          * @method
          * Shorthand for {@link #removeManagedListener}.
-         * @alias Ext.util.Observable#removeManagedListener
+         * @inheritdoc Ext.util.Observable#removeManagedListener
          */
         mun: 'removeManagedListener'
     });

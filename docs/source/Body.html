@@ -18,10 +18,8 @@
   <pre class="prettyprint lang-js"><span id='Ext-layout-component-Body'>/**
 </span> * Component layout for components which maintain an inner body element which must be resized to synchronize with the
  * Component size.
- * @class Ext.layout.component.Body
  * @private
  */
-
 Ext.define('Ext.layout.component.Body', {
 
     /* Begin Definitions */
@@ -40,69 +38,87 @@ Ext.define('Ext.layout.component.Body', {
         ownerContext.bodyContext = ownerContext.getEl('body');
     },
 
-    calculate: function(ownerContext) {
-        // Subtle But Important:
-        // 
-        // We don't want to call getProp/hasProp et.al. unless we in fact need that value
-        // for our results! If we call it and don't need it, the layout manager will think
-        // we depend on it and will schedule us again should it change.
-
-        var me = this,
-            fixedHeight = ownerContext.heightAuthority &gt; 0,
-            fixedWidth  = ownerContext.widthAuthority &gt; 0,
-            height, width, bodyContext, frameInfo;
-
-        me.callParent(arguments);
-
-        bodyContext = ownerContext.bodyContext;
-        frameInfo = ownerContext.getFrameInfo();
-
-        // Either fix the body size based upon this Component's frame info (padding)
-        // Or adjust this Componentts auto size, accounting for extra size added by the body's padding 
-        if (fixedWidth) {
-            width = ownerContext.getProp('width');
-            if (width === undefined) {
-                me.done = false;
-            } else {
-                bodyContext.setWidth(width - frameInfo.width);
-            }
-        }
-        if (fixedHeight) {
-            height = ownerContext.getProp('height');
-            if (height === undefined) {
-                me.done = false;
-            } else {
-               bodyContext.setHeight(height - frameInfo.height);
-            }
-        }
-    },
+    // Padding is exciting here because we have 2 el's: owner.el and owner.body. Content
+    // size always includes the padding of the targetEl, which should be owner.body. But
+    // it is common to have padding on owner.el also (such as a panel header), so we need
+    // to do some more padding work if targetContext is not owner.el. The base class has
+    // already handled the ownerContext's frameInfo (border+framing) so all that is left
+    // is padding.
 
     calculateOwnerHeightFromContentHeight: function (ownerContext, contentHeight) {
-        return contentHeight + ownerContext.getFrameInfo().height;
+        var height = this.callParent(arguments);
+
+        if (ownerContext.targetContext != ownerContext) {
+            height += ownerContext.getPaddingInfo().height;
+        }
+
+        return height;
     },
 
     calculateOwnerWidthFromContentWidth: function (ownerContext, contentWidth) {
-        return contentWidth + ownerContext.getFrameInfo().width;
+        var width = this.callParent(arguments);
+
+        if (ownerContext.targetContext != ownerContext) {
+            width += ownerContext.getPaddingInfo().width;
+        }
+
+        return width;
     },
 
-    getContentWidth: function (ownerContext) {
-        return ownerContext.bodyContext.el.dom.offsetWidth;
+    measureContentWidth: function (ownerContext) {
+        var contentWidth = ownerContext.bodyContext.el.dom.offsetWidth,
+            targetContext = ownerContext.targetContext,
+            padding = targetContext &amp;&amp; targetContext.getPaddingInfo();
+
+        ownerContext.bodyContext.setWidth(contentWidth, false);
+
+        if (padding) {
+            contentWidth += padding.width;
+        }
+
+        return contentWidth;
     },
 
-    getContentHeight: function (ownerContext) {
-        return ownerContext.bodyContext.el.dom.offsetHeight;
+    measureContentHeight: function (ownerContext) {
+        var contentHeight = ownerContext.bodyContext.el.dom.offsetHeight,
+            targetContext = ownerContext.targetContext,
+            padding = targetContext &amp;&amp; targetContext.getPaddingInfo();
+
+        ownerContext.bodyContext.setHeight(contentHeight, false);
+
+        if (padding) {
+            contentHeight += padding.height;
+        }
+
+        return contentHeight;
     },
 
-    publishOwnerHeight: function (ownerContext, contentHeight) {
-        this.callParent(arguments);
+    publishInnerHeight: function (ownerContext, height) {
+        var innerHeight = height - ownerContext.getFrameInfo().height,
+            targetContext = ownerContext.targetContext;
 
-        ownerContext.bodyContext.setProp('height', contentHeight, false);
+        if (targetContext) {
+            innerHeight -= targetContext.getPaddingInfo().height;
+        }
+        if (targetContext != ownerContext) {
+            innerHeight -= ownerContext.getPaddingInfo().height;
+        }
+
+        ownerContext.bodyContext.setHeight(innerHeight, !ownerContext.heightModel.natural);
     },
 
-    publishOwnerWidth: function (ownerContext, contentWidth) {
-        this.callParent(arguments);
+    publishInnerWidth: function (ownerContext, width) {
+        var innerWidth = width - ownerContext.getFrameInfo().width,
+            targetContext = ownerContext.targetContext;
 
-        ownerContext.bodyContext.setProp('width', contentWidth, false);
+        if (targetContext) {
+            innerWidth -= targetContext.getPaddingInfo().width;
+        }
+        if (targetContext != ownerContext) {
+            innerWidth -= ownerContext.getPaddingInfo().width;
+        }
+
+        ownerContext.bodyContext.setWidth(innerWidth, !ownerContext.widthModel.natural);
     }
 });
 </pre>

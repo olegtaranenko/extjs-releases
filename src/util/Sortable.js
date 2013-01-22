@@ -144,25 +144,35 @@ Ext.define("Ext.util.Sortable", {
             
             sorters = me.sorters.items;
             if (sorters.length) {
-                //construct an amalgamated sorter function which combines all of the Sorters passed
-                sorterFn = function(r1, r2) {
-                    var result = sorters[0].sort(r1, r2),
-                        length = sorters.length,
-                        i;
-
-                        //if we have more than one sorter, OR any additional sorter functions together
-                        for (i = 1; i < length; i++) {
-                            result = result || sorters[i].sort.call(this, r1, r2);
-                        }
-
-                    return result;
-                };
-
-                me.doSort(sorterFn);
+                // Sort using a generated sorter function which combines all of the Sorters passed
+                me.doSort(me.generateComparator());
             }
         }
 
         return sorters;
+    },
+
+    /**
+     * <p>Returns a comparator function which compares two items and returns -1, 0, or 1 depending
+     * on the currently defined set of {@link #sorters}.</p>
+     * <p>If there are no {@link #sorters} defined, it returns a function which returns <code>0</code> meaning that no sorting will occur.</p>
+     */
+    generateComparator: function() {
+        return (this.sorters.items.length) ? (function(sorters) {
+            return function(r1, r2) {
+                var result = sorters[0].sort(r1, r2),
+                    length = sorters.length,
+                    i;
+
+                // if we have more than one sorter, OR any additional sorter functions together
+                for (i = 1; i < length; i++) {
+                    result = result || sorters[i].sort.call(this, r1, r2);
+                }
+                return result;
+            };
+        })(this.sorters.items) : function() {
+            return 0;
+        };
     },
 
     onBeforeSort: Ext.emptyFn,

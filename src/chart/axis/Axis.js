@@ -96,6 +96,7 @@ Ext.define('Ext.chart.axis.Axis', {
     /**
      * @cfg {Number} majorTickSteps
      * If `minimum` and `maximum` are specified it forces the number of major ticks to the specified value.
+     * If a number of major ticks is forced, it wont search for pretty numbers at the ticks.
      */
 
     /**
@@ -108,7 +109,7 @@ Ext.define('Ext.chart.axis.Axis', {
      * The title for the Axis
      */
 
-    //@private force min/max values from store
+    // @private force min/max values from store
     forceMinMax: false,
 
     /**
@@ -223,9 +224,10 @@ Ext.define('Ext.chart.axis.Axis', {
             max = range.max,
             outfrom, outto, out;
 
-        out = Ext.draw.Draw.snapEnds(min, max, me.majorTickSteps !== false ?  (me.majorTickSteps +1) : me.steps);
+        out = Ext.draw.Draw.snapEnds(min, max, me.majorTickSteps !== false ?  (me.majorTickSteps+1) : me.steps, (me.majorTickSteps === false));
         outfrom = out.from;
         outto = out.to;
+
         if (me.forceMinMax) {
             if (!isNaN(max)) {
                 out.to = max;
@@ -254,6 +256,7 @@ Ext.define('Ext.chart.axis.Axis', {
         if (me.adjustMinimumByMajorUnit) {
             out.from -= out.step;
         }
+
         me.prevMin = min == max? 0 : min;
         me.prevMax = max;
         return out;
@@ -296,9 +299,10 @@ Ext.define('Ext.chart.axis.Axis', {
         if (me.hidden || isNaN(step) || (from == to)) {
             return;
         }
-
+        
         me.from = stepCalcs.from;
         me.to = stepCalcs.to;
+
         if (position == 'left' || position == 'right') {
             currentX = Math.floor(x) + 0.5;
             path = ["M", currentX, y, "l", 0, -length];
@@ -317,6 +321,7 @@ Ext.define('Ext.chart.axis.Axis', {
             calcLabels = true;
             me.labels = [stepCalcs.from];
         }
+
         if (position == 'right' || position == 'left') {
             currentY = y - gutterY;
             currentX = x - ((position == 'left') * dashSize * 2);
@@ -329,9 +334,11 @@ Ext.define('Ext.chart.axis.Axis', {
                 }
                 inflections.push([ Math.floor(x), Math.floor(currentY) ]);
                 currentY -= delta;
+                
                 if (calcLabels) {
                     me.labels.push(me.labels[me.labels.length -1] + step);
                 }
+                
                 if (delta === 0) {
                     break;
                 }
@@ -376,6 +383,12 @@ Ext.define('Ext.chart.axis.Axis', {
                 }
             }
         }
+
+        // the label on index "inflections.length-1" is the last label that gets rendered
+        if(calcLabels){
+            me.labels[inflections.length-1] = +(me.labels[inflections.length-1]).toFixed(10);
+        }
+        
         if (!me.axis) {
             me.axis = me.chart.surface.add(Ext.apply({
                 type: 'path',
@@ -512,7 +525,7 @@ Ext.define('Ext.chart.axis.Axis', {
         }
     },
 
-    //@private
+    // @private
     getOrCreateLabel: function(i, text) {
         var me = this,
             labelGroup = me.labelGroup,

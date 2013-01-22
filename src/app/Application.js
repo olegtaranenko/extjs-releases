@@ -1,7 +1,4 @@
 /**
- * @class Ext.app.Application
- * @extend Ext.app.Controller
- * 
  * Represents an Ext JS 4 application, which is typically a single page app using a {@link Ext.container.Viewport Viewport}.
  * A typical Ext.app.Application might look like this:
  * 
@@ -24,7 +21,7 @@
  * at which time you can run the code that starts your app. Usually this consists of creating a Viewport, as we do in
  * the example above.
  * 
- * <u>Telling Application about the rest of the app</u>
+ * # Telling Application about the rest of the app
  * 
  * Because an Ext.app.Application represents an entire app, we should tell it about the other parts of the app - namely
  * the Models, Views and Controllers that are bundled with the application. Let's say we have a blog management app; we
@@ -78,41 +75,45 @@ Ext.define('Ext.app.Application', {
     ],
 
     /**
-     * @cfg {String} name The name of your application. This will also be the namespace for your views, controllers
+     * @cfg {String} name
+     * The name of your application. This will also be the namespace for your views, controllers
      * models and stores. Don't use spaces or special characters in the name.
      */
 
     /**
-     * @cfg {Object} scope The scope to execute the {@link #launch} function in. Defaults to the Application
-     * instance.
+     * @cfg {Object} scope
+     * The scope to execute the {@link #launch} function in. Defaults to the Application instance.
      */
     scope: undefined,
 
     /**
-     * @cfg {Boolean} enableQuickTips True to automatically set up Ext.tip.QuickTip support (defaults to true)
+     * @cfg {Boolean} enableQuickTips
+     * True to automatically set up Ext.tip.QuickTip support.
      */
     enableQuickTips: true,
 
     /**
-     * @cfg {String} defaultUrl When the app is first loaded, this url will be redirected to. Defaults to undefined
+     * @cfg {String} defaultUrl
+     * When the app is first loaded, this url will be redirected to.
      */
 
     /**
-     * @cfg {String} appFolder The path to the directory which contains all application's classes.
-     * This path will be registered via {@link Ext.Loader#setPath} for the namespace specified in the {@link #name name} config.
-     * Defaults to 'app'
+     * @cfg {String} appFolder
+     * The path to the directory which contains all application's classes.
+     * This path will be registered via {@link Ext.Loader#setPath} for the namespace specified
+     * in the {@link #name name} config.
      */
     appFolder: 'app',
 
     /**
-     * @cfg {Boolean} autoCreateViewport True to automatically load and instantiate AppName.view.Viewport
-     * before firing the launch function (defaults to false).
+     * @cfg {Boolean} autoCreateViewport
+     * True to automatically load and instantiate AppName.view.Viewport before firing the launch function.
      */
     autoCreateViewport: false,
 
     /**
      * Creates new Application.
-     * @param {Object} config (optional) Config object.
+     * @param {Object} [config] Config object.
      */
     constructor: function(config) {
         config = config || {};
@@ -163,10 +164,10 @@ Ext.define('Ext.app.Application', {
     },
 
     /**
+     * @method
+     * @template
      * Called automatically when the page has completely loaded. This is an empty function that should be
-     * overridden by each application that needs to take action on page load
-     * @property launch
-     * @type Function
+     * overridden by each application that needs to take action on page load.
      * @param {String} profile The detected {@link #profiles application profile}
      * @return {Boolean} By default, the Application will dispatch to the configured startup controller and
      * action immediately after running the launch function. Return false to prevent this behavior.

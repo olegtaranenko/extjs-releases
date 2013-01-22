@@ -136,49 +136,53 @@ Ext.define('Ext.resizer.SplitterTracker', {
 
     // Performs the actual resizing of the previous and next components
     performResize: function(e, offset) {
-        var me       = this,
-            splitter = me.getSplitter(),
-            orient   = splitter.orientation,
-            prevCmp  = me.getPrevCmp(),
-            nextCmp  = me.getNextCmp(),
-            owner    = splitter.ownerCt,
-            layout   = owner.getLayout();
+        var me        = this,
+            splitter  = me.getSplitter(),
+            orient    = splitter.orientation,
+            prevCmp   = me.getPrevCmp(),
+            nextCmp   = me.getNextCmp(),
+            owner     = splitter.ownerCt,
+            flexedSiblings = owner.query('>[flex]'),
+            len       = flexedSiblings.length,
+            i         = 0,
+            dimension,
+            size,
+            totalFlex = 0;
+
+        // Convert flexes to pixel values proportional to the total pixel width of all flexes.
+        for (; i < len; i++) {
+            size = flexedSiblings[i].getWidth();
+            totalFlex += size;
+            flexedSiblings[i].flex = size;
+        }
 
         offset = offset || me.getOffset('dragTarget');
 
-        // Inhibit automatic container layout caused by setSize calls below.
-        owner.suspendLayouts();
-
         if (orient === 'vertical') {
-            if (prevCmp) {
-                if (!prevCmp.maintainFlex) {
-                    delete prevCmp.flex;
-                    prevCmp.setSize(me.prevBox.width + offset[0], prevCmp.getHeight());
-                }
-            }
-            if (nextCmp) {
-                if (!nextCmp.maintainFlex) {
-                    delete nextCmp.flex;
-                    nextCmp.setSize(me.nextBox.width - offset[0], nextCmp.getHeight());
-                }
-            }
-        // verticals
+            offset = offset[0];
+            dimension = 'width';
         } else {
-            if (prevCmp) {
-                if (!prevCmp.maintainFlex) {
-                    delete prevCmp.flex;
-                    prevCmp.setSize(prevCmp.getWidth(), me.prevBox.height + offset[1]);
-                }
+            dimension = 'height';
+            offset = offset[1];
+        }
+        if (prevCmp) {
+            size = me.prevBox[dimension] + offset;
+            if (prevCmp.flex) {
+                prevCmp.flex = size;
+            } else {
+                prevCmp[dimension] = size;
             }
-            if (nextCmp) {
-                if (!nextCmp.maintainFlex) {
-                    delete nextCmp.flex;
-                    nextCmp.setSize(prevCmp.getWidth(), me.nextBox.height - offset[1]);
-                }
+        }
+        if (nextCmp) {
+            size = me.nextBox[dimension] - offset;
+            if (nextCmp.flex) {
+                nextCmp.flex = size;
+            } else {
+                nextCmp[dimension] = size;
             }
         }
 
-        owner.resumeLayouts(true);
+        owner.updateLayout();
     },
 
     // Cleans up the overlay (if we have one) and calls the base. This cannot be done in

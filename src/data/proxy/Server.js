@@ -143,7 +143,8 @@ Ext.define('Ext.data.proxy.Server', {
          */
         me.extraParams = config.extraParams || {};
 
-        me.api = config.api || {};
+        me.api = Ext.apply({}, config.api || me.api);
+        
 
         //backwards compatibility, will be deprecated in 5.0
         me.nocache = me.noCache;
@@ -182,11 +183,12 @@ Ext.define('Ext.data.proxy.Server', {
      * @return {Ext.data.Request} The request object
      */
     buildRequest: function(operation) {
-        var params = Ext.applyIf(operation.params || {}, this.extraParams || {}),
+        var me = this,
+            params = Ext.applyIf(operation.params || {}, me.extraParams || {}),
             request;
 
         //copy any sorters, filters etc into the params so they can be sent over the wire
-        params = Ext.applyIf(params, this.getParams(operation));
+        params = Ext.applyIf(params, me.getParams(operation));
 
         if (operation.id && !params.id) {
             params.id = operation.id;
@@ -197,10 +199,14 @@ Ext.define('Ext.data.proxy.Server', {
             action   : operation.action,
             records  : operation.records,
             operation: operation,
-            url      : operation.url
+            url      : operation.url,
+
+            // this is needed by JsonSimlet in order to properly construct responses for
+            // requests from this proxy
+            proxy: me
         });
 
-        request.url = this.buildUrl(request);
+        request.url = me.buildUrl(request);
 
         /*
          * Save the request on the Operation. Operations don't usually care about Request and Response data, but in the

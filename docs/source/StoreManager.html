@@ -53,7 +53,7 @@ Ext.define('Ext.data.StoreManager', {
     
 <span id='Ext-data-StoreManager-cfg-listeners'>    /**
 </span>     * @cfg {Object} listeners
-     * Not applicable for StoreManager.
+     * @private
      */
 
 <span id='Ext-data-StoreManager-method-register'>    /**
@@ -165,7 +165,7 @@ Ext.define('Ext.data.StoreManager', {
 </span>     * Shortcut to {@link Ext.data.StoreManager#lookup}.
      * @member Ext
      * @method getStore
-     * @alias Ext.data.StoreManager#lookup
+     * @inheritdoc Ext.data.StoreManager#lookup
      */
     Ext.getStore = function(name) {
         return Ext.data.StoreManager.lookup(name);

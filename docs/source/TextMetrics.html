@@ -66,7 +66,7 @@ Ext.define('Ext.util.TextMetrics', {
 <span id='Ext-util-TextMetrics-method-constructor'>    /**
 </span>     * Creates new TextMetrics.
      * @param {String/HTMLElement/Ext.Element} bindTo The element or its ID to bind to.
-     * @param {Number} fixedWidth (optional) A fixed width to apply to the measuring element.
+     * @param {Number} [fixedWidth] A fixed width to apply to the measuring element.
      */
     constructor: function(bindTo, fixedWidth){
         var measure = this.measure = Ext.getBody().createChild({
@@ -153,8 +153,8 @@ Ext.define('Ext.util.TextMetrics', {
 <span id='Ext-dom-Element-method-getTextWidth'>        /**
 </span>         * Returns the width in pixels of the passed text, or the width of the text in this Element.
          * @param {String} text The text to measure. Defaults to the innerHTML of the element.
-         * @param {Number} min (optional) The minumum value to return.
-         * @param {Number} max (optional) The maximum value to return.
+         * @param {Number} [min] The minumum value to return.
+         * @param {Number} [max] The maximum value to return.
          * @return {Number} The text width in pixels.
          * @member Ext.dom.Element
          */

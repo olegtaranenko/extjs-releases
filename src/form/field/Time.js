@@ -65,40 +65,56 @@ Ext.define('Ext.form.field.Time', {
      * @cfg {String} minText
      * The error text to display when the entered time is before {@link #minValue}.
      */
+    //<locale>
     minText : "The time in this field must be equal to or after {0}",
+    //</locale>
 
     /**
      * @cfg {String} maxText
      * The error text to display when the entered time is after {@link #maxValue}.
      */
+    //<locale>
     maxText : "The time in this field must be equal to or before {0}",
+    //</locale>
 
     /**
      * @cfg {String} invalidText
      * The error text to display when the time in the field is invalid.
      */
+    //<locale>
     invalidText : "{0} is not a valid time",
+    //</locale>
 
     /**
-     * @cfg {String} format
+     * @cfg {String} [format=undefined]
      * The default time format string which can be overriden for localization support. The format must be valid
-     * according to {@link Ext.Date#parse} (defaults to 'g:i A', e.g., '3:15 PM'). For 24-hour time format try 'H:i'
-     * instead.
+     * according to {@link Ext.Date#parse}.
+     *
+     * Defaults to `'g:i A'`, e.g., `'3:15 PM'`. For 24-hour time format try `'H:i'` instead.
      */
+    //<locale>
     format : "g:i A",
+    //</locale>
 
     /**
-     * @cfg {String} submitFormat
-     * The date format string which will be submitted to the server. The format must be valid according to {@link
-     * Ext.Date#parse} (defaults to {@link #format}).
+     * @cfg {String} [submitFormat=undefined]
+     * The date format string which will be submitted to the server. The format must be valid according to
+     * {@link Ext.Date#parse}.
+     *
+     * Defaults to {@link #format}.
      */
+    //<locale>
+    submitFormat: 'g:i A',
+    //</locale>
 
     /**
      * @cfg {String} altFormats
      * Multiple date formats separated by "|" to try when parsing a user input value and it doesn't match the defined
      * format.
      */
+    //<locale>
     altFormats : "g:ia|g:iA|g:i a|g:i A|h:i|g:i|H:i|ga|ha|gA|h a|g a|g A|gi|hi|gia|hia|g|H|gi a|hi a|giA|hiA|gi A|hi A",
+    //</locale>
 
     /**
      * @cfg {Number} increment
@@ -395,12 +411,15 @@ Ext.define('Ext.form.field.Time', {
         }
         Ext.defer(keyNav.enable, 1, keyNav); //wait a bit so it doesn't react to the down arrow opening the picker
 
+        // syncronize the selection in case "setValue" was called before the picker was expanded for the first time
+        me.syncSelection();
+
         // Highlight the last selected item and scroll it into view
         selected = picker.getSelectionModel().getSelection()[0];
         if (selected) {
             itemNode = picker.getNode(selected);
             picker.highlightItem(itemNode);
-            picker.el.scrollChildIntoView(itemNode, false);
+            picker.listEl.scrollChildIntoView(itemNode, false);
         }
     },
 
@@ -470,14 +489,13 @@ Ext.define('Ext.form.field.Time', {
             
         if (picker && !me.skipSync) {
             picker.clearHighlight();
-            store = picker.store;
             value = me.getValue();
             selModel = picker.getSelectionModel();
             // Update the selection to match
             me.ignoreSelection++;
             if (value === null) {
                 selModel.deselectAll();
-            } else {
+            } else if(Ext.isDate(value)) {
                 // find value, select it
                 picker.store.each(function(rec){
                    if (Ext.Date.isEqual(rec.get('date'), value)) {
@@ -489,5 +507,12 @@ Ext.define('Ext.form.field.Time', {
             }
             me.ignoreSelection--;
         }
+    },
+
+    postBlur: function() {
+        var me = this;
+
+        me.callParent(arguments);
+        me.setRawValue(me.formatDate(me.getValue()));
     }
 });

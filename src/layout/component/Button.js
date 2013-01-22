@@ -1,6 +1,5 @@
 /**
  * Component layout for buttons
- * @class Ext.layout.component.Button
  * @private
  */
 Ext.define('Ext.layout.component.Button', {
@@ -47,34 +46,6 @@ Ext.define('Ext.layout.component.Button', {
         owner.btnIconEl.setStyle('width', empty);
     },
 
-    calculate: function (ownerContext) {
-        var me = this,
-            state = ownerContext.state,
-            fixed, height, width;
-
-        me.callParent(arguments);
-
-        if (!ownerContext.autoWidth) {
-            width = ownerContext.getProp('width');
-            if (state.btnWidth !== width) {
-                state.btnWidth = width;
-                fixed = true;
-            }
-        }
-
-        if (!ownerContext.autoHeight) {
-            height = ownerContext.getProp('height');
-            if (state.btnHeight !== height) {
-                state.btnHeight = height;
-                fixed = true;
-            }
-        }
-
-        if (fixed) {
-            me.setButtonSize(ownerContext, width, height);
-        }
-    },
-
     calculateOwnerHeightFromContentHeight: function (ownerContext, contentHeight) {
         return contentHeight;
     },
@@ -83,7 +54,7 @@ Ext.define('Ext.layout.component.Button', {
         return contentWidth;
     },
 
-    getContentWidth: function (ownerContext) {
+    measureContentWidth: function (ownerContext) {
         var me = this,
             owner = me.owner,
             btnEl = owner.btnEl,
@@ -121,7 +92,7 @@ Ext.define('Ext.layout.component.Button', {
         return width;
     },
 
-    getContentHeight: function (ownerContext) {
+    measureContentHeight: function (ownerContext) {
         var me = this,
             owner = me.owner,
             btnInnerEl = owner.btnInnerEl,
@@ -132,7 +103,7 @@ Ext.define('Ext.layout.component.Button', {
             height += me.btnFrameHeight + me.adjHeight;
 
             // Vertical buttons need height explicitly set
-            ownerContext.setHeight(height, true, true);
+            ownerContext.setHeight(height, /*dirty=*/true, /*force=*/true);
         } else {
             height = ownerContext.el.getHeight();
         }
@@ -140,21 +111,20 @@ Ext.define('Ext.layout.component.Button', {
         return height;
     },
 
-    setButtonSize: function(ownerContext, width, height) {
+    publishInnerHeight: function(ownerContext, height) {
         var me = this,
             owner = me.owner,
             isNum = Ext.isNumber,
             btnItem = ownerContext.getEl('btnEl'),
             btnInnerEl = owner.btnInnerEl,
             btnInnerItem = ownerContext.getEl('btnInnerEl'),
-            btnWidth = isNum(width) ? width - me.adjWidth : width,
             btnHeight = isNum(height) ? height - me.adjHeight : height,
             btnFrameHeight = me.btnFrameHeight,
             text = owner.getText(),
             textHeight;
 
-        btnItem.setSize(btnWidth, btnHeight);
-        btnInnerItem.setSize(btnWidth, btnHeight);
+        btnItem.setHeight(btnHeight);
+        btnInnerItem.setHeight(btnHeight);
 
         // Only need the line-height setting for regular, horizontal Buttons
         if (!owner.vertical && btnHeight >= 0) {
@@ -171,8 +141,19 @@ Ext.define('Ext.layout.component.Button', {
             textHeight = Ext.util.TextMetrics.measure(btnInnerEl, text).height;
             btnInnerItem.setProp('padding-top',
                 me.btnFrameTop + Math.max(btnInnerEl.getHeight() - btnFrameHeight - textHeight, 0) / 2);
-            btnInnerItem.setSize(btnWidth, btnHeight);
+            btnInnerItem.setHeight(btnHeight);
         }
+    },
+
+    publishInnerWidth: function(ownerContext, width) {
+        var me = this,
+            isNum = Ext.isNumber,
+            btnItem = ownerContext.getEl('btnEl'),
+            btnInnerItem = ownerContext.getEl('btnInnerEl'),
+            btnWidth = isNum(width) ? width - me.adjWidth : width;
+
+        btnItem.setWidth(btnWidth);
+        btnInnerItem.setWidth(btnWidth);
     },
 
     cacheTargetInfo: function(ownerContext) {
@@ -183,7 +164,7 @@ Ext.define('Ext.layout.component.Button', {
             owner = me.owner;
             frameSize = ownerContext.getFrameInfo();
             btnWrapPadding = ownerContext.getEl('btnWrap').getPaddingInfo();
-            innerFrameSize = ownerContext.getEl('btnInnerEl').getFrameInfo();
+            innerFrameSize = ownerContext.getEl('btnInnerEl').getPaddingInfo();
 
             Ext.apply(me, {
                 // Width adjustment must take into account the arrow area. The btnWrap is the <em> which has padding to accommodate the arrow.

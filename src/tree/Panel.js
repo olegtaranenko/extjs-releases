@@ -46,22 +46,26 @@ Ext.define('Ext.tree.Panel', {
 
     /**
      * @private
-     * @cfg {Boolean} [rowLines=false] False so that rows are not separated by lines.
+     * @cfg {Boolean} rowLines
+     * False so that rows are not separated by lines.
      */
     rowLines: false,
 
     /**
-     * @cfg {Boolean} lines False to disable tree lines.
+     * @cfg {Boolean} lines
+     * False to disable tree lines.
      */
     lines: true,
 
     /**
-     * @cfg {Boolean} useArrows True to use Vista-style arrows in the tree.
+     * @cfg {Boolean} useArrows
+     * True to use Vista-style arrows in the tree.
      */
     useArrows: false,
 
     /**
-     * @cfg {Boolean} singleExpand True if only 1 node per branch may be expanded.
+     * @cfg {Boolean} singleExpand
+     * True if only 1 node per branch may be expanded.
      */
     singleExpand: false,
 
@@ -71,16 +75,19 @@ Ext.define('Ext.tree.Panel', {
     },
 
     /**
-     * @cfg {Boolean} animate True to enable animated expand/collapse. Defaults to the value of {@link Ext#enableFx}.
+     * @cfg {Boolean} animate
+     * True to enable animated expand/collapse. Defaults to the value of {@link Ext#enableFx}.
      */
 
     /**
-     * @cfg {Boolean} rootVisible False to hide the root node.
+     * @cfg {Boolean} rootVisible
+     * False to hide the root node.
      */
     rootVisible: true,
 
     /**
-     * @cfg {String} [displayField=text] The field inside the model that will be used as the node's text.
+     * @cfg {String} displayField
+     * The field inside the model that will be used as the node's text.
      */
     displayField: 'text',
 
@@ -111,11 +118,13 @@ Ext.define('Ext.tree.Panel', {
     lockedCfgCopy: ['displayField', 'root', 'singleExpand', 'useArrows', 'lines', 'rootVisible'],
 
     /**
-     * @cfg {Boolean} hideHeaders True to hide the headers. Defaults to `undefined`.
+     * @cfg {Boolean} hideHeaders
+     * True to hide the headers.
      */
 
     /**
-     * @cfg {Boolean} folderSort True to automatically prepend a leaf sorter to the store. Defaults to `undefined`.
+     * @cfg {Boolean} folderSort
+     * True to automatically prepend a leaf sorter to the store.
      */
 
     constructor: function(config) {
@@ -168,7 +177,8 @@ Ext.define('Ext.tree.Panel', {
         //     me.rootVisible = false;
         // }
 
-        me.viewConfig = Ext.applyIf(me.viewConfig || {}, {
+        me.viewConfig = Ext.apply({}, me.viewConfig);
+        me.viewConfig = Ext.applyIf(me.viewConfig, {
             rootVisible: me.rootVisible,
             animate: me.enableAnimations,
             singleExpand: me.singleExpand,
@@ -185,13 +195,13 @@ Ext.define('Ext.tree.Panel', {
         me.relayEvents(me.store, [
             /**
              * @event beforeload
-             * @alias Ext.data.Store#beforeload
+             * @inheritdoc Ext.data.Store#beforeload
              */
             'beforeload',
 
             /**
              * @event load
-             * @alias Ext.data.Store#load
+             * @inheritdoc Ext.data.Store#load
              */
             'load'
         ]);
@@ -199,73 +209,73 @@ Ext.define('Ext.tree.Panel', {
         me.store.on({
             /**
              * @event itemappend
-             * @alias Ext.data.TreeStore#append
+             * @inheritdoc Ext.data.TreeStore#append
              */
             append: me.createRelayer('itemappend'),
 
             /**
              * @event itemremove
-             * @alias Ext.data.TreeStore#remove
+             * @inheritdoc Ext.data.TreeStore#remove
              */
             remove: me.createRelayer('itemremove'),
 
             /**
              * @event itemmove
-             * @alias Ext.data.TreeStore#move
+             * @inheritdoc Ext.data.TreeStore#move
              */
             move: me.createRelayer('itemmove'),
 
             /**
              * @event iteminsert
-             * @alias Ext.data.TreeStore#insert
+             * @inheritdoc Ext.data.TreeStore#insert
              */
             insert: me.createRelayer('iteminsert'),
 
             /**
              * @event beforeitemappend
-             * @alias Ext.data.TreeStore#beforeappend
+             * @inheritdoc Ext.data.TreeStore#beforeappend
              */
             beforeappend: me.createRelayer('beforeitemappend'),
 
             /**
              * @event beforeitemremove
-             * @alias Ext.data.TreeStore#beforeremove
+             * @inheritdoc Ext.data.TreeStore#beforeremove
              */
             beforeremove: me.createRelayer('beforeitemremove'),
 
             /**
              * @event beforeitemmove
-             * @alias Ext.data.TreeStore#beforemove
+             * @inheritdoc Ext.data.TreeStore#beforemove
              */
             beforemove: me.createRelayer('beforeitemmove'),
 
             /**
              * @event beforeiteminsert
-             * @alias Ext.data.TreeStore#beforeinsert
+             * @inheritdoc Ext.data.TreeStore#beforeinsert
              */
             beforeinsert: me.createRelayer('beforeiteminsert'),
 
             /**
              * @event itemexpand
-             * @alias Ext.data.TreeStore#expand
+             * @inheritdoc Ext.data.TreeStore#expand
              */
             expand: me.createRelayer('itemexpand'),
 
             /**
              * @event itemcollapse
-             * @alias Ext.data.TreeStore#collapse
+             * @inheritdoc Ext.data.TreeStore#collapse
              */
             collapse: me.createRelayer('itemcollapse'),
 
             /**
              * @event beforeitemexpand
-             * @alias Ext.data.TreeStore#beforeexpand
+             * @inheritdoc Ext.data.TreeStore#beforeexpand
              */
             beforeexpand: me.createRelayer('beforeitemexpand'),
 
             /**
              * @event beforeitemcollapse
-             * @alias Ext.data.TreeStore#beforecollapse
+             * @inheritdoc Ext.data.TreeStore#beforecollapse
              */
             beforecollapse: me.createRelayer('beforeitemcollapse')
         });
@@ -293,17 +303,6 @@ Ext.define('Ext.tree.Panel', {
         
         view = me.getView();
 
-        // Only IE6 requires manual minimum sizing with a stretcher.
-        // All other browsers allow the 1000px wide header to impose a minimum size.
-        if (Ext.isIE6 && me.autoWidth) {
-            view.afterRender = Ext.Function.createSequence(view.afterRender, function() {
-                this.stretcher = view.el.down('th').createChild({style:"height:0px;width:" + (this.getWidth() - Ext.getScrollbarSize().width) + "px"});
-            });
-            view.afterComponentLayout = Ext.Function.createSequence(view.afterComponentLayout, function() {
-                this.stretcher.setWidth((this.getWidth() - Ext.getScrollbarSize().width));
-            });
-        }
-
         me.relayEvents(view, [
             /**
              * @event checkchange
@@ -314,12 +313,12 @@ Ext.define('Ext.tree.Panel', {
             'checkchange',
             /**
              * @event afteritemexpand
-             * @alias Ext.tree.View#afteritemexpand
+             * @inheritdoc Ext.tree.View#afteritemexpand
              */
             'afteritemexpand',
             /**
              * @event afteritemcollapse
-             * @alias Ext.tree.View#afteritemcollapse
+             * @inheritdoc Ext.tree.View#afteritemcollapse
              */
             'afteritemcollapse'
         ]);
@@ -331,7 +330,7 @@ Ext.define('Ext.tree.Panel', {
             });
         }
     },
-
+    
     onClear: function(){
         this.view.onClear();
     },
@@ -371,8 +370,8 @@ Ext.define('Ext.tree.Panel', {
 
     /**
      * Expand all nodes
-     * @param {Function} callback (optional) A function to execute when the expand finishes.
-     * @param {Object} scope (optional) The scope of the callback function
+     * @param {Function} [callback] A function to execute when the expand finishes.
+     * @param {Object} [scope] The scope of the callback function
      */
     expandAll : function(callback, scope) {
         var root = this.getRootNode(),
@@ -391,8 +390,8 @@ Ext.define('Ext.tree.Panel', {
 
     /**
      * Collapse all nodes
-     * @param {Function} callback (optional) A function to execute when the collapse finishes.
-     * @param {Object} scope (optional) The scope of the callback function
+     * @param {Function} [callback] A function to execute when the collapse finishes.
+     * @param {Object} [scope] The scope of the callback function
      */
     collapseAll : function(callback, scope) {
         var root = this.getRootNode(),
@@ -417,11 +416,11 @@ Ext.define('Ext.tree.Panel', {
     /**
      * Expand the tree to the path of a particular node.
      * @param {String} path The path to expand. The path should include a leading separator.
-     * @param {String} field (optional) The field to get the data from. Defaults to the model idProperty.
-     * @param {String} separator (optional) A separator to use. Defaults to `'/'`.
-     * @param {Function} callback (optional) A function to execute when the expand finishes. The callback will be called with
+     * @param {String} [field] The field to get the data from. Defaults to the model idProperty.
+     * @param {String} [separator='/'] A separator to use.
+     * @param {Function} [callback] A function to execute when the expand finishes. The callback will be called with
      * (success, lastNode) where success is if the expand was successful and lastNode is the last node that was expanded.
-     * @param {Object} scope (optional) The scope of the callback function
+     * @param {Object} [scope] The scope of the callback function
      */
     expandPath: function(path, field, separator, callback, scope) {
         var me = this,
@@ -465,11 +464,11 @@ Ext.define('Ext.tree.Panel', {
     /**
      * Expand the tree to the path of a particular node, then select it.
      * @param {String} path The path to select. The path should include a leading separator.
-     * @param {String} field (optional) The field to get the data from. Defaults to the model idProperty.
-     * @param {String} separator (optional) A separator to use. Defaults to `'/'`.
-     * @param {Function} callback (optional) A function to execute when the select finishes. The callback will be called with
+     * @param {String} [field] The field to get the data from. Defaults to the model idProperty.
+     * @param {String} [separator='/'] A separator to use.
+     * @param {Function} [callback] A function to execute when the select finishes. The callback will be called with
      * (bSuccess, oLastNode) where bSuccess is if the select was successful and oLastNode is the last node that was expanded.
-     * @param {Object} scope (optional) The scope of the callback function
+     * @param {Object} [scope] The scope of the callback function
      */
     selectPath: function(path, field, separator, callback, scope) {
         var me = this,

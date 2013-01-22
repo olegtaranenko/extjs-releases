@@ -5,28 +5,29 @@ Ext.dom.AbstractElement.override({
     /**
      * Looks at this node and then at parent nodes for a match of the passed simple selector (e.g. div.some-class or span:first-child)
      * @param {String} selector The simple selector to test
-     * @param {Number/String/HTMLElement/Ext.Element} [maxDepth]
-     * The max depth to search as a number or element (defaults to 50 || document.body)
+     * @param {Number/String/HTMLElement/Ext.Element} [limit]
+     * The max depth to search as a number or an element which causes the upward traversal to stop
+     * and is <b>not</b> considered for inclusion as the result. (defaults to 50 || document.documentElement)
      * @param {Boolean} [returnEl=false] True to return a Ext.Element object instead of DOM node
      * @return {HTMLElement} The matching DOM node (or null if no match was found)
      */
-    findParent: function(simpleSelector, maxDepth, returnEl) {
-        var p = this.dom,
-            b = document.body,
+    findParent: function(simpleSelector, limit, returnEl) {
+        var target = this.dom,
+            topmost = document.documentElement,
             depth = 0,
             stopEl;
 
-        maxDepth = maxDepth || 50;
-        if (isNaN(maxDepth)) {
-            stopEl = Ext.getDom(maxDepth);
-            maxDepth = Number.MAX_VALUE;
+        limit = limit || 50;
+        if (isNaN(limit)) {
+            stopEl = Ext.getDom(limit);
+            limit = Number.MAX_VALUE;
         }
-        while (p && p.nodeType == 1 && depth < maxDepth && p != b && p != stopEl) {
-            if (Ext.DomQuery.is(p, simpleSelector)) {
-                return returnEl ? Ext.get(p) : p;
+        while (target && target.nodeType == 1 && depth < limit && target != topmost && target != stopEl) {
+            if (Ext.DomQuery.is(target, simpleSelector)) {
+                return returnEl ? Ext.get(target) : target;
             }
             depth++;
-            p = p.parentNode;
+            target = target.parentNode;
         }
         return null;
     },
@@ -34,32 +35,34 @@ Ext.dom.AbstractElement.override({
     /**
      * Looks at parent nodes for a match of the passed simple selector (e.g. div.some-class or span:first-child)
      * @param {String} selector The simple selector to test
-     * @param {Number/String/HTMLElement/Ext.Element} [maxDepth]
-     * The max depth to search as a number or element (defaults to 10 || document.body)
+     * @param {Number/String/HTMLElement/Ext.Element} [limit]
+     * The max depth to search as a number or an element which causes the upward traversal to stop
+     * and is <b>not</b> considered for inclusion as the result. (defaults to 50 || document.documentElement)
      * @param {Boolean} [returnEl=false] True to return a Ext.Element object instead of DOM node
      * @return {HTMLElement} The matching DOM node (or null if no match was found)
      */
-    findParentNode: function(simpleSelector, maxDepth, returnEl) {
+    findParentNode: function(simpleSelector, limit, returnEl) {
         var p = Ext.fly(this.dom.parentNode, '_internal');
-        return p ? p.findParent(simpleSelector, maxDepth, returnEl) : null;
+        return p ? p.findParent(simpleSelector, limit, returnEl) : null;
     },
 
     /**
      * Walks up the dom looking for a parent node that matches the passed simple selector (e.g. div.some-class or span:first-child).
      * This is a shortcut for findParentNode() that always returns an Ext.dom.Element.
      * @param {String} selector The simple selector to test
-     * @param {Number/String/HTMLElement/Ext.Element} [maxDepth]
-     * The max depth to search as a number or element (defaults to 10 || document.body)
+     * @param {Number/String/HTMLElement/Ext.Element} [limit]
+     * The max depth to search as a number or an element which causes the upward traversal to stop
+     * and is <b>not</b> considered for inclusion as the result. (defaults to 50 || document.documentElement)
      * @return {Ext.Element} The matching DOM node (or null if no match was found)
      */
-    up: function(simpleSelector, maxDepth) {
-        return this.findParentNode(simpleSelector, maxDepth, true);
+    up: function(simpleSelector, limit) {
+        return this.findParentNode(simpleSelector, limit, true);
     },
 
     /**
      * Creates a {@link Ext.CompositeElement} for child nodes based on the passed CSS selector (the selector should not contain an id).
      * @param {String} selector The CSS selector
-     * @return {Ext.CompositeElement/Ext.CompositeElement} The composite element
+     * @return {Ext.CompositeElement} The composite element
      */
     select: function(selector, composite) {
         return Ext.dom.Element.select(selector, this.dom, composite);

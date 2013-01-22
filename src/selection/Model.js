@@ -37,7 +37,8 @@ Ext.define('Ext.selection.Model', {
 
     /**
      * @property {Ext.util.MixedCollection} selected
-     * A MixedCollection that maintains all of the currently selected records. Read-only.
+     * A MixedCollection that maintains all of the currently selected records.
+     * @readonly
      */
     selected: null,
 
@@ -274,7 +275,7 @@ Ext.define('Ext.selection.Model', {
         var me = this,
             record;
 
-        if (me.locked) {
+        if (me.locked || !me.store) {
             return;
         }
         if (typeof records === "number") {
@@ -339,7 +340,7 @@ Ext.define('Ext.selection.Model', {
             attempted = 0,
             accepted = 0;
 
-        if (me.locked) {
+        if (me.locked || !me.store) {
             return false;
         }
 

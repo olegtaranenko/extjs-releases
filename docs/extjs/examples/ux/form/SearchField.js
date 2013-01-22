@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 Ext.define('Ext.ux.form.SearchField', {
     extend: 'Ext.form.field.Trigger',
     
@@ -35,7 +21,7 @@ Ext.define('Ext.ux.form.SearchField', {
     
     afterRender: function(){
         this.callParent();
-        this.triggerEl.item(0).setDisplayed('none');  
+        this.triggerCell.item(0).setDisplayed(false);
     },
     
     onTrigger1Click : function(){
@@ -47,10 +33,9 @@ Ext.define('Ext.ux.form.SearchField', {
         if (me.hasSearch) {
             me.setValue('');
             proxy.extraParams[me.paramName] = '';
-            proxy.extraParams.start = 0;
-            store.load();
+            store.loadPage(1);
             me.hasSearch = false;
-            me.triggerEl.item(0).setDisplayed('none');
+            me.triggerCell.item(0).setDisplayed(false);
             me.doComponentLayout();
         }
     },
@@ -66,10 +51,9 @@ Ext.define('Ext.ux.form.SearchField', {
             return;
         }
         proxy.extraParams[me.paramName] = value;
-        proxy.extraParams.start = 0;
-        store.load();
+        store.loadPage(1);
         me.hasSearch = true;
-        me.triggerEl.item(0).setDisplayed('block');
+        me.triggerCell.item(0).setDisplayed(true);
         me.doComponentLayout();
     }
 });

@@ -19,12 +19,11 @@
 </span> * This class functions **between siblings of a {@link Ext.layout.container.VBox VBox} or {@link Ext.layout.container.HBox HBox}
  * layout** to resize both immediate siblings.
  *
- * By default it will set the size of both siblings. **One** of the siblings may be configured with
- * `{@link Ext.Component#maintainFlex maintainFlex}: true` which will cause it not to receive a new size explicitly, but to be resized
- * by the layout.
+ * A Splitter will preserve the flex ratio of any flexed siblings it is required to resize. It does this by setting the `flex` property of *all* flexed siblings
+ * to equal their pixel size. The actual numerical `flex` property in the Components will change, but the **ratio** to the total flex value will be preserved.
  *
  * A Splitter may be configured to show a centered mini-collapse tool orientated to collapse the {@link #collapseTarget}.
- * The Splitter will then call that sibling Panel's {@link Ext.panel.Panel#collapse collapse} or {@link Ext.panel.Panel#expand expand} method
+ * The Splitter will then call that sibling Panel's {@link Ext.panel.Panel#method-collapse collapse} or {@link Ext.panel.Panel#method-expand expand} method
  * to perform the appropriate operation (depending on the sibling collapse state). To create the mini-collapse tool but take care
  * of collapsing yourself, configure the splitter with `{@link #performCollapse}: false`.
  */
@@ -112,7 +111,8 @@ Ext.define('Ext.resizer.Splitter', {
 
 <span id='Ext-resizer-Splitter-method-getTrackerConfig'>    /**
 </span>     * Returns the config object (with an `xclass` property) for the splitter tracker. This
-     * is overridden by {@link BorderSplitter} to create a {@link BorderSplitterTracker}.
+     * is overridden by {@link Ext.resizer.BorderSplitter BorderSplitter} to create a
+     * {@link Ext.resizer.BorderSplitterTracker BorderSplitterTracker}.
      * @protected
      */
     getTrackerConfig: function () {
@@ -129,7 +129,11 @@ Ext.define('Ext.resizer.Splitter', {
             collapseDir = me.getCollapseDirection();
 
         me.callParent();
-
+        
+        if (target.collapsed) {
+            me.addCls(me.collapsedClsInternal);
+        }
+        
         me.addCls(me.baseCls + '-' + me.orientation);
         Ext.applyIf(me.renderData, {
             collapseDir: collapseDir,

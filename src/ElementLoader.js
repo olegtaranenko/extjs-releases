@@ -9,7 +9,7 @@
  *         }
  *     });
  *
- * In general this class will not be instanced directly, rather the {@link Ext.Element#load} method
+ * In general this class will not be instanced directly, rather the {@link Ext.Element#method-load} method
  * will be used.
  */
 Ext.define('Ext.ElementLoader', {
@@ -58,7 +58,7 @@ Ext.define('Ext.ElementLoader', {
     /**
      * @cfg {Boolean/Object} autoLoad
      * True to have the loader make a request as soon as it is created.
-     * This argument can also be a set of options that will be passed to {@link #load} is called.
+     * This argument can also be a set of options that will be passed to {@link #method-load} is called.
      */
     autoLoad: false,
 
@@ -360,7 +360,7 @@ Ext.define('Ext.ElementLoader', {
     /**
      * Automatically refreshes the content over a specified period.
      * @param {Number} interval The interval to refresh in ms.
-     * @param {Object} options (optional) The options to pass to the load method. See {@link #load}
+     * @param {Object} options (optional) The options to pass to the load method. See {@link #method-load}
      */
     startAutoRefresh: function(interval, options){
         var me = this;

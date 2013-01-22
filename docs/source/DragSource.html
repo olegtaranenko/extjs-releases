@@ -16,8 +16,7 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-dd-DragSource'>/**
-</span> * @class Ext.dd.DragSource
- * A simple class that provides the basic implementation needed to make any element draggable.
+</span> * A simple class that provides the basic implementation needed to make any element draggable.
  */
 Ext.define('Ext.dd.DragSource', {
     extend: 'Ext.dd.DDProxy',
@@ -33,12 +32,12 @@ Ext.define('Ext.dd.DragSource', {
      */
 
 <span id='Ext-dd-DragSource-cfg-dropAllowed'>    /**
-</span>     * @cfg {String} [dropAllowed=&quot;x-dd-drop-ok&quot;]
+</span>     * @cfg {String} dropAllowed
      * The CSS class returned to the drag source when drop is allowed.
      */
     dropAllowed : Ext.baseCSSPrefix + 'dd-drop-ok',
 <span id='Ext-dd-DragSource-cfg-dropNotAllowed'>    /**
-</span>     * @cfg {String} [dropNotAllowed=&quot;x-dd-drop-nodrop&quot;]
+</span>     * @cfg {String} dropNotAllowed
      * The CSS class returned to the drag source when drop is not allowed.
      */
     dropNotAllowed : Ext.baseCSSPrefix + 'dd-drop-nodrop',
@@ -59,7 +58,6 @@ Ext.define('Ext.dd.DragSource', {
 
 <span id='Ext-dd-DragSource-method-constructor'>    /**
 </span>     * Creates new drag-source.
-     * @constructor
      * @param {String/HTMLElement/Ext.Element} el The container element or ID of it.
      * @param {Object} config (optional) Config object.
      */
@@ -127,12 +125,6 @@ Ext.define('Ext.dd.DragSource', {
      */
     beforeDragEnter: function(target, e, id) {
         return true;
-    },
-
-    // private
-    alignElWithMouse: function() {
-        this.callParent(arguments);
-        this.proxy.sync();
     },
 
     // private

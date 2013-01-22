@@ -74,9 +74,10 @@ Ext.define('Ext.form.Label', {
 
     getElConfig: function(){
         var me = this;
+
+        me.html = me.text ? Ext.util.Format.htmlEncode(me.text) : (me.html || '');
         return Ext.apply(me.callParent(), {
-            htmlFor: me.forId || '',
-            html: me.text ? Ext.util.Format.htmlEncode(me.text) : (me.html || '') 
+            htmlFor: me.forId || ''
         });
     },
 

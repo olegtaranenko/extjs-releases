@@ -1,35 +1,31 @@
 /**
- * @class Ext.Editor
- *
- * <p>
  * The Editor class is used to provide inline editing for elements on the page. The editor
  * is backed by a {@link Ext.form.field.Field} that will be displayed to edit the underlying content.
  * The editor is a floating Component, when the editor is shown it is automatically aligned to
  * display over the top of the bound element it is editing. The Editor contains several options
  * for how to handle key presses:
- * <ul>
- * <li>{@link #completeOnEnter}</li>
- * <li>{@link #cancelOnEsc}</li>
- * <li>{@link #swallowKeys}</li>
- * </ul>
+ *
+ * - {@link #completeOnEnter}
+ * - {@link #cancelOnEsc}
+ * - {@link #swallowKeys}
+ *
  * It also has options for how to use the value once the editor has been activated:
- * <ul>
- * <li>{@link #revertInvalid}</li>
- * <li>{@link #ignoreNoChange}</li>
- * <li>{@link #updateEl}</li>
- * </ul>
+ *
+ * - {@link #revertInvalid}
+ * - {@link #ignoreNoChange}
+ * - {@link #updateEl}
+ *
  * Sample usage:
- * </p>
- * <pre><code>
-var editor = new Ext.Editor({
-    updateEl: true, // update the innerHTML of the bound element when editing completes
-    field: {
-        xtype: 'textfield'
-    }
-});
-var el = Ext.get('my-text'); // The element to 'edit'
-editor.startEdit(el); // The value of the field will be taken as the innerHTML of the element.
- * </code></pre>
+ *
+ *     var editor = new Ext.Editor({
+ *         updateEl: true, // update the innerHTML of the bound element when editing completes
+ *         field: {
+ *             xtype: 'textfield'
+ *         }
+ *     });
+ *     var el = Ext.get('my-text'); // The element to 'edit'
+ *     editor.startEdit(el); // The value of the field will be taken as the innerHTML of the element.
+ *
  * {@img Ext.Editor/Ext.Editor.png Ext.Editor component}
  *
  */
@@ -66,19 +62,18 @@ Ext.define('Ext.Editor', {
      * 'field'. If a dimension is not specified, it will use the underlying height/width specified on
      * the editor object.
      * Examples:
-     * <pre><code>
-autoSize: true // The editor will be sized to the height/width of the field
-
-height: 21,
-autoSize: {
-    width: 'boundEl' // The width will be determined by the width of the boundEl, the height from the editor (21)
-}
-
-autoSize: {
-    width: 'field', // Width from the field
-    height: 'boundEl' // Height from the boundEl
-}
-     * </pre></code>
+     *
+     *     autoSize: true // The editor will be sized to the height/width of the field
+     *
+     *     height: 21,
+     *     autoSize: {
+     *         width: 'boundEl' // The width will be determined by the width of the boundEl, the height from the editor (21)
+     *     }
+     *
+     *     autoSize: {
+     *         width: 'field', // Width from the field
+     *         height: 'boundEl' // Height from the boundEl
+     *     }
      */
 
     /**
@@ -155,8 +150,8 @@ autoSize: {
     updateEl : false,
 
     /**
-     * @cfg {String/HTMLElement/Ext.Element} parentEl
-     * An element to render to. Defaults to the <tt>document.body</tt>.
+     * @cfg {String/HTMLElement/Ext.Element} [parentEl=document.body]
+     * An element to render to.
      */
 
     // private overrides

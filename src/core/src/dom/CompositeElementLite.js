@@ -50,7 +50,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
     constructor: function(elements, root) {
         /**
          * @property {HTMLElement[]} elements
-         * The Array of DOM elements which this CompositeElement encapsulates. Read-only.
+         * The Array of DOM elements which this CompositeElement encapsulates.
          *
          * This will not *usually* be accessed in developers' code, but developers wishing to augment the capabilities
          * of the CompositeElementLite class may use it when adding methods to the class.
@@ -75,6 +75,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
          *         }
          *     });
          *
+         * @readonly
          */
         this.elements = [];
         this.add(elements, root);
@@ -401,7 +402,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
     /**
      * @member Ext
      * @method select
-     * @alias Ext.dom.Element#select
+     * @inheritdoc Ext.dom.Element#select
      */
     Ext.select = function() {
         return Ext.dom.Element.select.apply(Ext.dom.Element, arguments);

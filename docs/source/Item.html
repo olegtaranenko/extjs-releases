@@ -171,7 +171,7 @@ Ext.define('Ext.menu.Item', {
         '&lt;tpl else&gt;',
             '&lt;a id=&quot;{id}-itemEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-link&quot; href=&quot;{href}&quot; &lt;tpl if=&quot;hrefTarget&quot;&gt;target=&quot;{hrefTarget}&quot;&lt;/tpl&gt; hidefocus=&quot;true&quot; unselectable=&quot;on&quot;&gt;',
                 '&lt;img id=&quot;{id}-iconEl&quot; src=&quot;{icon}&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-icon {iconCls}&quot; /&gt;',
-                '&lt;span id=&quot;{id}-textEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-text&quot; &lt;tpl if=&quot;menu&quot;&gt;style=&quot;margin-right: 17px;&quot;&lt;/tpl&gt; &gt;{text}&lt;/span&gt;',
+                '&lt;span id=&quot;{id}-textEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'menu-item-text&quot; &lt;tpl if=&quot;arrowCls&quot;&gt;style=&quot;margin-right: 17px;&quot;&lt;/tpl&gt; &gt;{text}&lt;/span&gt;',
                 '&lt;img id=&quot;{id}-arrowEl&quot; src=&quot;{blank}&quot; class=&quot;{arrowCls}&quot; /&gt;',
             '&lt;/a&gt;',
         '&lt;/tpl&gt;'
@@ -203,9 +203,8 @@ Ext.define('Ext.menu.Item', {
         }
     },
 
-    blur: function() {
-        this.$focused = false;
-        this.callParent(arguments);
+    getFocusEl: function() {
+        return this.itemEl;
     },
 
     deactivate: function() {
@@ -227,7 +226,7 @@ Ext.define('Ext.menu.Item', {
             me.parentMenu.activeChild = me.menu;
             me.menu.parentItem = me;
             me.menu.parentMenu = me.menu.ownerCt = me.parentMenu;
-            me.menu.showBy(me, me.menuAlign);
+            me.menu.showBy(me, me.menuAlign, ((!Ext.isStrict &amp;&amp; Ext.isIE) || Ext.isIE6) ? [-2, -2] : undefined);
         }
     },
 
@@ -258,11 +257,6 @@ Ext.define('Ext.menu.Item', {
         }
     },
 
-    focus: function() {
-        this.$focused = true;
-        this.callParent(arguments);
-    },
-
     getRefItems: function(deep){
         var menu = this.menu,
             items;
@@ -286,7 +280,8 @@ Ext.define('Ext.menu.Item', {
     initComponent: function() {
         var me = this,
             prefix = Ext.baseCSSPrefix,
-            cls = [prefix + 'menu-item'];
+            cls = [prefix + 'menu-item'],
+            menu;
 
         me.addEvents(
 <span id='Ext-menu-Item-event-activate'>            /**
@@ -323,7 +318,9 @@ Ext.define('Ext.menu.Item', {
         me.cls = cls.join(' ');
 
         if (me.menu) {
-            me.menu = Ext.menu.Manager.get(me.menu);
+            menu = me.menu;
+            delete me.menu;
+            me.setMenu(menu);
         }
 
         me.callParent(arguments);
@@ -365,7 +362,7 @@ Ext.define('Ext.menu.Item', {
 
     beforeRender: function() {
         var me = this,
-            blank = Ext.BLANK_IMAGE_URL;;
+            blank = Ext.BLANK_IMAGE_URL;
 
         me.callParent();
 
@@ -397,12 +394,15 @@ Ext.define('Ext.menu.Item', {
             delete oldMenu.parentItem;
             delete oldMenu.parentMenu;
             delete oldMenu.ownerCt;
+            delete oldMenu.ownerItem;
+            
             if (destroyMenu === true || (destroyMenu !== false &amp;&amp; me.destroyMenu)) {
                 Ext.destroy(oldMenu);
             }
         }
         if (menu) {
             me.menu = Ext.menu.Manager.get(menu);
+            me.menu.ownerItem = me;
         } else {
             me.menu = null;
         }
@@ -415,11 +415,23 @@ Ext.define('Ext.menu.Item', {
 <span id='Ext-menu-Item-method-setHandler'>    /**
 </span>     * Sets the {@link #click} handler of this item
      * @param {Function} fn The handler function
-     * @param {Object} scope (optional) The scope of the handler function
+     * @param {Object} [scope] The scope of the handler function
      */
     setHandler: function(fn, scope) {
         this.handler = fn || null;
         this.scope = scope;
+    },
+    
+<span id='Ext-menu-Item-method-setIcon'>    /**
+</span>     * Sets the {@link #icon} on this item.
+     * @param {String} icon The new icon 
+     */
+    setIcon: function(icon){
+        var iconEl = this.iconEl;
+        if (iconEl) {
+            iconEl.src = icon || Ext.BLANK_IMAGE_URL;
+        }
+        this.icon = icon;
     },
 
 <span id='Ext-menu-Item-method-setIconCls'>    /**
@@ -428,7 +440,7 @@ Ext.define('Ext.menu.Item', {
      */
     setIconCls: function(iconCls) {
         var me = this,
-            iconEl;
+            iconEl = me.iconEl;
 
         if (iconEl) {
             if (me.iconCls) {
@@ -455,8 +467,8 @@ Ext.define('Ext.menu.Item', {
 
         if (me.rendered) {
             el.update(text || '');
-            // cannot just call doComponentLayout due to stretchmax
-            me.ownerCt.redoComponentLayout();
+            // cannot just call layout on the component due to stretchmax
+            me.ownerCt.updateLayout();
         }
     }
 });

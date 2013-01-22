@@ -1,5 +1,4 @@
 /**
- * @class Ext.view.DragZone
  * @private
  */
 Ext.define('Ext.view.DragZone', {

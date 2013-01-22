@@ -1,5 +1,4 @@
 /**
- * @class Ext.grid.header.DragZone
  * @private
  */
 Ext.define('Ext.grid.header.DragZone', {

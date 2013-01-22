@@ -241,36 +241,19 @@ Ext.define('Ext.data.Connection', {
 
             requestOptions = me.setOptions(options, scope);
 
-            if (this.isFormUpload(options) === true) {
-                this.upload(options.form, requestOptions.url, requestOptions.data, options);
+            if (me.isFormUpload(options)) {
+                me.upload(options.form, requestOptions.url, requestOptions.data, options);
                 return null;
             }
 
             // if autoabort is set, cancel the current transactions
-            if (options.autoAbort === true || me.autoAbort) {
+            if (options.autoAbort || me.autoAbort) {
                 me.abort();
             }
 
             // create a connection object
-
-            if ((options.cors === true || me.cors === true) && Ext.isIe && Ext.ieVersion >= 8) {
-                xhr = new XDomainRequest();
-            } else {
-                xhr = this.getXhrInstance();
-            }
-
             async = options.async !== false ? (options.async || me.async) : false;
-
-            // open the request
-            if (username) {
-                xhr.open(requestOptions.method, requestOptions.url, async, username, password);
-            } else {
-                xhr.open(requestOptions.method, requestOptions.url, async);
-            }
-
-            if (options.withCredentials === true || me.withCredentials === true) {
-                xhr.withCredentials = true;
-            }
+            xhr = me.openRequest(options, requestOptions, async, username, password);
 
             headers = me.setupHeaders(xhr, options, requestOptions.data, requestOptions.params);
 
@@ -296,7 +279,7 @@ Ext.define('Ext.data.Connection', {
             // start the request!
             xhr.send(requestOptions.data);
             if (!async) {
-                return this.onComplete(request);
+                return me.onComplete(request);
             }
             return request;
         } else {
@@ -638,7 +621,46 @@ Ext.define('Ext.data.Connection', {
     },
 
     /**
-     * Creates the appropriate XHR transport for the browser.
+     * Creates the appropriate XHR transport for a given request on this browser. On IE
+     * this may be an `XDomainRequest` rather than an `XMLHttpRequest`.
+     * @private
+     */
+    newRequest: function (options) {
+        var xhr;
+
+        if ((options.cors || this.cors) && Ext.isIE && Ext.ieVersion >= 8) {
+            xhr = new XDomainRequest();
+        } else {
+            xhr = this.getXhrInstance();
+        }
+
+        return xhr;
+    },
+
+    /**
+     * Creates and opens an appropriate XHR transport for a given request on this browser.
+     * This logic is contained in an individual method to allow for overrides to process all
+     * of the parameters and options and return a suitable, open connection.
+     * @private
+     */
+    openRequest: function (options, requestOptions, async, username, password) {
+        var xhr = this.newRequest(options);
+
+        if (username) {
+            xhr.open(requestOptions.method, requestOptions.url, async, username, password);
+        } else {
+            xhr.open(requestOptions.method, requestOptions.url, async);
+        }
+
+        if (options.withCredentials || this.withCredentials) {
+            xhr.withCredentials = true;
+        }
+
+        return xhr;
+    },
+
+    /**
+     * Creates the appropriate XHR transport for this browser.
      * @private
      */
     getXhrInstance: (function() {
@@ -687,7 +709,8 @@ Ext.define('Ext.data.Connection', {
      * @param {Object} [request] Defaults to the last request
      */
     abort : function(request) {
-        var me = this;
+        var me = this,
+            xhr;
         
         if (!request) {
             request = me.getLatest();
@@ -699,8 +722,15 @@ Ext.define('Ext.data.Connection', {
              * greater control, the browser may/may not fire the function
              * depending on a series of conditions.
              */
-            request.xhr.onreadystatechange = null;
-            request.xhr.abort();
+            xhr = request.xhr;
+            try {
+                xhr.onreadystatechange = null;
+            } catch (e) {
+                // Setting onreadystatechange to null can cause problems in IE, see
+                // http://www.quirksmode.org/blog/archives/2005/09/xmlhttp_notes_a_1.html
+                xhr = Ext.emptyFn;
+            }
+            xhr.abort();
             me.clearTimeout(request);
             if (!request.timedout) {
                 request.aborted = true;

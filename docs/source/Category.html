@@ -116,7 +116,7 @@ Ext.define('Ext.chart.axis.Category', {
 
     // @private creates an array of labels to be used when rendering.
     setLabels: function() {
-        var store = this.chart.store,
+        var store = this.chart.getChartStore(),
             fields = this.fields,
             ln = fields.length,
             i;
@@ -133,7 +133,7 @@ Ext.define('Ext.chart.axis.Category', {
     applyData: function() {
         this.callParent();
         this.setLabels();
-        var count = this.chart.store.getCount();
+        var count = this.chart.getChartStore().getCount();
         return {
             from: 0,
             to: count,

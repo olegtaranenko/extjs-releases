@@ -69,14 +69,16 @@ Ext.define('Ext.ProgressBar', {
 
     config: {
         /**
-        * @cfg {Boolean} animate
-        * True to animate the progress bar during transitions
-        */
+         * @cfg {Boolean} animate
+         * True to animate the progress bar during transitions.
+         * @accessor
+         */
         animate: false,
 
         /**
          * @cfg {String} text
-         * The text shown in the progress bar
+         * The text shown in the progress bar.
+         * @accessor
          */
         text: ''
     },
@@ -158,7 +160,8 @@ Ext.define('Ext.ProgressBar', {
      * @return {Ext.ProgressBar} this
      */
     updateProgress: function(value, text, animate) {
-        var me = this;
+        var me = this,
+            oldValue = me.value;
 
         me.value = value || 0;
         if (text) {
@@ -168,8 +171,11 @@ Ext.define('Ext.ProgressBar', {
             if (animate === true || (animate !== false && me.animate)) {
                 me.bar.stopAnimation();
                 me.bar.animate(Ext.apply({
+                    from: {
+                        width: (oldValue * 100) + '%'
+                    },
                     to: {
-                        width: Math.floor(this.value * this.el.getWidth(true)) + 'px'
+                        width: (me.value * 100) + '%'
                     }
                 }, me.animate));
             } else {

@@ -205,7 +205,7 @@
                 if (dom) {
                     className = className.replace(trimRe, '');
                     if (className) {
-                        dom.classList.toggle(name);
+                        dom.classList.toggle(className);
                     }
                 }
 
@@ -294,7 +294,7 @@
          * may be due to a 'transparent' style value or an rgba value with 0 in the alpha
          * component.
          * @param {String} prop The style property whose value is to be tested.
-         * @return True if the style property is visually transparent.
+         * @return {Boolean} True if the style property is visually transparent.
          */
         isTransparent: function (prop) {
             var value = this.getStyle(prop);
@@ -391,7 +391,7 @@
          *
          *     // change the height to 200px and animate with default configuration
          *     Ext.fly('elementId').setHeight(200, true);
-         *      
+         *
          *     // change the height to 150px and animate with a custom configuration
          *     Ext.fly('elId').setHeight(150, {
          *         duration : .5, // animation will have a duration of .5 seconds
@@ -501,7 +501,7 @@
          * Example:
          *
          *     var vpSize = Ext.getBody().getViewSize();
-         *      
+         *
          *     // all Windows created afterwards will have a default value of 90% height and 95% width
          *     Ext.Window.override({
          *         width: vpSize.width * 0.9,
@@ -591,7 +591,6 @@
          * This method can only be applied to elements which accept child nodes.
          * @param {String} [msg] A message to display in the mask
          * @param {String} [msgCls] A css class to apply to the msg element
-         * @return {Ext.Element} The mask element
          */
         mask: function(msg, msgCls, transparent) {
             var me = this,

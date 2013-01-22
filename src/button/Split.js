@@ -44,6 +44,8 @@ Ext.define('Ext.button.Split', {
     /**
      * @cfg {Function} arrowHandler
      * A function called when the arrow button is clicked (can be used instead of click event)
+     * @cfg {Ext.button.Split} arrowHandler.this
+     * @cfg {Event} arrowHandler.e The click event
      */
     /**
      * @cfg {String} arrowTooltip
@@ -90,7 +92,7 @@ Ext.define('Ext.button.Split', {
                 }
             } else {
                 me.doToggle();
-                me.fireHandler();
+                me.fireHandler(e);
             }
         }
     }

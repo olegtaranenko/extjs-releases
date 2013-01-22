@@ -40,6 +40,12 @@ describe("Ext.util.Format", function() {
             expect(currency(-1234.567)).toEqual("-\u20ac1.234,57");
         });
     });
+    
+    describe("currency", function(){
+        it("should allow 0 for a decimal value", function(){
+            expect(currency(100, '$', 0)).toBe('$100');
+        });  
+    });
 
     describe("number in default (US) locale", function() {
         it("should format with no decimals", function() {

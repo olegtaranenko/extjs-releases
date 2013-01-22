@@ -59,6 +59,11 @@
  *
  * ComboBox also allows selection of multiple items from the list; to enable multi-selection set the
  * {@link #multiSelect} config to `true`.
+ * 
+ * # Filtered Stores
+ * 
+ * If you have a local store that is already filtered, you can use the {@link #lastQuery} config option
+ * to prevent the store from having the filter being cleared on first expand.
  */
 Ext.define('Ext.form.field.ComboBox', {
     extend:'Ext.form.field.Picker',
@@ -75,6 +80,14 @@ Ext.define('Ext.form.field.ComboBox', {
      * by default and `triggerCls` will be **appended** if specified.
      */
     triggerCls: Ext.baseCSSPrefix + 'form-arrow-trigger',
+    
+    /**
+     * @cfg {String} [hiddenName=""]
+     * The name of an underlying hidden field which will be synchronized with the underlying value of the combo.
+     * This option is useful if the combo is part of a form element doing a regular form post. The hidden field
+     * will not be created unless a hiddenName is specified.
+     */
+    hiddenName: '',
 
     /**
      * @private
@@ -84,12 +97,14 @@ Ext.define('Ext.form.field.ComboBox', {
     hiddenDataCls: Ext.baseCSSPrefix + 'hide-display ' + Ext.baseCSSPrefix + 'form-data-hidden',
 
     /**
-     * @override
+     * @cfg
+     * @inheritdoc
      */
     fieldSubTpl: [
         '<div class="{hiddenDataCls}" role="presentation"></div>',
-        '<input id="{id}" type="{type}" ',
+        '<input id="{id}" type="{type}" {inputAttrTpl}',
             '<tpl if="value"> value="{value}"</tpl>',
+            '<tpl if="name"> name="{name}"</tpl>',
             '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
             '<tpl if="size"> size="{size}"</tpl>',
             '<tpl if="maxLength !== undefined"> maxlength="{maxLength}"</tpl>',
@@ -98,11 +113,6 @@ Ext.define('Ext.form.field.ComboBox', {
             '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
             '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
             'class="{fieldCls} {typeCls}" autocomplete="off" />',
-        '<div id="{cmpId}-triggerWrap" class="{triggerWrapCls}" role="presentation"',
-            '<tpl if="triggerWrapStyle"> style="{triggerWrapStyle}"</tpl>',
-            '>{triggerEl}',
-            '<div class="{clearCls}" role="presentation"></div>',
-        '</div>',
         {
             compiled: true,
             disableFormats: true
@@ -157,7 +167,9 @@ Ext.define('Ext.form.field.ComboBox', {
      * The character(s) used to separate the {@link #displayField display values} of multiple selected items when
      * `{@link #multiSelect} = true`.
      */
+    //<locale>
     delimiter: ', ',
+    //</locale>
 
     /**
      * @cfg {String} displayField
@@ -169,11 +181,12 @@ Ext.define('Ext.form.field.ComboBox', {
 
     /**
      * @cfg {String} valueField (required)
-     * The underlying {@link Ext.data.Field#name data value name} to bind to this ComboBox (defaults to match
-     * the value of the {@link #displayField} config).
+     * The underlying {@link Ext.data.Field#name data value name} to bind to this ComboBox.
      *
      * **Note**: use of a `valueField` requires the user to make a selection in order for a value to be mapped. See also
      * `{@link #displayField}`.
+     *
+     * Defaults to match the value of the {@link #displayField} config.
      */
 
     /**
@@ -214,7 +227,7 @@ Ext.define('Ext.form.field.ComboBox', {
      *     In `queryMode: 'remote'`, the ComboBox loads its Store dynamically based upon user interaction.
      *
      *     This is typically used for "autocomplete" type inputs, and after the user finishes typing, the Store is {@link
-     *     Ext.data.Store#load load}ed.
+     *     Ext.data.Store#method-load load}ed.
      *
      *     A parameter containing the typed string is sent in the load request. The default parameter name for the input
      *     string is `query`, but this can be configured using the {@link #queryParam} config.
@@ -248,6 +261,11 @@ Ext.define('Ext.form.field.ComboBox', {
      */
     queryMode: 'remote',
 
+    /**
+     * @cfg {Boolean} [queryCaching=true]
+     * When true, this prevents the combo from re-querying (either locally or remotely) when the current query
+     * is the same as the previous query.
+     */
     queryCaching: true,
 
     /**
@@ -261,14 +279,17 @@ Ext.define('Ext.form.field.ComboBox', {
     /**
      * @cfg {Number} queryDelay
      * The length of time in milliseconds to delay between the start of typing and sending the query to filter the
-     * dropdown list (defaults to `500` if `{@link #queryMode} = 'remote'` or `10` if `{@link #queryMode} = 'local'`)
+     * dropdown list.
+     *
+     * Defaults to `500` if `{@link #queryMode} = 'remote'` or `10` if `{@link #queryMode} = 'local'`
      */
 
     /**
      * @cfg {Number} minChars
-     * The minimum number of characters the user must type before autocomplete and {@link #typeAhead} activate (defaults
-     * to `4` if `{@link #queryMode} = 'remote'` or `0` if `{@link #queryMode} = 'local'`, does not apply if
-     * `{@link Ext.form.field.Trigger#editable editable} = false`).
+     * The minimum number of characters the user must type before autocomplete and {@link #typeAhead} activate.
+     *
+     * Defaults to `4` if `{@link #queryMode} = 'remote'` or `0` if `{@link #queryMode} = 'local'`,
+     * does not apply if `{@link Ext.form.field.Trigger#editable editable} = false`.
      */
 
     /**
@@ -345,8 +366,6 @@ Ext.define('Ext.form.field.ComboBox', {
      * Set of options that will be used as defaults for the user-configured {@link #listConfig} object.
      */
     defaultListConfig: {
-        emptyText: '',
-        loadingText: 'Loading...',
         loadingHeight: 70,
         minWidth: 70,
         maxHeight: 300,
@@ -461,9 +480,11 @@ Ext.define('Ext.form.field.ComboBox', {
         if (transform) {
             transformSelect = Ext.getDom(transform);
             if (transformSelect) {
-                store = Ext.Array.map(Ext.Array.from(transformSelect.options), function(option) {
-                    return [option.value, option.text];
-                });
+                if (!me.store) {
+                    store = Ext.Array.map(Ext.Array.from(transformSelect.options), function(option){
+                        return [option.value, option.text];
+                    });
+                }
                 if (!me.name) {
                     me.name = transformSelect.name;
                 }
@@ -610,15 +631,29 @@ Ext.define('Ext.form.field.ComboBox', {
     
     getStoreListeners: function() {
         return {
+            beforeload: this.onBeforeLoad,
             load: this.onLoad,
-            exception: this.collapse    
+            exception: this.onException    
         }; 
+    },
+    
+    onBeforeLoad: function(){
+        // If we're remote loading, the load mask will show which will trigger a deslectAll.
+        // This selection change will trigger the collapse in onListSelectionChange. As such
+        // we'll veto it for now and restore selection listeners when we've loaded.
+        ++this.ignoreSelection;    
+    },
+    
+    onException: function(){
+        --this.ignoreSelection;
+        this.collapse();    
     },
 
     onLoad: function() {
         var me = this,
             value = me.value;
 
+        --me.ignoreSelection;
         // If performing a remote query upon the raw value...
         if (me.rawQuery) {
             me.rawQuery = false;
@@ -846,10 +881,21 @@ Ext.define('Ext.form.field.ComboBox', {
             me.mon(me.inputEl, 'keyup', me.onKeyUp, me);
         }
     },
-    
-    onDestroy: function(){
+
+    onDestroy: function() {
         this.bindStore(null);
-        this.callParent();    
+        this.callParent();
+    },
+
+    // The picker (the dropdown) must have its zIndex managed by the same ZIndexManager which is
+    // providing the zIndex of our Container.
+    onAdded: function() {
+        var me = this;
+        me.callParent(arguments);
+        if (me.picker) {
+            me.picker.ownerCt = me.up('[floating]');
+            me.picker.registerWithOwnerCt();
+        }
     },
 
     createPicker: function() {
@@ -863,7 +909,10 @@ Ext.define('Ext.form.field.ComboBox', {
                 },
                 floating: true,
                 hidden: true,
-                ownerCt: me.ownerCt,
+
+                // The picker (the dropdown) must have its zIndex managed by the same ZIndexManager which is
+                // providing the zIndex of our Container.
+                ownerCt: me.up('[floating]'),
                 cls: me.el.up('.' + menuCls) ? menuCls : '',
                 store: me.store,
                 displayField: me.displayField,
@@ -903,7 +952,7 @@ Ext.define('Ext.form.field.ComboBox', {
         // Allow the picker to height itself naturally.
         if (picker.height) {
             delete picker.height;
-            picker.doComponentLayout();
+            picker.updateLayout();
         }
         // Then ensure that vertically, the dropdown will fit into the space either above or below the inputEl.
         if (picker.getHeight() > space - 5) {
@@ -923,13 +972,11 @@ Ext.define('Ext.form.field.ComboBox', {
          * clicking on the selected element. Detect it here.
          */
         var me = this,
-            lastSelection = me.lastSelection,
-            valueField = me.valueField,
-            selected;
+            selection = me.picker.getSelectionModel().getSelection(),
+            valueField = me.valueField;
 
-        if (!me.multiSelect && lastSelection) {
-            selected = lastSelection[0];
-            if (selected && (record.get(valueField) === selected.get(valueField))) {
+        if (!me.multiSelect && selection.length) {
+            if (record.get(valueField) === selection[0].get(valueField)) {
                 // Make sure we also update the display value if it's only partial
                 me.displayTplData = [record.data];
                 me.setRawValue(me.getDisplayValue());
@@ -1145,8 +1192,11 @@ Ext.define('Ext.form.field.ComboBox', {
      * Dynamically adds and removes input[type=hidden] elements
      */
     setHiddenValue: function(values){
-        var me = this, i;
-        if (!me.hiddenDataEl) {
+        var me = this,
+            name = me.hiddenName, 
+            i;
+            
+        if (!me.hiddenDataEl || !name) {
             return;
         }
         values = Ext.Array.from(values);
@@ -1157,7 +1207,11 @@ Ext.define('Ext.form.field.ComboBox', {
             childrenCount = childNodes.length;
         
         if (!input && valueCount > 0) {
-            me.hiddenDataEl.update(Ext.DomHelper.markup({tag:'input', type:'hidden', name:me.name}));
+            me.hiddenDataEl.update(Ext.DomHelper.markup({
+                tag: 'input', 
+                type: 'hidden', 
+                name: name
+            }));
             childrenCount = 1;
             input = dom.firstChild;
         }

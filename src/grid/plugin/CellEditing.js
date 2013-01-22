@@ -84,7 +84,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
          *         e.record.commit();
          *     };
          *
-         * @param {Ext.grid.plugin.Editing} editor
+         * @param {Ext.grid.plugin.CellEditing} editor
          * @param {Object} e An edit event with the following properties:
          *
          * - grid - The grid
@@ -115,7 +115,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
          *       }
          *     });
          *
-         * @param {Ext.grid.plugin.Editing} editor
+         * @param {Ext.grid.plugin.CellEditing} editor
          * @param {Object} e An edit event with the following properties:
          *
          * - grid - The grid
@@ -129,6 +129,22 @@ Ext.define('Ext.grid.plugin.CellEditing', {
          * - colIdx - The column index that is being edited
          * - cancel - Set this to true to cancel the edit or return false from your handler.
          */
+        /**
+         * @event canceledit
+         * Fires when the user started editing a cell but then cancelled the edit.
+         * @param {Ext.grid.plugin.CellEditing} editor
+         * @param {Object} e An edit event with the following properties:
+         * 
+         * - grid - The grid
+         * - record - The record that was edited
+         * - field - The field name that was edited
+         * - value - The value being set
+         * - row - The grid table row
+         * - column - The grid {@link Ext.grid.column.Column Column} defining the column that was edited.
+         * - rowIdx - The row index that was edited
+         * - colIdx - The column index that was edited
+         */
+
         this.callParent(arguments);
         this.editors = new Ext.util.MixedCollection(false, function(editor) {
             return editor.editorId;
@@ -180,23 +196,19 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         });
     },
 
-    /**
-     * Starts editing the specified record, using the specified Column definition to define which field is being edited.
-     * @param {Ext.data.Model} record The Store data record which backs the row to be edited.
-     * @param {Ext.data.Model} columnHeader The Column object defining the column to be edited. @override
-     */
     startEdit: function(record, columnHeader) {
         var me = this,
-            value = record.get(columnHeader.dataIndex),
             context = me.getEditingContext(record, columnHeader),
-            ed;
+            value, ed;
+            
+        // Complete the edit now, before getting the editor's target
+        // cell DOM element. Completing the edit causes a row refresh.
+        // Also allows any post-edit events to take effect before continuing
+        me.completeEdit();
 
         record = context.record;
         columnHeader = context.column;
-
-        // Complete the edit now, before getting the editor's target
-        // cell DOM element. Completing the edit causes a view refresh.
-        me.completeEdit();
+        value = record.get(columnHeader.dataIndex);
 
         context.originalValue = context.value = value;
         if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel) {
@@ -217,6 +229,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
 
             // Defer, so we have some time between view scroll to sync up the editor
             me.editTask.delay(15, ed.startEdit, ed, [me.getCell(record, columnHeader), value]);
+            me.editing = true;
         } else {
             // BrowserBug: WebKit & IE refuse to focus the element, rather
             // it will focus it and then immediately focus the body. This
@@ -230,6 +243,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         var activeEd = this.getActiveEditor();
         if (activeEd) {
             activeEd.completeEdit();
+            this.editing = false;
         }
     },
 
@@ -277,11 +291,10 @@ Ext.define('Ext.grid.plugin.CellEditing', {
                 editor = new Ext.grid.CellEditor({
                     editorId: editorId,
                     field: editor,
-                    editingPlugin: me
+                    editingPlugin: me,
+                    ownerCt: me.grid
                 });
             }
-            editor.parentEl = me.grid.getEditorParent();
-            // editor.parentEl should be set here.
             editor.on({
                 scope: me,
                 specialkey: me.onSpecialKey,
@@ -330,7 +343,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             record;
 
         if (activeColumn) {
-            record = me.context.record
+            record = me.context.record;
 
             me.setActiveEditor(null);
             me.setActiveColumn(null);
@@ -367,6 +380,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         if (activeEd) {
             activeEd.cancelEdit();
             viewEl.focus();
+            me.callParent(arguments);
         }
     },
 
@@ -375,27 +389,11 @@ Ext.define('Ext.grid.plugin.CellEditing', {
      * @param {Object} position A position with keys of row and column.
      */
     startEditByPosition: function(position) {
-        var me = this,
-            rowIndex = position.row,
-            grid = me.grid,
-            store = grid.store,
-            view = grid.getView(),
-            sm = grid.getSelectionModel(),
-            editColumnHeader = grid.headerCt.getHeaderAtIndex(position.column),
-            editRecord, tableView;
-
-        if(store.getAt) {
-            // for regular stores we can use the getAt method to get the record at the specified row index
-            editRecord = store.getAt(rowIndex)
-        } else {
-            // TreeStores don't have the getAt method, so we have to use the view to find the record
-            tableView = editColumnHeader.ownerCt.lockableInjected ? (editColumnHeader.locked ? view.lockedView : view.normalView) : view;
-            editRecord = tableView.getRecord(tableView.getNode(rowIndex));
-        }
+        var sm = this.grid.getSelectionModel();
 
         if (sm.selectByPosition) {
             sm.selectByPosition(position);
         }
-        me.startEdit(editRecord, editColumnHeader);
+        this.startEdit(position.row, position.column);
     }
 });

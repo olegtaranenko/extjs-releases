@@ -210,7 +210,6 @@ this.ExtBootstrapData = {
         "Ext.layout.Context":[],
         "Ext.layout.ContextItem":[],
         "Ext.layout.Layout":[],
-        "Ext.layout.component.AbstractDock":[],
         "Ext.layout.component.Auto":["layout.autocomponent"
         ],
         "Ext.layout.component.Component":[],
@@ -293,9 +292,6 @@ this.ExtBootstrapData = {
         "Ext.dom.Helper":[],
         "Ext.flash.Component":["widget.flash"
         ],
-        "Ext.focus.DefaultNavigationHandler":[],
-        "Ext.focus.FocusManager":[],
-        "Ext.focus.PanelNavigationHandler":[],
         "Ext.form.Basic":[],
         "Ext.form.CheckboxGroup":["widget.checkboxgroup"
         ],
@@ -445,13 +441,9 @@ this.ExtBootstrapData = {
         ],
         "Ext.layout.component.Tab":["layout.tab"
         ],
-        "Ext.layout.component.Tip":["layout.tip"
-        ],
-        "Ext.layout.component.field.BoxLabelField":["layout.boxlabelfield"
-        ],
         "Ext.layout.component.field.Field":["layout.field"
         ],
-        "Ext.layout.component.field.File":["layout.filefield"
+        "Ext.layout.component.field.FieldContainer":["layout.fieldcontainer"
         ],
         "Ext.layout.component.field.HtmlEditor":["layout.htmleditor"
         ],
@@ -483,6 +475,8 @@ this.ExtBootstrapData = {
         "Ext.layout.container.Editor":["layout.editor"
         ],
         "Ext.layout.container.Fit":["layout.fit"
+        ],
+        "Ext.layout.container.Form":["layout.form"
         ],
         "Ext.layout.container.HBox":["layout.hbox"
         ],
@@ -634,7 +628,6 @@ this.ExtBootstrapData = {
         "Ext.StoreMgr":"Ext.data.StoreManager",
         "Ext.data.StoreMgr":"Ext.data.StoreManager",
         "Ext.StoreManager":"Ext.data.StoreManager",
-        "Ext.data.XmlStore":"Ext.data.XmlStore",
         "Ext.data.Association":"Ext.data.association.Association",
         "Ext.data.BelongsToAssociation":"Ext.data.association.BelongsTo",
         "Ext.data.HasManyAssociation":"Ext.data.association.HasMany",
@@ -663,7 +656,6 @@ this.ExtBootstrapData = {
         "Ext.data.XmlWriter":"Ext.data.writer.Xml",
         "Ext.Direct.Transaction":"Ext.direct.Transaction",
         "Ext.AbstractSelectionModel":"Ext.selection.Model",
-        "Ext.view.AbstractView":"Ext.view.AbstractView",
         "Ext.WindowGroup":"Ext.ZIndexManager",
         "Ext.Button":"Ext.button.Button",
         "Ext.CycleButton":"Ext.button.Cycle",
@@ -676,8 +668,6 @@ this.ExtBootstrapData = {
         "Ext.Element":"Ext.dom.Element",
         "Ext.core.Element":"Ext.dom.Element",
         "Ext.FlashComponent":"Ext.flash.Component",
-        "Ext.FocusMgr":"Ext.focus.FocusManager",
-        "Ext.FocusManager":"Ext.focus.FocusManager",
         "Ext.form.BasicForm":"Ext.form.Basic",
         "Ext.FormPanel":"Ext.form.Panel",
         "Ext.form.FormPanel":"Ext.form.Panel",
@@ -725,6 +715,7 @@ this.ExtBootstrapData = {
         "Ext.grid.PropertyColumnModel":"Ext.grid.property.HeaderContainer",
         "Ext.PropGridProperty":"Ext.grid.property.Property",
         "Ext.grid.PropertyStore":"Ext.grid.property.Store",
+        "Ext.layout.component.AbstractDock":"Ext.layout.component.Dock",
         "Ext.layout.AbsoluteLayout":"Ext.layout.container.Absolute",
         "Ext.layout.AccordionLayout":"Ext.layout.container.Accordion",
         "Ext.layout.AnchorLayout":"Ext.layout.container.Anchor",
@@ -734,6 +725,7 @@ this.ExtBootstrapData = {
         "Ext.layout.ColumnLayout":"Ext.layout.container.Column",
         "Ext.layout.ContainerLayout":"Ext.layout.container.Container",
         "Ext.layout.FitLayout":"Ext.layout.container.Fit",
+        "Ext.layout.FormLayout":"Ext.layout.container.Form",
         "Ext.layout.HBoxLayout":"Ext.layout.container.HBox",
         "Ext.layout.TableLayout":"Ext.layout.container.Table",
         "Ext.layout.VBoxLayout":"Ext.layout.container.VBox",

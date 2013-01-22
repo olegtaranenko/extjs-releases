@@ -1,3 +1,6 @@
+/**
+ * @private
+ */
 Ext.define('Ext.tree.ViewDragZone', {
     extend: 'Ext.view.DragZone',
 

@@ -1,10 +1,7 @@
 /**
- * @private
- * @class Ext.layout.component.field.HtmlEditor
  * Layout class for {@link Ext.form.field.HtmlEditor} fields. Sizes the toolbar, textarea, and iframe elements.
  * @private
  */
-
 Ext.define('Ext.layout.component.field.HtmlEditor', {
     extend: 'Ext.layout.component.field.Field',
     alias: ['layout.htmleditor'],
@@ -18,8 +15,12 @@ Ext.define('Ext.layout.component.field.HtmlEditor', {
         setsHeight: 0
     },
 
-    calculateBodyNaturalWidth: function() {
-        return 565;
+    beginLayout: function(ownerContext) {
+        this.callParent(arguments);
+
+        ownerContext.textAreaContext = ownerContext.getEl('textareaEl');
+        ownerContext.iframeContext   = ownerContext.getEl('iframeEl');
+        ownerContext.toolbarContext  = ownerContext.context.getCmp(this.owner.getToolbar());
     },
 
     getItemSizePolicy: function (item) {
@@ -35,37 +36,24 @@ Ext.define('Ext.layout.component.field.HtmlEditor', {
         return this.owner.bodyEl;
     },
 
-    sizeBodyContents: function(width, height, ownerContext) {
+    publishInnerHeight: function (ownerContext, height) {
         var me = this,
-            owner = me.owner,
-            bodyContext = ownerContext.getEl('bodyEl'),
-            toolbar = owner.getToolbar(),
-            toolbarContext = ownerContext.context.getCmp(toolbar),
-            toolbarHeight,
-            textareaContext = ownerContext.getEl('textareaEl'),
-            iframe = owner.iframeEl,
-            iframeContext = ownerContext.getEl('iframeEl'),
-            editorHeight;
+            innerHeight = height - me.measureLabelErrorHeight(ownerContext) -
+                          ownerContext.toolbarContext.getProp('height') -
+                          ownerContext.bodyCellContext.getPaddingInfo().height;
 
-        if (Ext.isNumber(width)) {
-            width -= bodyContext.getFrameInfo().width;
-        }
-        toolbarContext.setWidth(width);
-        textareaContext.setWidth(width);
-        iframeContext.setWidth(width);
-
-        // If fixed height, subtract toolbar height from the input area height
         // If the Toolbar has not acheieved a height yest, we are not done laying out.
-        if (Ext.isNumber(height)) {
-            toolbarHeight = toolbarContext.getProp('height');
-            if (toolbarHeight) {
-                editorHeight = height - toolbarHeight - bodyContext.getFrameInfo().height;
-                textareaContext.setHeight(editorHeight);
-                iframeContext.setHeight(editorHeight);
-            }
-            else {
-                me.done = false;
-            }
+        if (Ext.isNumber(innerHeight)) {
+            ownerContext.textAreaContext.setHeight(innerHeight);
+            ownerContext.iframeContext.setHeight(innerHeight);
+        } else {
+            me.done = false;
         }
+    },
+
+    publishInnerWidth: function (ownerContext, width) {
+        var innerWidth = width - ownerContext.bodyCellContext.getFrameInfo().width;
+
+        ownerContext.toolbarContext.setWidth(innerWidth);
     }
 });

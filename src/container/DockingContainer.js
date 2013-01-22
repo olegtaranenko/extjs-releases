@@ -80,8 +80,6 @@ Ext.define('Ext.container.DockingContainer', {
             me.onDockedAdd(item);
         }
 
-        // Set flag which means that beforeLayout will not veto the layout due to the size not changing
-        me.componentLayout.childrenChanged = true;
         if (me.rendered && !me.suspendLayout) {
             me.updateLayout();
         }
@@ -134,7 +132,12 @@ Ext.define('Ext.container.DockingContainer', {
     },
 
     /**
-     * Retrieve an array of all currently docked Components.
+     * Retrieves an array of all currently docked Components.
+     *
+     * For example to find a toolbar that has been docked at top:
+     *
+     *     panel.getDockedItems('toolbar[dock="top"]');
+     *
      * @param {String} selector A {@link Ext.ComponentQuery ComponentQuery} selector string to filter the returned items.
      * @param {Boolean} beforeBody An optional flag to limit the set of items to only those
      *  before the body (true) or after the body (false). All components are returned by
@@ -225,9 +228,6 @@ Ext.define('Ext.container.DockingContainer', {
             layout.afterRemove(item);
         }
 
-
-        // Set flag which means that beforeLayout will not veto the layout due to the size not changing
-        me.componentLayout.childrenChanged = true;
         if (!me.destroying && !me.suspendLayout) {
             me.doComponentLayout();
         }

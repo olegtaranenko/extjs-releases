@@ -25,7 +25,9 @@ Element.override({
     },
 
     /**
-      * Gets the current position of the element based on page coordinates.  Element must be part of the DOM tree to have page coordinates (display:none or elements not appended return false).
+      * Gets the current position of the element based on page coordinates.
+      * Element must be part of the DOM tree to have page coordinates
+      * (display:none or elements not appended return false).
       * @return {Number[]} The XY position of the element
       */
     getXY: function() {
@@ -33,9 +35,10 @@ Element.override({
     },
 
     /**
-      * Returns the offsets of this element from the passed element. Both element must be part of the DOM tree and not have display:none to have page coordinates.
+      * Returns the offsets of this element from the passed element. Both element must be part
+      * of the DOM tree and not have display:none to have page coordinates.
       * @param {String/HTMLElement/Ext.Element} element The element to get the offsets from.
-      * @return {Number[]} The XY page offsets (e.g. [100, -200])
+      * @return {Number[]} The XY page offsets (e.g. `[100, -200]`)
       */
     getOffsetsTo : function(el){
         var o = this.getXY(),
@@ -72,10 +75,12 @@ Element.override({
     },
 
     /**
-     * Sets the position of the element in page coordinates, regardless of how the element is positioned.
-     * The element must be part of the DOM tree to have page coordinates (display:none or elements not appended return false).
+     * Sets the position of the element in page coordinates, regardless of how the element
+     * is positioned. The element must be part of the DOM tree to have page coordinates
+     * (`display:none` or elements not appended return false).
      * @param {Number[]} pos Contains X & Y [x, y] values for new position (coordinates are page-based)
-     * @param {Boolean/Object} animate (optional) True for the default animation, or a standard Element animation config object
+     * @param {Boolean/Object} [animate] True for the default animation, or a standard Element
+     * animation config object
      * @return {Ext.Element} this
      */
     setXY: function(pos, animate) {
@@ -225,11 +230,13 @@ Element.override({
     },
 
     /**
-     * Sets the position of the element in page coordinates, regardless of how the element is positioned.
-     * The element must be part of the DOM tree to have page coordinates (display:none or elements not appended return false).
+     * Sets the position of the element in page coordinates, regardless of how the element
+     * is positioned. The element must be part of the DOM tree to have page coordinates
+     * (`display:none` or elements not appended return false).
      * @param {Number} x X value for new position (coordinates are page-based)
      * @param {Number} y Y value for new position (coordinates are page-based)
-     * @param {Boolean/Object} animate (optional) True for the default animation, or a standard Element animation config object
+     * @param {Boolean/Object} [animate] True for the default animation, or a standard Element
+     * animation config object
      * @return {Ext.dom.AbstractElement} this
      */
     setLocation : function(x, y, animate) {
@@ -237,11 +244,13 @@ Element.override({
     },
 
     /**
-     * Sets the position of the element in page coordinates, regardless of how the element is positioned.
-     * The element must be part of the DOM tree to have page coordinates (display:none or elements not appended return false).
+     * Sets the position of the element in page coordinates, regardless of how the element
+     * is positioned. The element must be part of the DOM tree to have page coordinates
+     * (`display:none` or elements not appended return false).
      * @param {Number} x X value for new position (coordinates are page-based)
      * @param {Number} y Y value for new position (coordinates are page-based)
-     * @param {Boolean/Object} animate (optional) True for the default animation, or a standard Element animation config object
+     * @param {Boolean/Object} [animate] True for the default animation, or a standard Element
+     * animation config object
      * @return {Ext.dom.AbstractElement} this
      */
     moveTo : function(x, y, animate) {
@@ -251,10 +260,10 @@ Element.override({
     /**
      * Initializes positioning on this element. If a desired position is not passed, it will make the
      * the element positioned relative IF it is not already positioned.
-     * @param {String} pos (optional) Positioning to use "relative", "absolute" or "fixed"
-     * @param {Number} zIndex (optional) The zIndex to apply
-     * @param {Number} x (optional) Set the page X position
-     * @param {Number} y (optional) Set the page Y position
+     * @param {String} [pos] Positioning to use "relative", "absolute" or "fixed"
+     * @param {Number} [zIndex] The zIndex to apply
+     * @param {Number} [x] Set the page X position
+     * @param {Number} [y] Set the page Y position
      */
     position : function(pos, zIndex, x, y) {
         var me = this;
@@ -273,8 +282,8 @@ Element.override({
     },
 
     /**
-     * Clear positioning back to the default when the document was loaded
-     * @param {String} value (optional) The value to use for the left,right,top,bottom, defaults to '' (empty string). You could use 'auto'.
+     * Clears positioning back to the default when the document was loaded.
+     * @param {String} [value=''] The value to use for the left, right, top, bottom. You could use 'auto'.
      * @return {Ext.dom.AbstractElement} this
      */
     clearPositioning : function(value) {
@@ -291,7 +300,7 @@ Element.override({
     },
 
     /**
-     * Gets an object with all CSS positioning properties. Useful along with setPostioning to get
+     * Gets an object with all CSS positioning properties. Useful along with #setPostioning to get
      * snapshot before performing an update and then restoring the element.
      * @return {Object}
      */
@@ -309,7 +318,7 @@ Element.override({
     },
 
     /**
-     * Set positioning with an object returned by getPositioning().
+     * Set positioning with an object returned by #getPositioning.
      * @param {Object} posCfg
      * @return {Ext.dom.AbstractElement} this
      */
@@ -331,9 +340,16 @@ Element.override({
 
     /**
      * Move this element relative to its current position.
-     * @param {String} direction Possible values are: "l" (or "left"), "r" (or "right"), "t" (or "top", or "up"), "b" (or "bottom", or "down").
+     * @param {String} direction Possible values are:
+     *
+     * - `"l"` (or `"left"`)
+     * - `"r"` (or `"right"`)
+     * - `"t"` (or `"top"`, or `"up"`)
+     * - `"b"` (or `"bottom"`, or `"down"`)
+     *
      * @param {Number} distance How far to move the element in pixels
-     * @param {Boolean/Object} animate (optional) true for the default animation or a standard Element animation config object
+     * @param {Boolean/Object} [animate] true for the default animation or a standard Element
+     * animation config object
      */
     move: function(direction, distance, animate) {
         var me = this,
@@ -362,7 +378,7 @@ Element.override({
     },
 
     /**
-     * Quick set left and top adding default units
+     * Conveniently sets left and top adding default units.
      * @param {String} left The left CSS property value
      * @param {String} top The top CSS property value
      * @return {Ext.dom.Element} this
@@ -378,7 +394,8 @@ Element.override({
 
     /**
      * Returns the region of this element.
-     * The element must be part of the DOM tree to have a region (display:none or elements not appended return false).
+     * The element must be part of the DOM tree to have a region
+     * (display:none or elements not appended return false).
      * @return {Ext.util.Region} A Region containing "top, left, bottom, right" member data.
      */
     getRegion: function() {
@@ -386,7 +403,7 @@ Element.override({
     },
 
     /**
-     * Returns the <b>content</b> region of this element. That is the region within the borders and padding.
+     * Returns the **content** region of this element. That is the region within the borders and padding.
      * @return {Ext.util.Region} A Region containing "top, left, bottom, right" member data.
      */
     getViewRegion: function() {
@@ -414,18 +431,24 @@ Element.override({
     },
 
     /**
-     * Sets the element's position and size in one shot. If animation is true then width, height, x and y will be animated concurrently.
+     * Sets the element's position and size in one shot. If animation is true then width, height,
+     * x and y will be animated concurrently.
+     *
      * @param {Number} x X value for new position (coordinates are page-based)
      * @param {Number} y Y value for new position (coordinates are page-based)
-     * @param {Number/String} width The new width. This may be one of:<div class="mdetail-params"><ul>
-     * <li>A Number specifying the new width in this Element's {@link #defaultUnit}s (by default, pixels)</li>
-     * <li>A String used to set the CSS width style. Animation may <b>not</b> be used.
-     * </ul></div>
-     * @param {Number/String} height The new height. This may be one of:<div class="mdetail-params"><ul>
-     * <li>A Number specifying the new height in this Element's {@link #defaultUnit}s (by default, pixels)</li>
-     * <li>A String used to set the CSS height style. Animation may <b>not</b> be used.</li>
-     * </ul></div>
-     * @param {Boolean/Object} animate (optional) true for the default animation or a standard Element animation config object
+     * @param {Number/String} width The new width. This may be one of:
+     *
+     * - A Number specifying the new width in this Element's {@link #defaultUnit}s (by default, pixels)
+     * - A String used to set the CSS width style. Animation may **not** be used.
+     *
+     * @param {Number/String} height The new height. This may be one of:
+     *
+     * - A Number specifying the new height in this Element's {@link #defaultUnit}s (by default, pixels)
+     * - A String used to set the CSS height style. Animation may **not** be used.
+     *
+     * @param {Boolean/Object} [animate] true for the default animation or a standard Element
+     * animation config object
+     *
      * @return {Ext.dom.AbstractElement} this
      */
     setBounds: function(x, y, width, height, animate) {
@@ -450,9 +473,12 @@ Element.override({
     },
 
     /**
-     * Sets the element's position and size the specified region. If animation is true then width, height, x and y will be animated concurrently.
+     * Sets the element's position and size the specified region. If animation is true then width, height,
+     * x and y will be animated concurrently.
+     *
      * @param {Ext.util.Region} region The region to fill
-     * @param {Boolean/Object} animate (optional) true for the default animation or a standard Element animation config object
+     * @param {Boolean/Object} [animate] true for the default animation or a standard Element
+     * animation config object
      * @return {Ext.dom.AbstractElement} this
      */
     setRegion: function(region, animate) {

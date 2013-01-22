@@ -41,12 +41,15 @@ Ext.define('Ext.picker.Time', {
     increment: 15,
 
     /**
-     * @cfg {String} format
+     * @cfg {String} [format=undefined]
      * The default time format string which can be overriden for localization support. The format must be valid
-     * according to {@link Ext.Date#parse} (defaults to 'g:i A', e.g., '3:15 PM'). For 24-hour time format try 'H:i'
-     * instead.
+     * according to {@link Ext.Date#parse}.
+     *
+     * Defaults to `'g:i A'`, e.g., `'3:15 PM'`. For 24-hour time format try `'H:i'` instead.
      */
+    //<locale>
     format : "g:i A",
+    //</locale>
 
     /**
      * @private
@@ -64,8 +67,8 @@ Ext.define('Ext.picker.Time', {
     componentCls: Ext.baseCSSPrefix + 'timepicker',
 
     /**
-     * @cfg {Boolean/Object} loadMask
-     * Not applicable for Time picker.
+     * @cfg
+     * @private
      */
     loadMask: false,
 

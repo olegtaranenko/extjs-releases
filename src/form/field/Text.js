@@ -70,8 +70,8 @@ Ext.define('Ext.form.field.Text', {
     /**
      * @cfg {RegExp} stripCharsRe
      * A JavaScript RegExp object used to strip unwanted content from the value
-     * before validation. If <tt>stripCharsRe</tt> is specified,
-     * every character matching <tt>stripCharsRe</tt> will be removed before fed to validation.
+     * before validation. If `stripCharsRe` is specified,
+     * every character matching `stripCharsRe` will be removed before fed to validation.
      * This does not change the value of the field.
      */
 
@@ -106,7 +106,9 @@ Ext.define('Ext.form.field.Text', {
      * common fonts) to leave enough space for the next typed character and avoid the field value shifting before the
      * width is adjusted.
      */
+    //<locale>
     growAppend: 'W',
+    //</locale>
 
     /**
      * @cfg {String} vtype
@@ -138,10 +140,12 @@ Ext.define('Ext.form.field.Text', {
 
     /**
      * @cfg {Number} maxLength
-     * Maximum input field length allowed by validation (defaults to Number.MAX_VALUE). This behavior is intended to
+     * Maximum input field length allowed by validation. This behavior is intended to
      * provide instant feedback to the user by improving usability to allow pasting and editing or overtyping and back
-     * tracking. To restrict the maximum number of characters that can be entered into the field use the **{@link
-     * Ext.form.field.Text#enforceMaxLength enforceMaxLength}** option.
+     * tracking. To restrict the maximum number of characters that can be entered into the field use the
+     * **{@link Ext.form.field.Text#enforceMaxLength enforceMaxLength}** option.
+     *
+     * Defaults to Number.MAX_VALUE.
      */
     maxLength : Number.MAX_VALUE,
 
@@ -154,13 +158,17 @@ Ext.define('Ext.form.field.Text', {
      * @cfg {String} minLengthText
      * Error text to display if the **{@link #minLength minimum length}** validation fails.
      */
+    //<locale>
     minLengthText : 'The minimum length for this field is {0}',
+    //</locale>
 
     /**
      * @cfg {String} maxLengthText
      * Error text to display if the **{@link #maxLength maximum length}** validation fails
      */
+    //<locale>
     maxLengthText : 'The maximum length for this field is {0}',
+    //</locale>
 
     /**
      * @cfg {Boolean} [selectOnFocus=false]
@@ -171,7 +179,9 @@ Ext.define('Ext.form.field.Text', {
      * @cfg {String} blankText
      * The error text to display if the **{@link #allowBlank}** validation fails
      */
+    //<locale>
     blankText : 'This field is required',
+    //</locale>
 
     /**
      * @cfg {Function} validator
@@ -189,9 +199,10 @@ Ext.define('Ext.form.field.Text', {
      */
 
     /**
-     * @cfg {RegExp} regex A JavaScript RegExp object to be tested against the field value during validation.
+     * @cfg {RegExp} regex
+     * A JavaScript RegExp object to be tested against the field value during validation.
      * If the test fails, the field will be marked invalid using
-     * either <b><tt>{@link #regexText}</tt></b> or <b><tt>{@link #invalidText}</tt></b>.
+     * either **{@link #regexText}** or **{@link #invalidText}**.
      */
 
     /**
@@ -210,6 +221,11 @@ Ext.define('Ext.form.field.Text', {
      *
      * Also note that if you use {@link #inputType inputType}:'file', {@link #emptyText} is not supported and should be
      * avoided.
+     *
+     * Note that for browsers that support it, setting this property will use the HTML 5 placeholder attribute, and for
+     * older browsers that don't support the HTML 5 placeholder attribute the value will be placed directly into the input
+     * element itself as the raw value. This means that older browsers will obfuscate the {@link #emptyText} value for
+     * password input fields.
      */
 
     /**
@@ -226,9 +242,12 @@ Ext.define('Ext.form.field.Text', {
 
     componentLayout: 'textfield',
 
-    initComponent : function(){
-        this.callParent();
-        this.addEvents(
+    initComponent: function () {
+        var me = this;
+
+        me.callParent();
+
+        me.addEvents(
             /**
              * @event autosize
              * Fires when the **{@link #autoSize}** function is triggered and the field is resized according to the
@@ -261,6 +280,10 @@ Ext.define('Ext.form.field.Text', {
              */
             'keypress'
         );
+
+        if (me.grow) {
+            me.shrinkWrap |= 1; // width must shrinkWrap
+        }
     },
 
     // private
@@ -420,7 +443,17 @@ Ext.define('Ext.form.field.Text', {
             me.autoSize();
         }
     },
-
+    
+    afterFirstLayout: function() {
+        this.callParent();
+        if (Ext.isIE && this.disabled) {
+            var el = this.inputEl;
+            if (el) {
+                el.dom.unselectable = 'on';
+            }
+        }
+    },
+    
     // private
     preFocus : function(){
         var me = this,
@@ -563,7 +596,7 @@ Ext.define('Ext.form.field.Text', {
      * 4. **Field specific regex test**
      *
      *     If none of the prior validation steps halts validation, a field's
-     *     configured <code>{@link #regex}</code> test will be processed.
+     *     configured `{@link #regex}` test will be processed.
      *     The invalid message for this test is configured with `{@link #regexText}`
      *
      * @param {Object} value The value to validate. The processed raw value will be used if nothing is passed.
@@ -657,12 +690,9 @@ Ext.define('Ext.form.field.Text', {
      */
     autoSize: function() {
         var me = this;
-        //\\ TODO: Don: How do we go about defeating any size management, and forcing an auto size?
-        //\\ It looks like this has never worked. It just did a component layout and then compared the inputEl width with what
-        //\\ was last stored.
         if (me.grow && me.rendered) {
             me.autoSizing = true;
-            me.doComponentLayout();
+            me.updateLayout();
         }
     },
 
@@ -679,15 +709,5 @@ Ext.define('Ext.form.field.Text', {
                 delete me.autoSizing;
             }
         }
-    },
-
-    /**
-     * To get the natural width of the inputEl, we do a simple calculation based on the 'size' config. We use
-     * hard-coded numbers to approximate what browsers do natively, to avoid having to read any styles which would hurt
-     * performance. Overrides Labelable method.
-     * @protected
-     */
-    getBodyNaturalWidth: function() {
-        return Math.round(this.size * 6.5) + 20;
     }
 });

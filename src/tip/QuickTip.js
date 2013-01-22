@@ -142,7 +142,9 @@ Ext.define('Ext.tip.QuickTip', {
     // private
     onTargetOver : function(e){
         var me = this,
-            target = e.getTarget(),
+            target = e.getTarget(me.delegate),
+            hasShowDelay,
+            delay,
             elTarget,
             cfg,
             ns,
@@ -158,7 +160,8 @@ Ext.define('Ext.tip.QuickTip', {
         // that smashed Ext.EventObject.
         me.targetXY = e.getXY();
 
-        if(!target || target.nodeType !== 1 || target == document || target == document.body){
+        // If the over target was filtered out by the delegate selector, or is not an HTMLElement, or is the <html> or the <body>, then return
+        if(!target || target.nodeType !== 1 || target == document.documentElement || target == document.body){
             return;
         }
 
@@ -183,7 +186,15 @@ Ext.define('Ext.tip.QuickTip', {
                 if (me.anchor) {
                     me.anchorTarget = target;
                 }
+                hasShowDelay = Ext.isDefined(me.activeTarget.showDelay);
+                if (hasShowDelay) {
+                    delay = me.showDelay;
+                    me.showDelay = me.activeTarget.showDelay;
+                }
                 me.delayShow();
+                if (hasShowDelay) {
+                    me.showDelay = delay;
+                }
                 return;
             }
         }
@@ -217,22 +228,42 @@ Ext.define('Ext.tip.QuickTip', {
             if (me.anchor) {
                 me.anchorTarget = target;
             }
+            hasShowDelay = Ext.isDefined(me.activeTarget.showDelay);
+            if (hasShowDelay) {
+                delay = me.showDelay;
+                me.showDelay = me.activeTarget.showDelay;
+            }
             me.delayShow();
+            if (hasShowDelay) {
+                me.showDelay = delay;
+            }
         }
     },
 
     // private
     onTargetOut : function(e){
-        var me = this;
+        var me = this,
+            active = me.activeTarget,
+            hasHideDelay,
+            delay;
 
         // If moving within the current target, and it does not have a new tip, ignore the mouseout
-        if (me.activeTarget && e.within(me.activeTarget.el) && !me.getTipCfg(e)) {
+        // EventObject.within is the only correct way to determine this.
+        if (active && e.within(me.activeTarget.el) && !me.getTipCfg(e)) {
             return;
         }
 
         me.clearTimer('show');
         if (me.autoHide !== false) {
+            hasHideDelay = active && Ext.isDefined(active.hideDelay);
+            if (hasHideDelay) {
+                delay = me.hideDelay;
+                me.hideDelay = active.hideDelay;
+            }
             me.delayHide();
+            if (hasHideDelay) {
+                me.hideDelay = delay;
+            }
         }
     },
 

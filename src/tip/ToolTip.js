@@ -478,6 +478,9 @@ Ext.define('Ext.tip.ToolTip', {
     // private
     onTargetOut: function(e) {
         var me = this;
+
+        // If disabled, moving within the current target, ignore the mouseout
+        // EventObject.within is the only correct way to determine this.
         if (me.disabled || e.within(me.target.dom, true)) {
             return;
         }

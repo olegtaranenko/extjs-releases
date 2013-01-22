@@ -181,19 +181,21 @@ Ext.define('Ext.form.field.Radio', {
 
     /**
      * @cfg {String} uncheckedValue
-     * Not applicable for Radio.
+     * @private
      */
 
     // private
     inputType: 'radio',
     ariaRole: 'radio',
+    
+    formId: null,
 
     /**
      * If this radio is part of a group, it will return the selected value
      * @return {String}
      */
     getGroupValue: function() {
-        var selected = this.getManager().getChecked(this.name);
+        var selected = this.getManager().getChecked(this.name, this.getFormId());
         return selected ? selected.inputValue : null;
     },
 
@@ -205,6 +207,24 @@ Ext.define('Ext.form.field.Radio', {
         if (!me.disabled && !me.readOnly) {
             this.setValue(true);
         }
+    },
+    
+    getFormId: function(){
+        var me = this,
+            form;
+            
+        if (!me.formId) {
+            form = me.up('form');
+            if (form) {
+                me.formId = form.id;
+            }
+        }
+        return me.formId;
+    },
+    
+    onRemoved: function(){
+        this.callParent(arguments);
+        this.formId = null;
     },
 
     /**
@@ -220,7 +240,7 @@ Ext.define('Ext.form.field.Radio', {
         if (Ext.isBoolean(v)) {
             me.callParent(arguments);
         } else {
-            active = me.getManager().getWithValue(me.name, v).getAt(0);
+            active = me.getManager().getWithValue(me.name, v, me.getFormId()).getAt(0);
             if (active) {
                 active.setValue(true);
             }
@@ -246,7 +266,7 @@ Ext.define('Ext.form.field.Radio', {
         me.callParent(arguments);
 
         if (newVal) {
-            this.getManager().getByName(me.name).each(function(item){
+            me.getManager().getByName(me.name, me.getFormId()).each(function(item){
                 if (item !== me) {
                     item.setValue(false);
                 }

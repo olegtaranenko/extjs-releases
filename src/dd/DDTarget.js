@@ -8,7 +8,6 @@
 
 
 /**
- * @class Ext.dd.DDTarget
  * A DragDrop implementation that does not move, but can be a drop
  * target.  You would get the same result by simply omitting implementation
  * for the event callbacks, but this way we reduce the processing cost of the

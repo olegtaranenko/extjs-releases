@@ -66,9 +66,9 @@ Ext.define('Ext.dom.CompositeElement', {
 });
 
 /**
- * Shorthand of {@link Ext.Element#select}.
+ * Shorthand of {@link Ext.Element#method-select}.
  * @member Ext
  * @method select
- * @alias Ext.Element#select
+ * @inheritdoc Ext.Element#select
  */
 Ext.select = Ext.Element.select;

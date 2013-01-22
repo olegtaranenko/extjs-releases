@@ -94,11 +94,11 @@ Ext.define('Ext.form.field.Number', {
 
     /**
      * @cfg {RegExp} stripCharsRe
-     * Not applicable for Number field.
+     * @private
      */
     /**
      * @cfg {RegExp} maskRe
-     * Not applicable for Number field.
+     * @private
      */
 
     /**
@@ -111,7 +111,9 @@ Ext.define('Ext.form.field.Number', {
      * @cfg {String} decimalSeparator
      * Character(s) to allow as the decimal separator
      */
+    //<locale>
     decimalSeparator : '.',
+    //</locale>
     
     /**
      * @cfg {Boolean} [submitLocaleSeparator=true]
@@ -119,25 +121,33 @@ Ext.define('Ext.form.field.Number', {
      * always uses `.` as the separator, regardless of the {@link #decimalSeparator}
      * configuration.
      */
+    //<locale>
     submitLocaleSeparator: true,
+    //</locale>
 
     /**
      * @cfg {Number} decimalPrecision
      * The maximum precision to display after the decimal separator
      */
+    //<locale>
     decimalPrecision : 2,
+    //</locale>
 
     /**
      * @cfg {Number} minValue
-     * The minimum allowed value (defaults to Number.NEGATIVE_INFINITY). Will be used by the field's validation logic,
+     * The minimum allowed value. Will be used by the field's validation logic,
      * and for {@link Ext.form.field.Spinner#setSpinUpEnabled enabling/disabling the down spinner button}.
+     *
+     * Defaults to Number.NEGATIVE_INFINITY.
      */
     minValue: Number.NEGATIVE_INFINITY,
 
     /**
      * @cfg {Number} maxValue
-     * The maximum allowed value (defaults to Number.MAX_VALUE). Will be used by the field's validation logic, and for
+     * The maximum allowed value. Will be used by the field's validation logic, and for
      * {@link Ext.form.field.Spinner#setSpinUpEnabled enabling/disabling the up spinner button}.
+     *
+     * Defaults to Number.MAX_VALUE.
      */
     maxValue: Number.MAX_VALUE,
 
@@ -152,27 +162,35 @@ Ext.define('Ext.form.field.Number', {
      * @cfg {String} minText
      * Error text to display if the minimum value validation fails.
      */
+    //<locale>
     minText : 'The minimum value for this field is {0}',
+    //</locale>
 
     /**
      * @cfg {String} maxText
      * Error text to display if the maximum value validation fails.
      */
+    //<locale>
     maxText : 'The maximum value for this field is {0}',
+    //</locale>
 
     /**
      * @cfg {String} nanText
      * Error text to display if the value is not a valid number. For example, this can happen if a valid character like
      * '.' or '-' is left in the field with no number.
      */
+    //<locale>
     nanText : '{0} is not a valid number',
+    //</locale>
 
     /**
      * @cfg {String} negativeText
      * Error text to display if the value is negative and {@link #minValue} is set to 0. This is used instead of the
      * {@link #minText} in that circumstance only.
      */
+    //<locale>
     negativeText : 'The value cannot be negative',
+    //</locale>
 
     /**
      * @cfg {String} baseChars
@@ -283,13 +301,15 @@ Ext.define('Ext.form.field.Number', {
     },
 
     onChange: function() {
+        this.toggleSpinners();
+        this.callParent(arguments);
+    },
+    
+    toggleSpinners: function(){
         var me = this,
-            value = me.getValue(),
+            value = me.getValue();
             valueIsNull = value === null;
-
-        me.callParent(arguments);
-
-        // Update the spinner buttons
+            
         me.setSpinUpEnabled(valueIsNull || value < me.maxValue);
         me.setSpinDownEnabled(valueIsNull || value > me.minValue);
     },
@@ -300,6 +320,7 @@ Ext.define('Ext.form.field.Number', {
      */
     setMinValue : function(value) {
         this.minValue = Ext.Number.from(value, Number.NEGATIVE_INFINITY);
+        this.toggleSpinners();
     },
 
     /**
@@ -308,6 +329,7 @@ Ext.define('Ext.form.field.Number', {
      */
     setMaxValue: function(value) {
         this.maxValue = Ext.Number.from(value, Number.MAX_VALUE);
+        this.toggleSpinners();
     },
 
     // private

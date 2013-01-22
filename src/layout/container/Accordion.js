@@ -1,6 +1,4 @@
 /**
- * @class Ext.layout.container.Accordion
- *
  * This is a layout that manages multiple Panels in an expandable accordion style such that only
  * **one Panel can be expanded at any given time**. Each Panel has built-in support for expanding and collapsing.
  *
@@ -16,7 +14,7 @@
  *             // applied to each contained panel
  *             bodyStyle: 'padding:15px'
  *         },
- *         layoutConfig: {
+ *         layout: {
  *             // layout-specific configs go here
  *             titleCollapse: false,
  *             animate: true,
@@ -69,7 +67,7 @@ Ext.define('Ext.layout.container.Accordion', {
     /**
      * @cfg {Boolean} hideCollapseTool
      * True to hide the contained Panels' collapse/expand toggle buttons, false to display them.
-     * When set to true, {@link #titleCollapse} is automatically set to <code>true</code>.
+     * When set to true, {@link #titleCollapse} is automatically set to true.
      */
     hideCollapseTool : false,
 
@@ -84,7 +82,7 @@ Ext.define('Ext.layout.container.Accordion', {
      * @cfg {Boolean} animate
      * True to slide the contained panels open and closed during expand/collapse using animation, false to open and
      * close directly with no animation. Note: The layout performs animated collapsing
-     * and expanding, <i>not</i> the child Panels.
+     * and expanding, *not* the child Panels.
      */
     animate : true,
     /**
@@ -97,11 +95,11 @@ Ext.define('Ext.layout.container.Accordion', {
     activeOnTop : false,
     /**
      * @cfg {Boolean} multi
-     * Set to <code>true</code> to enable multiple accordion items to be open at once.
+     * Set to true to enable multiple accordion items to be open at once.
      */
     multi: false,
     
-    animatePolicy: {
+    defaultAnimatePolicy: {
         y: true,
         height: true
     },
@@ -111,9 +109,11 @@ Ext.define('Ext.layout.container.Accordion', {
 
         me.callParent(arguments);
 
-        // animate flag must be false during initial render phase so we don't get animations.
-        me.initialAnimate = me.animate;
-        me.animate = false;
+        if (me.animate) {
+            me.animatePolicy = Ext.apply({}, me.defaultAnimatePolicy);
+        } else {
+            me.animatePolicy = null;
+        }
 
         // Child Panels are not absolutely positioned if we are not filling, so use a different itemCls.
         if (me.fill === false) {
@@ -220,6 +220,10 @@ Ext.define('Ext.layout.container.Accordion', {
 
     configureItem: function(item) {
         this.callParent(arguments);
+
+        // we handle animations for the expand/collapse of items:
+        item.animCollapse = false;
+
         if (this.fill) {
             item.flex = 1;
         }
@@ -298,8 +302,8 @@ Ext.define('Ext.layout.container.Accordion', {
 
         if (!me.processing) {
             me.processing = true;
-            previousValue = owner.deferLayout;
-            owner.deferLayout = true;
+            previousValue = owner.deferLayouts;
+            owner.deferLayouts = true;
             expanded = me.multi ? [] : owner.query('>panel:not([collapsed])');
             expandedCount = expanded.length;
             
@@ -307,7 +311,7 @@ Ext.define('Ext.layout.container.Accordion', {
             for (i = 0; i < expandedCount; i++) {
                 expanded[i].collapse();
             }
-            owner.deferLayout = previousValue;
+            owner.deferLayouts = previousValue;
             me.processing = false;
         }
     },
@@ -321,8 +325,8 @@ Ext.define('Ext.layout.container.Accordion', {
 
         if (!me.processing) {
             me.processing = true;
-            previousValue = owner.deferLayout;
-            owner.deferLayout = true;
+            previousValue = owner.deferLayouts;
+            owner.deferLayouts = true;
             toExpand = comp.next() || comp.prev();
 
             // If we are allowing multi, and the "toCollapse" component is NOT the only expanded Component,
@@ -339,7 +343,7 @@ Ext.define('Ext.layout.container.Accordion', {
             } else {
                 toExpand.expand();
             }
-            owner.deferLayout = previousValue;
+            owner.deferLayouts = previousValue;
             me.processing = false;
         }
     },

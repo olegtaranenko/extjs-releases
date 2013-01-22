@@ -193,7 +193,11 @@ Ext.define('Ext.chart.Legend', {
     create: function() {
         var me = this;
         me.createBox();
-        me.createItems();
+        
+        if (me.rebuild !== false) {
+            me.createItems();
+        }
+        
         if (!me.created && me.isDisplayed()) {
             me.created = true;
 
@@ -312,10 +316,21 @@ Ext.define('Ext.chart.Legend', {
      */
     createBox: function() {
         var me = this,
-            box;
+            box, bbox;
 
         if (me.boxSprite) {
             me.boxSprite.destroy();
+        }
+
+        bbox = me.getBBox();
+        //if some of the dimensions are NaN this means that we
+        //cannot set a specific width/height for the legend
+        //container. One possibility for this is that there are
+        //actually no items to show in the legend, and the legend
+        //should be hidden.
+        if (isNaN(bbox.width) || isNaN(bbox.height)) {
+            me.boxSprite = false;
+            return;
         }
         
         box = me.boxSprite = me.chart.surface.add(Ext.apply({
@@ -324,7 +339,7 @@ Ext.define('Ext.chart.Legend', {
             "stroke-width": me.boxStrokeWidth,
             fill: me.boxFill,
             zIndex: me.boxZIndex
-        }, me.getBBox()));
+        }, bbox));
 
         box.redraw();
     },
@@ -335,8 +350,8 @@ Ext.define('Ext.chart.Legend', {
     updatePosition: function() {
         var me = this,
             x, y,
-            legendWidth = me.width,
-            legendHeight = me.height,
+            legendWidth = me.width || 0,
+            legendHeight = me.height || 0,
             padding = me.padding,
             chart = me.chart,
             chartBBox = chart.chartBBox,
@@ -346,7 +361,8 @@ Ext.define('Ext.chart.Legend', {
             chartX = chartBBox.x + insets,
             chartY = chartBBox.y + insets,
             surface = chart.surface,
-            mfloor = Math.floor;
+            mfloor = Math.floor,
+            bbox;
 
         if (me.isDisplayed()) {
             // Find the position based on the dimensions
@@ -378,8 +394,26 @@ Ext.define('Ext.chart.Legend', {
             Ext.each(me.items, function(item) {
                 item.updatePosition();
             });
-            // Update the position of the outer box
-            me.boxSprite.setAttributes(me.getBBox(), true);
+
+            bbox = me.getBBox();
+
+            //if some of the dimensions are NaN this means that we
+            //cannot set a specific width/height for the legend
+            //container. One possibility for this is that there are
+            //actually no items to show in the legend, and the legend
+            //should be hidden.
+            if (isNaN(bbox.width) || isNaN(bbox.height)) {
+                if (me.boxSprite) {
+                    me.boxSprite.hide(true);
+                }
+            } else {
+                if (!me.boxSprite) {
+                    me.createBox();
+                }
+                // Update the position of the outer box
+                me.boxSprite.setAttributes(bbox, true);
+                me.boxSprite.show(true);
+            }
         }
     }
 });

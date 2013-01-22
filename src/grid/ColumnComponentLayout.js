@@ -1,6 +1,5 @@
 /**
  * Component layout for grid column headers which have a title element at the top followed by content.
- * @class Ext.layout.component.BoundList
  * @private
  */
 Ext.define('Ext.grid.ColumnComponentLayout', {

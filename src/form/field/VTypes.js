@@ -1,3 +1,4 @@
+//<localeInfo useApply="true" />
 /**
  * @singleton
  * @alternateClassName Ext.form.VTypes
@@ -98,7 +99,9 @@ Ext.define('Ext.form.field.VTypes', (function(){
          * The error text to display when the email validation function returns false.
          * Defaults to: 'This field should be an e-mail address in the format "user@example.com"'
          */
+        //<locale>
         'emailText' : 'This field should be an e-mail address in the format "user@example.com"',
+        //</locale>
         /**
          * @property {RegExp} emailMask
          * The keystroke filter mask to be applied on email input. See the {@link #email} method for information about
@@ -119,7 +122,9 @@ Ext.define('Ext.form.field.VTypes', (function(){
          * The error text to display when the url validation function returns false.
          * Defaults to: 'This field should be a URL in the format "http:/'+'/www.example.com"'
          */
+        //<locale>
         'urlText' : 'This field should be a URL in the format "http:/'+'/www.example.com"',
+        //</locale>
 
         /**
          * The function used to validate alpha values
@@ -134,7 +139,9 @@ Ext.define('Ext.form.field.VTypes', (function(){
          * The error text to display when the alpha validation function returns false.
          * Defaults to: 'This field should only contain letters and _'
          */
+        //<locale>
         'alphaText' : 'This field should only contain letters and _',
+        //</locale>
         /**
          * @property {RegExp} alphaMask
          * The keystroke filter mask to be applied on alpha input. Defaults to: /[a-z_]/i
@@ -154,7 +161,9 @@ Ext.define('Ext.form.field.VTypes', (function(){
          * The error text to display when the alphanumeric validation function returns false.
          * Defaults to: 'This field should only contain letters, numbers and _'
          */
+        //<locale>
         'alphanumText' : 'This field should only contain letters, numbers and _',
+        //</locale>
         /**
          * @property {RegExp} alphanumMask
          * The keystroke filter mask to be applied on alphanumeric input. Defaults to: /[a-z0-9_]/i

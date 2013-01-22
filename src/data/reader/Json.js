@@ -131,7 +131,7 @@ reader: {
  * - {@link #totalProperty}: property name for the total number of records in the data
  * - {@link #successProperty}: property name for the success status of the response
  * - {@link #messageProperty}: property name for an optional response message
- * - {@link Ext.data.Model#fields fields}: Config used to reconfigure the Model's fields before converting the
+ * - {@link Ext.data.Model#cfg-fields fields}: Config used to reconfigure the Model's fields before converting the
  * response data into records
  * 
  * An initial Reader configuration containing all of these properties might look like this ("fields" would be

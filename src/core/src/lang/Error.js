@@ -238,6 +238,29 @@ Ext.Error = Ext.extend(Error, {
 });
 
 /*
+ * Create a function that will throw an error if called (in debug mode) with a message that
+ * indicates the method has been removed.
+ * @param {String} suggestion Optional text to include in the message (a workaround perhaps).
+ * @return {Function} The generated function.
+ * @private
+ */
+Ext.deprecated = function (suggestion) {
+    //<debug>
+    if (!suggestion) {
+        suggestion = '';
+    }
+
+    function fail () {
+        Ext.Error.raise('The method "' + fail.$owner.$className + '.' + fail.$name + 
+                '" has been removed. ' + suggestion);
+    }
+
+    return fail;
+    //</debug>
+    return Ext.emptyFn;
+};
+
+/*
  * This mechanism is used to notify the user of the first error encountered on the page. This
  * was previously internal to Ext.Error.raise and is a desirable feature since errors often
  * slip silently under the radar. It cannot live in Ext.Error.raise since there are times
@@ -245,8 +268,7 @@ Ext.Error = Ext.extend(Error, {
  */
 //<debug>
 (function () {
-    var prevOnError, timer, errors = 0,
-        extraordinarilyBad = /(out of stack)|(too much recursion)|(stack overflow)|(out of memory)/i,
+    var timer, errors = 0,
         win = Ext.global;
 
     if (typeof window === 'undefined') {

@@ -63,7 +63,7 @@
  *
  *         wrc = {@link Ext#getCmp Ext.getCmp}('west-region-container');
  *         wrc.{@link Ext.container.Container#removeAll removeAll}();
- *         wrc.{@link Ext.container.Container#add add}({
+ *         wrc.{@link Ext.container.Container#method-add add}({
  *             title: 'Added Panel',
  *             html: 'Some content'
  *         });
@@ -84,6 +84,13 @@ Ext.define('Ext.layout.container.Border', {
     targetCls: Ext.baseCSSPrefix + 'border-layout-ct',
 
     itemCls: Ext.baseCSSPrefix + 'border-item ' + Ext.baseCSSPrefix + 'box-item',
+
+    /**
+     * @cfg {Boolean} split
+     * This configuration option is to be applied to the **child `items`** managed by this layout.
+     * Each region with `split:true` will get a {@link Ext.resizer.BorderSplitter Splitter} that
+     * allows for manual resizing of the container. Except for the `center` region.
+     */
 
     /**
      * @cfg {Number/String/Object} padding
@@ -159,7 +166,7 @@ Ext.define('Ext.layout.container.Border', {
      * instances of Border layout. If this is not desired, provide a replacement object as
      * a config option instead:
      * 
-     *      layoutConfig: {
+     *      layout: {
      *          type: 'border',
      *          regionWeights: {
      *              west: 20,
@@ -311,7 +318,7 @@ Ext.define('Ext.layout.container.Border', {
                 pad = Ext.util.Format.parseBox(pad);
             }
         } else {
-            pad = Ext.apply({}, ownerContext.getPaddingInfo());
+            pad = ownerContext.getEl('getTargetEl').getPaddingInfo();
             padOnContainer = true;
         }
         ownerContext.outerPad = pad;
@@ -375,12 +382,12 @@ Ext.define('Ext.layout.container.Border', {
             padOnContainer = ownerContext.padOnContainer,
             i, childContext, childMargins;
 
-        horz.begin = padOnContainer ? 0: pad.left;
-        vert.begin = padOnContainer ? 0: pad.top;
+        horz.begin = pad.left;
+        vert.begin = pad.top;
         // If the padding is already on the container we need to add it to the space
         // If not on the container, it's "virtual" padding.
-        horz.end = horz.flexSpace = containerSize.width + (padOnContainer ? 0 : -pad.right);
-        vert.end = vert.flexSpace = containerSize.height + (padOnContainer ? 0 : -pad.bottom);
+        horz.end = horz.flexSpace = containerSize.width + (padOnContainer ? pad.left : -pad.right);
+        vert.end = vert.flexSpace = containerSize.height + (padOnContainer ? pad.top : -pad.bottom);
 
         // Reduce flexSpace on each axis by the fixed/auto sized dimensions of items that
         // aren't flexed along that axis.
@@ -392,17 +399,13 @@ Ext.define('Ext.layout.container.Border', {
             horz.addUnflexed(childMargins.width);
             vert.addUnflexed(childMargins.height);
 
-            // horizontal items (north/south) are flexed horizontally but may be unflexed
-            // vertically and the reverse is true for vertical items (they may be unflexed
-            // horizontally):
             if (!childContext.flex) {
-                if (childContext.isHorz || childContext.autoWidth) {
+                if (childContext.isHorz) {
                     horz.addUnflexed(childContext.getProp('width'));
-                } else if (childContext.isVert || childContext.autoHeight) {
+                } else if (childContext.isVert) {
                     vert.addUnflexed(childContext.getProp('height'));
                 }
-                // else ignore uncollapsed center since it is fully flexed (when collapsed
-                // it reports as autoWidth/Height)
+                // else ignore center since it is fully flexed
             }
         }
 
@@ -509,11 +512,15 @@ Ext.define('Ext.layout.container.Border', {
         }
     },
 
+    getPlaceholder: function (comp) {
+        return comp.createPlaceholder();
+    },
+
     getSplitterTarget: function (splitter) {
         var collapseTarget = splitter.collapseTarget;
 
-        if (collapseTarget && collapseTarget.hidden) {
-            return collapseTarget.placeholder;
+        if (collapseTarget && collapseTarget.collapsed) {
+            return collapseTarget.placeholder || collapseTarget;
         }
 
         return collapseTarget;
@@ -582,11 +589,18 @@ Ext.define('Ext.layout.container.Border', {
                 }
             }
 
-            if (!item.hasOwnProperty('collapseMode') && me.panelCollapseMode) {
+            if (!item.hasOwnProperty('collapseMode')) {
                 item.collapseMode = me.panelCollapseMode;
             }
-            if (!item.hasOwnProperty('animCollapse') && typeof me.panelCollapseAnimate == 'boolean') {
-                item.animCollapse = me.panelCollapseAnimate;
+
+            if (!item.hasOwnProperty('animCollapse')) {
+                if (item.collapseMode != 'placeholder') {
+                    // other collapse modes do not animate nicely in a border layout, so
+                    // default them to off:
+                    item.animCollapse = false;
+                } else {
+                    item.animCollapse = me.panelCollapseAnimate;
+                }
             }
         } else if (placeholderFor) {
             Ext.apply(item, me.regionFlags[placeholderFor.region]);
@@ -662,8 +676,13 @@ Ext.define('Ext.layout.container.Border', {
                         edge.neighbors.push(comp);
                     }
                 }
-
-                splitter = comp.splitter;
+                
+                if (comp.placeholderFor) {
+                    // placeholder, so grab the splitter for the actual panel
+                    splitter = comp.placeholderFor.splitter;
+                } else {
+                    splitter = comp.splitter;
+                }
                 if (splitter) {
                     splitter.neighbors = [];
                 }
@@ -682,11 +701,6 @@ Ext.define('Ext.layout.container.Border', {
                 }
             }
         }
-    },
-
-    getItemFlexDimension: function (item) {
-        var region = item.region;
-        return (region == 'north' || region == 'south') ? 'height' : 'width';
     },
 
     /**

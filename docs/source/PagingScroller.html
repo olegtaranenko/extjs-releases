@@ -16,44 +16,61 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-grid-PagingScroller'>/**
-</span> * @class Ext.grid.PagingScroller
- * &lt;p&gt;This class monitors scrolling of the {@link Ext.view.Table TableView} within a {@link Ext.grid.Panel GridPanel} which is
- * using a buffered store to only cache and render a small section of a very large dataset.&lt;/p&gt;
- * &lt;p&gt;The GridPanel will instantiate this to perform monitoring, this class should never be instantiated by user code.&lt;/p&gt;
+</span> * This class monitors scrolling of the {@link Ext.view.Table TableView} within a
+ * {@link Ext.grid.Panel GridPanel} which is using a buffered store to only cache
+ * and render a small section of a very large dataset.
+ *
+ * The GridPanel will instantiate this to perform monitoring, this class should
+ * never be instantiated by user code.
  */
 Ext.define('Ext.grid.PagingScroller', {
 
 <span id='Ext-grid-PagingScroller-cfg-percentageFromEdge'>    /**
-</span>     * @cfg {Number} percentageFromEdge This is a number above 0 and less than 1 which specifies
-     * at what percentage to begin fetching the next page. For example if the pageSize is 100
-     * and the percentageFromEdge is the default of 0.35, the paging scroller will prefetch pages
-     * when scrolling up between records 0 and 34 and when scrolling down between records 65 and 99.
+</span>     * @cfg
+     * @deprecated This config is now ignored.
      */
     percentageFromEdge: 0.35,
 
+<span id='Ext-grid-PagingScroller-cfg-numFromEdge'>    /**
+</span>     * @cfg
+     * The zone which causes a refresh of the rendered viewport. As soon as the edge
+     * of the rendered grid is this number of rows from the edge of the viewport, the view is moved.
+     */
+    numFromEdge: 2,
+
+<span id='Ext-grid-PagingScroller-cfg-trailingBufferZone'>    /**
+</span>     * @cfg
+     * The number of extra rows to render on the trailing side of scrolling
+     * **outside the {@link #numFromEdge}** buffer as scrolling proceeds.
+     */
+    trailingBufferZone: 5,
+    
+<span id='Ext-grid-PagingScroller-cfg-leadingBufferZone'>    /**
+</span>     * @cfg
+     * The number of extra rows to render on the leading side of scrolling
+     * **outside the {@link #numFromEdge}** buffer as scrolling proceeds.
+     */
+    leadingBufferZone: 15,
+
 <span id='Ext-grid-PagingScroller-cfg-scrollToLoadBuffer'>    /**
-</span>     * @cfg {Number} scrollToLoadBuffer This is the time in milliseconds to buffer load requests
-     * when scrolling the PagingScrollbar.
+</span>     * @cfg
+     * This is the time in milliseconds to buffer load requests when scrolling the PagingScrollbar.
      */
     scrollToLoadBuffer: 200,
-
-    activePrefetch: true,
-
-    chunkSize: 50,
-    snapIncrement: 25,
 
     constructor: function(config) {
         var me = this,
             listeners = {
-            scroll: {
-                fn: me.onViewScroll,
-                element: 'el',
+                scroll: {
+                    fn: me.onViewScroll,
+                    element: 'el',
+                    scope: me
+                },
+                render: me.onViewRender,
+                resize: me.onViewResize,
+                refresh: me.onViewRefresh,
                 scope: me
-            },
-            render: me.onViewRender,
-            refresh: me.onViewRefresh,
-            scope: me
-        };
+            };
         Ext.apply(me, config);
 
         // Prepare for the most common scnerio: An initial load of page one, followed by controlled scrolling downwards
@@ -72,11 +89,9 @@ Ext.define('Ext.grid.PagingScroller', {
             });
         }
 
-        // Calculate our scroll limit based upon the Store's page size.
-        me.numFromEdge = Math.max(Math.ceil(me.percentageFromEdge * me.store.pageSize), 20);
-
-<span id='Ext-grid-PagingScroller-property-current'>        /**
-</span>         * @property {Number} current pixel scroll position of the associated {@link Ext.view.Table View}
+<span id='Ext-grid-PagingScroller-property-position'>        /**
+</span>         * @property {Number} position
+         * Current pixel scroll position of the associated {@link Ext.view.Table View}.
          */
         me.position = 0;
 
@@ -108,27 +123,62 @@ Ext.define('Ext.grid.PagingScroller', {
         }, el.dom.firstChild);
     },
 
-    // Used for variable row heights. Find which 
+    onViewResize: function(view, width, height) {
+        var me = this,
+            store = me.store,
+            calcPageSize;
+        
+        me.minStoreSize = (height / 21) + (me.numFromEdge * 2) + me.trailingBufferZone + me.leadingBufferZone;
+        calcPageSize = Math.max(me.store.pageSize||0, Math.floor(me.minStoreSize + (store.numFromEdge * 2) + store.trailingBufferZone + store.leadingBufferZone));
+
+        // calculate a sensible Store page size
+        if (store.pageSize) {
+            // &lt;debug&gt;
+            if (store.pageSize &lt; calcPageSize) {
+                Ext.log(&quot;Store &quot; + store.storeId + &quot;'s pageSize (&quot; + store.pageSize + &quot;) is smaller than optimal page size of &quot; + calcPageSize);
+            }
+            // &lt;/debug&gt;
+        } else {
+            store.pageSize = calcPageSize;
+        }
+    },
+
+    // Used for variable row heights. Try to find the offset from scrollTop of a common row
     beforeViewRefresh: function() {
         var me = this,
             view = me.view,
-            table = view.el.child('table'),
+            rows,
             store = me.store,
-            newFirstRecord = store.getAt(0),
-            newLastRecord = store.getAt(store.getCount() - 1),
-            oldRows = me.view.el.query('tr'),
-            len = oldRows.length - 1,
-            i, rec;
+            direction = me.lastScrollDirection;
 
-        // Skip the column size and find the row which represents the new top.
-        for (i = 1; i &lt; len; i++) {
-            rec = view.getRecord(oldRows[i]);
-            if (rec === newFirstRecord) {
-                me.newTableTop = table.getTop(true) + Ext.fly(oldRows[i]).getOffsetsTo(table)[1];
-                return;
-            } else if (rec === newLastRecord) {
-                
+        me.commonRecordIndex = undefined;
+        if (me.variableRowHeight &amp;&amp; (me.previousStart !== undefined) &amp;&amp; (me.scrollProportion === undefined)) {
+            rows = view.getNodes();
+
+            // We have scrolled downwards
+            if (direction === 1) {
+
+                // If the ranges overlap, we are going to be able to position the table exactly
+                if (store.guaranteedStart &lt;= me.previousEnd) {
+                    me.commonRecordIndex = rows.length - 1;
+
+                }
             }
+            // We have scrolled upwards
+            else if (direction === -1) {
+
+                // If the ranges overlap, we are going to be able to position the table exactly
+                if (store.guaranteedEnd &gt;= me.previousStart) {
+                    me.commonRecordIndex = 0;
+                }
+            }
+            // Cache the old offset of the common row from the scrollTop
+            me.scrollOffset = -view.el.getOffsetsTo(rows[me.commonRecordIndex])[1];
+
+            // In the new table the common row is at a different index
+            me.commonRecordIndex -= (store.guaranteedStart - me.previousStart)
+        } else {
+            me.scrollOffset = undefined;
         }
     },
 
@@ -136,33 +186,51 @@ Ext.define('Ext.grid.PagingScroller', {
     onViewRefresh: function() {
         var me = this,
             newScrollHeight = me.getScrollHeight(),
-            table;
+            view = me.view,
+            viewEl = view.el.dom,
+            store = me.store,
+            rows,
+            newScrollOffset,
+            scrollDelta,
+            table,
+            tableTop;
 
         me.stretcher.setHeight(newScrollHeight);
-        if (me.variableRowHeight &amp;&amp; me.newTableTop) {
+
+        // If we have had to calculate the store position from the pure scroll bar position,
+        // then we must calculate the table's vertical position from the scrollProportion 
+        if (me.scrollProportion !== undefined) {
+            table = me.view.el.child('table', true);
+            me.scrollProportion = view.el.dom.scrollTop / (newScrollHeight - table.offsetHeight);
             table = me.view.el.child('table', true);
             table.style.position = 'absolute';
-            table.style.top = me.newTableTop + 'px';
+            table.style.top = (me.scrollProportion ? (newScrollHeight * me.scrollProportion) - (table.offsetHeight * me.scrollProportion) : 0) + 'px';
+        }
+        else {
+            table = me.view.el.child('table', true);
+            table.style.position = 'absolute';
+            table.style.top = (tableTop = (store.guaranteedStart||0) * me.rowHeight) + 'px';
+
+            // ScrollOffset to a common row was calculated in beforeViewRefresh, so we can synch table position with how it was before
+            if (me.scrollOffset) {
+                rows = view.getNodes();
+                newScrollOffset = -view.el.getOffsetsTo(rows[me.commonRecordIndex])[1];
+                scrollDelta = newScrollOffset - me.scrollOffset;
+                me.position = (view.el.dom.scrollTop += scrollDelta);
+            }
+
+            // If the table is not fully in view view, scroll to where it is in view.
+            // This will happen when the page goes out of view undepectedly, outside the
+            // control of the PagingScroller. For example, a refresh caused by a remote sort reverting
+            // back to page 1.
+            // Note that with buffered Stores, only remote paging is allowed, otherwise the locally
+            // sorted page will be out of order with the whole dataset.
+            else if ((tableTop &gt; viewEl.scrollTop) || ((tableTop + table.offsetHeight) &lt; viewEl.scrollTop + viewEl.clientHeight)) {
+                me.position = viewEl.scrollTop = tableTop;
+            }
         }
     },
-
-    // Not used yet. Adjust page size to accomodate the scrolling zone around the visible zone.
-    fixEdges: function() {
-        var me = this,
-            store = me.store,
-            scrollZoneSize = me.numFromEdge * 2,
-            visibleCount = me.getLastVisibleRowIndex() - me.getFirstVisibleRowIndex() + 1;
-
-        // If our visible extremites are outside the scroll trigger range, we need to expand the page size.
-        if ((store.pageSize - scrollZoneSize) &lt;= visibleCount) {
-            store.on({
-                beforeload: function() {
-                    store.pageSize = Math.ceil((visibleCount + scrollZoneSize) / me.snapIncrement) * me.snapIncrement;
-                }
-            });
-        }
-    },
-
+    
     onGuaranteedRange: function(range, start, end) {
         var me = this,
             ds = me.store;
@@ -173,82 +241,90 @@ Ext.define('Ext.grid.PagingScroller', {
         }
 
         ds.loadRecords(range);
-
-        if (!me.firstLoad) {
-            me.firstLoad = true;
-        } else if (!me.variableRowHeight) {
-            // adjust top position of the &lt;table&gt; element so that the
-            // correct range of rows is in view
-            me.view.el.child('table').setStyle({
-                position: 'absolute',
-                top: (me.store.guaranteedStart * me.rowHeight) + 'px'
-            });
-        }
     },
 
     onViewScroll: function(e, t) {
         var me = this,
             view = me.view,
-            lastPosition = me.position,
-            direction;
+            lastPosition = me.position;
 
         me.position = view.el.dom.scrollTop;
-        direction = me.position &gt; lastPosition ? 1 : -1;
-        me.handleViewScroll(e, direction);
+        me.lastScrollDirection = me.position &gt; lastPosition ? 1 : -1;
+        me.handleViewScroll(e, me.lastScrollDirection);
     },
 
     handleViewScroll: function(e, direction) {
         var me = this,
             store = me.store,
-            pageSize = store.pageSize,
-            guaranteedStart = store.guaranteedStart,
-            guaranteedEnd = store.guaranteedEnd,
+            view = me.view,
+            guaranteedStart = me.previousStart = store.guaranteedStart,
+            guaranteedEnd = me.previousEnd = store.guaranteedEnd,
+            renderedSize = store.getCount(),
             totalCount = store.getTotalCount(),
-            numFromEdge = Math.max(Math.ceil(me.percentageFromEdge * store.pageSize), 20),
             visibleStart = me.getFirstVisibleRowIndex(),
             visibleEnd = me.getLastVisibleRowIndex(),
-            prefetchPage = Math.floor(visibleStart / store.pageSize),
-            lastPage = Math.ceil(totalCount / store.pageSize),
             requestStart,
             requestEnd;
 
         // Only process if the total rows is larger than the visible page size
-        if (totalCount &gt;= pageSize) {
+        if (totalCount &gt;= renderedSize) {
+
+            // This is only set if we are using variable row height, and the thumb is dragged so that
+            // There are no remaining visible rows to vertically anchor the new table to.
+            // In this case we use the scrollProprtion to anchor the table to the correct relative
+            // position on the vertical axis.
+            me.scrollProportion = undefined;
+
             // We're scrolling up
             if (direction == -1) {
-                if (visibleStart &lt; (guaranteedStart + numFromEdge)) {
-                    requestStart = Math.floor(Math.max((visibleEnd + (me.snapIncrement - 1)) - pageSize, 0) / me.snapIncrement) * me.snapIncrement;
+                if (visibleStart !== undefined) {
+                    if (visibleStart &lt; (guaranteedStart + me.numFromEdge)) {
+                        requestStart = Math.max(0, visibleEnd + me.numFromEdge + me.trailingBufferZone - renderedSize);
+                    }
                 }
-                
-                // Scrolling upwards, we probably need to see currentPage - 1
-                // If that is zero, prepare for downward scrolling instead.
-                prefetchPage = Math.floor(visibleStart / store.pageSize) || 2;
+
+                // The only way we can end up without a visible start is if, in variableRowHeight mode, the user drags
+                // the thumb up out of the visible range. In this case, we have to estimate the start row index
+                else {
+                    // If we have no visible rows to orientate with, then use the scroll proportion
+                    me.scrollProportion = view.el.dom.scrollTop / (view.el.dom.scrollHeight - view.el.dom.clientHeight);
+                    requestStart = Math.max(0, totalCount * me.scrollProportion - (renderedSize / 2) - me.numFromEdge - ((me.leadingBufferZone + me.trailingBufferZone) / 2));
+                }
             }
             // We're scrolling down
             else {
-                if (visibleEnd &gt; (guaranteedEnd - numFromEdge)) {
-                    requestStart = Math.floor(visibleStart / me.snapIncrement) * me.snapIncrement;
+                if (visibleStart !== undefined) {
+                    if (visibleEnd &gt; (guaranteedEnd - me.numFromEdge)) {
+                        requestStart = Math.min(visibleStart - me.numFromEdge - me.trailingBufferZone, totalCount - renderedSize);
+                    }
                 }
-                prefetchPage = Math.floor(visibleEnd / store.pageSize) + 2;
+                
+                // The only way we can end up without a visible end is if, in variableRowHeight mode, the user drags
+                // the thumb down out of the visible range. In this case, we have to estimate the start row index
+                else {
+                    // If we have no visible rows to orientate with, then use the scroll proportion
+                    me.scrollProportion = view.el.dom.scrollTop / (view.el.dom.scrollHeight - view.el.dom.clientHeight);
+                    requestStart = Math.min(totalCount - renderedSize, totalCount * me.scrollProportion - (renderedSize / 2) - me.numFromEdge - ((me.leadingBufferZone + me.trailingBufferZone) / 2));
+                }
             }
             
 
             // We scrolled close to the edge and the Store needs reloading
             if (requestStart !== undefined) {
-                requestEnd = requestStart + pageSize - 1;
+                // Make sure first row is even to ensure correct even/odd row striping
+                requestStart = requestStart &amp; ~1;
+                requestEnd = requestStart + renderedSize - 1;
 
                 // End of request was past end of Store: Ensure last page is visible
                 if (requestEnd &gt; totalCount - 1) {
                     me.cancelLoad();
-                    if (!store.rangeSatisfied(totalCount - pageSize, totalCount - 1)) {
-                        store.guaranteeRange(totalCount - pageSize, totalCount - 1);
+                    if (!store.rangeSatisfied(totalCount - renderedSize + 1, totalCount - 1)) {
+                        store.guaranteeRange(totalCount - renderedSize + 1, totalCount - 1);
                     }
                 }
                 
                 // Store's range needs adjusting. Ideally from prefetch buffer.
                 else {
-                    // Make sure first row is even to ensure correct even/odd row striping
-                    requestStart = requestStart &amp; ~1;
 
                     // If range is satsfied within the prefetch buffer, then just draw it from the prefetch buffer
                     if (store.rangeSatisfied(requestStart, requestEnd)) {
@@ -256,11 +332,6 @@ Ext.define('Ext.grid.PagingScroller', {
                         store.guaranteeRange(requestStart, requestEnd);
                     } else {
                         me.attemptLoad(requestStart, requestEnd);
-                    }
-
-                    // Keep the prefetch buffer primed for the Store to satifsy future loads from.
-                    if (prefetchPage &gt; 0 &amp;&amp; prefetchPage &lt; lastPage) {
-                        store.prefetchPage(prefetchPage);
                     }
                 }
             }
@@ -273,19 +344,23 @@ Ext.define('Ext.grid.PagingScroller', {
             view = me.view,
             scrollTop = view.el.dom.scrollTop,
             rows,
-            table,
             count,
             i,
             rowBottom;
 
         if (me.variableRowHeight) {
             rows = view.getNodes();
-            table = view.el.child('table');
             count = store.getCount();
             for (i = 0; i &lt; count; i++) {
-                rowBottom = Ext.fly(rows[i]).getOffsetsTo(table)[1] + rows[i].offsetHeight - scrollTop;
+                rowBottom = Ext.fly(rows[i]).getOffsetsTo(view.el)[1] + rows[i].offsetHeight;
+                
+                // Searching for the first visible row, and off the bottom of the clientArea, then there's no visible first row!
+                if (rowBottom &gt; view.el.dom.clientHeight) {
+                    return;
+                }
+
                 if (rowBottom &gt; 0) {
-                    return i;
+                    return i + store.guaranteedStart;
                 }
             }
         } else {
@@ -298,21 +373,23 @@ Ext.define('Ext.grid.PagingScroller', {
             store = me.store,
             view = me.view,
             clientHeight = view.el.dom.clientHeight,
-            scrollTop = view.el.dom.scrollTop,
             rows,
-            table,
             count,
             i,
             rowTop;
 
         if (me.variableRowHeight) {
             rows = view.getNodes();
-            table = view.el.child('table');
             count = store.getCount();
             for (i = count - 1; i &gt;= 0; i--) {
-                rowTop = Ext.fly(rows[i]).getOffsetsTo(table)[1] - scrollTop;
+                rowTop = Ext.fly(rows[i]).getOffsetsTo(view.el)[1];
+
+                // Searching for the last visible row, and off the top of the clientArea, then there's no visible last row!
+                if (rowTop &lt; 0) {
+                    return;
+                }
                 if (rowTop &lt; clientHeight) {
-                    return i;
+                    return i + store.guaranteedStart;
                 }
             }
         } else {
@@ -323,13 +400,20 @@ Ext.define('Ext.grid.PagingScroller', {
     getScrollHeight: function() {
         var me = this,
             view   = me.view,
+            table,
             firstRow,
             store  = me.store,
             rowCount,
-            height = 1;
+            deltaHeight = 0;
 
         if (me.variableRowHeight) {
-            me.rowHeight = me.view.el.down('table', true).offsetHeight / me.store.pageSize;
+            table = me.view.el.down('table', true);
+            if (me.rowHeight) {
+                deltaHeight = table.offsetHeight - me.initialTableHeight;
+            } else {
+                me.initialTableHeight = table.offsetHeight;
+                me.rowHeight = me.initialTableHeight / me.store.pageSize;
+            }
         } else if (!me.rowHeight) {
             firstRow = view.el.down(view.getItemSelector());
             me.rowHeight = firstRow ? firstRow.getHeight(false, true) : 0;
@@ -337,8 +421,7 @@ Ext.define('Ext.grid.PagingScroller', {
 
         // If the Store is *locally* filtered, use the filtered count from getCount.
         rowCount = store[(!store.remoteFilter &amp;&amp; store.isFiltered()) ? 'getCount' : 'getTotalCount']() || 0;
-        height = rowCount * me.rowHeight;
-        return height;
+        return Math.floor(rowCount * me.rowHeight) + deltaHeight;
     },
 
     attemptLoad: function(start, end) {

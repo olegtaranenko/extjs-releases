@@ -217,7 +217,7 @@
          *               'My': 'my_own_path'
          *           }
          *         });
-         *     <script>
+         *     </script>
          *     <script type="text/javascript">
          *         Ext.require(...);
          *
@@ -442,6 +442,11 @@
          * Maintain the list of files that have already been handled so that they never get double-loaded
          * @private
          */
+        isClassFileLoaded: {},
+
+        /**
+         * @private
+         */
         isFileLoaded: {},
 
         /**
@@ -484,6 +489,8 @@
          * @private
          */
         syncModeEnabled: false,
+
+        scriptElements: {},
 
         /**
          * Refresh all items in the queue. If all dependencies for an item exist during looping,
@@ -569,13 +576,28 @@
             return script;
         },
 
+        removeScriptElement: function(url) {
+            var scriptElements = this.scriptElements;
+
+            if (scriptElements[url]) {
+                this.cleanupScriptElement(scriptElements[url], true);
+                delete scriptElements[url];
+            }
+
+            return this;
+        },
+
         /**
          * @private
          */
-        cleanupScriptElement: function(script) {
+        cleanupScriptElement: function(script, remove) {
             script.onload = null;
             script.onreadystatechange = null;
             script.onerror = null;
+
+            if (remove) {
+                this.documentHead.removeChild(script);
+            }
 
             return this;
         },
@@ -591,10 +613,15 @@
          */
         loadScriptFile: function(url, onLoad, onError, scope, synchronous) {
             var me = this,
+                isFileLoaded = this.isFileLoaded,
+                scriptElements = this.scriptElements,
                 noCacheUrl = url + (this.getConfig('disableCaching') ? ('?' + this.getConfig('disableCachingParam') + '=' + Ext.Date.now()) : ''),
-                fileName = url.split('/').pop(),
                 isCrossOriginRestricted = false,
                 xhr, status, onScriptError;
+
+            if (isFileLoaded[url]) {
+                return this;
+            }
 
             scope = scope || this;
 
@@ -609,11 +636,13 @@
 
                 if (!Ext.isReady && Ext.onDocumentReady) {
                     Ext.onDocumentReady(function() {
-                        me.injectScriptElement(noCacheUrl, onLoad, onScriptError, scope);
+                        if (!isFileLoaded[url]) {
+                            scriptElements[url] = me.injectScriptElement(noCacheUrl, onLoad, onScriptError, scope);
+                        }
                     });
                 }
                 else {
-                    this.injectScriptElement(noCacheUrl, onLoad, onScriptError, scope);
+                    scriptElements[url] = this.injectScriptElement(noCacheUrl, onLoad, onScriptError, scope);
                 }
             }
             else {
@@ -653,8 +682,9 @@
                 || isPhantomJS
                 //</if>
                 ) {
-                    // Firebug friendly, file names are still shown even though they're eval'ed code
-                    new Function(xhr.responseText + "\n//@ sourceURL=" + fileName)();
+                    // Debugger friendly, file names are still shown even though they're eval'ed code
+                    // Breakpoints work on both Firebug and Chrome's Web Inspector
+                    Ext.globalEval(xhr.responseText + "\n//@ sourceURL=" + url);
 
                     onLoad.call(scope);
                 }
@@ -671,9 +701,7 @@
             }
         },
 
-        /**
-         * @ignore
-         */
+        // documented above
         syncRequire: function() {
             var syncModeEnabled = this.syncModeEnabled;
 
@@ -682,22 +710,21 @@
             }
 
             this.require.apply(this, arguments);
-            this.refreshQueue();
 
             if (!syncModeEnabled) {
                 this.syncModeEnabled = false;
             }
+
+            this.refreshQueue();
         },
 
-        /**
-         * @ignore
-         */
+        // documented above
         require: function(expressions, fn, scope, excludes) {
             var excluded = {},
                 included = {},
                 queue = this.queue,
                 classNameToFilePathMap = this.classNameToFilePathMap,
-                isFileLoaded = this.isFileLoaded,
+                isClassFileLoaded = this.isClassFileLoaded,
                 excludedClassNames = [],
                 possibleClassNames = [],
                 classNames = [],
@@ -784,38 +811,55 @@
                 return this;
             }
 
-            queue.push({
-                requires: classNames.slice(), // this array will be modified as the queue is processed,
-                                              // so we need a copy of it
-                callback: callback,
-                scope: scope
-            });
+            syncModeEnabled = this.syncModeEnabled;
 
-            for (i = 0,ln = classNames.length; i < ln; i++) {
+            if (!syncModeEnabled) {
+                queue.push({
+                    requires: classNames.slice(), // this array will be modified as the queue is processed,
+                                                  // so we need a copy of it
+                    callback: callback,
+                    scope: scope
+                });
+            }
+
+            ln = classNames.length;
+
+            for (i = 0; i < ln; i++) {
                 className = classNames[i];
 
-                if (!isFileLoaded.hasOwnProperty(className)) {
-                    isFileLoaded[className] = false;
+                filePath = this.getPath(className);
 
-                    filePath = this.getPath(className);
+                // If we are synchronously loading a file that has already been asychronously loaded before
+                // we need to destroy the script tag and revert the count
+                // This file will then be forced loaded in synchronous
+                if (syncModeEnabled && isClassFileLoaded.hasOwnProperty(className)) {
+                    this.numPendingFiles--;
+                    this.removeScriptElement(filePath);
+                    delete isClassFileLoaded[className];
+                }
+
+                if (!isClassFileLoaded.hasOwnProperty(className)) {
+                    isClassFileLoaded[className] = false;
 
                     classNameToFilePathMap[className] = filePath;
 
                     this.numPendingFiles++;
 
-                    syncModeEnabled = this.syncModeEnabled;
-
                     this.loadScriptFile(
                         filePath,
                         pass(this.onFileLoaded, [className, filePath], this),
-                        pass(this.onFileLoadError, [className, filePath]),
+                        pass(this.onFileLoadError, [className, filePath], this),
                         this,
                         syncModeEnabled
                     );
+                }
+            }
 
-                    if (ln === 1 && syncModeEnabled) {
-                        return Manager.get(className);
-                    }
+            if (syncModeEnabled) {
+                callback.call(scope);
+
+                if (ln === 1) {
+                    return Manager.get(className);
                 }
             }
 
@@ -830,7 +874,8 @@
         onFileLoaded: function(className, filePath) {
             this.numLoadedFiles++;
 
-            this.isFileLoaded[className] = true;
+            this.isClassFileLoaded[className] = true;
+            this.isFileLoaded[filePath] = true;
 
             this.numPendingFiles--;
 
@@ -850,7 +895,7 @@
                     requires = queue[i].requires;
 
                     for (j = 0,subLn = requires.length; j < subLn; j++) {
-                        if (this.isFileLoaded[requires[j]]) {
+                        if (this.isClassFileLoaded[requires[j]]) {
                             missingClasses.push(requires[j]);
                         }
                     }
@@ -972,7 +1017,7 @@
         historyPush: function(className) {
             var isInHistory = this.isInHistory;
 
-            if (className && this.isFileLoaded.hasOwnProperty(className) && !isInHistory[className]) {
+            if (className && this.isClassFileLoaded.hasOwnProperty(className) && !isInHistory[className]) {
                 isInHistory[className] = true;
                 this.history.push(className);
             }
@@ -980,6 +1025,22 @@
             return this;
         }
     });
+
+    /**
+     * Turns on or off the "cache buster" applied to dynamically loaded scripts. Normally
+     * dynamically loaded scripts have an extra query parameter appended to avoid stale
+     * cached scripts. This method can be used to disable this mechanism, and is primarily
+     * useful for testing. This is done using a cookie.
+     * @param {Boolean} disable True to disable the cache buster.
+     * @param {String} [path="/"] An optional path to scope the cookie.
+     * @private
+     */
+    Ext.disableCacheBuster = function (disable, path) {
+        var date = new Date();
+        date.setTime(date.getTime() + (disable ? 10*365 : -1) * 24*60*60*1000);
+        data = date.toGMTString();
+        document.cookie = 'ext-cache=1; expires=' + date + '; path='+(path || '/');
+    };
 
     //<if nonBrowser>
     if (isNonBrowser) {

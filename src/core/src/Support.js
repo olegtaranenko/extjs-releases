@@ -163,6 +163,7 @@ Ext.supports = {
                 '<div style="width: 200px; height: 200px; position: relative; padding: 5px;">',
                     '<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>',
                 '</div>',
+                '<div style="position: absolute; left: 10%; top: 10%;"></div>',
                 '<div style="float:left; background-color:transparent;"></div>'
             ].join('');
 
@@ -619,6 +620,18 @@ Ext.supports = {
             fn: function(){
                 var el = document.createElement('textarea');
                 return ('maxlength' in el);
+            }
+        },
+        /**
+         * @property GetPositionPercentage True if the browser will return the left/top/right/bottom 
+         * position as a percentage when explicitly set as a percentage value.
+         * @type {Boolean}
+         */
+        // Related bug: https://bugzilla.mozilla.org/show_bug.cgi?id=707691#c7
+        {
+            identity: 'GetPositionPercentage',
+            fn: function(doc, div){
+                return Ext.get(div.childNodes[2]).getStyle('left') == '10%';
             }
         }
     ]

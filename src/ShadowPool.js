@@ -1,5 +1,5 @@
 /**
- * Private utility class that manages the internal Shadow cache
+ * Private utility class that manages the internal Shadow cache.
  * @private
  */
 Ext.define('Ext.ShadowPool', {

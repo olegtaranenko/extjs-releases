@@ -1,5 +1,4 @@
 /**
- * @class Ext.grid.header.DropZone
  * @private
  */
 Ext.define('Ext.grid.header.DropZone', {
@@ -181,13 +180,15 @@ Ext.define('Ext.grid.header.DropZone', {
                 localToIdx   = toCt.items.indexOf(targetHeader),
                 headerCt     = this.headerCt,
                 fromIdx      = headerCt.getHeaderIndex(dragHeader),
+                colsToMove   = dragHeader.isGroupHeader ? dragHeader.query(':not([isGroupHeader])').length : 1,
                 toIdx        = headerCt.getHeaderIndex(targetHeader),
                 groupCt,
                 scrollerOwner;
 
+            // Drop position is to the right of the targetHeader, increment the toIdx correctly
             if (lastLocation.pos === 'after') {
                 localToIdx++;
-                toIdx++;
+                toIdx += targetHeader.isGroupHeader ? targetHeader.query(':not([isGroupHeader])').length : 1;
             }
 
             // If we are dragging in between two HeaderContainers that have had the lockable
@@ -200,28 +201,28 @@ Ext.define('Ext.grid.header.DropZone', {
                 scrollerOwner = fromCt.up('[scrollerOwner]');
                 scrollerOwner.unlock(dragHeader, localToIdx);
             } else {
-                // If dragging rightwards, then after removal, the insertion index will be one less when moving
-                // in between the same container.
+                // If dragging rightwards, then after removal, the insertion index will be less when moving
+                // within the same container.
                 if ((fromCt === toCt) && (localToIdx > localFromIdx)) {
-                    localToIdx--;
-                    toIdx--;
+
+                    // Wer're dragging whole headers, so locally, the adjustment is only one
+                    localToIdx -= 1;
                 }
 
-                // Remove dragged header from where it was without destroying it or relaying its Container
+                // Suspend layouts while we sort all this out.
+                Ext.suspendLayouts();
+
+                // Remove dragged header from where it was.
                 if (fromCt !== toCt) {
-                    fromCt.suspendLayouts();
                     fromCt.remove(dragHeader, false);
-                    fromCt.resumeLayouts();
                 }
 
                 // Dragged the last header out of the fromCt group... The fromCt group must die
                 if (fromCt.isGroupHeader) {
                     if (!fromCt.items.getCount()) {
                         groupCt = fromCt.ownerCt;
-                        groupCt.suspendLayouts();
                         groupCt.remove(fromCt, false);
                         fromCt.el.dom.parentNode.removeChild(fromCt.el.dom);
-                        groupCt.resumeLayouts();
                     } else {
                         fromCt.minWidth = fromCt.getWidth() - dragHeader.getWidth();
                         fromCt.setWidth(fromCt.minWidth);
@@ -229,13 +230,11 @@ Ext.define('Ext.grid.header.DropZone', {
                 }
 
                 // Move dragged header into its drop position
-                toCt.suspendLayouts();
                 if (fromCt === toCt) {
                     toCt.move(localFromIdx, localToIdx);
                 } else {
                     toCt.insert(localToIdx, dragHeader);
                 }
-                toCt.resumeLayouts();
 
                 // Group headers acquire the aggregate width of their child headers
                 // Therefore a child header may not flex; it must contribute a fixed width.
@@ -257,8 +256,8 @@ Ext.define('Ext.grid.header.DropZone', {
 
                 // Refresh columns cache in case we remove an emptied group column
                 headerCt.purgeCache();
-                headerCt.doLayout();
-                headerCt.onHeaderMoved(dragHeader, fromIdx, toIdx);
+                Ext.resumeLayouts(true);
+                headerCt.onHeaderMoved(dragHeader, colsToMove, fromIdx, toIdx);
 
                 // Emptied group header can only be destroyed after the header and grid have been refreshed
                 if (!fromCt.items.getCount()) {

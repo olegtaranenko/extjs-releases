@@ -1,11 +1,8 @@
 /**
- * @private
- * @class Ext.layout.component.field.Trigger
  * Layout class for {@link Ext.form.field.Trigger} fields. Adjusts the input field size to accommodate
  * the trigger button(s).
  * @private
  */
-
 Ext.define('Ext.layout.component.field.Trigger', {
 
     /* Begin Definitions */
@@ -23,9 +20,9 @@ Ext.define('Ext.layout.component.field.Trigger', {
             owner = me.owner,
             flags;
 
-        me.callParent(arguments);
-
         ownerContext.triggerWrap = ownerContext.getEl('triggerWrap');
+
+        me.callParent(arguments);
 
         // if any of these important states have changed, sync them now:
         flags = owner.getTriggerStateFlags();
@@ -35,21 +32,27 @@ Ext.define('Ext.layout.component.field.Trigger', {
         }
     },
 
-    sizeBodyContents: function(width, height, ownerContext) {
-        var me = this,
-            owner = me.owner,
-            triggerWidth = owner.getTriggerWidth();
+    beginLayoutFixed: function (ownerContext, width) {
+        var owner = ownerContext.target;
 
-        // If we or our ancestor is hidden, we can get a triggerWidth calculation
-        // of 0.  We don't want to resize in this case.
-        if (owner.hideTrigger || owner.readOnly || triggerWidth > 0) {
-            // Decrease the field's width by the width of the triggers. Both the field and the triggerWrap
-            // are floated left in CSS so they'll stack up side by side.
-            ownerContext.inputContext.setWidth(width - triggerWidth, true);
-    
-            // Explicitly set the triggerWrap's width, to prevent wrapping
-            ownerContext.triggerWrap.setWidth(triggerWidth);
-        }
+        this.callParent(arguments);
+
+        owner.inputCell.setStyle('width', '100%');
+        owner.inputEl.setStyle('width', '100%');
+        owner.triggerWrap.setStyle('width', width);
+        owner.triggerWrap.setStyle('table-layout', 'fixed');
+    },
+
+    beginLayoutShrinkWrap: function (ownerContext) {
+        var owner = ownerContext.target,
+            emptyString = '';
+
+        this.callParent(arguments);
+
+        owner.triggerWrap.setStyle('width', emptyString);
+        owner.inputCell.setStyle('width', emptyString);
+        owner.inputEl.setStyle('width', emptyString);
+        owner.triggerWrap.setStyle('table-layout', 'auto');
     },
 
     updateEditState: function() {

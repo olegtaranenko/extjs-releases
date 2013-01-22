@@ -2,7 +2,7 @@
  * @docauthor Robert Dougan <rob@sencha.com>
  *
  * Create simple buttons with this component. Customisations include {@link #iconAlign aligned}
- * {@link #iconCls icons}, {@link #menu dropdown menus}, {@link #tooltip tooltips}
+ * {@link #iconCls icons}, {@link #cfg-menu dropdown menus}, {@link #tooltip tooltips}
  * and {@link #scale sizing options}. Specify a {@link #handler handler} to run code when
  * a user clicks the button, or use {@link #listeners listeners} for other events such as
  * {@link #mouseover mouseover}. Example usage:
@@ -76,7 +76,7 @@
  *         enableToggle: true
  *     });
  *
- * You can assign a menu to a button by using the {@link #menu} configuration. This standard configuration
+ * You can assign a menu to a button by using the {@link #cfg-menu} configuration. This standard configuration
  * can either be a reference to a {@link Ext.menu.Menu menu} object, a {@link Ext.menu.Menu menu} id or a
  * {@link Ext.menu.Menu menu} config blob. When assigning a menu to a button, an arrow is automatically
  * added to the button.  You can change the alignment of the arrow using the {@link #arrowAlign} configuration
@@ -150,19 +150,22 @@ Ext.define('Ext.button.Button', {
 
     /**
      * @property {Boolean} hidden
-     * True if this button is hidden. Read-only.
+     * True if this button is hidden.
+     * @readonly
      */
     hidden: false,
 
     /**
      * @property {Boolean} disabled
-     * True if this button is disabled. Read-only.
+     * True if this button is disabled.
+     * @readonly
      */
     disabled: false,
 
     /**
      * @property {Boolean} pressed
-     * True if this button is pressed (only if enableToggle = true). Read-only.
+     * True if this button is pressed (only if enableToggle = true).
+     * @readonly
      */
     pressed: false,
 
@@ -201,7 +204,7 @@ Ext.define('Ext.button.Button', {
      */
 
     /**
-     * @cfg {Boolean} [disabled=true]
+     * @cfg {Boolean} [disabled=false]
      * True to start disabled.
      */
 
@@ -338,6 +341,13 @@ Ext.define('Ext.button.Button', {
      *
      *     handler: function() { window.location = "http://www.sencha.com" }
      */
+    
+    /**
+      * @cfg {String} [hrefTarget="_blank"]
+      * The target attribute to use for the underlying anchor. Only used if the {@link #href}
+      * property is specified.
+      */
+     hrefTarget: '_blank',
 
     /**
      * @cfg {Object} baseParams
@@ -355,27 +365,23 @@ Ext.define('Ext.button.Button', {
     ],
 
     renderTpl: [
-        '<em id="{id}-btnWrap"',
-                '<tpl if="splitCls">',
-                    ' class="{splitCls}"',
-                '</tpl>',
-                '>',
+        '<em id="{id}-btnWrap"<tpl if="splitCls"> class="{splitCls}"</tpl>>',
             '<tpl if="href">',
-                '<a id="{id}-btnEl" href="{href}" class="{btnCls}" target="{target}"<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl> role="link">',
-                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner"<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>>',
+                '<a id="{id}-btnEl" href="{href}" class="{btnCls}" target="{hrefTarget}"<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl> role="link">',
+                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner">',
                         '{text}',
                     '</span>',
-                        '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}"></span>',
+                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}"<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>></span>',
                 '</a>',
             '<tpl else>',
                 '<button id="{id}-btnEl" type="{type}" class="{btnCls}" hidefocus="true"',
                     // the autocomplete="off" is required to prevent Firefox from remembering
                     // the button's disabled state between page reloads.
                     '<tpl if="tabIndex"> tabIndex="{tabIndex}"</tpl> role="button" autocomplete="off">',
-                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner" style="<tpl if="iconUrl">background-image:url({iconUrl});</tpl>{innerSpanStyle}">',
+                    '<span id="{id}-btnInnerEl" class="{baseCls}-inner" style="{innerSpanStyle}">',
                         '{text}',
                     '</span>',
-                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}">&#160;</span>',
+                    '<span id="{id}-btnIconEl" class="{baseCls}-icon {iconCls}"<tpl if="iconUrl"> style="background-image:url({iconUrl})"</tpl>>&#160;</span>',
                 '</button>',
             '</tpl>',
         '</em>',
@@ -419,7 +425,7 @@ Ext.define('Ext.button.Button', {
 
     /**
      * @cfg {String} arrowAlign
-     * The side of the Button box to render the arrow if the button has an associated {@link #menu}. Two
+     * The side of the Button box to render the arrow if the button has an associated {@link #cfg-menu}. Two
      * values are allowed:
      *
      * - 'right'
@@ -448,7 +454,7 @@ Ext.define('Ext.button.Button', {
 
     /**
      * @property {Ext.menu.Menu} menu
-     * The {@link Ext.menu.Menu Menu} object associated with this Button when configured with the {@link #menu} config
+     * The {@link Ext.menu.Menu Menu} object associated with this Button when configured with the {@link #cfg-menu} config
      * option.
      */
 
@@ -477,7 +483,8 @@ Ext.define('Ext.button.Button', {
         me.addEvents(
             /**
              * @event click
-             * Fires when this button is clicked
+             * Fires when this button is clicked, before the configured {@link #handler} is invoked. Execution of the
+             * {@link #handler} may be vetoed by returning <code>false</code> to this event.
              * @param {Ext.button.Button} this
              * @param {Event} e The click event
              */
@@ -548,7 +555,7 @@ Ext.define('Ext.button.Button', {
 
             // retrieve menu by id or instantiate instance if needed
             me.menu = Ext.menu.Manager.get(me.menu);
-            me.menu.ownerCt = me;
+            me.menu.ownerButton = me;
         }
 
         // Accept url as a synonym for href
@@ -574,29 +581,20 @@ Ext.define('Ext.button.Button', {
 
     // inherit docs
     getFocusEl: function() {
-        return this.btnEl;
+        return this.inOnFocus ? this.el : this.btnEl;
     },
 
-    // private @override
     // Buttons add the focus class to the *outermost element*, not the focusEl!
     onFocus: function(e) {
-        var me = this,
-            focusCls = me.focusCls,
-            targetEl = me.getEl();
+        var me = this;
 
-        if (!me.disabled) {
-            me.preFocus(e);
-            if (focusCls && targetEl) {
-                targetEl.addCls(me.addClsWithUI(focusCls, true));
-            }
-            if (!me.hasFocus) {
-                me.hasFocus = true;
-                me.fireEvent('focus', me, e);
-            }
-        }
+        // Set this flag, so that when AbstractComponent's onFocus gets the focusEl to add the focusCls
+        // to, it will get the encapsulating element - that's what the CSS rules for Button need right now
+        me.inOnFocus = true;
+        me.callParent(arguments);
+        me.inOnFocus = false;
     },
 
-    // private @override
     // Buttons add the focus class to the *outermost element*, not the focusEl!
     onBlur : function(e) {
         var me = this,
@@ -648,9 +646,8 @@ Ext.define('Ext.button.Button', {
             cls.push('noicon');
         }
 
-        cls.push.apply(cls, me.addClsWithUI(cls, true));
         if (me.pressed) {
-            cls.push.apply(cls, me.addClsWithUI(me.pressedCls));
+            cls.push(me.pressedCls);
         }
         return cls;
     },
@@ -661,7 +658,8 @@ Ext.define('Ext.button.Button', {
         me.callParent();
 
         // Add all needed classes to the protoElement.
-        me.addCls(me.getComponentCls());
+        me.oldCls = me.getComponentCls();
+        me.addClsWithUI(me.oldCls);
 
         // Apply the renderData to the template args
         Ext.applyIf(me.renderData, me.getTemplateArgs());
@@ -767,12 +765,12 @@ Ext.define('Ext.button.Button', {
 
         return {
             href     : me.getHref(),
-            target   : me.target || '_blank',
+            hrefTarget: me.hrefTarget,
             type     : me.type,
             btnCls   : me.getBtnCls(),
             splitCls : me.getSplitCls(),
             iconUrl  : me.icon,
-            iconCls  : me.iconCls || Ext.baseCSSPrefix + 'hide-display',
+            iconCls  : me.iconCls,
             text     : me.text || '&#160;',
             tabIndex : me.tabIndex,
             innerSpanStyle: innerSpanStyle
@@ -831,6 +829,9 @@ Ext.define('Ext.button.Button', {
             btnIconEl.removeCls(oldCls);
             btnIconEl.addCls(cls || '');
             me.setComponentCls();
+            if (me.didIconStateChange(oldCls, cls)) {
+                me.updateLayout();
+            }
         }
         return me;
     },
@@ -958,7 +959,11 @@ Ext.define('Ext.button.Button', {
         if (me.rendered) {
             me.btnInnerEl.update(text || '&#160;');
             me.setComponentCls();
-            me.doComponentLayout();
+            if (Ext.isStrict && Ext.isIE8) {
+                // weird repaint issue causes it to not resize
+                me.el.repaint();
+            }
+            me.updateLayout();
         }
         return me;
     },
@@ -971,14 +976,30 @@ Ext.define('Ext.button.Button', {
      */
     setIcon: function(icon) {
         var me = this,
-            btnInnerEl = me.btnInnerEl;
+            btnIconEl = me.btnIconEl,
+            oldIcon = me.icon;
             
         me.icon = icon;
-        if (btnInnerEl) {
-            btnInnerEl.setStyle('background-image', icon ? 'url(' + icon + ')': '');
+        if (btnIconEl) {
+            btnIconEl.setStyle('background-image', icon ? 'url(' + icon + ')': '');
             me.setComponentCls();
+            if (me.didIconStateChange(oldIcon, icon)) {
+                me.updateLayout();
+            }
         }
         return me;
+    },
+    
+    /**
+     * Checks if the icon/iconCls changed from being empty to having a value, or having a value to being empty.
+     * @private
+     * @param {String} old The old icon/iconCls
+     * @param {String} current The current icon/iconCls
+     * @return {Boolean} True if the icon state changed
+     */
+    didIconStateChange: function(old, current) {
+        var currentEmpty = Ext.isEmpty(current);
+        return Ext.isEmpty(old) ? !currentEmpty : currentEmpty;
     },
 
     /**
@@ -1031,7 +1052,7 @@ Ext.define('Ext.button.Button', {
                 me.menu.hide();
             }
 
-            me.menu.showBy(me.el, me.menuAlign);
+            me.menu.showBy(me.el, me.menuAlign, ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) ? [-2, -2] : undefined);
         }
         return me;
     },
@@ -1080,11 +1101,12 @@ Ext.define('Ext.button.Button', {
         var me = this,
             handler = me.handler;
             
-        me.fireEvent('click', me, e);
-        if (handler) {
-            handler.call(me.scope || me, me, e);
+        if (me.fireEvent('click', me, e) !== false) {
+            if (handler) {
+                handler.call(me.scope || me, me, e);
+            }
+            me.blur();
         }
-        me.onBlur();
     },
     
     doToggle: function(){
@@ -1383,10 +1405,7 @@ Ext.define('Ext.button.Button', {
             }
         };
 
-    /**
-     * Private utility class used by Button
-     * @private
-     */
+    // Private utility class used by Button
     Ext.ButtonToggleManager = {
         register: function(btn) {
             if (!btn.toggleGroup) {
@@ -1411,11 +1430,9 @@ Ext.define('Ext.button.Button', {
             }
         },
 
-        /**
-         * Gets the pressed button in the passed group or null
-         * @param {String} group
-         * @return {Ext.button.Button}
-         */
+        // Gets the pressed button in the passed group or null
+        // @param {String} group
+        // @return {Ext.button.Button}
         getPressed: function(group) {
             var g = groups[group],
                 i = 0,

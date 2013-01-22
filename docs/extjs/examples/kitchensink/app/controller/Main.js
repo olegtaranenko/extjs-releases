@@ -1,7 +1,13 @@
 Ext.define('KitchenSink.controller.Main', {
     extend: 'Ext.app.Controller',
     
-    stores: ['Examples'],
+    stores: [
+        'Examples',
+        'Companies',
+        'Restaurants',
+        'States',
+        'TreeStore'
+    ],
 
     views: [
         'Viewport',

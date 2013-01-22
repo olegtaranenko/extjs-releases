@@ -46,17 +46,20 @@ Ext.define('Ext.container.ButtonGroup', {
     alternateClassName: 'Ext.ButtonGroup',
 
     /**
-     * @cfg {Number} columns The `columns` configuration property passed to the
-     * {@link #layout configured layout manager}. See {@link Ext.layout.container.Table#columns}.
+     * @cfg {Number} columns
+     * The `columns` configuration property passed to the {@link #layout configured layout manager}.
+     * See {@link Ext.layout.container.Table#columns}.
      */
 
     /**
-     * @cfg {String} [baseCls='x-btn-group']
+     * @cfg {String} baseCls
+     * @inheritdoc
      */
     baseCls: Ext.baseCSSPrefix + 'btn-group',
 
     /**
-     * @cfg {Object} layout  Defaults to <tt>'table'</tt>.  See {@link Ext.container.Container#layout}.
+     * @cfg {Object} layout
+     * @inheritdoc
      */
     layout: {
         type: 'table'
@@ -65,7 +68,8 @@ Ext.define('Ext.container.ButtonGroup', {
     defaultType: 'button',
 
     /**
-     * @cfg {Boolean} frame  Defaults to <tt>true</tt>.  See {@link Ext.panel.Panel#frame}.
+     * @cfg {Boolean} frame
+     * @inheritdoc
      */
     frame: true,
 
@@ -139,22 +143,22 @@ Ext.define('Ext.container.ButtonGroup', {
 
     /**
      * @cfg {Array} tools
-     * Not applicable for ButtonGroup.
+     * @private
      */
     /**
      * @cfg {Boolean} collapsible
-     * Not applicable for ButtonGroup.
+     * @private
      */
     /**
      * @cfg {Boolean} collapseMode
-     * Not applicable for ButtonGroup.
+     * @private
      */
     /**
      * @cfg {Boolean} animCollapse
-     * Not applicable for ButtonGroup.
+     * @private
      */
     /**
      * @cfg {Boolean} closable
-     * Not applicable for ButtonGroup.
+     * @private
      */
 });

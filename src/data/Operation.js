@@ -59,11 +59,10 @@ Ext.define('Ext.data.Operation', {
 
     /**
      * @cfg {Function} callback
-     * Function to execute when operation completed.  Will be called with the following parameters:
-     *
-     * - records : Array of Ext.data.Model objects.
-     * - operation : The Ext.data.Operation itself.
-     * - success : True when operation completed successfully.
+     * Function to execute when operation completed.
+     * @cfg {Ext.data.Model[]} callback.records Array of records.
+     * @cfg {Ext.data.Operation} callback.operation The Operation itself.
+     * @cfg {Boolean} callback.success True when operation completed successfully.
      */
     callback: undefined,
 
@@ -75,37 +74,42 @@ Ext.define('Ext.data.Operation', {
 
     /**
      * @property {Boolean} started
-     * Read-only property tracking the start status of this Operation. Use {@link #isStarted}.
+     * The start status of this Operation. Use {@link #isStarted}.
+     * @readonly
      * @private
      */
     started: false,
 
     /**
      * @property {Boolean} running
-     * Read-only property tracking the run status of this Operation. Use {@link #isRunning}.
+     * The run status of this Operation. Use {@link #isRunning}.
+     * @readonly
      * @private
      */
     running: false,
 
     /**
      * @property {Boolean} complete
-     * Read-only property tracking the completion status of this Operation. Use {@link #isComplete}.
+     * The completion status of this Operation. Use {@link #isComplete}.
+     * @readonly
      * @private
      */
     complete: false,
 
     /**
      * @property {Boolean} success
-     * Read-only property tracking whether the Operation was successful or not. This starts as undefined and is set to true
+     * Whether the Operation was successful or not. This starts as undefined and is set to true
      * or false by the Proxy that is executing the Operation. It is also set to false by {@link #setException}. Use
      * {@link #wasSuccessful} to query success status.
+     * @readonly
      * @private
      */
     success: undefined,
 
     /**
      * @property {Boolean} exception
-     * Read-only property tracking the exception status of this Operation. Use {@link #hasException} and see {@link #getError}.
+     * The exception status of this Operation. Use {@link #hasException} and see {@link #getError}.
+     * @readonly
      * @private
      */
     exception: false,
@@ -273,13 +277,13 @@ Ext.define('Ext.data.Operation', {
     },
 
     /**
-     * Returns an array of Ext.data.Model instances as set by the Proxy.
-     * @return {Ext.data.Model[]} Any loaded Records
+     * Returns the {@link Ext.data.Model record}s associated with this operation.  For read operations the records as set by the {@link Ext.data.proxy.Proxy Proxy} will be returned (returns `null` if the proxy has not yet set the records).
+     * For create, update, and destroy operations the operation's initially configured records will be returned, although the proxy may modify these records' data at some point after the operation is initialized.
+     * @return {Ext.data.Model[]}
      */
     getRecords: function() {
         var resultSet = this.getResultSet();
-
-        return (resultSet === undefined ? this.records : resultSet.records);
+        return this.records || (resultSet ? resultSet.records : null);
     },
 
     /**

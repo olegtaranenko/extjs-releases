@@ -153,8 +153,8 @@
  * Examples:
  *
  *     var tpl = new Ext.XTemplate(
- *         "<tpl if='age > 1 && age < 10'>Child</tpl>",
- *         "<tpl if='age >= 10 && age < 18'>Teenager</tpl>",
+ *         "<tpl if='age &gt; 1 && age &lt; 10'>Child</tpl>",
+ *         "<tpl if='age &gt;= 10 && age &lt; 18'>Teenager</tpl>",
  *         "<tpl if='this.isGirl(name)'>...</tpl>",
  *         '<tpl if="id == \'download\'">...</tpl>',
  *         "<tpl if='needsIcon'><img src='{icon}' class='{iconCls}'/></tpl>",

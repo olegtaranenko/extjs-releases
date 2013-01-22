@@ -33,6 +33,11 @@ Ext.define('Ext.data.NodeStore', {
      */    
     rootVisible: false,
 
+    /**
+     * @cfg {Ext.data.TreeStore} treeStore
+     * The TreeStore that is used by this NodeStore's Ext.tree.View.
+     */
+
     constructor: function(config) {
         var me = this,
             node;
@@ -45,6 +50,7 @@ Ext.define('Ext.data.NodeStore', {
             Ext.Error.raise("A NodeStore cannot be bound to a proxy. Instead bind it to a record " +
                             "decorated with the NodeInterface by setting the node config.");
         }
+        me.useModelWarning = false;
         //</debug>
 
         config.proxy = {type: 'proxy'};
@@ -59,7 +65,6 @@ Ext.define('Ext.data.NodeStore', {
 
     setNode: function(node) {
         var me = this;
-
         if (me.node && me.node != node) {
             // We want to unbind our listeners on the old node
             me.mun(me.node, {
@@ -79,8 +84,7 @@ Ext.define('Ext.data.NodeStore', {
             me.removeAll();
             if (me.rootVisible) {
                 me.add(node);
-            }
-            else if (!node.isExpanded()) {
+            } else if (!node.isExpanded() && me.autoLoad !== false) {
                 node.expand();
             }
 

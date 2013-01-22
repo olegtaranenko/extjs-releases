@@ -173,14 +173,14 @@ Ext.JSON.encodeDate = function(d) {
  * Shorthand for {@link Ext.JSON#encode}
  * @member Ext
  * @method encode
- * @alias Ext.JSON#encode
+ * @inheritdoc Ext.JSON#encode
  */
 Ext.encode = Ext.JSON.encode;
 /**
  * Shorthand for {@link Ext.JSON#decode}
  * @member Ext
  * @method decode
- * @alias Ext.JSON#decode
+ * @inheritdoc Ext.JSON#decode
  */
 Ext.decode = Ext.JSON.decode;
 
@@ -262,10 +262,7 @@ Ext.apply(Ext, {
         }
         if (!el.id) {
             if (me.isSandboxed) {
-                if (!me.uniqueGlobalNamespace) {
-                    me.getUniqueGlobalNamespace();
-                }
-                sandboxPrefix = me.uniqueGlobalNamespace + '-';
+                sandboxPrefix = Ext.sandboxName.toLowerCase() + '-';
             }
             el.id = sandboxPrefix + (prefix || "ext-gen") + (++Ext.idSeed);
         }
@@ -383,7 +380,7 @@ Ext.apply(Ext, {
 
     /**
      * Alias for {@link Ext.String#htmlEncode}.
-     * @alias Ext.String#htmlEncode
+     * @inheritdoc Ext.String#htmlEncode
      */
     htmlEncode : function(value) {
         return Ext.String.htmlEncode(value);
@@ -391,7 +388,7 @@ Ext.apply(Ext, {
 
     /**
      * Alias for {@link Ext.String#htmlDecode}.
-     * @alias Ext.String#htmlDecode
+     * @inheritdoc Ext.String#htmlDecode
      */
     htmlDecode : function(value) {
          return Ext.String.htmlDecode(value);
@@ -399,7 +396,7 @@ Ext.apply(Ext, {
 
     /**
      * Alias for {@link Ext.String#urlAppend}.
-     * @alias Ext.String#urlAppend
+     * @inheritdoc Ext.String#urlAppend
      */
     urlAppend : function(url, s) {
         return Ext.String.urlAppend(url, s);
@@ -451,9 +448,9 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
         isSafari4 = isSafari && check(/version\/4/),
         isSafari5 = isSafari && check(/version\/5/),
         isIE = !isOpera && check(/msie/),
-        isIE7 = isIE && (check(/msie 7/) || docMode == 7),
-        isIE8 = isIE && (check(/msie 8/) && docMode != 7 && docMode != 9 || docMode == 8),
-        isIE9 = isIE && (check(/msie 9/) && docMode != 7 && docMode != 8 || docMode == 9),
+        isIE7 = isIE && ((check(/msie 7/) && docMode != 8 && docMode != 9) || docMode == 7),
+        isIE8 = isIE && ((check(/msie 8/) && docMode != 7 && docMode != 9) || docMode == 8),
+        isIE9 = isIE && ((check(/msie 9/) && docMode != 7 && docMode != 8) || docMode == 9),
         isIE6 = isIE && check(/msie 6/),
         isGecko = !isWebKit && check(/gecko/),
         isGecko3 = isGecko && check(/rv:1\.9/),
@@ -616,7 +613,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
     log.counters = { error: 0, warn: 0, info: 0, log: 0 };
     log.indentSize = 2;
     log.out = [];
-    log.max = 250;
+    log.max = 750;
     log.show = function () {
         window.open('','extlog').document.write([
             '<html><head><script type="text/javascript">',
@@ -626,7 +623,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
                         'extlog = ext && ext.log;',
                     'if (extlog && extlog.out && lastCount != extlog.count) {',
                         'lastCount = extlog.count;',
-                        'var s = "<tt>" + extlog.out.join("<br>").replace(/[ ]/g, "&nbsp;") + "</tt>";',
+                        'var s = "<tt>" + extlog.out.join("~~~").replace(/[&]/g, "&amp;").replace(/[<]/g, "&lt;").replace(/[ ]/g, "&nbsp;").replace(/\\~\\~\\~/g, "<br>") + "</tt>";',
                         'document.body.innerHTML = s;',
                     '}',
                     'setTimeout(update, 1000);',
@@ -647,7 +644,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * to prevent the IE insecure content warning (`'about:blank'`, except for IE
          * in secure mode, which is `'javascript:""'`).
          */
-        SSL_SECURE_URL : isSecure && isIE ? 'javascript:""' : 'about:blank',
+        SSL_SECURE_URL : isSecure && isIE ? 'javascript:\'\'' : 'about:blank',
 
         /**
          * @property {Boolean} enableFx
@@ -1052,29 +1049,34 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * Returns the size of the browser scrollbars. This can differ depending on
          * operating system settings, such as the theme or font size.
          * @param {Boolean} [force] true to force a recalculation of the value.
-         * @return {Object} An object containing the width of a vertical scrollbar and the
-         * height of a horizontal scrollbar.
+         * @return {Object} An object containing scrollbar sizes.
+         * @return.width {Number} The width of the vertical scrollbar.
+         * @return.height {Number} The height of the horizontal scrollbar.
          */
         getScrollbarSize: function (force) {
             if (!Ext.isReady) {
-                return 0;
+                return {};
             }
 
-            if (force === true || scrollbarSize === null) {
+            if (force || !scrollbarSize) {
                 var db = document.body,
-                    div = document.createElement('div'),
-                    width;
+                    div = document.createElement('div');
 
                 div.style.width = div.style.height = '100px';
                 div.style.overflow = 'scroll';
                 div.style.position = 'absolute';
-                db.appendChild(div);
-                width = 100 - div.clientWidth;
-                db.removeChild(div);
 
-                // We assume width == height for now. TODO: is this always true?
-                scrollbarSize = { width: width, height: width };
+                db.appendChild(div); // now we can measure the div...
+
+                // at least in iE9 the div is not 100px - the scrollbar size is removed!
+                scrollbarSize = {
+                    width: div.offsetWidth - div.clientWidth,
+                    height: div.offsetHeight - div.clientHeight
+                };
+
+                db.removeChild(div);
             }
+
             return scrollbarSize;
         },
 
@@ -1336,6 +1338,7 @@ Ext.application = function(config) {
     });
 };
 
+//<localeInfo useApply="true" />
 /**
  * @class Ext.util.Format
 
@@ -1407,28 +1410,36 @@ XTemplates can also directly use Ext.util.Format functions:
          * <p>The character that the {@link #number} function uses as a thousand separator.</p>
          * <p>This may be overridden in a locale file.</p>
          */
+        //<locale>
         thousandSeparator: ',',
+        //</locale>
 
         /**
          * @property {String} decimalSeparator
          * <p>The character that the {@link #number} function uses as a decimal point.</p>
          * <p>This may be overridden in a locale file.</p>
          */
+        //<locale>
         decimalSeparator: '.',
+        //</locale>
 
         /**
          * @property {Number} currencyPrecision
          * <p>The number of decimal places that the {@link #currency} function displays.</p>
          * <p>This may be overridden in a locale file.</p>
          */
+        //<locale>
         currencyPrecision: 2,
+        //</locale>
 
         /**
          * @property {String} currencySign
          * <p>The currency sign that the {@link #currency} function displays.</p>
          * <p>This may be overridden in a locale file.</p>
          */
+         //<locale>
         currencySign: '$',
+        //</locale>
 
         /**
          * @property {Boolean} currencyAtEnd
@@ -1436,7 +1447,9 @@ XTemplates can also directly use Ext.util.Format functions:
          * append the currency sign to the formatted value.</p>
          * <p>This may be overridden in a locale file.</p>
          */
+        //<locale>
         currencyAtEnd: false,
+        //</locale>
 
         /**
          * Checks a reference and converts it to empty string if it is undefined
@@ -1512,7 +1525,7 @@ XTemplates can also directly use Ext.util.Format functions:
                 v = -v;
                 negativeSign = '-';
             }
-            decimals = decimals || UtilFormat.currencyPrecision;
+            decimals = Ext.isDefined(decimals) ? decimals : UtilFormat.currencyPrecision;
             format += format + (decimals > 0 ? '.' : '');
             for (; i < decimals; i++) {
                 format += '0';
@@ -1683,7 +1696,7 @@ XTemplates can also directly use Ext.util.Format functions:
             }
 
             if (1 < psplit.length) {
-                v = v.toFixed(psplit[1].length);
+                v = Ext.Number.toFixed(v, psplit[1].length);
             } else if(2 < psplit.length) {
                 //<debug>
                 Ext.Error.raise({
@@ -1695,7 +1708,7 @@ XTemplates can also directly use Ext.util.Format functions:
                 });
                 //</debug>
             } else {
-                v = v.toFixed(0);
+                v = Ext.Number.toFixed(v, 0);
             }
 
             var fnum = v.toString();
@@ -1775,49 +1788,49 @@ XTemplates can also directly use Ext.util.Format functions:
         /**
          * Alias for {@link Ext.String#capitalize}.
          * @method
-         * @alias Ext.String#capitalize
+         * @inheritdoc Ext.String#capitalize
          */
         capitalize: Ext.String.capitalize,
 
         /**
          * Alias for {@link Ext.String#ellipsis}.
          * @method
-         * @alias Ext.String#ellipsis
+         * @inheritdoc Ext.String#ellipsis
          */
         ellipsis: Ext.String.ellipsis,
 
         /**
          * Alias for {@link Ext.String#format}.
          * @method
-         * @alias Ext.String#format
+         * @inheritdoc Ext.String#format
          */
         format: Ext.String.format,
 
         /**
          * Alias for {@link Ext.String#htmlDecode}.
          * @method
-         * @alias Ext.String#htmlDecode
+         * @inheritdoc Ext.String#htmlDecode
          */
         htmlDecode: Ext.String.htmlDecode,
 
         /**
          * Alias for {@link Ext.String#htmlEncode}.
          * @method
-         * @alias Ext.String#htmlEncode
+         * @inheritdoc Ext.String#htmlEncode
          */
         htmlEncode: Ext.String.htmlEncode,
 
         /**
          * Alias for {@link Ext.String#leftPad}.
          * @method
-         * @alias Ext.String#leftPad
+         * @inheritdoc Ext.String#leftPad
          */
         leftPad: Ext.String.leftPad,
 
         /**
          * Alias for {@link Ext.String#trim}.
          * @method
-         * @alias Ext.String#trim
+         * @inheritdoc Ext.String#trim
          */
         trim : Ext.String.trim,
 
@@ -2054,21 +2067,27 @@ Ext.define('Ext.perf.Accumulator', function () {
     var currentFrame = null,
         formatTpl;
 
+    // lazy init on first request for timestamp (avoids infobar in IE until needed)
     var getTimestamp = function () {
-        return new Date().getTime();
-    };
-
-    if (window.ActiveXObject) {
-        try {
-            // the above technique is not very accurate for small intervals...
-            var toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
-            getTimestamp = function () {
-                return toolbox.milliseconds;
-            };
-        } catch (e) {
-            // ignore
+        getTimestamp = function () {
+            return new Date().getTime();
         }
-    }
+
+        if (window.ActiveXObject) {
+            try {
+                // the above technique is not very accurate for small intervals...
+                var toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
+                getTimestamp = function () {
+                    return toolbox.milliseconds;
+                };
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        Ext.perf.getTimestamp = Ext.perf.Accumulator.getTimestamp = getTimestamp;
+        return getTimestamp();
+    };
 
     function adjustSet (set, time) {
         set.sum += time;
@@ -2365,50 +2384,50 @@ Ext.define('Ext.perf.Monitor', {
                 /*xtplCompile: {
                     'Ext.XTemplateCompiler': 'compile'
                 },*/
-                doInsert: {
-                    'Ext.Template': 'doInsert'
-                },
-                applyOut: {
-                    'Ext.XTemplate': 'applyOut'
-                },
+//                doInsert: {
+//                    'Ext.Template': 'doInsert'
+//                },
+//                applyOut: {
+//                    'Ext.XTemplate': 'applyOut'
+//                },
                 render: {
                     'Ext.AbstractComponent': 'render'
                 },
-                fnishRender: {
-                    'Ext.AbstractComponent': 'finishRender'
-                },
-                renderSelectors: {
-                    'Ext.AbstractComponent': 'applyRenderSelectors'
-                },
-                compAddCls: {
-                    'Ext.AbstractComponent': 'addCls'
-                },
-                compRemoveCls: {
-                    'Ext.AbstractComponent': 'removeCls'
-                },
-                getStyle: {
-                    'Ext.core.Element': 'getStyle'
-                },
-                setStyle: {
-                    'Ext.core.Element': 'setStyle'
-                },
-                addCls: {
-                    'Ext.core.Element': 'addCls'
-                },
-                removeCls: {
-                    'Ext.core.Element': 'removeCls'
-                },
-                measure: {
-                    'Ext.layout.component.Component': 'measureAutoDimensions'
-                },
+//                fnishRender: {
+//                    'Ext.AbstractComponent': 'finishRender'
+//                },
+//                renderSelectors: {
+//                    'Ext.AbstractComponent': 'applyRenderSelectors'
+//                },
+//                compAddCls: {
+//                    'Ext.AbstractComponent': 'addCls'
+//                },
+//                compRemoveCls: {
+//                    'Ext.AbstractComponent': 'removeCls'
+//                },
+//                getStyle: {
+//                    'Ext.core.Element': 'getStyle'
+//                },
+//                setStyle: {
+//                    'Ext.core.Element': 'setStyle'
+//                },
+//                addCls: {
+//                    'Ext.core.Element': 'addCls'
+//                },
+//                removeCls: {
+//                    'Ext.core.Element': 'removeCls'
+//                },
+//                measure: {
+//                    'Ext.layout.component.Component': 'measureAutoDimensions'
+//                },
+//                moveItem: {
+//                    'Ext.layout.Layout': 'moveItem'
+//                },
+//                layoutFlush: {
+//                    'Ext.layout.Context': 'flush'
+//                },
                 layout: {
                     'Ext.layout.Context': 'run'
-                },
-                moveItem: {
-                    'Ext.layout.Layout': 'moveItem'
-                },
-                layoutFlush: {
-                    'Ext.layout.Context': 'flush'
                 }
             };
         }
@@ -2588,6 +2607,7 @@ Ext.supports = {
                 '<div style="width: 200px; height: 200px; position: relative; padding: 5px;">',
                     '<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>',
                 '</div>',
+                '<div style="position: absolute; left: 10%; top: 10%;"></div>',
                 '<div style="float:left; background-color:transparent;"></div>'
             ].join('');
 
@@ -3044,6 +3064,18 @@ Ext.supports = {
             fn: function(){
                 var el = document.createElement('textarea');
                 return ('maxlength' in el);
+            }
+        },
+        /**
+         * @property GetPositionPercentage True if the browser will return the left/top/right/bottom 
+         * position as a percentage when explicitly set as a percentage value.
+         * @type {Boolean}
+         */
+        // Related bug: https://bugzilla.mozilla.org/show_bug.cgi?id=707691#c7
+        {
+            identity: 'GetPositionPercentage',
+            fn: function(doc, div){
+                return Ext.get(div.childNodes[2]).getStyle('left') == '10%';
             }
         }
     ]

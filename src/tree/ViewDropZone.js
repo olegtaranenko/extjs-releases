@@ -1,5 +1,4 @@
 /**
- * @class Ext.tree.ViewDropZone
  * @private
  */
 Ext.define('Ext.tree.ViewDropZone', {

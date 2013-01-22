@@ -90,11 +90,12 @@ Ext.define('Ext.panel.Table', {
 
     /**
      * @cfg {Ext.grid.column.Column[]} columns
-     * <p>An array of {@link Ext.grid.column.Column column} definition objects which define all columns that appear in this
+     * An array of {@link Ext.grid.column.Column column} definition objects which define all columns that appear in this
      * grid. Each column definition provides the header text for the column, and a definition of where the data for that
-     * column comes from.</p>
-     * <p>This can also be a configuration object for a {Ext.grid.header.Container HeaderContainer} which may override
-     * certain default configurations if necessary. For example, the special layout may be overridden to use a simpler layout.</p>
+     * column comes from.
+     *
+     * This can also be a configuration object for a {Ext.grid.header.Container HeaderContainer} which may override
+     * certain default configurations if necessary. For example, the special layout may be overridden to use a simpler layout.
      */
 
     /**
@@ -140,8 +141,6 @@ Ext.define('Ext.panel.Table', {
     // private property used to determine where to go down to find views
     // this is here to support locking.
     scrollerOwner: true,
-
-    invalidateScrollerOnRefresh: true,
 
     /**
      * @cfg {Boolean} [enableColumnMove=true]
@@ -252,6 +251,8 @@ Ext.define('Ext.panel.Table', {
              * @event reconfigure
              * Fires after a reconfigure.
              * @param {Ext.panel.Table} this
+             * @param {Ext.data.Store} store The store that was passed to the {@link #method-reconfigure} method
+             * @param {Object[]} columns The column configs that were passed to the {@link #method-reconfigure} method
              */
             'reconfigure',
             /**
@@ -284,6 +285,13 @@ Ext.define('Ext.panel.Table', {
             // Extract the array of Column objects
             me.columns = me.headerCt.items.items;
 
+            // If the Store is paging blocks of the dataset in, then it can only be sorted remotely.
+            if (me.store.buffered && !me.store.remoteSort) {
+                for (var i = 0, len = me.columns.length; i < len; i++) {
+                    me.columns[i].sortable = false;
+                }
+            }
+
             if (me.hideHeaders) {
                 me.headerCt.height = 0;
                 me.headerCt.border = false;
@@ -315,7 +323,13 @@ Ext.define('Ext.panel.Table', {
             me.dockedItems = me.dockedItems || [];
             me.dockedItems.unshift(me.headerCt);
             me.viewConfig = me.viewConfig || {};
-            me.viewConfig.invalidateScrollerOnRefresh = me.invalidateScrollerOnRefresh;
+
+            // Buffered scrolling must preserve scroll on refresh
+            if (me.store && me.store.buffered) {
+                me.viewConfig.preserveScrollOnRefresh = true;
+            } else if (me.invalidateScrollerOnRefresh !== undefined) {
+                me.viewConfig.preserveScrollOnRefresh = !me.invalidateScrollerOnRefresh;
+            }
 
             // AbstractDataView will look up a Store configured as an object
             // getView converts viewConfig into a View instance
@@ -359,182 +373,178 @@ Ext.define('Ext.panel.Table', {
                 refresh: me.onViewRefresh,
                 scope: me
             });
-            this.relayEvents(view, [
-                /**
-                 * @event beforeitemmousedown
-                 * @alias Ext.view.View#beforeitemmousedown
-                 */
-                'beforeitemmousedown',
-                /**
-                 * @event beforeitemmouseup
-                 * @alias Ext.view.View#beforeitemmouseup
-                 */
-                'beforeitemmouseup',
-                /**
-                 * @event beforeitemmouseenter
-                 * @alias Ext.view.View#beforeitemmouseenter
-                 */
-                'beforeitemmouseenter',
-                /**
-                 * @event beforeitemmouseleave
-                 * @alias Ext.view.View#beforeitemmouseleave
-                 */
-                'beforeitemmouseleave',
-                /**
-                 * @event beforeitemclick
-                 * @alias Ext.view.View#beforeitemclick
-                 */
-                'beforeitemclick',
-                /**
-                 * @event beforeitemdblclick
-                 * @alias Ext.view.View#beforeitemdblclick
-                 */
-                'beforeitemdblclick',
-                /**
-                 * @event beforeitemcontextmenu
-                 * @alias Ext.view.View#beforeitemcontextmenu
-                 */
-                'beforeitemcontextmenu',
-                /**
-                 * @event itemmousedown
-                 * @alias Ext.view.View#itemmousedown
-                 */
-                'itemmousedown',
-                /**
-                 * @event itemmouseup
-                 * @alias Ext.view.View#itemmouseup
-                 */
-                'itemmouseup',
-                /**
-                 * @event itemmouseenter
-                 * @alias Ext.view.View#itemmouseenter
-                 */
-                'itemmouseenter',
-                /**
-                 * @event itemmouseleave
-                 * @alias Ext.view.View#itemmouseleave
-                 */
-                'itemmouseleave',
-                /**
-                 * @event itemclick
-                 * @alias Ext.view.View#itemclick
-                 */
-                'itemclick',
-                /**
-                 * @event itemdblclick
-                 * @alias Ext.view.View#itemdblclick
-                 */
-                'itemdblclick',
-                /**
-                 * @event itemcontextmenu
-                 * @alias Ext.view.View#itemcontextmenu
-                 */
-                'itemcontextmenu',
-                /**
-                 * @event beforecontainermousedown
-                 * @alias Ext.view.View#beforecontainermousedown
-                 */
-                'beforecontainermousedown',
-                /**
-                 * @event beforecontainermouseup
-                 * @alias Ext.view.View#beforecontainermouseup
-                 */
-                'beforecontainermouseup',
-                /**
-                 * @event beforecontainermouseover
-                 * @alias Ext.view.View#beforecontainermouseover
-                 */
-                'beforecontainermouseover',
-                /**
-                 * @event beforecontainermouseout
-                 * @alias Ext.view.View#beforecontainermouseout
-                 */
-                'beforecontainermouseout',
-                /**
-                 * @event beforecontainerclick
-                 * @alias Ext.view.View#beforecontainerclick
-                 */
-                'beforecontainerclick',
-                /**
-                 * @event beforecontainerdblclick
-                 * @alias Ext.view.View#beforecontainerdblclick
-                 */
-                'beforecontainerdblclick',
-                /**
-                 * @event beforecontainercontextmenu
-                 * @alias Ext.view.View#beforecontainercontextmenu
-                 */
-                'beforecontainercontextmenu',
-                /**
-                 * @event containermouseup
-                 * @alias Ext.view.View#containermouseup
-                 */
-                'containermouseup',
-                /**
-                 * @event containermouseover
-                 * @alias Ext.view.View#containermouseover
-                 */
-                'containermouseover',
-                /**
-                 * @event containermouseout
-                 * @alias Ext.view.View#containermouseout
-                 */
-                'containermouseout',
-                /**
-                 * @event containerclick
-                 * @alias Ext.view.View#containerclick
-                 */
-                'containerclick',
-                /**
-                 * @event containerdblclick
-                 * @alias Ext.view.View#containerdblclick
-                 */
-                'containerdblclick',
-                /**
-                 * @event containercontextmenu
-                 * @alias Ext.view.View#containercontextmenu
-                 */
-                'containercontextmenu',
-                /**
-                 * @event selectionchange
-                 * @alias Ext.selection.Model#selectionchange
-                 */
-                'selectionchange',
-                /**
-                 * @event beforeselect
-                 * @alias Ext.selection.RowModel#beforeselect
-                 */
-                'beforeselect',
-                /**
-                 * @event select
-                 * @alias Ext.selection.RowModel#select
-                 */
-                'select',
-                /**
-                 * @event beforedeselect
-                 * @alias Ext.selection.RowModel#beforedeselect
-                 */
-                'beforedeselect',
-                /**
-                 * @event deselect
-                 * @alias Ext.selection.RowModel#deselect
-                 */
-                'deselect'
-            ]);
         }
+
+        // Relay events from the View whether it be a LockingView, or a regular GridView
+        this.relayEvents(me.view, [
+            /**
+             * @event beforeitemmousedown
+             * @inheritdoc Ext.view.View#beforeitemmousedown
+             */
+            'beforeitemmousedown',
+            /**
+             * @event beforeitemmouseup
+             * @inheritdoc Ext.view.View#beforeitemmouseup
+             */
+            'beforeitemmouseup',
+            /**
+             * @event beforeitemmouseenter
+             * @inheritdoc Ext.view.View#beforeitemmouseenter
+             */
+            'beforeitemmouseenter',
+            /**
+             * @event beforeitemmouseleave
+             * @inheritdoc Ext.view.View#beforeitemmouseleave
+             */
+            'beforeitemmouseleave',
+            /**
+             * @event beforeitemclick
+             * @inheritdoc Ext.view.View#beforeitemclick
+             */
+            'beforeitemclick',
+            /**
+             * @event beforeitemdblclick
+             * @inheritdoc Ext.view.View#beforeitemdblclick
+             */
+            'beforeitemdblclick',
+            /**
+             * @event beforeitemcontextmenu
+             * @inheritdoc Ext.view.View#beforeitemcontextmenu
+             */
+            'beforeitemcontextmenu',
+            /**
+             * @event itemmousedown
+             * @inheritdoc Ext.view.View#itemmousedown
+             */
+            'itemmousedown',
+            /**
+             * @event itemmouseup
+             * @inheritdoc Ext.view.View#itemmouseup
+             */
+            'itemmouseup',
+            /**
+             * @event itemmouseenter
+             * @inheritdoc Ext.view.View#itemmouseenter
+             */
+            'itemmouseenter',
+            /**
+             * @event itemmouseleave
+             * @inheritdoc Ext.view.View#itemmouseleave
+             */
+            'itemmouseleave',
+            /**
+             * @event itemclick
+             * @inheritdoc Ext.view.View#itemclick
+             */
+            'itemclick',
+            /**
+             * @event itemdblclick
+             * @inheritdoc Ext.view.View#itemdblclick
+             */
+            'itemdblclick',
+            /**
+             * @event itemcontextmenu
+             * @inheritdoc Ext.view.View#itemcontextmenu
+             */
+            'itemcontextmenu',
+            /**
+             * @event beforecontainermousedown
+             * @inheritdoc Ext.view.View#beforecontainermousedown
+             */
+            'beforecontainermousedown',
+            /**
+             * @event beforecontainermouseup
+             * @inheritdoc Ext.view.View#beforecontainermouseup
+             */
+            'beforecontainermouseup',
+            /**
+             * @event beforecontainermouseover
+             * @inheritdoc Ext.view.View#beforecontainermouseover
+             */
+            'beforecontainermouseover',
+            /**
+             * @event beforecontainermouseout
+             * @inheritdoc Ext.view.View#beforecontainermouseout
+             */
+            'beforecontainermouseout',
+            /**
+             * @event beforecontainerclick
+             * @inheritdoc Ext.view.View#beforecontainerclick
+             */
+            'beforecontainerclick',
+            /**
+             * @event beforecontainerdblclick
+             * @inheritdoc Ext.view.View#beforecontainerdblclick
+             */
+            'beforecontainerdblclick',
+            /**
+             * @event beforecontainercontextmenu
+             * @inheritdoc Ext.view.View#beforecontainercontextmenu
+             */
+            'beforecontainercontextmenu',
+            /**
+             * @event containermouseup
+             * @inheritdoc Ext.view.View#containermouseup
+             */
+            'containermouseup',
+            /**
+             * @event containermouseover
+             * @inheritdoc Ext.view.View#containermouseover
+             */
+            'containermouseover',
+            /**
+             * @event containermouseout
+             * @inheritdoc Ext.view.View#containermouseout
+             */
+            'containermouseout',
+            /**
+             * @event containerclick
+             * @inheritdoc Ext.view.View#containerclick
+             */
+            'containerclick',
+            /**
+             * @event containerdblclick
+             * @inheritdoc Ext.view.View#containerdblclick
+             */
+            'containerdblclick',
+            /**
+             * @event containercontextmenu
+             * @inheritdoc Ext.view.View#containercontextmenu
+             */
+            'containercontextmenu',
+            /**
+             * @event selectionchange
+             * @inheritdoc Ext.selection.Model#selectionchange
+             */
+            'selectionchange',
+            /**
+             * @event beforeselect
+             * @inheritdoc Ext.selection.RowModel#beforeselect
+             */
+            'beforeselect',
+            /**
+             * @event select
+             * @inheritdoc Ext.selection.RowModel#select
+             */
+            'select',
+            /**
+             * @event beforedeselect
+             * @inheritdoc Ext.selection.RowModel#beforedeselect
+             */
+            'beforedeselect',
+            /**
+             * @event deselect
+             * @inheritdoc Ext.selection.RowModel#deselect
+             */
+            'deselect'
+        ]);
 
         me.callParent(arguments);
     },
 
     // state management
     initStateEvents: function(){
-        var events = this.stateEvents;
-        // push on stateEvents if they don't exist
-        Ext.each(['columnresize', 'columnmove', 'columnhide', 'columnshow', 'sortchange'], function(event){
-            if (Ext.Array.indexOf(events, event)) {
-                events.push(event);
-            }
-        });
+        this.stateEvents = Ext.Array.merge(this.stateEvents, ['columnresize', 'columnmove', 'columnhide', 'columnshow', 'sortchange']);
         this.callParent();
     },
 
@@ -542,27 +552,27 @@ Ext.define('Ext.panel.Table', {
         this.relayEvents(headerCt, [
             /**
              * @event columnresize
-             * @alias Ext.grid.header.Container#columnresize
+             * @inheritdoc Ext.grid.header.Container#columnresize
              */
             'columnresize',
             /**
              * @event columnmove
-             * @alias Ext.grid.header.Container#columnmove
+             * @inheritdoc Ext.grid.header.Container#columnmove
              */
             'columnmove',
             /**
              * @event columnhide
-             * @alias Ext.grid.header.Container#columnhide
+             * @inheritdoc Ext.grid.header.Container#columnhide
              */
             'columnhide',
             /**
              * @event columnshow
-             * @alias Ext.grid.header.Container#columnshow
+             * @inheritdoc Ext.grid.header.Container#columnshow
              */
             'columnshow',
             /**
              * @event sortchange
-             * @alias Ext.grid.header.Container#sortchange
+             * @inheritdoc Ext.grid.header.Container#sortchange
              */
             'sortchange'
         ]);
@@ -656,7 +666,6 @@ Ext.define('Ext.panel.Table', {
 
     /**
      * @private
-     * @override
      * autoScroll is never valid for all classes which extend TablePanel.
      */
     setAutoScroll: Ext.emptyFn,
@@ -681,12 +690,36 @@ Ext.define('Ext.panel.Table', {
         }
     },
 
-    scrollByDeltaY: function(yDelta) {
-        this.getView().getEl().scroll('down', yDelta);
+    /**
+     * This method is obsolete in 4.1. The closest equivalent in
+     * 4.1 is {@link #doLayout}, but it is also possible that no
+     * layout is needed.
+     * @deprecated 4.1
+     */
+    determineScrollbars: function () {
+        //<debug>
+        Ext.log.warn('Obsolete');
+        //</debug>
     },
 
-    scrollByDeltaX: function(xDelta) {
-        this.getView().getEl().scroll('right', xDelta);
+    /**
+     * This method is obsolete in 4.1. The closest equivalent in 4.1 is
+     * {@link Ext.AbstractComponent#updateLayout}, but it is also possible that no layout
+     * is needed.
+     * @deprecated 4.1
+     */
+    invalidateScroller: function () {
+        //<debug>
+        Ext.log.warn('Obsolete');
+        //</debug>
+    },
+
+    scrollByDeltaY: function(yDelta, animate) {
+        this.getView().scrollBy(0, yDelta, animate);
+    },
+
+    scrollByDeltaX: function(xDelta, animate) {
+        this.getView().scrollBy(xDelta, 0, animate);
     },
 
     afterCollapse: function() {
@@ -703,17 +736,13 @@ Ext.define('Ext.panel.Table', {
         me.restoreScrollPos();
     },
 
-    saveScrollPos: function() {
+    saveScrollPos: Ext.emptyFn,
 
-    },
-
-    restoreScrollPos: function() {
-
-    },
+    restoreScrollPos: Ext.emptyFn,
 
     // refresh the view when a header moves
-    onHeaderMove: function(headerCt, header, fromIdx, toIdx) {
-        this.view.moveColumn(fromIdx, toIdx);
+    onHeaderMove: function(headerCt, header, colsToMove, fromIdx, toIdx) {
+        this.view.moveColumn(fromIdx, toIdx, colsToMove);
     },
 
     // Section onHeaderHide is invoked after view.
@@ -883,7 +912,8 @@ Ext.define('Ext.panel.Table', {
             if (columns) {
                 headerCt.resumeLayouts(true);
             }
+            headerCt.setSortState();
         }
-        me.fireEvent('reconfigure', me);
+        me.fireEvent('reconfigure', me, store, columns);
     }
 });

@@ -1,6 +1,4 @@
 /**
- * @class Ext.chart.Mask
- *
  * Defines a mask for a chart's series.
  * The 'chart' member must be set prior to rendering.
  *
@@ -13,20 +11,21 @@
  * `true`, `vertical` or `horizontal`. Then a possible configuration for the
  * listener could be:
  *
-        items: {
-            xtype: 'chart',
-            animate: true,
-            store: store1,
-            mask: 'horizontal',
-            listeners: {
-                select: {
-                    fn: function(me, selection) {
-                        me.setZoom(selection);
-                        me.mask.hide();
-                    }
-                }
-            },
-
+ *     items: {
+ *         xtype: 'chart',
+ *         animate: true,
+ *         store: store1,
+ *         mask: 'horizontal',
+ *         listeners: {
+ *             select: {
+ *                 fn: function(me, selection) {
+ *                     me.setZoom(selection);
+ *                     me.mask.hide();
+ *                 }
+ *             }
+ *         }
+ *     }
+ *
  * In this example we zoom the chart to that particular region. You can also get
  * a handle to a mask instance from the chart object. The `chart.mask` element is a
  * `Ext.Panel`.
@@ -36,10 +35,19 @@ Ext.define('Ext.chart.Mask', {
     requires: [
         'Ext.chart.MaskLayer'
     ],
+    
+    /**
+     * @cfg {Boolean/String} mask
+     * Enables selecting a region on chart. True to enable any selection,
+     * 'horizontal' or 'vertical' to restrict the selection to X or Y axis.
+     *
+     * The mask in itself will do nothing but fire 'select' event.
+     * See {@link Ext.chart.Mask} for example.
+     */
 
     /**
      * Creates new Mask.
-     * @param {Object} config (optional) Config object.
+     * @param {Object} [config] Config object.
      */
     constructor: function(config) {
         var me = this;

@@ -121,14 +121,13 @@ Ext.define('Ext.chart.series.Bar', {
             surface = me.chart.surface,
             shadow = me.chart.shadow,
             i, l;
+        config.highlightCfg = Ext.Object.merge({
+            lineWidth: 3,
+            stroke: '#55c',
+            opacity: 0.8,
+            color: '#f00'
+        }, config.highlightCfg);
         Ext.apply(me, config, {
-            highlightCfg: {
-                lineWidth: 3,
-                stroke: '#55c',
-                opacity: 0.8,
-                color: '#f00'
-            },
-
             shadowAttributes: [{
                 "stroke-width": 6,
                 "stroke-opacity": 0.05,
@@ -155,6 +154,7 @@ Ext.define('Ext.chart.series.Bar', {
                 }
             }]
         });
+
         me.group = surface.getGroup(me.seriesId + '-bars');
         if (shadow) {
             for (i = 0, l = me.shadowAttributes.length; i < l; i++) {
@@ -290,6 +290,7 @@ Ext.define('Ext.chart.series.Bar', {
             store = chart.getChartStore(),
             bounds = me.bounds = me.getBounds(),
             items = me.items = [],
+            yFields = me.yField,
             gutter = me.gutter / 100,
             groupGutter = me.groupGutter / 100,
             animate = chart.animate,
@@ -377,6 +378,7 @@ Ext.define('Ext.chart.series.Bar', {
                 barAttr.height = Math.floor(barAttr.height);
                 items.push({
                     series: me,
+                    yField: yFields[j],
                     storeItem: record,
                     value: [record.get(me.xField), yValue],
                     attr: barAttr,
@@ -502,7 +504,9 @@ Ext.define('Ext.chart.series.Bar', {
             items, ln, i, j, baseAttrs, sprite, rendererAttributes, shadowIndex, shadowGroup,
             bounds, endSeriesStyle, barAttr, attrs, anim;
 
-        if (!store || !store.getCount()) {
+        if (!store || !store.getCount() || me.seriesIsHidden) {
+            me.hide();
+            me.items = [];
             return;
         }
 
@@ -511,7 +515,7 @@ Ext.define('Ext.chart.series.Bar', {
         endSeriesStyle = Ext.apply(seriesStyle, this.style);
         me.unHighlightItem();
         me.cleanHighlights();
-
+        
         me.getPaths();
         bounds = me.bounds;
         items = me.items;

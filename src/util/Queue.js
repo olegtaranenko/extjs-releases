@@ -35,6 +35,12 @@ Ext.define('Ext.util.Queue', {
         return items;
     },
 
+    contains: function (obj) {
+        var key = this.getKey(obj);
+
+        return this.map.hasOwnProperty(key);
+    },
+
     /**
      * Returns the number of items in the collection.
      * @return {Number} the number of items in the collection.

@@ -1,12 +1,9 @@
 /**
- * @class Ext.util.ClickRepeater
- *
  * A wrapper class which can be applied to any element. Fires a "click" event while the
  * mouse is pressed. The interval between firings may be specified in the config but
  * defaults to 20 milliseconds.
  *
  * Optionally, a CSS class may be applied to the element during the time it is pressed.
- *
  */
 Ext.define('Ext.util.ClickRepeater', {
     extend: 'Ext.util.Observable',
@@ -14,7 +11,7 @@ Ext.define('Ext.util.ClickRepeater', {
     /**
      * Creates new ClickRepeater.
      * @param {String/HTMLElement/Ext.Element} el The element or its ID to listen on
-     * @param {Object} config (optional) Config object.
+     * @param {Object} [config] Config object.
      */
     constructor : function(el, config){
         this.el = Ext.get(el);
@@ -60,35 +57,43 @@ Ext.define('Ext.util.ClickRepeater', {
     },
 
     /**
-     * @cfg {String/HTMLElement/Ext.Element} el The element to act as a button.
+     * @cfg {String/HTMLElement/Ext.Element} el
+     * The element to act as a button.
      */
 
     /**
-     * @cfg {String} pressedCls A CSS class name to be applied to the element while pressed.
+     * @cfg {String} pressedCls
+     * A CSS class name to be applied to the element while pressed.
      */
 
     /**
-     * @cfg {Boolean} accelerate True if autorepeating should start slowly and accelerate.
+     * @cfg {Boolean} accelerate
+     * True if autorepeating should start slowly and accelerate.
      * "interval" and "delay" are ignored.
      */
 
     /**
-     * @cfg {Number} interval The interval between firings of the "click" event. Default 20 ms.
+     * @cfg {Number} interval
+     * The interval between firings of the "click" event (in milliseconds).
      */
     interval : 20,
 
     /**
-     * @cfg {Number} delay The initial delay before the repeating event begins firing.
+     * @cfg {Number} delay
+     * The initial delay before the repeating event begins firing.
      * Similar to an autorepeat key delay.
      */
     delay: 250,
 
     /**
-     * @cfg {Boolean} preventDefault True to prevent the default click event
+     * @cfg {Boolean} preventDefault
+     * True to prevent the default click event
      */
     preventDefault : true,
+
     /**
-     * @cfg {Boolean} stopDefault True to stop the default click event
+     * @cfg {Boolean} stopDefault
+     * True to stop the default click event
      */
     stopDefault : false,
 

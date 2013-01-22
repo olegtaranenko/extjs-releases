@@ -248,7 +248,7 @@ var s = Ext.String.format('&lt;div class="{0}">{1}&lt;/div>', cls, text);
  * @deprecated Use {@link Ext.String#htmlEncode} instead
  * @method
  * @member Ext
- * @alias Ext.String#htmlEncode
+ * @inheritdoc Ext.String#htmlEncode
  */
 Ext.htmlEncode = Ext.String.htmlEncode;
 
@@ -258,7 +258,7 @@ Ext.htmlEncode = Ext.String.htmlEncode;
  * @deprecated Use {@link Ext.String#htmlDecode} instead
  * @method
  * @member Ext
- * @alias Ext.String#htmlDecode
+ * @inheritdoc Ext.String#htmlDecode
  */
 Ext.htmlDecode = Ext.String.htmlDecode;
 
@@ -267,6 +267,6 @@ Ext.htmlDecode = Ext.String.htmlDecode;
  * @deprecated Use {@link Ext.String#urlAppend} instead
  * @method
  * @member Ext
- * @alias Ext.String#urlAppend
+ * @inheritdoc Ext.String#urlAppend
  */
 Ext.urlAppend = Ext.String.urlAppend;

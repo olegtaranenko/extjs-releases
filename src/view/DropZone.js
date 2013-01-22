@@ -1,5 +1,4 @@
 /**
- * @class Ext.view.DropZone
  * @private
  */
 Ext.define('Ext.view.DropZone', {
@@ -112,7 +111,7 @@ Ext.define('Ext.view.DropZone', {
             pos = me.getPosition(e, node),
             overRecord = view.getRecord(node),
             draggingRecords = data.records,
-            indicator, indicatorY;
+            indicatorY;
 
         if (!Ext.Array.contains(draggingRecords, overRecord) && (
             pos == 'before' && !me.containsRecordAtOffset(draggingRecords, overRecord, -1) ||

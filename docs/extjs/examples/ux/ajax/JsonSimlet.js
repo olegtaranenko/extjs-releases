@@ -1,19 +1,7 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
- * @class Ext.ux.ajax.JsonSimlet
+ * @extends Ext.ux.ajax.Simlet
+ * @alias simlet.json
+ * JSON Simlet.
  */
 Ext.define('Ext.ux.ajax.JsonSimlet', function () {
 
@@ -49,7 +37,7 @@ Ext.define('Ext.ux.ajax.JsonSimlet', function () {
             var me = this,
                 data = me.data,
                 params = ctx.params,
-                order = (params.group || '') + (params.sort || ''),
+                order = (params.group||'')+'-'+(params.sort||'')+'-'+(params.dir||''),
                 fields,
                 sortFn,
                 i;
@@ -62,8 +50,14 @@ Ext.define('Ext.ux.ajax.JsonSimlet', function () {
                 return me.sortedData;
             }
 
-            ctx.sortSpec = fields = params.sort && Ext.decode(params.sort);
-            sortFn = makeSortFns(fields);
+            fields = params.sort;
+            if (params.dir) {
+                fields = [{ direction: params.dir, property: fields }];
+            } else {
+                fields = Ext.decode(params.sort);
+            }
+
+            sortFn = makeSortFns(ctx.sortSpec = fields);
 
             ctx.groupSpec = fields = params.group && Ext.decode(params.group);
             sortFn = makeSortFns(fields, sortFn);
@@ -149,11 +143,12 @@ Ext.define('Ext.ux.ajax.JsonSimlet', function () {
             var me = this,
                 data = me.getData(ctx),
                 page = me.getPage(ctx, data),
-                response = {
-                    data: page,
-                    totalRecords: data.length
-                },
-                ret = this.callParent(arguments); // pick up status/statusText
+                reader = ctx.xhr.options.proxy.reader,
+                ret = me.callParent(arguments), // pick up status/statusText
+                response = {};
+
+            response[reader.root] = page;
+            response[reader.totalProperty] = data.length;
 
             if (ctx.groupSpec) {
                 response.summaryData = me.getSummary(ctx, data, page);
@@ -164,4 +159,3 @@ Ext.define('Ext.ux.ajax.JsonSimlet', function () {
         }
     };
 }());
-

@@ -1,8 +1,8 @@
 /**
- * @class Ext.Shadow
- * Simple class that can provide a shadow effect for any element.  Note that the element MUST be absolutely positioned,
- * and the shadow does not provide any shimming.  This should be used only in simple cases -- for more advanced
- * functionality that can also provide the same shadow effect, see the {@link Ext.Layer} class.
+ * Simple class that can provide a shadow effect for any element.  Note that the element
+ * MUST be absolutely positioned, and the shadow does not provide any shimming.  This
+ * should be used only in simple cases - for more advanced functionality that can also
+ * provide the same shadow effect, see the {@link Ext.Layer} class.
  */
 Ext.define('Ext.Shadow', {
     requires: ['Ext.ShadowPool'],
@@ -88,12 +88,13 @@ Ext.define('Ext.Shadow', {
 
     /**
      * @cfg {String} mode
-     * The shadow display mode.  Supports the following options:<div class="mdetail-params"><ul>
-     * <li><b><tt>sides</tt></b> : Shadow displays on both sides and bottom only</li>
-     * <li><b><tt>frame</tt></b> : Shadow displays equally on all four sides</li>
-     * <li><b><tt>drop</tt></b> : Traditional bottom-right drop shadow</li>
-     * </ul></div>
+     * The shadow display mode.  Supports the following options:
+     *
+     * - sides : Shadow displays on both sides and bottom only</li>
+     * - frame : Shadow displays equally on all four sides</li>
+     * - drop : Traditional bottom-right drop shadow</li>
      */
+
     /**
      * @cfg {Number} offset
      * The number of pixels to offset the shadow from the element

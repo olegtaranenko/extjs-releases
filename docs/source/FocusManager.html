@@ -15,31 +15,28 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext-focus-FocusManager'>/**
+  <pre class="prettyprint lang-js"><span id='Ext-FocusManager'>/**
 </span> * The FocusManager is responsible for globally:
  *
  * 1. Managing component focus
  * 2. Providing basic keyboard navigation
  * 3. (optional) Provide a visual cue for focused components, in the form of a focus ring/frame.
  *
- * To activate the FocusManager, simply call `Ext.focus.FocusManager.enable();`. In turn, you may
- * deactivate the FocusManager by subsequently calling `Ext.focus.FocusManager.disable();`.  The
+ * To activate the FocusManager, simply call `Ext.FocusManager.enable();`. In turn, you may
+ * deactivate the FocusManager by subsequently calling `Ext.FocusManager.disable();`.  The
  * FocusManager is disabled by default.
  *
- * To enable the optional focus frame, pass `true` or `{focusFrame: true}` to {@link #enable}.
+ * To enable the optional focus frame, pass `true` or `{focusFrame: true}` to {@link #method-enable}.
  *
  * Another feature of the FocusManager is to provide basic keyboard focus navigation scoped to any {@link Ext.container.Container}
- * that would like to have navigation between its child {@link Ext.Component}'s. The {@link Ext.container.Container} can simply
- * call {@link #subscribe Ext.focus.FocusManager.subscribe} to take advantage of this feature, and can at any time call
- * {@link #unsubscribe Ext.focus.FocusManager.unsubscribe} to turn the navigation off.
+ * that would like to have navigation between its child {@link Ext.Component}'s.
  *
- * @singleton
  * @author Jarred Nicholls &lt;jarred@sencha.com&gt;
  * @docauthor Jarred Nicholls &lt;jarred@sencha.com&gt;
  */
-Ext.define('Ext.focus.FocusManager', {
+Ext.define('Ext.FocusManager', {
     singleton: true,
-    alternateClassName: ['Ext.FocusMgr', 'Ext.FocusManager'],
+    alternateClassName: ['Ext.FocusMgr' ],
 
     mixins: {
         observable: 'Ext.util.Observable'
@@ -47,19 +44,20 @@ Ext.define('Ext.focus.FocusManager', {
 
     requires: [
         'Ext.AbstractComponent',
+        'Ext.Component',
         'Ext.ComponentManager',
         'Ext.ComponentQuery',
         'Ext.util.HashMap',
         'Ext.util.KeyNav'
     ],
 
-<span id='Ext-focus-FocusManager-property-enabled'>    /**
+<span id='Ext-FocusManager-property-enabled'>    /**
 </span>     * @property {Boolean} enabled
      * Whether or not the FocusManager is currently enabled
      */
     enabled: false,
 
-<span id='Ext-focus-FocusManager-property-focusedCmp'>    /**
+<span id='Ext-FocusManager-property-focusedCmp'>    /**
 </span>     * @property {Ext.Component} focusedCmp
      * The currently focused component.
      */
@@ -68,7 +66,7 @@ Ext.define('Ext.focus.FocusManager', {
 
     focusFrameCls: Ext.baseCSSPrefix + 'focus-frame',
 
-<span id='Ext-focus-FocusManager-property-whitelist'>    /**
+<span id='Ext-FocusManager-property-whitelist'>    /**
 </span>     * @property {String[]} whitelist
      * A list of xtypes that should ignore certain navigation input keys and
      * allow for the default browser event/behavior. These input keys include:
@@ -88,108 +86,80 @@ Ext.define('Ext.focus.FocusManager', {
         'textfield'
     ],
 
-<span id='Ext-focus-FocusManager-property-tabIndexWhitelist'>    /**
-</span>     * @private
-     * A list of tagNames which do not need a tabIndex attribute set to be able to receive focus. Component's focusEls,
-     * when they are tagNames other than these, get a tabIndex of -1 poked into them.
-     * If given a value of &quot;-1&quot;, the element can't be tabbed to but focus can be given to the element programmatically (using element.focus()).
-     * See http://snook.ca/archives/accessibility_and_usability/elements_focusable_with_tabindex
-     */
-    tabIndexWhitelist: [
-        'a',
-        'button',
-        'embed',
-        'frame',
-        'iframe',
-        'img',
-        'input',
-        'object',
-        'select',
-        'textarea'
-    ],
-
-    needsTabIndex: function(n) {
-        var dom = Ext.getDom(n);
-
-        // If the element is not naturally focusable, and its tabIndex &lt;= 0 (An unspecififed tabIndex returns the value -1), then it needs a tabIndex to make it focusable.
-        return dom.tagName &amp;&amp; !Ext.Array.contains(this.tabIndexWhitelist, dom.tagName.toLowerCase())
-            &amp;&amp; dom.tabIndex &lt;= 0;
-    },
-
     constructor: function() {
         var me = this,
             CQ = Ext.ComponentQuery;
 
         me.addEvents(
-<span id='Ext-focus-FocusManager-event-beforecomponentfocus'>            /**
+<span id='Ext-FocusManager-event-beforecomponentfocus'>            /**
 </span>             * @event beforecomponentfocus
              * Fires before a component becomes focused. Return `false` to prevent
              * the component from gaining focus.
-             * @param {Ext.focus.FocusManager} fm A reference to the FocusManager singleton
+             * @param {Ext.FocusManager} fm A reference to the FocusManager singleton
              * @param {Ext.Component} cmp The component that is being focused
              * @param {Ext.Component} previousCmp The component that was previously focused,
              * or `undefined` if there was no previously focused component.
              */
             'beforecomponentfocus',
 
-<span id='Ext-focus-FocusManager-event-componentfocus'>            /**
+<span id='Ext-FocusManager-event-componentfocus'>            /**
 </span>             * @event componentfocus
              * Fires after a component becomes focused.
-             * @param {Ext.focus.FocusManager} fm A reference to the FocusManager singleton
+             * @param {Ext.FocusManager} fm A reference to the FocusManager singleton
              * @param {Ext.Component} cmp The component that has been focused
              * @param {Ext.Component} previousCmp The component that was previously focused,
              * or `undefined` if there was no previously focused component.
              */
             'componentfocus',
 
-<span id='Ext-focus-FocusManager-event-disable'>            /**
+<span id='Ext-FocusManager-event-disable'>            /**
 </span>             * @event disable
              * Fires when the FocusManager is disabled
-             * @param {Ext.focus.FocusManager} fm A reference to the FocusManager singleton
+             * @param {Ext.FocusManager} fm A reference to the FocusManager singleton
              */
             'disable',
 
-<span id='Ext-focus-FocusManager-event-enable'>            /**
+<span id='Ext-FocusManager-event-enable'>            /**
 </span>             * @event enable
              * Fires when the FocusManager is enabled
-             * @param {Ext.focus.FocusManager} fm A reference to the FocusManager singleton
+             * @param {Ext.FocusManager} fm A reference to the FocusManager singleton
              */
             'enable'
         );
 
-        // Buffer focus handling so components can do a layout/positioning
-        // and give us an ability to buffer focuses
-        me.self.prototype.handleComponentFocus = Ext.Function.createBuffered(me.self.prototype.handleComponentFocus, 10);
+        me.focusTask = new Ext.util.DelayedTask(me.handleComponentFocus, me);
 
 
         // Gain control on Component focus, blur, hide and destroy
         Ext.override(Ext.AbstractComponent, {
             onFocus: function() {
-                this.callOverridden(arguments);
+                this.callParent(arguments);
                 if (me.enabled &amp;&amp; this.hasFocus) {
                     Array.prototype.unshift.call(arguments, this);
                     me.onComponentFocus.apply(me, arguments);
                 }
             },
             onBlur: function() {
-                this.callOverridden(arguments);
+                this.callParent(arguments);
                 if (me.enabled &amp;&amp; !this.hasFocus) {
                     Array.prototype.unshift.call(arguments, this);
                     me.onComponentBlur.apply(me, arguments);
                 }
             },
-            afterHide: function() {
-                this.callOverridden(arguments);
-                if (me.enabled) {
-                    Array.prototype.unshift.call(arguments, this);
-                    me.onComponentHide.apply(me, arguments);
-                }
-            },
             onDestroy: function() {
-                this.callOverridden(arguments);
+                this.callParent(arguments);
                 if (me.enabled) {
                     Array.prototype.unshift.call(arguments, this);
                     me.onComponentDestroy.apply(me, arguments);
+                }
+            }
+        });
+        Ext.override(Ext.Component, {
+            afterHide: function() {
+                this.callParent(arguments);
+                if (me.enabled) {
+                    Array.prototype.unshift.call(arguments, this);
+                    me.onComponentHide.apply(me, arguments);
                 }
             }
         });
@@ -202,14 +172,13 @@ Ext.define('Ext.focus.FocusManager', {
             backspace: me.focusLast,
             enter: me.navigateIn,
             esc: me.navigateOut,
-            tab: me.navigateSiblings
-
-            //space: me.navigateIn,
-            //del: me.focusLast,
-            //left: me.navigateSiblings,
-            //right: me.navigateSiblings,
-            //down: me.navigateSiblings,
-            //up: me.navigateSiblings
+            tab: me.navigateSiblings,
+            space: me.navigateIn,
+            del: me.focusLast,
+            left: me.navigateSiblings,
+            right: me.navigateSiblings,
+            down: me.navigateSiblings,
+            up: me.navigateSiblings
         });
 
         me.focusData = {};
@@ -234,26 +203,30 @@ Ext.define('Ext.focus.FocusManager', {
                 return results;
             },
 
+            // Return the single next focusable sibling from the current idx in either direction (step -1 or 1)
             nextFocus: function(cmps, idx, step) {
                 step = step || 1;
                 idx = parseInt(idx, 10);
 
                 var len = cmps.length,
-                    i = idx + step,
-                    c;
+                    i = idx, c;
 
-                for (; i != idx; i += step) {
-                    if (i &gt;= len) {
+                for (;;) {
+                    // Increment index, and loop round if off either end
+                    if ((i += step) &gt;= len) {
                         i = 0;
                     } else if (i &lt; 0) {
                         i = len - 1;
                     }
 
-                    c = cmps[i];
-                    if (c.isFocusable()) {
+                    // As soon as we loop back to the starting index, give up, there are no focusable siblings.
+                    if (i === idx) {
+                        return [];
+                    }
+
+                    // If we have found a focusable sibling, return it
+                    if ((c = cmps[i]).isFocusable()) {
                         return [c];
-                    } else if (c.placeholder &amp;&amp; c.placeholder.isFocusable()) {
-                        return [c.placeholder];
                     }
                 }
 
@@ -282,7 +255,7 @@ Ext.define('Ext.focus.FocusManager', {
         });
     },
 
-<span id='Ext-focus-FocusManager-method-addXTypeToWhitelist'>    /**
+<span id='Ext-FocusManager-method-addXTypeToWhitelist'>    /**
 </span>     * Adds the specified xtype to the {@link #whitelist}.
      * @param {String/String[]} xtype Adds the xtype(s) to the {@link #whitelist}.
      */
@@ -306,7 +279,7 @@ Ext.define('Ext.focus.FocusManager', {
         }
     },
 
-<span id='Ext-focus-FocusManager-method-disable'>    /**
+<span id='Ext-FocusManager-method-disable'>    /**
 </span>     * Disables the FocusManager by turning of all automatic focus management and keyboard navigation
      */
     disable: function() {
@@ -327,13 +300,11 @@ Ext.define('Ext.focus.FocusManager', {
         me.fireEvent('disable', me);
     },
 
-<span id='Ext-focus-FocusManager-method-enable'>    /**
+<span id='Ext-FocusManager-method-enable'>    /**
 </span>     * Enables the FocusManager by turning on all automatic focus management and keyboard navigation
      * @param {Boolean/Object} options Either `true`/`false` to turn on the focus frame, or an object
      * with the following options:
-     *
-     * - focusFrame : Boolean
-     *   `true` to show the focus frame around a component when it is focused. Defaults to `false`.
+     * @param {Boolean} [focusFrame=false] `true` to show the focus frame around a component when it is focused.
      */
     enable: function(options) {
         var me = this;
@@ -347,6 +318,8 @@ Ext.define('Ext.focus.FocusManager', {
             return;
         }
 
+        // When calling addFocusListener on Containers, the FocusManager must be enabled, otherwise it won't do it.
+        me.enabled = true;
         me.initDOM(options);
 
         // Start handling key navigation
@@ -356,7 +329,6 @@ Ext.define('Ext.focus.FocusManager', {
         me.focusEl.focus();
         delete me.focusedCmp;
 
-        me.enabled = true;
         me.fireEvent('enable', me);
     },
 
@@ -390,21 +362,25 @@ Ext.define('Ext.focus.FocusManager', {
 
     initDOM: function(options) {
         var me = this,
-            sp = '&amp;#160',
-            cls = me.focusFrameCls;
+            cls = me.focusFrameCls,
+            needListeners = Ext.ComponentQuery.query('{getFocusEl()}:not([focusListenerAdded])'),
+            i = 0, len = needListeners.length;
 
         if (!Ext.isReady) {
-            Ext.onReady(me.initDOM, me);
-            return;
+            return Ext.onReady(me.initDOM, me);
         }
 
-        // Create global focus element
+        // When we are enabled, we must ensure that all Components which return a focusEl that is *not naturally focusable*
+        // have focus/blur listeners enabled to then trigger onFocus/onBlur handling so that we get to know about their focus action.
+        // These listeners are not added at initialization unless the FocusManager is enabled at that time.
+        for (; i &lt; len; i++) {
+            needListeners[i].addFocusListener();
+        }
+
+        // Make the document body the global focus element
         if (!me.focusEl) {
-            me.focusEl = Ext.getBody().createChild({
-                tabIndex: '-1',
-                cls: me.focusElementCls,
-                html: sp
-            });
+            me.focusEl = Ext.getBody()
+            me.focusEl.dom.tabIndex = -1;
         }
 
         // Create global focus frame
@@ -434,19 +410,23 @@ Ext.define('Ext.focus.FocusManager', {
     navigateIn: function(e) {
         var me = this,
             focusedCmp = me.focusedCmp,
-            rootCmps,
+            defaultRoot,
             firstChild;
 
         if (!focusedCmp) {
             // No focus yet, so focus the first root cmp on the page
-            rootCmps = me.getRootComponents();
-            if (rootCmps.length) {
-                rootCmps[0].focus();
+            if (defaultRoot = me.getRootComponents()[0]) {
+                // If the default root is based upon the body, then it will already be focused, and will not fire a focus event to
+                // trigger its own onFocus processing, so we have to programatically blur it first.
+                if (defaultRoot.getFocusEl() === me.focusEl) {
+                    me.focusEl.blur();
+                }
+                defaultRoot.focus();
             }
         } else {
             // Drill into child ref items of the focused cmp, if applicable.
             // This works for any Component with a getRefItems implementation.
-            firstChild = Ext.ComponentQuery.query('&gt;:focusable', focusedCmp)[0];
+            firstChild = focusedCmp.hasFocus ? Ext.ComponentQuery.query('&gt;:focusable', focusedCmp)[0] : focusedCmp;
             if (firstChild) {
                 firstChild.focus();
             } else {
@@ -454,7 +434,11 @@ Ext.define('Ext.focus.FocusManager', {
                 if (Ext.isFunction(focusedCmp.onClick)) {
                     e.button = 0;
                     focusedCmp.onClick(e);
-                    focusedCmp.focus();
+                    if (focusedCmp.isVisible(true)) {
+                        focusedCmp.focus();
+                    } else {
+                        me.navigateOut();
+                    }
                 }
             }
         }
@@ -484,21 +468,32 @@ Ext.define('Ext.focus.FocusManager', {
             goBack = e.shiftKey || key == EO.LEFT || key == EO.UP,
             checkWhitelist = key == EO.LEFT || key == EO.RIGHT || key == EO.UP || key == EO.DOWN,
             nextSelector = goBack ? 'prev' : 'next',
-            idx, next, focusedCmp;
+            idx, next, focusedCmp, siblings;
 
         focusedCmp = (src.focusedCmp &amp;&amp; src.focusedCmp.comp) || src.focusedCmp;
         if (!focusedCmp &amp;&amp; !parent) {
-            return;
+            return true;
         }
 
         if (checkWhitelist &amp;&amp; me.isWhitelisted(focusedCmp)) {
             return true;
         }
 
-        parent = parent || focusedCmp.up();
-        if (parent) {
-            idx = focusedCmp ? Ext.Array.indexOf(parent.getRefItems(), focusedCmp) : -1;
-            next = Ext.ComponentQuery.query('&gt;:' + nextSelector + 'Focus(' + idx + ')', parent)[0];
+        // If no focused Component, or a root level one was focused, then siblings are root components.
+        if (!focusedCmp || focusedCmp.is(':root')) {
+            siblings = me.getRootComponents();
+        }
+
+        // Else if the focused component has a parent, get siblings from there
+        else if (parent = parent || focusedCmp.up()) {
+            siblings =  parent.getRefItems();
+        }
+
+
+        // Navigate if we have found siblings.
+        if (siblings) {
+            idx = focusedCmp ? Ext.Array.indexOf(siblings, focusedCmp) : -1;
+            next = Ext.ComponentQuery.query(':' + nextSelector + 'Focus(' + idx + ')', siblings)[0];
             if (next &amp;&amp; focusedCmp !== next) {
                 next.focus();
                 return next;
@@ -546,13 +541,16 @@ Ext.define('Ext.focus.FocusManager', {
 
             return;
         }
-
         // Clear our focus chain when we have a focusable component
         me.focusChain = {};
-        me.handleComponentFocus.apply(me, arguments);
+
+        // Capture the focusEl to frame now.
+        // Button returns its encapsulating element during the focus phase
+        // So that element gets styled and framed.
+        me.focusTask.delay(10, null, null, [cmp, cmp.getFocusEl()]);
     },
 
-    handleComponentFocus: function(cmp, e) {
+    handleComponentFocus: function(cmp, focusEl) {
         var me = this;
 
         if (me.fireEvent('beforecomponentfocus', me, cmp, me.previousFocusedCmp) === false) {
@@ -567,7 +565,7 @@ Ext.define('Ext.focus.FocusManager', {
             var cls = '.' + me.focusFrameCls + '-',
                 ff = me.focusFrame,
                 fw = me.focusFrameWidth,
-                box = cmp.getFocusEl().getPageBox(),
+                box = focusEl.getPageBox(),
 
             // Size the focus frame's t/b/l/r according to the box
             // This leaves a hole in the middle of the frame so user
@@ -595,27 +593,22 @@ Ext.define('Ext.focus.FocusManager', {
     onComponentHide: function(cmp) {
         var me = this,
             cmpHadFocus = false,
-            focusedCmp,
+            focusedCmp = me.focusedCmp,
             parent;
 
-        if (me.focusedCmp) {
+        if (focusedCmp) {
             // See if the Component being hidden was the focused Component, or owns the focused Component
             // In these cases, focus needs to be removed from the focused Component to the nearest focusable ancestor
-            cmpHadFocus = (cmp === me.focusedCmp) || (cmp.isContainer &amp;&amp; cmp.isAncestor(me.focusedCmp));
-
-            if (focusedCmp) {
-                me.clearComponent(focusedCmp);
-            }
+            cmpHadFocus = cmp.hasFocus || (cmp.isContainer &amp;&amp; cmp.isAncestor(me.focusedCmp));
         }
 
         me.clearComponent(cmp);
 
-        // Move focus onto the nearest focusable ancestor
-        if (cmpHadFocus) {
-            parent = cmp.up(':focusable');
-            if (parent) {
-                parent.focus();
-            }
+        // Move focus onto the nearest focusable ancestor, or this is there is none
+        if (cmpHadFocus &amp;&amp; (parent = cmp.up(':focusable'))) {
+            parent.focus();
+        } else {
+            me.focusEl.focus();
         }
     },
 
@@ -633,7 +626,6 @@ Ext.define('Ext.focus.FocusManager', {
         }
 
         Ext.destroy(
-            me.focusEl,
             me.focusFrame
         );
         delete me.focusEl;
@@ -641,7 +633,7 @@ Ext.define('Ext.focus.FocusManager', {
         delete me.focusFrameWidth;
     },
 
-<span id='Ext-focus-FocusManager-method-removeXTypeFromWhitelist'>    /**
+<span id='Ext-FocusManager-method-removeXTypeFromWhitelist'>    /**
 </span>     * Removes the specified xtype from the {@link #whitelist}.
      * @param {String/String[]} xtype Removes the xtype(s) from the {@link #whitelist}.
      */
@@ -702,8 +694,7 @@ Ext.define('Ext.focus.FocusManager', {
         // Do not show a focus frame if
         // 1. We are configured not to.
         // 2. No Component was passed
-        // 3. The Component's focusEl is naturally focusable
-        if (!me.focusFrame || !cmp || (cmpFocusElTag &amp;&amp; Ext.Array.contains(me.tabIndexWhitelist, cmpFocusElTag.toLowerCase()))) {
+        if (!me.focusFrame || !cmp) {
             return false;
         }
 

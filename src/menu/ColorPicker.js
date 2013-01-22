@@ -56,7 +56,7 @@
 
     /**
      * @cfg {Number} maxHeight
-     * Not applicable for ColorPicker.
+     * @private
      */
 
     /**
@@ -66,7 +66,7 @@
 
     /**
      * @event click
-     * Not applicable for ColorPicker.
+     * @private
      */
 
     initComponent : function(){
@@ -91,7 +91,7 @@
 
         /**
          * @event select
-         * @alias Ext.picker.Color#select
+         * @inheritdoc Ext.picker.Color#select
          */
         me.relayEvents(me.picker, ['select']);
 

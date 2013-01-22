@@ -93,20 +93,30 @@ Ext.define('Ext.form.field.Base', {
      * The content of the field body is defined by this config option.
      */
     fieldSubTpl: [ // note: {id} here is really {inputId}, but {cmpId} is available
-        '<input id="{id}" type="{type}"',
+        '<input id="{id}" type="{type}" {inputAttrTpl}',
+            ' size="1"', // allows inputs to fully respect CSS widths across all browsers
             '<tpl if="name"> name="{name}"</tpl>',
             '<tpl if="value"> value="{value}"</tpl>',
             '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
-            '<tpl if="size"> size="{size}"</tpl>',
             '<tpl if="maxLength !== undefined"> maxlength="{maxLength}"</tpl>',
             '<tpl if="readOnly"> readonly="readonly"</tpl>',
             '<tpl if="disabled"> disabled="disabled"</tpl>',
             '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
             '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
-        ' class="{fieldCls} {typeCls}" autocomplete="off"/>',
+        ' class="{fieldCls} {typeCls} {editableCls}" autocomplete="off"/>',
         {
             disableFormats: true
         }
+    ],
+
+    subTplInsertions: [
+        /**
+         * @cfg {String/Array/Ext.XTemplate} inputAttrTpl
+         * An optional string or `XTemplate` configuration to insert in the field markup
+         * inside the input element (as attributes). If an `XTemplate` is used, the component's
+         * {@link #getSubTplData subTpl data} serves as the context.
+         */
+        'inputAttrTpl'
     ],
 
     /**
@@ -138,7 +148,9 @@ Ext.define('Ext.form.field.Base', {
      * @cfg {String} invalidText
      * The error text to use when marking a field invalid and no message is provided
      */
+    //<locale>
     invalidText : 'The value in this field is invalid',
+    //</locale>
 
     /**
      * @cfg {String} [fieldCls='x-form-field']
@@ -315,7 +327,8 @@ Ext.define('Ext.form.field.Base', {
         var me = this,
             type = me.inputType,
             inputId = me.getInputId(),
-            cls = [];
+            cls = [],
+            data;
 
         if (me.cls) {
             cls.push(me.cls);
@@ -324,7 +337,7 @@ Ext.define('Ext.form.field.Base', {
             cls.push(me.readOnlyCls);
         }
         
-        return Ext.applyIf(me.subTplData, {
+        data = Ext.apply({
             id         : inputId,
             cmpId      : me.id,
             name       : me.name || inputId,
@@ -332,13 +345,16 @@ Ext.define('Ext.form.field.Base', {
             readOnly   : false,
             value      : me.getRawValue(),
             type       : type,
-            size       : me.size || 20,
             cls        : cls.join(' '),
             fieldCls   : me.fieldCls,
-            fieldStyle : me.fieldStyle,
+            fieldStyle : me.getFieldStyle(),
             tabIdx     : me.tabIndex,
             typeCls    : Ext.baseCSSPrefix + 'form-' + (type === 'password' ? 'text' : type)
-        });
+        }, me.subTplData);
+
+        me.getInsertionRenderData(data, me.subTplInsertions);
+
+        return data;
     },
 
     afterFirstLayout: function() {
@@ -392,6 +408,10 @@ Ext.define('Ext.form.field.Base', {
             inputEl.applyStyles(style);
         }
         me.fieldStyle = style;
+    },
+
+    getFieldStyle: function() {
+        return 'width:100%;' + (Ext.isObject(this.fieldStyle) ? Ext.DomHelper.generateStyles(this.fieldStyle) : this.fieldStyle ||'');
     },
 
     // private
@@ -559,9 +579,15 @@ Ext.define('Ext.form.field.Base', {
     onDisable: function() {
         var me = this,
             inputEl = me.inputEl;
+            
         me.callParent();
         if (inputEl) {
             inputEl.dom.disabled = true;
+            if (me.hasActiveError()) {
+                // clear invalid state since the field is now disabled
+                me.clearInvalid();
+                me.needsValidateOnEnable = true;
+            }
         }
     },
 
@@ -569,9 +595,17 @@ Ext.define('Ext.form.field.Base', {
     onEnable: function() {
         var me = this,
             inputEl = me.inputEl;
+            
         me.callParent();
         if (inputEl) {
             inputEl.dom.disabled = false;
+            if (me.needsValidateOnEnable) {
+                delete me.needsValidateOnEnable;
+                // will trigger errors to be shown
+                me.forceValidation = true;
+                me.isValid();
+                delete me.forceValidation;
+            }
         }
     },
 
@@ -664,8 +698,12 @@ Ext.define('Ext.form.field.Base', {
      * @return {Boolean} True if the value is valid, else false
      */
     isValid : function() {
-        var me = this;
-        return me.disabled || me.validateValue(me.processRawValue(me.getRawValue()));
+        var me = this,
+            disabled = me.disabled,
+            validate = me.forceValidation || !disabled;
+            
+        
+        return validate ? me.validateValue(me.processRawValue(me.getRawValue())) : disabled;
     },
 
 

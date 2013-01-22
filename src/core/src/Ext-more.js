@@ -75,10 +75,7 @@ Ext.apply(Ext, {
         }
         if (!el.id) {
             if (me.isSandboxed) {
-                if (!me.uniqueGlobalNamespace) {
-                    me.getUniqueGlobalNamespace();
-                }
-                sandboxPrefix = me.uniqueGlobalNamespace + '-';
+                sandboxPrefix = Ext.sandboxName.toLowerCase() + '-';
             }
             el.id = sandboxPrefix + (prefix || "ext-gen") + (++Ext.idSeed);
         }
@@ -196,7 +193,7 @@ Ext.apply(Ext, {
 
     /**
      * Alias for {@link Ext.String#htmlEncode}.
-     * @alias Ext.String#htmlEncode
+     * @inheritdoc Ext.String#htmlEncode
      */
     htmlEncode : function(value) {
         return Ext.String.htmlEncode(value);
@@ -204,7 +201,7 @@ Ext.apply(Ext, {
 
     /**
      * Alias for {@link Ext.String#htmlDecode}.
-     * @alias Ext.String#htmlDecode
+     * @inheritdoc Ext.String#htmlDecode
      */
     htmlDecode : function(value) {
          return Ext.String.htmlDecode(value);
@@ -212,7 +209,7 @@ Ext.apply(Ext, {
 
     /**
      * Alias for {@link Ext.String#urlAppend}.
-     * @alias Ext.String#urlAppend
+     * @inheritdoc Ext.String#urlAppend
      */
     urlAppend : function(url, s) {
         return Ext.String.urlAppend(url, s);
@@ -264,9 +261,9 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
         isSafari4 = isSafari && check(/version\/4/),
         isSafari5 = isSafari && check(/version\/5/),
         isIE = !isOpera && check(/msie/),
-        isIE7 = isIE && (check(/msie 7/) || docMode == 7),
-        isIE8 = isIE && (check(/msie 8/) && docMode != 7 && docMode != 9 || docMode == 8),
-        isIE9 = isIE && (check(/msie 9/) && docMode != 7 && docMode != 8 || docMode == 9),
+        isIE7 = isIE && ((check(/msie 7/) && docMode != 8 && docMode != 9) || docMode == 7),
+        isIE8 = isIE && ((check(/msie 8/) && docMode != 7 && docMode != 9) || docMode == 8),
+        isIE9 = isIE && ((check(/msie 9/) && docMode != 7 && docMode != 8) || docMode == 9),
         isIE6 = isIE && check(/msie 6/),
         isGecko = !isWebKit && check(/gecko/),
         isGecko3 = isGecko && check(/rv:1\.9/),
@@ -429,7 +426,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
     log.counters = { error: 0, warn: 0, info: 0, log: 0 };
     log.indentSize = 2;
     log.out = [];
-    log.max = 250;
+    log.max = 750;
     log.show = function () {
         window.open('','extlog').document.write([
             '<html><head><script type="text/javascript">',
@@ -439,7 +436,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
                         'extlog = ext && ext.log;',
                     'if (extlog && extlog.out && lastCount != extlog.count) {',
                         'lastCount = extlog.count;',
-                        'var s = "<tt>" + extlog.out.join("<br>").replace(/[ ]/g, "&nbsp;") + "</tt>";',
+                        'var s = "<tt>" + extlog.out.join("~~~").replace(/[&]/g, "&amp;").replace(/[<]/g, "&lt;").replace(/[ ]/g, "&nbsp;").replace(/\\~\\~\\~/g, "<br>") + "</tt>";',
                         'document.body.innerHTML = s;',
                     '}',
                     'setTimeout(update, 1000);',
@@ -460,7 +457,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * to prevent the IE insecure content warning (`'about:blank'`, except for IE
          * in secure mode, which is `'javascript:""'`).
          */
-        SSL_SECURE_URL : isSecure && isIE ? 'javascript:""' : 'about:blank',
+        SSL_SECURE_URL : isSecure && isIE ? 'javascript:\'\'' : 'about:blank',
 
         /**
          * @property {Boolean} enableFx
@@ -865,29 +862,34 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * Returns the size of the browser scrollbars. This can differ depending on
          * operating system settings, such as the theme or font size.
          * @param {Boolean} [force] true to force a recalculation of the value.
-         * @return {Object} An object containing the width of a vertical scrollbar and the
-         * height of a horizontal scrollbar.
+         * @return {Object} An object containing scrollbar sizes.
+         * @return.width {Number} The width of the vertical scrollbar.
+         * @return.height {Number} The height of the horizontal scrollbar.
          */
         getScrollbarSize: function (force) {
             if (!Ext.isReady) {
-                return 0;
+                return {};
             }
 
-            if (force === true || scrollbarSize === null) {
+            if (force || !scrollbarSize) {
                 var db = document.body,
-                    div = document.createElement('div'),
-                    width;
+                    div = document.createElement('div');
 
                 div.style.width = div.style.height = '100px';
                 div.style.overflow = 'scroll';
                 div.style.position = 'absolute';
-                db.appendChild(div);
-                width = 100 - div.clientWidth;
-                db.removeChild(div);
 
-                // We assume width == height for now. TODO: is this always true?
-                scrollbarSize = { width: width, height: width };
+                db.appendChild(div); // now we can measure the div...
+
+                // at least in iE9 the div is not 100px - the scrollbar size is removed!
+                scrollbarSize = {
+                    width: div.offsetWidth - div.clientWidth,
+                    height: div.offsetHeight - div.clientHeight
+                };
+
+                db.removeChild(div);
             }
+
             return scrollbarSize;
         },
 

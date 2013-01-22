@@ -3,7 +3,7 @@
  * available default to a standard 40-color palette; this can be customized with the {@link #colors} config.
  *
  * Typically you will need to implement a handler function to be notified when the user chooses a color from the picker;
- * you can register the handler using the {@link #select} event, or by implementing the {@link #handler} method.
+ * you can register the handler using the {@link #event-select} event, or by implementing the {@link #handler} method.
  *
  *     @example
  *     Ext.create('Ext.picker.Color', {
@@ -49,7 +49,7 @@ Ext.define('Ext.picker.Color', {
 
     /**
      * @cfg {Boolean} allowReselect
-     * If set to true then reselecting a color that is already selected fires the {@link #select} event
+     * If set to true then reselecting a color that is already selected fires the {@link #event-select} event
      */
     allowReselect : false,
 
@@ -93,8 +93,9 @@ Ext.define('Ext.picker.Color', {
 
     /**
      * @cfg {Object} scope
-     * The scope (`this` reference) in which the `{@link #handler}` function will be called. Defaults to this
-     * Color picker instance.
+     * The scope (`this` reference) in which the `{@link #handler}` function will be called.
+     *
+     * Defaults to this Color picker instance.
      */
 
     colorRe: /(?:^|\s)color-(.{6})(?:\s|$)/,
@@ -176,9 +177,9 @@ Ext.define('Ext.picker.Color', {
     },
 
     /**
-     * Selects the specified color in the picker (fires the {@link #select} event)
+     * Selects the specified color in the picker (fires the {@link #event-select} event)
      * @param {String} color A valid 6-digit color hex code (# will be stripped if included)
-     * @param {Boolean} suppressEvent (optional) True to stop the select event from firing. Defaults to false.
+     * @param {Boolean} [suppressEvent=false] True to stop the select event from firing.
      */
     select : function(color, suppressEvent){
 

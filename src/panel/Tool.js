@@ -204,6 +204,10 @@ Ext.define('Ext.panel.Tool', {
         }
     },
 
+    getFocusEl: function() {
+        return this.el;
+    },
+
     /**
      * Sets the type of the tool. Allows the icon to be changed.
      * @param {String} type The new type. See the {@link #type} config.

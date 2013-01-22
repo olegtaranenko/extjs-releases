@@ -317,9 +317,8 @@ Element.override({
         return {width: this.getWidth(contentSize), height: this.getHeight(contentSize)};
     },
 
-/**
- * TODO: Look at this
- */
+    // TODO: Look at this
+
     // private  ==> used by Fx
     adjustWidth : function(width) {
         var me = this,
@@ -343,7 +342,7 @@ Element.override({
     },
 
     /**
-     * Return the CSS color for the specified CSS attribute. rgb, 3 digit (like #fff) and valid values
+     * Return the CSS color for the specified CSS attribute. rgb, 3 digit (like `#fff`) and valid values
      * are convert to standard 6 digit hex color.
      * @param {String} attr The css attribute
      * @param {String} defaultValue The default value to use when a valid color isn't found

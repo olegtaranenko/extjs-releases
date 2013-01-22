@@ -38,11 +38,10 @@ Ext.define('Ext.form.field.TextArea', {
     ],
 
     fieldSubTpl: [
-        '<textarea id="{id}"',
+        '<textarea id="{id}" {inputAttrTpl}',
             '<tpl if="name"> name="{name}"</tpl>',
             '<tpl if="rows"> rows="{rows}" </tpl>',
             '<tpl if="cols"> cols="{cols}" </tpl>',
-            '<tpl if="value"> value="{value}"</tpl>',
             '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
             '<tpl if="size"> size="{size}"</tpl>',
             '<tpl if="maxLength !== undefined"> maxlength="{maxLength}"</tpl>',
@@ -96,9 +95,8 @@ Ext.define('Ext.form.field.TextArea', {
 
     /**
      * @cfg {Boolean} enterIsSpecial
-     * True if you want the enter key to be classed as a special key. Special keys are generally navigation keys
-     * (arrows, space, enter). Setting the config property to true would mean that you could not insert returns into the
-     * textarea.
+     * True if you want the ENTER key to be classed as a special key and the {@link #specialkey} event to be fired
+     * when ENTER is pressed.
      */
     enterIsSpecial: false,
 
@@ -115,7 +113,7 @@ Ext.define('Ext.form.field.TextArea', {
     // private
     getSubTplData: function() {
         var me = this,
-            fieldStyle = me.fieldStyle,
+            fieldStyle = me.getFieldStyle(),
             ret = me.callParent();
 
         if (me.grow) {
@@ -192,7 +190,15 @@ Ext.define('Ext.form.field.TextArea', {
             me.doComponentLayout();
             height = me.inputEl.getHeight();
             if (height !== me.lastInputHeight) {
-                me.fireEvent('autosize', height);
+                /**
+                 * @event autosize
+                 * Fires when the {@link #autoSize} function is triggered and the field is resized according to
+                 * the grow/growMin/growMax configs as a result. This event provides a hook for the developer
+                 * to apply additional logic at runtime to resize the field if needed.
+                 * @param {Ext.form.field.Text} this
+                 * @param {Number} height
+                 */
+                me.fireEvent('autosize', me, height);
                 me.lastInputHeight = height;
             }
         }
@@ -202,16 +208,6 @@ Ext.define('Ext.form.field.TextArea', {
     initAria: function() {
         this.callParent(arguments);
         this.getActionEl().dom.setAttribute('aria-multiline', true);
-    },
-
-    /**
-     * To get the natural width of the textarea element, we do a simple calculation based on the 'cols' config.
-     * We use hard-coded numbers to approximate what browsers do natively, to avoid having to read any styles which
-     * would hurt performance. Overrides Labelable method.
-     * @protected
-     */
-    getBodyNaturalWidth: function() {
-        return Math.round(this.cols * 6.5) + 20;
     },
     
     beforeDestroy: function(){

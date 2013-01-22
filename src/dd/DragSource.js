@@ -1,5 +1,4 @@
 /**
- * @class Ext.dd.DragSource
  * A simple class that provides the basic implementation needed to make any element draggable.
  */
 Ext.define('Ext.dd.DragSource', {
@@ -16,12 +15,12 @@ Ext.define('Ext.dd.DragSource', {
      */
 
     /**
-     * @cfg {String} [dropAllowed="x-dd-drop-ok"]
+     * @cfg {String} dropAllowed
      * The CSS class returned to the drag source when drop is allowed.
      */
     dropAllowed : Ext.baseCSSPrefix + 'dd-drop-ok',
     /**
-     * @cfg {String} [dropNotAllowed="x-dd-drop-nodrop"]
+     * @cfg {String} dropNotAllowed
      * The CSS class returned to the drag source when drop is not allowed.
      */
     dropNotAllowed : Ext.baseCSSPrefix + 'dd-drop-nodrop',
@@ -42,7 +41,6 @@ Ext.define('Ext.dd.DragSource', {
 
     /**
      * Creates new drag-source.
-     * @constructor
      * @param {String/HTMLElement/Ext.Element} el The container element or ID of it.
      * @param {Object} config (optional) Config object.
      */
@@ -110,12 +108,6 @@ Ext.define('Ext.dd.DragSource', {
      */
     beforeDragEnter: function(target, e, id) {
         return true;
-    },
-
-    // private
-    alignElWithMouse: function() {
-        this.callParent(arguments);
-        this.proxy.sync();
     },
 
     // private

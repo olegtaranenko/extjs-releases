@@ -13,26 +13,34 @@
     <link rel="stylesheet" href="resources/css/welcome_ie6.css" type="text/css" />
   <![endif]-->
 
-  <script type="text/javascript" src="http://use.typekit.com/uxj6dew.js"></script>
-  <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+  <!-- Async script to not block while loading TypeKit fonts -->
   <script type="text/javascript">
-    Docs = {
-        localStorageDb: "ext-4",
-        showPrintButton: false,
-        touchExamplesUi: false
+  (function() {
+    var TypekitConfig = {
+      kitId: 'uxj6dew'
     };
+    var tk = document.createElement('script');
+    tk.src = '//use.typekit.com/' + TypekitConfig.kitId + '.js';
+    tk.type = 'text/javascript';
+    tk.async = 'true';
+    tk.onload = tk.onreadystatechange = function() {
+      var rs = this.readyState;
+      if (rs && rs != 'complete' && rs != 'loaded') return;
+      try { Typekit.load(TypekitConfig); } catch (e) {}
+    };
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(tk, s);
+  })();
   </script>
+
   <script type="text/javascript" src="extjs/ext-all.js"></script>
+  <script type="text/javascript" src="data.js"></script>
   <script type="text/javascript" src="app.js"></script>
   <script type="text/javascript" src="resources/prettify/prettify.js"></script>
-  <script type="text/javascript" src="data.js"></script>
 
-          <script type="text/javascript">
-          Docs.exampleBaseUrl = "../examples/";
-        </script>
+  <link rel='canonical' href='http://docs.sencha.com/ext-js/4-1/' /><meta name='description' content='Ext JS 4.1 API Documentation from Sencha. Class documentation, Guides and Videos on how to create Javascript applications with Ext JS 4' />
 
-
-</head>
+<script type="text/javascript">Docs.exampleBaseUrl = "../examples/";</script></head>
 <body id="ext-body">
 
   <div id="loading"><span class="title"></span><span class="logo"></span></div>
@@ -51,9 +59,8 @@
     <section>
         <div class="auto_columns two">
             <div class="column">
-                <h2>Welcome to <strong>Ext JS 4</strong>!</h2>
-                <p class="intro">Ext JS 4 is a pure JavaScript application framework that works everywhere from IE6 to Chrome 11. It enables you to create the best cross-platform applications using nothing but a browser, and has a phenomenal API.</p>
-                <p class="intro">This is the biggest upgrade we've ever made to Ext JS and we think you're going to love it.</p>
+                <h2>Welcome to <strong>Ext JS 4.1 Beta</strong>!</h2>
+                <p class="intro">Ext JS 4.1 is a pure JavaScript application framework that works everywhere from IE6 to Chrome 16. It enables you to create the best cross-platform applications using nothing but a browser, and has a phenomenal API.</p>
                 <p class="button-group">
                     <a href="#!/example" class="button-link">View the Examples</a>
                     <a href="http://www.sencha.com/forum/forumdisplay.php?79-Ext-JS-Community-Forums-4.x" class="more-icon">Discuss Ext JS 4 on the forum</a>
@@ -64,12 +71,13 @@
                 <div class="auto_columns two right">
                     <div class="column">
                         <h3>What&rsquo;s New</h3>
-                        <p>We have also been posting summaries of new features and changes to <a href="http://www.sencha.com/blog/">our blog</a>:</p>
+                        <p>We have also been posting summaries of new features and changes to <a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">our blog</a>:</p>
                         <ul class="type13">
-                            <li><a href="#!/guide/drawing_and_charting">Drawing &amp; Charting</a></li>
-                            <li><a href="http://www.sencha.com/blog/ext-js-4-anatomy-of-a-model/">Anatomy of a Model</a></li>
-                            <li><a href="#!/guide/data">Data Package</a></li>
-                            <li><a href="http://www.sencha.com/blog/countdown-to-ext-js-4-dynamic-loading-and-new-class-system/">Dynamic Loading and the New Class System</a></li>
+                             <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Performance enhancement over 4.0</a></li>
+                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Grid</a></li>
+                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Border Layout</a></li>
+                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">XTemplate</a></li>
+                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Overrides</a></li>
                         </ul>
                         <p><a href="http://www.sencha.com/products/extjs4-preview/" class="more-icon">Learn more on sencha.com</a></p>
                         <p><a href="#!/api" class="more-icon">API Docs</a></p>
@@ -90,6 +98,7 @@
 <div class="news">
     <div class="l">
         <h1>SDK Updates</h1>
+        <div class="item"><span class="date">Dec 23</span> Ext 4.1.0 Beta 1 Released</div>
         <div class="item"><span class="date">Oct 19</span> Ext 4.0.7 Released</div>
         <div class="item"><span class="date">Aug 30</span> Ext 4.0.6 Released (support subscribers only)</div>
         <div class="item"><span class="date">Jul 24</span> Ext 4.0.5 Released (support subscribers only)</div>
@@ -119,9 +128,9 @@
 </div>
 </div>
           <div id='categories-content' style='display:none'>
-            <div class='section classes'>
+            <div class='section'>
 <h1>Base</h1>
-<div class='lft'>
+<div class='left-column'>
 <h3>Class System</h3>
 <div class='links'>
 <a href="#!/api/Ext" rel="Ext" class="docClass">Ext</a>
@@ -133,13 +142,10 @@
 <a href="#!/api/Ext.PluginManager" rel="Ext.PluginManager" class="docClass">Ext.PluginManager</a>
 </div>
 </div>
-<div class='mid'>
+<div class='middle-column'>
 <h3>Support</h3>
 <div class='links'>
 <a href="#!/api/Ext.is" rel="Ext.is" class="docClass">Ext.is</a>
-<a href="#!/api/Ext.env.Browser" rel="Ext.env.Browser" class="docClass">Ext.env.Browser</a>
-<a href="#!/api/Ext.env.FeatureDetector" rel="Ext.env.FeatureDetector" class="docClass">Ext.env.FeatureDetector</a>
-<a href="#!/api/Ext.env.OS" rel="Ext.env.OS" class="docClass">Ext.env.OS</a>
 <a href="#!/api/Ext.supports" rel="Ext.supports" class="docClass">Ext.supports</a>
 <a href="#!/api/Ext.Version" rel="Ext.Version" class="docClass">Ext.Version</a>
 </div>
@@ -156,7 +162,7 @@
 <a href="#!/api/Ext.util.History" rel="Ext.util.History" class="docClass">Ext.util.History</a>
 </div>
 </div>
-<div class='rgt'>
+<div class='right-column'>
 <h3>DOM & Browser</h3>
 <div class='links'>
 <a href="#!/api/Ext.dom.CompositeElement" rel="Ext.dom.CompositeElement" class="docClass">Ext.dom.CompositeElement</a>
@@ -186,9 +192,9 @@
 </div>
 <div style='clear:both'></div>
 </div>
-<div class='section classes'>
+<div class='section'>
 <h1>View</h1>
-<div class='lft'>
+<div class='left-column'>
 <h3>Containers & Panels</h3>
 <div class='links'>
 <a href="#!/api/Ext.container.ButtonGroup" rel="Ext.container.ButtonGroup" class="docClass">Ext.container.ButtonGroup</a>
@@ -206,12 +212,14 @@
 <a href="#!/api/Ext.form.Panel" rel="Ext.form.Panel" class="docClass">Ext.form.Panel</a>
 </div>
 </div>
-<div class='mid'>
+<div class='middle-column'>
 <h3>Layouts</h3>
 <div class='links'>
 <a href="#!/api/Ext.layout.ClassList" rel="Ext.layout.ClassList" class="docClass">Ext.layout.ClassList</a>
+<a href="#!/api/Ext.layout.Context" rel="Ext.layout.Context" class="docClass">Ext.layout.Context</a>
 <a href="#!/api/Ext.layout.ContextItem" rel="Ext.layout.ContextItem" class="docClass">Ext.layout.ContextItem</a>
 <a href="#!/api/Ext.layout.Layout" rel="Ext.layout.Layout" class="docClass">Ext.layout.Layout</a>
+<a href="#!/api/Ext.layout.component.Auto" rel="Ext.layout.component.Auto" class="docClass">Ext.layout.component.Auto</a>
 <a href="#!/api/Ext.layout.container.Absolute" rel="Ext.layout.container.Absolute" class="docClass">Ext.layout.container.Absolute</a>
 <a href="#!/api/Ext.layout.container.Accordion" rel="Ext.layout.container.Accordion" class="docClass">Ext.layout.container.Accordion</a>
 <a href="#!/api/Ext.layout.container.Anchor" rel="Ext.layout.container.Anchor" class="docClass">Ext.layout.container.Anchor</a>
@@ -223,14 +231,13 @@
 <a href="#!/api/Ext.layout.container.Column" rel="Ext.layout.container.Column" class="docClass">Ext.layout.container.Column</a>
 <a href="#!/api/Ext.layout.container.Container" rel="Ext.layout.container.Container" class="docClass">Ext.layout.container.Container</a>
 <a href="#!/api/Ext.layout.container.Fit" rel="Ext.layout.container.Fit" class="docClass">Ext.layout.container.Fit</a>
+<a href="#!/api/Ext.layout.container.Form" rel="Ext.layout.container.Form" class="docClass">Ext.layout.container.Form</a>
 <a href="#!/api/Ext.layout.container.HBox" rel="Ext.layout.container.HBox" class="docClass">Ext.layout.container.HBox</a>
 <a href="#!/api/Ext.layout.container.Table" rel="Ext.layout.container.Table" class="docClass">Ext.layout.container.Table</a>
 <a href="#!/api/Ext.layout.container.VBox" rel="Ext.layout.container.VBox" class="docClass">Ext.layout.container.VBox</a>
-<a href="#!/api/Ext.diag.layout.Context" rel="Ext.diag.layout.Context" class="docClass">Ext.diag.layout.Context</a>
-<a href="#!/api/Ext.diag.layout.ContextItem" rel="Ext.diag.layout.ContextItem" class="docClass">Ext.diag.layout.ContextItem</a>
 </div>
 </div>
-<div class='rgt'>
+<div class='right-column'>
 <h3>Draw</h3>
 <div class='links'>
 <a href="#!/api/Ext.draw.Color" rel="Ext.draw.Color" class="docClass">Ext.draw.Color</a>
@@ -245,9 +252,9 @@
 </div>
 <div style='clear:both'></div>
 </div>
-<div class='section classes'>
+<div class='section'>
 <h1>Components</h1>
-<div class='lft'>
+<div class='left-column'>
 <h3>Components</h3>
 <div class='links'>
 <a href="#!/api/Ext.ComponentQuery" rel="Ext.ComponentQuery" class="docClass">Ext.ComponentQuery</a>
@@ -303,7 +310,7 @@
 <a href="#!/api/Ext.menu.Separator" rel="Ext.menu.Separator" class="docClass">Ext.menu.Separator</a>
 </div>
 </div>
-<div class='mid'>
+<div class='middle-column'>
 <h3>Form</h3>
 <div class='links'>
 <a href="#!/api/Ext.form.Basic" rel="Ext.form.Basic" class="docClass">Ext.form.Basic</a>
@@ -377,7 +384,7 @@
 <a href="#!/api/Ext.view.View" rel="Ext.view.View" class="docClass">Ext.view.View</a>
 </div>
 </div>
-<div class='rgt'>
+<div class='right-column'>
 <h3>Charts</h3>
 <div class='links'>
 <a href="#!/api/Ext.chart.Callout" rel="Ext.chart.Callout" class="docClass">Ext.chart.Callout</a>
@@ -430,7 +437,7 @@
 <a href="#!/api/Ext.ComponentLoader" rel="Ext.ComponentLoader" class="docClass">Ext.ComponentLoader</a>
 <a href="#!/api/Ext.ComponentManager" rel="Ext.ComponentManager" class="docClass">Ext.ComponentManager</a>
 <a href="#!/api/Ext.Editor" rel="Ext.Editor" class="docClass">Ext.Editor</a>
-<a href="#!/api/Ext.focus.FocusManager" rel="Ext.focus.FocusManager" class="docClass">Ext.focus.FocusManager</a>
+<a href="#!/api/Ext.FocusManager" rel="Ext.FocusManager" class="docClass">Ext.FocusManager</a>
 <a href="#!/api/Ext.Layer" rel="Ext.Layer" class="docClass">Ext.Layer</a>
 <a href="#!/api/Ext.resizer.Handle" rel="Ext.resizer.Handle" class="docClass">Ext.resizer.Handle</a>
 <a href="#!/api/Ext.resizer.Resizer" rel="Ext.resizer.Resizer" class="docClass">Ext.resizer.Resizer</a>
@@ -450,9 +457,9 @@
 </div>
 <div style='clear:both'></div>
 </div>
-<div class='section classes'>
+<div class='section'>
 <h1>Data</h1>
-<div class='lft'>
+<div class='left-column'>
 <h3>Data Models</h3>
 <div class='links'>
 <a href="#!/api/Ext.data.Model" rel="Ext.data.Model" class="docClass">Ext.data.Model</a>
@@ -470,7 +477,7 @@
 <a href="#!/api/Ext.data.UuidGenerator" rel="Ext.data.UuidGenerator" class="docClass">Ext.data.UuidGenerator</a>
 </div>
 </div>
-<div class='mid'>
+<div class='middle-column'>
 <h3>Data Readers & Writers</h3>
 <div class='links'>
 <a href="#!/api/Ext.data.reader.Array" rel="Ext.data.reader.Array" class="docClass">Ext.data.reader.Array</a>
@@ -498,7 +505,7 @@
 <a href="#!/api/Ext.data.ResultSet" rel="Ext.data.ResultSet" class="docClass">Ext.data.ResultSet</a>
 </div>
 </div>
-<div class='rgt'>
+<div class='right-column'>
 <h3>Data Stores</h3>
 <div class='links'>
 <a href="#!/api/Ext.data.AbstractStore" rel="Ext.data.AbstractStore" class="docClass">Ext.data.AbstractStore</a>
@@ -522,9 +529,9 @@
 </div>
 <div style='clear:both'></div>
 </div>
-<div class='section classes'>
+<div class='section'>
 <h1>Utilities</h1>
-<div class='lft'>
+<div class='left-column'>
 <h3>Native Classes</h3>
 <div class='links'>
 <a href="#!/api/Array" rel="Array" class="docClass">Array</a>
@@ -548,7 +555,7 @@
 <a href="#!/api/Ext.Error" rel="Ext.Error" class="docClass">Ext.Error</a>
 </div>
 </div>
-<div class='mid'>
+<div class='middle-column'>
 <h3>Utility</h3>
 <div class='links'>
 <a href="#!/api/Ext.AbstractManager" rel="Ext.AbstractManager" class="docClass">Ext.AbstractManager</a>
@@ -568,7 +575,7 @@
 <a href="#!/api/Ext.util.Bindable" rel="Ext.util.Bindable" class="docClass">Ext.util.Bindable</a>
 </div>
 </div>
-<div class='rgt'>
+<div class='right-column'>
 <h3>Events</h3>
 <div class='links'>
 <a href="#!/api/Ext.TaskManager" rel="Ext.TaskManager" class="docClass">Ext.TaskManager</a>
@@ -582,33 +589,124 @@
 </div>
 <div style='clear:both'></div>
 </div>
+<div class='section'>
+<h1>User Extensions</h1>
+<div class='left-column'>
+<h3>Grid</h3>
+<div class='links'>
+<a href="#!/api/Ext.ux.grid.FiltersFeature" rel="Ext.ux.grid.FiltersFeature" class="docClass">Ext.ux.grid.FiltersFeature</a>
+<a href="#!/api/Ext.ux.grid.TransformGrid" rel="Ext.ux.grid.TransformGrid" class="docClass">Ext.ux.grid.TransformGrid</a>
+<a href="#!/api/Ext.ux.grid.filter.BooleanFilter" rel="Ext.ux.grid.filter.BooleanFilter" class="docClass">Ext.ux.grid.filter.BooleanFilter</a>
+<a href="#!/api/Ext.ux.grid.filter.DateFilter" rel="Ext.ux.grid.filter.DateFilter" class="docClass">Ext.ux.grid.filter.DateFilter</a>
+<a href="#!/api/Ext.ux.grid.filter.Filter" rel="Ext.ux.grid.filter.Filter" class="docClass">Ext.ux.grid.filter.Filter</a>
+<a href="#!/api/Ext.ux.grid.filter.ListFilter" rel="Ext.ux.grid.filter.ListFilter" class="docClass">Ext.ux.grid.filter.ListFilter</a>
+<a href="#!/api/Ext.ux.grid.filter.NumericFilter" rel="Ext.ux.grid.filter.NumericFilter" class="docClass">Ext.ux.grid.filter.NumericFilter</a>
+<a href="#!/api/Ext.ux.grid.filter.StringFilter" rel="Ext.ux.grid.filter.StringFilter" class="docClass">Ext.ux.grid.filter.StringFilter</a>
+<a href="#!/api/Ext.ux.grid.menu.ListMenu" rel="Ext.ux.grid.menu.ListMenu" class="docClass">Ext.ux.grid.menu.ListMenu</a>
+<a href="#!/api/Ext.ux.grid.menu.RangeMenu" rel="Ext.ux.grid.menu.RangeMenu" class="docClass">Ext.ux.grid.menu.RangeMenu</a>
+<a href="#!/api/Ext.ux.CheckColumn" rel="Ext.ux.CheckColumn" class="docClass">Ext.ux.CheckColumn</a>
+<a href="#!/api/Ext.ux.RowExpander" rel="Ext.ux.RowExpander" class="docClass">Ext.ux.RowExpander</a>
+<a href="#!/api/Ext.ux.ProgressBarPager" rel="Ext.ux.ProgressBarPager" class="docClass">Ext.ux.ProgressBarPager</a>
+<a href="#!/api/Ext.ux.SlidingPager" rel="Ext.ux.SlidingPager" class="docClass">Ext.ux.SlidingPager</a>
+<a href="#!/api/Ext.ux.LiveSearchGridPanel" rel="Ext.ux.LiveSearchGridPanel" class="docClass">Ext.ux.LiveSearchGridPanel</a>
+</div>
+</div>
+<div class='middle-column'>
+<h3>Data</h3>
+<div class='links'>
+<a href="#!/api/Ext.ux.ajax.JsonSimlet" rel="Ext.ux.ajax.JsonSimlet" class="docClass">Ext.ux.ajax.JsonSimlet</a>
+<a href="#!/api/Ext.ux.ajax.SimManager" rel="Ext.ux.ajax.SimManager" class="docClass">Ext.ux.ajax.SimManager</a>
+<a href="#!/api/Ext.ux.ajax.SimXhr" rel="Ext.ux.ajax.SimXhr" class="docClass">Ext.ux.ajax.SimXhr</a>
+<a href="#!/api/Ext.ux.ajax.Simlet" rel="Ext.ux.ajax.Simlet" class="docClass">Ext.ux.ajax.Simlet</a>
+<a href="#!/api/Ext.ux.data.PagingMemoryProxy" rel="Ext.ux.data.PagingMemoryProxy" class="docClass">Ext.ux.data.PagingMemoryProxy</a>
+</div>
+<h3>DataView</h3>
+<div class='links'>
+<a href="#!/api/Ext.ux.DataView.DragSelector" rel="Ext.ux.DataView.DragSelector" class="docClass">Ext.ux.DataView.DragSelector</a>
+<a href="#!/api/Ext.ux.DataView.Draggable" rel="Ext.ux.DataView.Draggable" class="docClass">Ext.ux.DataView.Draggable</a>
+<a href="#!/api/Ext.ux.DataView.LabelEditor" rel="Ext.ux.DataView.LabelEditor" class="docClass">Ext.ux.DataView.LabelEditor</a>
+<a href="#!/api/Ext.ux.DataViewTransition" rel="Ext.ux.DataViewTransition" class="docClass">Ext.ux.DataViewTransition</a>
+</div>
+<h3>Events</h3>
+<div class='links'>
+<a href="#!/api/Ext.ux.event.Driver" rel="Ext.ux.event.Driver" class="docClass">Ext.ux.event.Driver</a>
+<a href="#!/api/Ext.ux.event.Maker" rel="Ext.ux.event.Maker" class="docClass">Ext.ux.event.Maker</a>
+<a href="#!/api/Ext.ux.event.Player" rel="Ext.ux.event.Player" class="docClass">Ext.ux.event.Player</a>
+<a href="#!/api/Ext.ux.event.Recorder" rel="Ext.ux.event.Recorder" class="docClass">Ext.ux.event.Recorder</a>
+<a href="#!/api/Ext.ux.event.RecorderManager" rel="Ext.ux.event.RecorderManager" class="docClass">Ext.ux.event.RecorderManager</a>
+</div>
+</div>
+<div class='right-column'>
+<h3>Tabs</h3>
+<div class='links'>
+<a href="#!/api/Ext.ux.BoxReorderer" rel="Ext.ux.BoxReorderer" class="docClass">Ext.ux.BoxReorderer</a>
+<a href="#!/api/Ext.ux.TabCloseMenu" rel="Ext.ux.TabCloseMenu" class="docClass">Ext.ux.TabCloseMenu</a>
+<a href="#!/api/Ext.ux.TabReorderer" rel="Ext.ux.TabReorderer" class="docClass">Ext.ux.TabReorderer</a>
+<a href="#!/api/Ext.ux.TabScrollerMenu" rel="Ext.ux.TabScrollerMenu" class="docClass">Ext.ux.TabScrollerMenu</a>
+<a href="#!/api/Ext.ux.GroupTabPanel" rel="Ext.ux.GroupTabPanel" class="docClass">Ext.ux.GroupTabPanel</a>
+</div>
+<h3>Forms</h3>
+<div class='links'>
+<a href="#!/api/Ext.ux.form.ItemSelector" rel="Ext.ux.form.ItemSelector" class="docClass">Ext.ux.form.ItemSelector</a>
+<a href="#!/api/Ext.ux.form.MultiSelect" rel="Ext.ux.form.MultiSelect" class="docClass">Ext.ux.form.MultiSelect</a>
+</div>
+<h3>Others</h3>
+<div class='links'>
+<a href="#!/api/Ext.ux.FieldReplicator" rel="Ext.ux.FieldReplicator" class="docClass">Ext.ux.FieldReplicator</a>
+<a href="#!/api/Ext.ux.GMapPanel" rel="Ext.ux.GMapPanel" class="docClass">Ext.ux.GMapPanel</a>
+<a href="#!/api/Ext.ux.PreviewPlugin" rel="Ext.ux.PreviewPlugin" class="docClass">Ext.ux.PreviewPlugin</a>
+<a href="#!/api/Ext.ux.Spotlight" rel="Ext.ux.Spotlight" class="docClass">Ext.ux.Spotlight</a>
+<a href="#!/api/Ext.ux.ToolbarDroppable" rel="Ext.ux.ToolbarDroppable" class="docClass">Ext.ux.ToolbarDroppable</a>
+<a href="#!/api/Ext.ux.layout.Center" rel="Ext.ux.layout.Center" class="docClass">Ext.ux.layout.Center</a>
+<a href="#!/api/Ext.ux.statusbar.StatusBar" rel="Ext.ux.statusbar.StatusBar" class="docClass">Ext.ux.statusbar.StatusBar</a>
+<a href="#!/api/Ext.ux.statusbar.ValidationStatus" rel="Ext.ux.statusbar.ValidationStatus" class="docClass">Ext.ux.statusbar.ValidationStatus</a>
+</div>
+</div>
+<div style='clear:both'></div>
+</div>
         </div>
 
           <div id='guides-content' style='display:none'>
-            <h3>Ext JS 4 Guides</h3>
+            <h3>Overview</h3>
 <ul>
 <li><a href='#!/guide/getting_started'>Getting Started with Ext JS 4</a></li>
+<li><a href='#!/guide/upgrade'>Upgrade Guide</a></li>
+</ul>
+<h3>Concepts</h3>
+<ul>
 <li><a href='#!/guide/class_system'>The Class System</a></li>
-<li><a href='#!/guide/application_architecture'>The MVC Application Architecture</a></li>
+<li><a href='#!/guide/application_architecture'>MVC Application Architecture</a></li>
 <li><a href='#!/guide/layouts_and_containers'>Layouts and Containers</a></li>
+<li><a href='#!/guide/components'>Components</a></li>
 <li><a href='#!/guide/data'>The Data Package</a></li>
+<li><a href='#!/guide/drag_and_drop'>Drag and Drop</a></li>
+<li><a href='#!/guide/localization'>Localization</a></li>
+<li><a href='#!/guide/keyboard_nav'>Keyboard Navigation</a></li>
+<li><a href='#!/guide/testing'>Unit Testing</a></li>
+</ul>
+<h3>Components</h3>
+<ul>
 <li><a href='#!/guide/grid'>The Grid Component</a></li>
 <li><a href='#!/guide/tree'>Trees</a></li>
 <li><a href='#!/guide/drawing_and_charting'>Drawing and Charting</a></li>
 <li><a href='#!/guide/forms'>The Form Package</a></li>
-<li><a href='#!/guide/components'>Components</a></li>
 <li><a href='#!/guide/theming'>Theming</a></li>
-<li><a href='#!/guide/drag_and_drop'>Drag and Drop</a></li>
-<li><a href='#!/guide/upgrade'>Upgrade Guide</a></li>
+</ul>
+<h3>Tutorials</h3>
+<ul>
+<li><a href='#!/guide/mvc_pt1'>App Architecture Part 1</a></li>
+<li><a href='#!/guide/mvc_pt2'>App Architecture Part 2</a></li>
+<li><a href='#!/guide/mvc_pt3'>App Architecture Part 3</a></li>
+<li><a href='#!/guide/direct_grid_pt1'>Ext Direct and Grid Part 1</a></li>
+<li><a href='#!/guide/direct_grid_pt2'>Ext Direct and Grid Part 2</a></li>
+<li><a href='#!/guide/editable_grid'>Editable Grid + Node.js 1</a></li>
+<li><a href='#!/guide/editable_grid_pt2'>Editable Grid + Node.js 2</a></li>
 </ul>
         </div>
 
-  <div id='footer-content' style='display: none'>Ext JS 4.1.0 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> rev e48b916</div>
+  <div id='footer-content' style='display: none'>Ext JS 4.1.0 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> 3.2.1. <a href='http://www.sencha.com/legal/terms-of-use/'>Terms of Use</a></div>
 
-        <div id="notice-text" style="display: none">
-        Use <a href="http://docs.sencha.com/ext-js/4-0">http://docs.sencha.com/ext-js/4-0</a> for up to date documentation and features
-      </div>
-
+  
 
 </body>
 </html>

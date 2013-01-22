@@ -18,7 +18,7 @@
  * {@link Ext.layout.container.Card card layout}.
  *
  * Inner layouts are available by virtue of the fact that all {@link Ext.panel.Panel Panel}s
- * added to the Viewport, either through its {@link #items}, or through the items, or the {@link #add}
+ * added to the Viewport, either through its {@link #cfg-items}, or the {@link #method-add}
  * method of any of its child Panels may themselves have a layout.
  *
  * The Viewport does not provide scrolling, so child Panels within the Viewport should provide
@@ -78,57 +78,60 @@ Ext.define('Ext.container.Viewport', {
 
     /**
      * @cfg {String/HTMLElement/Ext.Element} applyTo
-     * Not applicable.
+     * @private
      */
 
     /**
      * @cfg {Boolean} allowDomMove
-     * Not applicable.
+     * @private
      */
 
     /**
      * @cfg {Boolean} hideParent
-     * Not applicable.
+     * @private
      */
 
     /**
      * @cfg {String/HTMLElement/Ext.Element} renderTo
-     * Not applicable. Always renders to document body.
+     * Always renders to document body.
+     * @private
      */
 
     /**
      * @cfg {Boolean} hideParent
-     * Not applicable.
+     * @private
      */
 
     /**
      * @cfg {Number} height
-     * Not applicable. Sets itself to viewport width.
+     * Sets itself to viewport width.
+     * @private
      */
 
     /**
      * @cfg {Number} width
-     * Not applicable. Sets itself to viewport height.
+     * Sets itself to viewport height.
+     * @private
      */
 
     /**
      * @cfg {Boolean} autoHeight
-     * Not applicable.
+     * @private
      */
 
     /**
      * @cfg {Boolean} autoWidth
-     * Not applicable.
+     * @private
      */
 
     /**
      * @cfg {Boolean} deferHeight
-     * Not applicable.
+     * @private
      */
 
     /**
      * @cfg {Boolean} monitorResize
-     * Not applicable.
+     * @private
      */
 
     isViewport: true,

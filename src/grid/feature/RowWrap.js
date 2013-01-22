@@ -1,5 +1,4 @@
 /**
- * @class Ext.grid.feature.RowWrap
  * @private
  */
 Ext.define('Ext.grid.feature.RowWrap', {
@@ -8,7 +7,44 @@ Ext.define('Ext.grid.feature.RowWrap', {
 
     // turn off feature events.
     hasFeatureEvent: false,
-    
+
+    init: function(){
+        if (!this.disabled) {
+            this.enable();
+        }
+    },
+
+    getRowSelector: function(){
+        return 'tr:has(> ' + this.view.cellSelector + ')';
+    },
+
+    enable: function(){
+        var me = this,
+            view = me.view;
+
+        me.callParent();
+        // we need to mutate the rowSelector since the template changes the ordering
+        me.savedRowSelector = view.rowSelector;
+        view.rowSelector = me.getRowSelector();
+
+        // Extra functionality needed on header resize when row is wrapped:
+        // Every individual cell in a column needs its width syncing.
+        view.onHeaderResize = Ext.Function.createSequence(view.onHeaderResize, me.onHeaderResize, me);
+    },
+
+    disable: function(){
+        var me = this,
+            view = me.view,
+            saved = me.savedRowSelector;
+
+        me.callParent();
+        if (saved) {
+            view.rowSelector = saved;
+        }
+        delete me.savedRowSelector;
+        delete view.onHeaderResize;
+    },
+
     mutateMetaRowTpl: function(metaRowTpl) {  
         var prefix = Ext.baseCSSPrefix;      
         // Remove "x-grid-row" from the first row, note this could be wrong
@@ -19,21 +55,21 @@ Ext.define('Ext.grid.feature.RowWrap', {
         metaRowTpl.unshift('<table class="' + prefix + 'grid-table ' + prefix + 'grid-table-resizer" style="width: {[this.embedFullWidth()]}px;">');
         // 1
         metaRowTpl.unshift('<tr class="' + prefix + 'grid-row {[this.embedRowCls()]}"><td colspan="{[this.embedColSpan()]}"><div class="' + prefix + 'grid-rowwrap-div">');
-        
+
         // 3
         metaRowTpl.push('</table>');
         // 4
         metaRowTpl.push('</div></td></tr>');
     },
-    
+
     embedColSpan: function() {
         return '{colspan}';
     },
-    
+
     embedFullWidth: function() {
         return '{fullWidth}';
     },
-    
+
     getAdditionalData: function(data, idx, record, orig) {
         var headerCt = this.view.headerCt,
             colspan  = headerCt.getColumnCount(),
@@ -62,17 +98,23 @@ Ext.define('Ext.grid.feature.RowWrap', {
             if (orig[id+'-tdAttr']) {
                 o[id+'-tdAttr'] += orig[id+'-tdAttr'];
             }
-            
         }
 
         return o;
     },
-    
+
     getMetaRowTplFragments: function() {
         return {
             embedFullWidth: this.embedFullWidth,
             embedColSpan: this.embedColSpan
         };
+    },
+
+    // When row is wrapped, every individual cell in a column needs its width syncing
+    onHeaderResize: function(header, w, suppressFocus) {
+        var el = this.view.el;
+        if (el) {
+            el.select('td.' + Ext.baseCSSPrefix + 'grid-col-resizer-' + header.id).setWidth(w);
+        }
     }
-    
 });

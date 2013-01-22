@@ -9,6 +9,42 @@ Ext.define('Ext.diag.layout.Context', {
         'Ext.perf.Monitor'
     ],
 
+    logOn: {
+        //boxParent: true,
+        //calculate: true,
+        //cancelComponent: true,
+        //cancelLayout: true,
+        //doInvalidate: true,
+        //flush: true,
+        //flushInvalidate: true,
+        //invalidate: true,
+        //initItem: true,
+        //layoutDone: true,
+        //queueLayout: true,
+        //resetLayout: true,
+        //runCycle: true,
+        //setProp: true,
+        0:0
+    },
+
+    //profileLayoutsByType: true,
+
+    //reportOnSuccess: true,
+
+    cancelComponent: function (comp) {
+        if (this.logOn.cancelComponent) {
+            Ext.log('cancelCmp: ', comp.id);
+        }
+        this.callParent(arguments);
+    },
+
+    cancelLayout: function (layout) {
+        if (this.logOn.cancelLayout) {
+            Ext.log('cancelLayout: ', this.getLayoutName(layout));
+        }
+        this.callParent(arguments);
+    },
+
     callLayout: function (layout, methodName) {
         var accum = this.accumByType[layout.type],
             frame = accum && accum.enter();
@@ -20,24 +56,52 @@ Ext.define('Ext.diag.layout.Context', {
         }
     },
 
+    checkRemainingLayouts: function () {
+        var me = this,
+            expected = 0;
+
+        Ext.Object.each(me.layouts, function (id, layout) {
+            if (layout.running) {
+                ++expected;
+            }
+        });
+
+        if (me.remainingLayouts != expected) {
+            Ext.Error.raise({
+                msg: 'Bookkeeping error me.remainingLayouts'
+            })
+        }
+    },
+
     flush: function () {
-        var items = this.flushQueue;
-        //Ext.log('--- Flush ', items && items.getCount());
+        if (this.logOn.flush) {
+            var items = this.flushQueue;
+            Ext.log('--- Flush ', items && items.getCount());
+        }
 
         return this.callParent(arguments);
     },
 
     flushInvalidates: function () {
-        //Ext.log('>> flushInvalidates');
+        if (this.logOn.flushInvalidate) {
+            Ext.log('>> flushInvalidates');
+        }
+
         var ret = this.callParent(arguments);
-        //Ext.log('<< flushInvalidates');
+
+        if (this.logOn.flushInvalidate) {
+            Ext.log('<< flushInvalidates');
+        }
+
         return ret;
     },
 
     getCmp: function (target) {
         var ret = this.callParent(arguments);
         if (!ret.wrapsComponent) {
-            //debugger;
+            Ext.Error.raise({
+                msg: target.id + ' is not a component'
+            });
         }
         return ret;
     },
@@ -45,9 +109,37 @@ Ext.define('Ext.diag.layout.Context', {
     getEl: function (parent, target) {
         var ret = this.callParent(arguments);
         if (ret && ret.wrapsComponent) {
-            //debugger;
+            Ext.Error.raise({
+                msg: parent.id + '/' + target.id + ' is a component (expected element)'
+            });
         }
         return ret;
+    },
+
+    getLayoutName: function (layout) {
+        return layout.owner.id + '<' + layout.type + '>';
+    },
+
+    layoutDone: function (layout) {
+        var me = this,
+            name = me.getLayoutName(layout);
+
+        if (me.logOn.layoutDone) {
+            Ext.log('layoutDone: ', name, ' ( ', me.remainingLayouts, ' running)');
+        }
+
+        if (!layout.running) {
+            Ext.Error.raise({
+                msg: name + ' is already done'
+            });
+        }
+        if (!me.remainingLayouts) {
+            Ext.Error.raise({
+                msg: name + ' finished but no layouts are running'
+            });
+        }
+
+        me.callParent(arguments);
     },
 
     layoutTreeHasFailures: function (layout, reported) {
@@ -89,35 +181,43 @@ Ext.define('Ext.diag.layout.Context', {
 
     queueLayout: function (layout) {
         if (layout.done || layout.blockCount || layout.pending) {
-            //debugger;
+            Ext.Error.raise({
+                msg: this.getLayoutName(layout) + ' should not be queued for layout'
+            });
         }
-        //Ext.log('Queue ', layout.owner.id, '<', layout.type, '>');
+        if (this.logOn.queueLayout) {
+            Ext.log('Queue ', this.getLayoutName(layout));
+        }
         return this.callParent(arguments);
     },
 
     reportLayoutResult: function (layout, reported) {
-        var me = this;
+        var me = this,
+            owner = layout.owner,
+            ownerContext = me.getCmp(owner),
+            blockedBy = [], triggeredBy = [];
 
         reported[layout.id] = 1;
-        if (layout.done) {
-            Ext.log({indent: 1}, '++', layout.owner.id, '<', layout.type, '>');
-        } else {
-            var blockedBy = [], triggeredBy = [];
-            Ext.Object.each(layout.blockedBy, function (t) {
-                blockedBy.push(t);
-            });
-            blockedBy.sort();
 
-            Ext.Object.each(layout.triggeredBy, function (name, info) {
-                triggeredBy.push({ name: name, info: info });
-            });
-            triggeredBy.sort(function (a, b) {
-                return a.name < b.name ? -1 : (b.name < a.name ? 1 : 0);
-            });
+        Ext.Object.each(layout.blockedBy, function (t) {
+            blockedBy.push(t);
+        });
+        blockedBy.sort();
 
-            Ext.log({indent: 1}, '--', layout.owner.id, '<', layout.type, '>',
-                (layout.owner.ownerCt ? ' - ownerCt: ' + layout.owner.ownerCt.id : ''));
+        Ext.Object.each(me.triggersByLayoutId[layout.id], function (name, info) {
+            triggeredBy.push({ name: name, info: info });
+        });
+        triggeredBy.sort(function (a, b) {
+            return a.name < b.name ? -1 : (b.name < a.name ? 1 : 0);
+        });
 
+        Ext.log({indent: 1}, (layout.done ? '++' : '--'), me.getLayoutName(layout),
+            (ownerContext.isBoxParent ? ' [isBoxParent]' : ''),
+            (ownerContext.boxChildren ? ' - boxChildren: ' + ownerContext.state.boxesMeasured + '/' + ownerContext.boxChildren.length : ''),
+            ownerContext.boxParent ? (' - boxParent: ' + ownerContext.boxParent.id) : '',
+            ' - size: ', ownerContext.widthModel.name, '/', ownerContext.heightModel.name);
+
+        if (!layout.done || me.reportOnSuccess) {
             if (blockedBy.length) {
                 ++Ext.log.indent;
                 Ext.log({indent: 1}, 'blockedBy:  count=',layout.blockCount);
@@ -158,16 +258,18 @@ Ext.define('Ext.diag.layout.Context', {
     resetLayout: function (layout) {
         var me = this,
             type = layout.type,
+            name = me.getLayoutName(layout),
             accum = me.accumByType[type];
 
-        if (!this.state) { // if (first time ... before run)
-            //Ext.log('resetLayout: ', layout.owner.id, '<', layout.type, '>');
-            if (!accum) {
-                //me.accumByType[type] = accum = Ext.Perf.get('layout_' + layout.type);
+        if (me.logOn.resetLayout) {
+            Ext.log('resetLayout: ', name, ' ( ', me.remainingLayouts, ' running)');
+        }
+
+        if (!me.state) { // if (first time ... before run)
+            if (!accum && me.profileLayoutsByType) {
+                me.accumByType[type] = accum = Ext.Perf.get('layout_' + layout.type);
             }
             me.numByType[type] = (me.numByType[type] || 0) + 1;
-        } else {
-            //Ext.log('resetLayout: ', layout.owner.id, '<', layout.type, '>');
         }
 
         var frame = accum && accum.enter();
@@ -175,6 +277,8 @@ Ext.define('Ext.diag.layout.Context', {
         if (accum) {
             frame.leave();
         }
+
+        me.checkRemainingLayouts();
     },
 
     round: function (t) {
@@ -189,6 +293,7 @@ Ext.define('Ext.diag.layout.Context', {
         me.calcsByType = {};
         me.numByType = {};
         me.timesByType = {};
+        me.triggersByLayoutId = {};
 
         Ext.log.indentSize = 3;
         Ext.log('==================== LAYOUT ====================');
@@ -197,8 +302,7 @@ Ext.define('Ext.diag.layout.Context', {
         ret = me.callParent(arguments);
         time = Ext.perf.getTimestamp() - time;
 
-        /*
-        if (me.boxParents) {
+        if (me.logOn.boxParent && me.boxParents) {
             me.boxParents.each(function (boxParent) {
                 Ext.log('boxParent: ', boxParent.id);
                 for (var i = 0, children = boxParent.boxChildren, n = children.length; i < n; ++i) {
@@ -206,19 +310,30 @@ Ext.define('Ext.diag.layout.Context', {
                 }
             });
         }
-        /**/
 
         if (ret) {
             Ext.log('----------------- SUCCESS -----------------');
         } else {
             Ext.log({level: 'error' },
                 '----------------- FAILURE -----------------');
+        }
+
+        Ext.Object.each(me.layouts, function (id, layout) {
+            if (layout.running) {
+                Ext.log.error('Layout left running: ', me.getLayoutName(layout));
+            }
+            if (layout.ownerContext) {
+                Ext.log.error('Layout left connected: ', me.getLayoutName(layout));
+            }
+        });
+
+        if (!ret || me.reportOnSuccess) {
             var reported = {},
                 unreported = 0;
 
             Ext.Object.each(me.layouts, function (id, layout) {
                 if (me.items[layout.owner.el.id].isTopLevel) {
-                    if (me.layoutTreeHasFailures(layout, reported)) {
+                    if (me.reportOnSuccess || me.layoutTreeHasFailures(layout, reported)) {
                         me.reportLayoutResult(layout, reported);
                     }
                 }
@@ -268,7 +383,9 @@ Ext.define('Ext.diag.layout.Context', {
     },
 
     runCycle: function () {
-        //Ext.log('>>> Cycle ', this.cycleCount, ' (queue length: ', this.layoutQueue.length, ')');
+        if (this.logOn.runCycle) {
+            Ext.log('>>> Cycle ', this.cycleCount, ' (queue length: ', this.layoutQueue.length, ')');
+        }
 
         return this.callParent(arguments);
     },
@@ -279,7 +396,9 @@ Ext.define('Ext.diag.layout.Context', {
             accum = me.accumByType[type],
             frame, ret, time;
 
-        //Ext.log('-- calculate ', layout.owner.id, ':', type);
+        if (me.logOn.calculate) {
+            Ext.log('-- calculate ', this.getLayoutName(layout));
+        }
 
         frame = accum && accum.enter();
 

@@ -53,8 +53,8 @@ describe("Ext.Element.traversal", function() {
     });
     
     describe("findParentNode", function() {
-        it("should return null", function() {
-            expect(el.findParentNode('body')).toBeNull();
+        it("should return document.body", function() {
+            expect(el.findParentNode('body')).toEqual(document.body);
         });
         
         it("should return a dom", function() {
@@ -81,8 +81,8 @@ describe("Ext.Element.traversal", function() {
     });
     
     describe("up", function() {
-        it("should return null", function() {
-            expect(el.up('body')).toBeNull();
+        it("should return Ext.getBody()", function() {
+            expect(el.up('body')).toEqual(Ext.getBody());
         });
         
         it("should return a el", function() {
@@ -253,8 +253,8 @@ describe("Ext.Element.traversal", function() {
     });
     
     describe("findParent", function() {
-        it("should return null", function() {
-            expect(el.findParent('body')).toBeNull();
+        it("should return document.body", function() {
+            expect(el.findParent('body')).toEqual(document.body);
         });
         
         it("should return a dom", function() {

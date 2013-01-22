@@ -20,7 +20,7 @@ Ext.define('Ext.slider.Thumb', {
 
     /**
      * Creates new slider thumb.
-     * @param {Object} config (optional) Config object.
+     * @param {Object} [config] Config object.
      */
     constructor: function(config) {
         var me = this;
@@ -38,10 +38,6 @@ Ext.define('Ext.slider.Thumb', {
             constrain: false
         });
         me.callParent([config]);
-
-        if (me.slider.vertical) {
-            Ext.apply(me, Ext.slider.Thumb.Vertical);
-        }
     },
 
     /**
@@ -61,7 +57,13 @@ Ext.define('Ext.slider.Thumb', {
     },
 
     getElConfig: function() {
+        var me = this,
+            slider = me.slider,
+            style = {};
+
+        style[slider.vertical ? 'bottom' : 'left'] = slider.calculateThumbPosition(slider.normalizeValue(me.value)) + '%';
         return {
+            style: style,
             id  : this.id,
             cls : this.cls
         };
@@ -71,16 +73,30 @@ Ext.define('Ext.slider.Thumb', {
      * @private
      * move the thumb
      */
-    move: function(v, animate){
-        if(!animate){
-            this.el.setLeft(v);
-        }else{
+    move: function(v, animate) {
+        var el = this.el,
+            styleProp = this.slider.vertical ? 'bottom' : 'left',
+            to,
+            from;
+
+        v += '%';
+        
+        if (!animate) {
+            el.dom.style[styleProp] = v;
+        } else {
+            to = {};
+            to[styleProp] = v;
+            
+            if (!Ext.supports.GetPositionPercentage) {
+                from = {};
+                from[styleProp] = el.dom.style[styleProp];
+            }
+            
             new Ext.fx.Anim({
-                target: this.el,
+                target: el,
                 duration: 350,
-                to: {
-                    left: v
-                }
+                from: from,
+                to: to
             });
         }
     },
@@ -184,32 +200,37 @@ Ext.define('Ext.slider.Thumb', {
         var me       = this,
             slider   = me.slider,
             index    = me.index,
-            newValue = me.getNewValue(),
+            newValue = me.getValueFromTracker(),
             above,
             below;
 
-        if (me.constrain) {
-            above = slider.thumbs[index + 1];
-            below = slider.thumbs[index - 1];
+        // If dragged out of range, value will be undefined
+        if (newValue !== undefined) {
+            if (me.constrain) {
+                above = slider.thumbs[index + 1];
+                below = slider.thumbs[index - 1];
 
-            if (below !== undefined && newValue <= below.value) {
-                newValue = below.value;
-            }
+                if (below !== undefined && newValue <= below.value) {
+                    newValue = below.value;
+                }
 
-            if (above !== undefined && newValue >= above.value) {
-                newValue = above.value;
+                if (above !== undefined && newValue >= above.value) {
+                    newValue = above.value;
+                }
             }
+            slider.setValue(index, newValue, false);
+            slider.fireEvent('drag', slider, e, me);
         }
-
-        slider.setValue(index, newValue, false);
-        slider.fireEvent('drag', slider, e, me);
     },
 
-    getNewValue: function() {
+    getValueFromTracker: function() {
         var slider = this.slider,
-            pos = slider.innerEl.translatePoints(this.tracker.getXY());
+            trackPoint = slider.getTrackpoint(this.tracker.getXY());
 
-        return Ext.util.Format.round(slider.reverseValue(pos.left), slider.decimalPrecision);
+        // If dragged out of range, value will be undefined
+        if (trackPoint !== undefined) {
+            return Ext.util.Format.round(slider.reversePixelValue(trackPoint), slider.decimalPrecision);
+        }
     },
 
     /**
@@ -234,31 +255,5 @@ Ext.define('Ext.slider.Thumb', {
 
     destroy: function() {
         Ext.destroy(this.tracker);
-    },
-    statics: {
-        // Method overrides to support vertical dragging of thumb within slider
-        Vertical: {
-            getNewValue: function() {
-                var slider   = this.slider,
-                    innerEl  = slider.innerEl,
-                    pos      = innerEl.translatePoints(this.tracker.getXY()),
-                    bottom   = innerEl.getHeight() - pos.top;
-
-                return Ext.util.Format.round(slider.reverseValue(bottom), slider.decimalPrecision);
-            },
-            move: function(v, animate) {
-                if (!animate) {
-                    this.el.setBottom(v);
-                } else {
-                    new Ext.fx.Anim({
-                        target: this.el,
-                        duration: 350,
-                        to: {
-                            bottom: v
-                        }
-                    });
-                }
-            }
-        }
     }
 });

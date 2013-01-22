@@ -14,7 +14,7 @@
  *
  * @constructor
  * Creates a new TextItem
- * @param {Object} text A text string, or a config object containing a <tt>text</tt> property
+ * @param {Object} text A text string, or a config object containing a #text property
  */
 Ext.define('Ext.toolbar.TextItem', {
     extend: 'Ext.toolbar.Item',
@@ -23,7 +23,8 @@ Ext.define('Ext.toolbar.TextItem', {
     alternateClassName: 'Ext.Toolbar.TextItem',
 
     /**
-     * @cfg {String} text The text to be used as innerHTML (html tags are accepted)
+     * @cfg {String} text
+     * The text to be used as innerHTML (html tags are accepted).
      */
     text: '',
 

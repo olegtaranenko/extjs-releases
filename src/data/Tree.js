@@ -58,87 +58,8 @@ Ext.define('Ext.data.Tree', {
         if (me.fireEvent('beforeappend', null, node) !== false) {
             node.set('root', true);
             node.updateInfo();
-
-            me.relayEvents(node, [
-                /**
-                 * @event append
-                 * @alias Ext.data.NodeInterface#append
-                 */
-                "append",
-
-                /**
-                 * @event remove
-                 * @alias Ext.data.NodeInterface#remove
-                 */
-                "remove",
-
-                /**
-                 * @event move
-                 * @alias Ext.data.NodeInterface#move
-                 */
-                "move",
-
-                /**
-                 * @event insert
-                 * @alias Ext.data.NodeInterface#insert
-                 */
-                "insert",
-
-                /**
-                 * @event beforeappend
-                 * @alias Ext.data.NodeInterface#beforeappend
-                 */
-                "beforeappend",
-
-                /**
-                 * @event beforeremove
-                 * @alias Ext.data.NodeInterface#beforeremove
-                 */
-                "beforeremove",
-
-                /**
-                 * @event beforemove
-                 * @alias Ext.data.NodeInterface#beforemove
-                 */
-                "beforemove",
-
-                /**
-                 * @event beforeinsert
-                 * @alias Ext.data.NodeInterface#beforeinsert
-                 */
-                "beforeinsert",
-
-                 /**
-                  * @event expand
-                  * @alias Ext.data.NodeInterface#expand
-                  */
-                 "expand",
-
-                 /**
-                  * @event collapse
-                  * @alias Ext.data.NodeInterface#collapse
-                  */
-                 "collapse",
-
-                 /**
-                  * @event beforeexpand
-                  * @alias Ext.data.NodeInterface#beforeexpand
-                  */
-                 "beforeexpand",
-
-                 /**
-                  * @event beforecollapse
-                  * @alias Ext.data.NodeInterface#beforecollapse
-                  */
-                 "beforecollapse" ,
-
-                 /**
-                  * @event rootchange
-                  * Fires whenever the root node is changed in the tree.
-                  * @param {Ext.data.Model} root The new root
-                  */
-                 "rootchange"
-            ]);
+            // root node should never be phantom or dirty, so commit it
+            node.commit();
 
             node.on({
                 scope: me,
@@ -146,6 +67,93 @@ Ext.define('Ext.data.Tree', {
                 append: me.onNodeAppend,
                 remove: me.onNodeRemove
             });
+
+            me.relayEvents(node, [
+                /**
+                 * @event append
+                 * @inheritdoc Ext.data.NodeInterface#append
+                 */
+                "append",
+
+                /**
+                 * @event remove
+                 * @inheritdoc Ext.data.NodeInterface#remove
+                 */
+                "remove",
+
+                /**
+                 * @event move
+                 * @inheritdoc Ext.data.NodeInterface#move
+                 */
+                "move",
+
+                /**
+                 * @event insert
+                 * @inheritdoc Ext.data.NodeInterface#insert
+                 */
+                "insert",
+
+                /**
+                 * @event beforeappend
+                 * @inheritdoc Ext.data.NodeInterface#beforeappend
+                 */
+                "beforeappend",
+
+                /**
+                 * @event beforeremove
+                 * @inheritdoc Ext.data.NodeInterface#beforeremove
+                 */
+                "beforeremove",
+
+                /**
+                 * @event beforemove
+                 * @inheritdoc Ext.data.NodeInterface#beforemove
+                 */
+                "beforemove",
+
+                /**
+                 * @event beforeinsert
+                 * @inheritdoc Ext.data.NodeInterface#beforeinsert
+                 */
+                "beforeinsert",
+
+                /**
+                 * @event expand
+                 * @inheritdoc Ext.data.NodeInterface#expand
+                 */
+                "expand",
+
+                /**
+                 * @event collapse
+                 * @inheritdoc Ext.data.NodeInterface#collapse
+                 */
+                "collapse",
+
+                /**
+                 * @event beforeexpand
+                 * @inheritdoc Ext.data.NodeInterface#beforeexpand
+                 */
+                "beforeexpand",
+
+                /**
+                 * @event beforecollapse
+                 * @inheritdoc Ext.data.NodeInterface#beforecollapse
+                 */
+                "beforecollapse" ,
+
+                /**
+                 * @event sort
+                 * @inheritdoc Ext.data.NodeInterface#event-sort
+                 */
+                "sort",
+
+                /**
+                 * @event rootchange
+                 * Fires whenever the root node is changed in the tree.
+                 * @param {Ext.data.Model} root The new root
+                 */
+                "rootchange"
+            ]);
 
             me.nodeHash = {};
             me.registerNode(node);
@@ -211,11 +219,11 @@ Ext.define('Ext.data.Tree', {
      * @param {Number} oldId The old id
      * @param {Number} newId The new id
      */
-    onNodeIdChanged: function(oldId, newId) {
+    onNodeIdChanged: function(node, oldId, newId) {
         var nodeHash = this.nodeHash;
-
-        nodeHash[newId] = nodeHash[oldId];
-        delete nodeHash[oldId];
+    
+        nodeHash[newId] = node;
+        delete nodeHash[oldId || node.internalId];
     },
 
     /**

@@ -1,14 +1,13 @@
 /**
- * @class Ext.grid.ColumnLayout
  * @private
  *
- * <p>This class is used only by the grid's HeaderContainer docked child.</p>
+ * This class is used only by the grid's HeaderContainer docked child.
  *
- * <p>It adds the ability to shrink the vertical size of the inner container element back if a grouped
- * column header has all its child columns dragged out, and the whole HeaderContainer needs to shrink back down.</p>
+ * It adds the ability to shrink the vertical size of the inner container element back if a grouped
+ * column header has all its child columns dragged out, and the whole HeaderContainer needs to shrink back down.
  *
- * <p>Also, after every layout, after all headers have attained their 'stretchmax' height, it goes through and calls
- * <code>setPadding</code> on the columns so that they lay out correctly.</p>
+ * Also, after every layout, after all headers have attained their 'stretchmax' height, it goes through and calls
+ * `setPadding` on the columns so that they lay out correctly.
  */
 Ext.define('Ext.grid.ColumnLayout', {
     extend: 'Ext.layout.container.HBox',
@@ -28,7 +27,8 @@ Ext.define('Ext.grid.ColumnLayout', {
     // Collect the height of the table of data upon layout begin
     beginLayout: function (ownerContext) {
         var me = this,
-            grid = me.owner.up('[scrollerOwner]'),
+            owner = me.owner,
+            grid = owner.up('[scrollerOwner]'),
             view = grid.view,
             i = 0,
             items = me.getVisibleItems(),
@@ -41,18 +41,13 @@ Ext.define('Ext.grid.ColumnLayout', {
         for (; i < len; i++) {
             item = items[i];
             item.removeCls([me.firstHeaderCls, me.lastHeaderCls]);
-            if (me.align == 'stretchmax') {
-                item.el.setStyle({
-                    height: 'auto'
-                });
-                item.titleEl.setStyle({
-                    height: 'auto',
-                    paddingTop: '0'
-                });
-                if (item.componentLayout && item.componentLayout.lastComponentSize) {
-                    item.componentLayout.lastComponentSize.height = item.el.dom.offsetHeight;
-                }
-            }
+            item.el.setStyle({
+                height: 'auto'
+            });
+            item.titleEl.setStyle({
+                height: 'auto',
+                paddingTop: '0'
+            });
         }
 
         // Add special first/last classes
@@ -84,7 +79,7 @@ Ext.define('Ext.grid.ColumnLayout', {
 
         // If we've collected a viewContext, we will also have the table height
         // If there's overflow, the View must be narrower to accomodate the scrollbar
-        if (viewContext && !viewContext.autoHeight) {
+        if (viewContext && !viewContext.heightModel.shrinkWrap) {
             viewHeight = viewContext.getProp('height');
             if (isNaN(viewHeight)) {
                 me.done = false;
@@ -117,6 +112,7 @@ Ext.define('Ext.grid.ColumnLayout', {
             owner = me.owner,
             state = ownerContext.state,
             needsInvalidate = false,
+            calculated = me.sizeModels.calculated,
             childItems, len, i, childContext, item;
 
         me.callParent(arguments);
@@ -137,7 +133,7 @@ Ext.define('Ext.grid.ColumnLayout', {
                 if (item.width) {
                     item.flex = ownerContext.childItems[i].flex = item.width;
                     delete item.width;
-                    childContext.widthAuthority = 2;
+                    childContext.widthModel = calculated;
                     needsInvalidate = true;
                 }
             }
@@ -163,13 +159,11 @@ Ext.define('Ext.grid.ColumnLayout', {
             headerHeight;
 
         // Set up padding in items
-        if (!me.owner.hideHeaders && me.align == 'stretchmax') {
-            items = me.getLayoutItems();
-            len = items.length;
-            headerHeight = me.getRenderTarget().getViewSize().height;
-            for (; i < len; i++) {
-                items[i].setPadding(headerHeight);
-            }
+        items = me.getVisibleItems();
+        len = items.length;
+        headerHeight = me.getRenderTarget().getViewSize().height;
+        for (; i < len; i++) {
+            items[i].setPadding(headerHeight);
         }
     },
 

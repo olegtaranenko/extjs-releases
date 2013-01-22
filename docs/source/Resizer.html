@@ -268,7 +268,7 @@ Ext.define('Ext.resizer.Resizer', {
              * Reference to the original resize target if the element of the original resize target was an IMG or a
              * TEXTAREA which must be wrapped in a DIV.
              */
-            me.originalTarget = me.target;
+            me.originalTarget = me.target.isComponent ? me.target.getEl() : me.target;
             me.target = me.el = me.el.wrap({
                 cls: me.wrapCls,
                 id: me.el.id + '-rzwrap'

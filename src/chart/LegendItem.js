@@ -64,14 +64,16 @@ Ext.define('Ext.chart.LegendItem', {
                     "stroke-width": series.lineWidth,
                     "stroke-linejoin": "round",
                     "stroke-dasharray": series.dash,
-                    stroke: seriesStyle.stroke || '#000',
+                    stroke: seriesStyle.stroke || series.getLegendColor(index) || '#000',
                     style: {
                         cursor: 'pointer'
                     }
                 }));
             }
             if (series.showMarkers || seriesType === 'scatter') {
-                markerConfig = Ext.apply(series.markerStyle, series.markerConfig || {});
+                markerConfig = Ext.apply(series.markerStyle, series.markerConfig || {}, {
+                    fill: series.getLegendColor(index)
+                });
                 me.add('marker', Ext.chart.Shape[markerConfig.type](surface, {
                     fill: markerConfig.fill,
                     x: 8.5,

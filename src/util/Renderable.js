@@ -19,29 +19,29 @@
  *
  * The rendering of the above proceeds roughly like this:
  *
- *  - ContainerA's initComponent calls {@link #render} passing the `renderTo` property as the
+ *  - ContainerA's initComponent calls #render passing the `renderTo` property as the
  *    container argument.
  *  - `render` calls the `getRenderTree` method to get a complete {@link Ext.DomHelper} spec.
- *  - `getRenderTree` fires the "beforerender" event and calls the {@link #beforeRender}
- *    method. Its result is obtained by calling {@link #getElConfig}.
- *  - The {@link #getElConfig} method uses the `renderTpl` and its render data as the content
+ *  - `getRenderTree` fires the "beforerender" event and calls the #beforeRender
+ *    method. Its result is obtained by calling #getElConfig.
+ *  - The #getElConfig method uses the `renderTpl` and its render data as the content
  *    of the `autoEl` described element.
  *  - The result of `getRenderTree` is passed to {@link Ext.DomHelper#append}.
  *  - The `renderTpl` contains calls to render things like docked items, container items
  *    and raw markup (such as the `html` or `tpl` config properties). These calls are to
- *    methods added to the {@link Ext.XTemplate} instance by {@link #setupRenderTpl}.
- *  - The `setupRenderTpl` method adds methods such as `renderItems`, `renderContent`, etc.
+ *    methods added to the {@link Ext.XTemplate} instance by #setupRenderTpl.
+ *  - The #setupRenderTpl method adds methods such as `renderItems`, `renderContent`, etc.
  *    to the template. These are directed to "doRenderItems", "doRenderContent" etc..
- *  - The `setupRenderTpl` calls traverse from components to their {@link Ext.layout.Layout}
+ *  - The #setupRenderTpl calls traverse from components to their {@link Ext.layout.Layout}
  *    object.
  *  - When a container is rendered, it also has a `renderTpl`. This is processed when the
  *    `renderContainer` method is called in the component's `renderTpl`. This call goes to
- *    {@link Ext.layout.container.Container#doRenderContainer}. This method repeats this
+ *    Ext.layout.container.Container#doRenderContainer. This method repeats this
  *    process for all components in the container.
  *  - After the top-most component's markup is generated and placed in to the DOM, the next
  *    step is to link elements to their components and finish calling the component methods
  *    `onRender` and `afterRender` as well as fire the corresponding events.
- *  - The first step in this is to call {@link #finishRender}. This method descends the
+ *  - The first step in this is to call #finishRender. This method descends the
  *    component hierarchy and calls `onRender` and fires the `render` event. These calls
  *    are delivered top-down to approximate the timing of these calls/events from previous
  *    versions.
@@ -50,7 +50,7 @@
  *  - These calls are also made on the {@link Ext.layout.container.Container} layout to
  *    capture its elements. Both of these classes use {@link Ext.util.ElementContainer} to
  *    handle `childEls` processing.
- *  - Once this is complete, a similar pass is made by calling {@link #finishAfterRender}.
+ *  - Once this is complete, a similar pass is made by calling #finishAfterRender.
  *    This call also descends the component hierarchy, but this time the calls are made in
  *    a bottom-up order to `afterRender`.
  *
@@ -63,7 +63,7 @@ Ext.define('Ext.util.Renderable', {
 
     frameCls: Ext.baseCSSPrefix + 'frame',
 
-    frameIdRegex: /[-]frame\d+[TMB][LCR]$/,
+    frameIdRegex: /[\-]frame\d+[TMB][LCR]$/,
 
     frameElementCls: {
         tl: [],
@@ -219,9 +219,10 @@ Ext.define('Ext.util.Renderable', {
 
     /**
      * @private
-     * <p>Called from the selected frame generation template to insert this Component's inner structure inside the framing structure.</p>
-     * <p>When framing is used, a selected frame generation template is used as the primary template of the {@link #getElConfig} instead
-     * of the configured {@link #renderTpl}. The {@link #renderTpl} is invoked by this method which is injected into the framing template.</p>
+     * Called from the selected frame generation template to insert this Component's inner structure inside the framing structure.
+     *
+     * When framing is used, a selected frame generation template is used as the primary template of the #getElConfig instead
+     * of the configured {@link #renderTpl}. The {@link #renderTpl} is invoked by this method which is injected into the framing template.
      */
     doApplyRenderTpl: function(out, values) {
         // Careful! This method is bolted on to the frameTpl so all we get for context is
@@ -257,8 +258,7 @@ Ext.define('Ext.util.Renderable', {
         // Careful! This method is bolted on to the renderTpl so all we get for context is
         // the renderData! The "this" pointer is the renderTpl instance!
 
-        var me = renderData.$comp,
-            emptyText = me.emptyText;
+        var me = renderData.$comp;
 
         if (me.html) {
             Ext.DomHelper.generateMarkup(me.html, out);
@@ -275,16 +275,6 @@ Ext.define('Ext.util.Renderable', {
                 //me.tpl[me.tplWriteMode](target, me.data);
                 me.tpl.applyOut(me.data, out);
                 delete me.data;
-            } else if (emptyText) {
-                //display if it's not deferred OR if the store has been set to auto load
-                if (!me.deferEmptyText || (me.deferEmptyText && me.store.autoLoad)) {
-                    if (typeof emptyText == 'string') {
-                        out.push(emptyText);
-                    } else {
-                        me.tpl.applyOut(emptyText, out);
-                    }
-                }
-                me.hasSkippedEmptyText = true;
             }
         }
     },
@@ -312,10 +302,11 @@ Ext.define('Ext.util.Renderable', {
      * This method visits the rendered component tree in a "top-down" order. That is, this
      * code runs on a parent component before running on a child. This method calls the
      * {@link #onRender} method of each component.
+     * @param {Number} containerIdx The index into the Container items of this Component.
      *
      * @private
      */
-    finishRender: function () {
+    finishRender: function(containerIdx) {
         var me = this,
             tpl, data, contentEl, el, pre, hide, target;
 
@@ -329,7 +320,7 @@ Ext.define('Ext.util.Renderable', {
 
         if (!me.el || me.$pid) {
             if (me.container) {
-                el = me.container.getById(me.id, true)
+                el = me.container.getById(me.id, true);
             } else {
                 el = Ext.getDom(me.id);
             }
@@ -371,18 +362,11 @@ Ext.define('Ext.util.Renderable', {
         }
 
         // Sets the rendered flag and clears the redering flag
-        me.onRender();
+        me.onRender(me.container, containerIdx);
 
         // Initialize with correct overflow attributes
-        target = me.getTargetEl()
-        if (me.autoScroll) {
-            target.setStyle('overflow', 'auto');
-            if (Ext.isIE6 || Ext.isIE7) {
-                // The scrollable container element must be non-statically positioned or IE6/7 will make
-                // positioned children stay in place rather than scrolling with the rest of the content
-                target.setStyle('position', 'relative');
-            }
-        }
+        target = me.getTargetEl();
+        target.setStyle(me.getOverflowStyle());
 
         // Tell the encapsulating element to hide itself in the way the Component is configured to hide
         // This means DISPLAY, VISIBILITY or OFFSETS.
@@ -470,7 +454,7 @@ Ext.define('Ext.util.Renderable', {
                 me.addChildEls({
                     name: 'frameBody',
                     id: frameGenId + 'MC'
-                })
+                });
             } else {
                 config.tplData = me.initRenderData();
             }
@@ -597,8 +581,36 @@ Ext.define('Ext.util.Renderable', {
         return tpl;
     },
 
-    onRender: function() {
-        var me = this;
+    /**
+     * @protected
+     * <p>Template method called when this Component's DOM structure is created.</p>
+     * <p>At this point, this Component's (And all descendants') DOM structure <i>exists</i> but it has not been layed out (positioned and sized).</p>
+     * <p>Subclasses which override this to gain access to the structure at render time should call the parent class's
+     * method before attempting to access any child elements of the Component.</p>
+     * @param {Ext.core.Element} parentNode The parent Element in which this Component's encapsulating element is contained.
+     * @param {Number} containerIdx The index within the parent Container's child collection of this Component.
+     */
+    onRender: function(parentNode, containerIdx) {
+        var me = this,
+            x = me.x,
+            y = me.y,
+            lastBox, width, height,
+            el = me.el;
+
+        // After the container property has been collected, we can wrap the Component in a reset wraper if necessary
+        if (Ext.scopeResetCSS && !me.ownerCt) {
+            // If this component's el is the body element, we add the reset class to the html tag
+            if (el.dom == Ext.getBody().dom) {
+                el.parent().addCls(Ext.baseCSSPrefix + 'reset');
+            }
+            else {
+                // Else we wrap this element in an element that adds the reset class.
+                me.resetEl = el.wrap({
+                    cls: Ext.baseCSSPrefix + 'reset'
+                });
+            }
+        }
+
         me.applyRenderSelectors();
 
         // Flag set on getRenderTree to flag to the layout's postprocessing routine that
@@ -606,23 +618,53 @@ Ext.define('Ext.util.Renderable', {
         delete me.rendering;
 
         me.rendered = true;
+
+        // We need to remember these to avoid writing them during the initial layout:
+        lastBox = null;
+
+        if (x !== undefined) {
+            lastBox = lastBox || {};
+            lastBox.x = x;
+        }
+        if (y !== undefined) {
+            lastBox = lastBox || {};
+            lastBox.y = y;
+        }
+        // framed components need their width/height to apply to the frame, which is
+        // best handled in layout at present
+        if (!me.getFrameInfo()) {
+            width = me.width;
+            height = me.height;
+
+            if (typeof width == 'number') {
+                lastBox = lastBox || {};
+                lastBox.width = width;
+            }
+            if (typeof height == 'number') {
+                lastBox = lastBox || {};
+                lastBox.height = height;
+            }
+        }
+
+        me.lastBox = me.el.lastBox = lastBox;
     },
 
     render: function(container, position) {
         var me = this,
             el = me.el && (me.el = Ext.get(me.el)), // ensure me.el is wrapped
-            tree;
+            tree,
+            nextSibling;
 
         Ext.suspendLayouts();
 
         container = me.initContainer(container);
 
-        position = me.getInsertPosition(position);
+        nextSibling = me.getInsertPosition(position);
 
         if (!el) {
             tree = me.getRenderTree();
-            if (position) {
-                el = Ext.DomHelper.insertBefore(position, tree);
+            if (nextSibling) {
+                el = Ext.DomHelper.insertBefore(nextSibling, tree);
             } else {
                 el = Ext.DomHelper.append(container, tree);
             }
@@ -632,15 +674,15 @@ Ext.define('Ext.util.Renderable', {
             me.initStyles(el);
             if (me.allowDomMove !== false) {
                 //debugger; // TODO
-                if (position) {
-                    container.dom.insertBefore(el.dom, position);
+                if (nextSibling) {
+                    container.dom.insertBefore(el.dom, nextSibling);
                 } else {
                     container.dom.appendChild(el.dom);
                 }
             }
         }
 
-        me.finishRender();
+        me.finishRender(position);
 
         Ext.resumeLayouts(!container.isDetachedBody);
     },
@@ -663,9 +705,7 @@ Ext.define('Ext.util.Renderable', {
             comp.container = body = Ext.getBody();
             body.appendChild(comp.el.dom);
             if (runLayout) {
-                comp.doComponentLayout();
-            } else {
-                comp.needsLayout = true;
+                comp.updateLayout();
             }
             if (typeof comp.x == 'number' || typeof comp.y == 'number') {
                 comp.setPosition(comp.x, comp.y);
@@ -876,7 +916,8 @@ Ext.define('Ext.util.Renderable', {
                         'component will be disabled.');
             }
 
-            Ext.log.info('No frameInfo cached for ', frameKey, ': ', Ext.encode(frameInfo));
+            // turn on if we restore frameInfoCache
+            //Ext.log.info('No frameInfo cached for ', frameKey, ': ', Ext.encode(frameInfo));
 
             //</debug>
 
@@ -968,7 +1009,8 @@ Ext.define('Ext.util.Renderable', {
 
     // Cache the frame information object for all unique Component xtypes so as not to
     // cause style recaclculations.
-    frameInfoCache: {
+    frameInfoCache: {},
+    _frameInfoCache: {
         // Components
         panel: {
             "table": false,

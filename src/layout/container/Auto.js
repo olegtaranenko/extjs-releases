@@ -52,30 +52,7 @@ Ext.define('Ext.layout.container.Auto', {
         '<div id="{ownerId}-clearEl" class="',Ext.baseCSSPrefix,'clear" role="presentation"></div>'
     ],
 
-    /*
-    beforeLayout: function(owner, target) {
-        var me = this,
-            items = me.getLayoutItems(),
-            length = items.length;
-
-        // Ensure the Container is only primed with the clear element if there are child items.
-        if (length) {
-            // Auto layout uses natural HTML flow to arrange the child items.
-            // To ensure that all browsers (I'm looking at you IE!) add the bottom margin of the last child to the
-            // containing element height, we create a zero-sized element with style clear:both to force a "new line"
-            if (!me.clearEl) {
-                me.clearEl = me.getRenderTarget().createChild({
-                    cls: Ext.baseCSSPrefix + 'clear',
-                    role: 'presentation'
-                });
-            }
-
-            // Auto layout allows CSS to size its child items.
-            while (length--) {
-                me.setItemSize(items[length]);
-            }
-        }
-    },/**/
+    // TODO - do we need to clear sizes in beginLayout?
 
     calculate: function(ownerContext) {
         var me = this,

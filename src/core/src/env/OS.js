@@ -64,14 +64,16 @@ Ext.define('Ext.env.OS', {
 
     /**
      * @property {String} name
-     * Read-only - the full name of the current operating system
-     * Possible values are: iOS, Android, WebOS, BlackBerry, MacOSX, Windows, Linux and Other
+     * The full name of the current operating system.
+     * Possible values are: iOS, Android, WebOS, BlackBerry, MacOSX, Windows, Linux and Other.
+     * @readonly
      */
     name: null,
 
     /**
      * @property {Ext.Version} version
-     * Read-only, refer to {@link Ext.Version}
+     * Refer to {@link Ext.Version}.
+     * @readonly
      */
     version: null,
 

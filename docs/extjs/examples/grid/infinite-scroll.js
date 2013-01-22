@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 Ext.Loader.setConfig({enabled: true});
 
 Ext.Loader.setPath('Ext.ux', '../ux/');
@@ -26,9 +12,15 @@ Ext.onReady(function(){
     Ext.define('ForumThread', {
         extend: 'Ext.data.Model',
         fields: [
-            'title', 'forumtitle', 'forumid', 'author',
-            {name: 'replycount', type: 'int'},
-            {name: 'lastpost', mapping: 'lastpost', type: 'date', dateFormat: 'timestamp'},
+            'title', 'forumtitle', 'forumid', 'username', {
+                name: 'replycount', 
+                type: 'int'
+            }, {
+                name: 'lastpost', 
+                mapping: 'lastpost', 
+                type: 'date', 
+                dateFormat: 'timestamp'
+            },
             'lastposter', 'excerpt', 'threadid'
         ],
         idProperty: 'threadid'
@@ -37,7 +29,6 @@ Ext.onReady(function(){
     // create the Data Store
     var store = Ext.create('Ext.data.Store', {
         id: 'store',
-        pageSize: 200,
         model: 'ForumThread',
         remoteSort: true,
         // allow the grid to interact with the paging scroller by buffering
@@ -47,9 +38,6 @@ Ext.onReady(function(){
             // this page, an HttpProxy would be better
             type: 'jsonp',
             url: 'http://www.sencha.com/forum/remote_topics/index.php',
-            extraParams: {
-                total: 50000
-            },
             reader: {
                 root: 'topics',
                 totalProperty: 'totalCount'
@@ -73,16 +61,16 @@ Ext.onReady(function(){
         );
     }
 
-
     var grid = Ext.create('Ext.grid.Panel', {
         width: 700,
         height: 500,
         title: 'ExtJS.com - Browse Forums',
         store: store,
-        verticalScrollerType: 'paginggridscroller',
         loadMask: true,
-        disableSelection: true,
-        invalidateScrollerOnRefresh: false,
+        selModel: {
+            pruneRemoved: false
+        },
+        multiSelect: true,
         viewConfig: {
             trackOver: false
         },
@@ -92,11 +80,7 @@ Ext.onReady(function(){
             width: 50,
             sortable: false
         },{
-            // id assigned so we can apply custom css (e.g. .x-grid-cell-topic b { color:#333 })
-            // TODO: This poses an issue in subclasses of Grid now because Headers are now Components
-            // therefore the id will be registered in the ComponentManager and conflict. Need a way to
-            // add additional CSS classes to the rendered cells.
-            id: 'topic',
+            tdCls: 'x-grid-cell-topic',
             text: "Topic",
             dataIndex: 'title',
             flex: 1,
@@ -104,7 +88,7 @@ Ext.onReady(function(){
             sortable: false
         },{
             text: "Author",
-            dataIndex: 'author',
+            dataIndex: 'username',
             width: 100,
             hidden: true,
             sortable: true
@@ -125,9 +109,13 @@ Ext.onReady(function(){
         renderTo: Ext.getBody()
     });
 
-    // trigger the data store load
-    store.guaranteeRange(0, 199);
+    // Load a maximum of 100 records into the prefetch buffer (which is NOT mapped to the UI)
+    // When that has completed, instruct the Store to load the first page from prefetch into the live, mapped record cache
+    store.prefetch({
+        start: 0,
+        limit: 99,
+        callback: function() {
+            store.guaranteeRange(0, 49);
+        }
+    });
 });
-
-
-

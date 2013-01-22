@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 // feature idea to enable Ajax loading and then the content
 // cache would actually make sense. Should we dictate that they use
 // data or support raw html as well?
@@ -74,16 +60,16 @@ Ext.define('Ext.ux.RowExpander', {
     /**
      * @event expandbody
      * <b<Fired through the grid's View</b>
-     * @param {HtmlElement} rowNode The &lt;tr> element which owns the expanded row.
+     * @param {HTMLElement} rowNode The &lt;tr> element which owns the expanded row.
      * @param {Ext.data.Model} record The record providing the data.
-     * @param {HtmlElement} expandRow The &lt;tr> element containing the expanded data.
+     * @param {HTMLElement} expandRow The &lt;tr> element containing the expanded data.
      */
     /**
      * @event collapsebody
      * <b<Fired through the grid's View.</b>
-     * @param {HtmlElement} rowNode The &lt;tr> element which owns the expanded row.
+     * @param {HTMLElement} rowNode The &lt;tr> element which owns the expanded row.
      * @param {Ext.data.Model} record The record providing the data.
-     * @param {HtmlElement} expandRow The &lt;tr> element containing the expanded data.
+     * @param {HTMLElement} expandRow The &lt;tr> element containing the expanded data.
      */
 
     constructor: function() {
@@ -206,13 +192,6 @@ Ext.define('Ext.ux.RowExpander', {
             this.recordsExpanded[record.internalId] = false;
             this.view.fireEvent('collapsebody', rowNode, record, nextBd.dom);
         }
-
-
-        // If Grid is auto-heighting itself, then perform a component layhout to accommodate the new height
-        if (!grid.isFixedHeight()) {
-            grid.doComponentLayout();
-        }
-        this.view.up('gridpanel').invalidateScroller();
     },
 
     onDblClick: function(view, cell, rowIdx, cellIndex, e) {
@@ -249,4 +228,3 @@ Ext.define('Ext.ux.RowExpander', {
         };
     }
 });
-

@@ -2,13 +2,12 @@
  * @class Ext.dom.AbstractQuery
  * @private
  */
-
 Ext.define('Ext.dom.AbstractQuery', {
     /**
      * Selects a group of elements.
      * @param {String} selector The selector/xpath query (can be a comma separated list of selectors)
      * @param {HTMLElement/String} [root] The start of the query (defaults to document).
-     * @return {Array} An Array of DOM elements which match the selector. If there are
+     * @return {HTMLElement[]} An Array of DOM elements which match the selector. If there are
      * no matches, and empty Array is returned.
      */
     select: function(q, root) {
@@ -29,10 +28,17 @@ Ext.define('Ext.dom.AbstractQuery', {
 
         for (i = 0,qlen = q.length; i < qlen; i++) {
             if (typeof q[i] == 'string') {
-                nodes = root.querySelectorAll(q[i]);
+                
+                //support for node attribute selection
+                if (typeof q[i][0] == '@') {
+                    nodes = root.getAttributeNode(q[i].substring(1));
+                    results.push(nodes);
+                } else {
+                    nodes = root.querySelectorAll(q[i]);
 
-                for (j = 0,nlen = nodes.length; j < nlen; j++) {
-                    results.push(nodes[j]);
+                    for (j = 0,nlen = nodes.length; j < nlen; j++) {
+                        results.push(nodes[j]);
+                    }
                 }
             }
         }

@@ -48,7 +48,7 @@ Ext.define('Ext.picker.Date', {
         '<div id="{id}-inner">',
             '<div role="presentation" class="{baseCls}-header">',
                 '<div class="{baseCls}-prev"><a id="{id}-prevEl" href="#" role="button" title="{prevText}"></a></div>',
-                '<div class="{baseCls}-month" id="{id}-middleBtnEl"></div>',
+                '<div class="{baseCls}-month" id="{id}-middleBtnEl">{%this.renderMonthBtn(values, out)%}</div>',
                 '<div class="{baseCls}-next"><a id="{id}-nextEl" href="#" role="button" title="{nextText}"></a></div>',
             '</div>',
             '<table id="{id}-eventEl" class="{baseCls}-inner" cellspacing="0" role="presentation">',
@@ -69,7 +69,7 @@ Ext.define('Ext.picker.Date', {
                 '</tr></tbody>',
             '</table>',
             '<tpl if="showToday">',
-                '<div id="{id}-footerEl" role="presentation" class="{baseCls}-footer"></div>',
+                '<div id="{id}-footerEl" role="presentation" class="{baseCls}-footer">{%this.renderTodayBtn(values, out)%}</div>',
             '</tpl>',
         '</div>',
         {
@@ -85,6 +85,12 @@ Ext.define('Ext.picker.Date', {
             },
             longDay: function(value){
                 return Ext.Date.format(value, this.longDayFormat);
+            },
+            renderTodayBtn: function(values, out) {
+                Ext.DomHelper.generateMarkup(values.$comp.todayBtn.getRenderTree(), out);
+            },
+            renderMonthBtn: function(values, out) {
+                Ext.DomHelper.generateMarkup(values.$comp.monthBtn.getRenderTree(), out);
             }
         }
     ],
@@ -93,7 +99,9 @@ Ext.define('Ext.picker.Date', {
      * @cfg {String} todayText
      * The text to display on the button that selects the current date
      */
+    //<locale>
     todayText : 'Today',
+    //</locale>
 
     /**
      * @cfg {Function} handler
@@ -111,8 +119,9 @@ Ext.define('Ext.picker.Date', {
 
     /**
      * @cfg {Object} scope
-     * The scope (`this` reference) in which the `{@link #handler}` function will be called. Defaults to this
-     * DatePicker instance.
+     * The scope (`this` reference) in which the `{@link #handler}` function will be called.
+     *
+     * Defaults to this DatePicker instance.
      */
 
     /**
@@ -120,19 +129,25 @@ Ext.define('Ext.picker.Date', {
      * A string used to format the message for displaying in a tooltip over the button that selects the current date.
      * The `{0}` token in string is replaced by today's date.
      */
+    //<locale>
     todayTip : '{0} (Spacebar)',
+    //</locale>
 
     /**
      * @cfg {String} minText
      * The error text to display if the minDate validation fails.
      */
+    //<locale>
     minText : 'This date is before the minimum date',
+    //</locale>
 
     /**
      * @cfg {String} maxText
      * The error text to display if the maxDate validation fails.
      */
+    //<locale>
     maxText : 'This date is after the maximum date',
+    //</locale>
 
     /**
      * @cfg {String} format
@@ -144,13 +159,17 @@ Ext.define('Ext.picker.Date', {
      * @cfg {String} disabledDaysText
      * The tooltip to display when the date falls on a disabled day.
      */
+    //<locale>
     disabledDaysText : 'Disabled',
+    //</locale>
 
     /**
      * @cfg {String} disabledDatesText
      * The tooltip text to display when the date falls on a disabled date.
      */
+    //<locale>
     disabledDatesText : 'Disabled',
+    //</locale>
 
     /**
      * @cfg {String[]} monthNames
@@ -166,32 +185,44 @@ Ext.define('Ext.picker.Date', {
      * @cfg {String} nextText
      * The next month navigation button tooltip
      */
+    //<locale>
     nextText : 'Next Month (Control+Right)',
+    //</locale>
 
     /**
      * @cfg {String} prevText
      * The previous month navigation button tooltip
      */
+    //<locale>
     prevText : 'Previous Month (Control+Left)',
+    //</locale>
 
     /**
      * @cfg {String} monthYearText
      * The header month selector tooltip
      */
+    //<locale>
     monthYearText : 'Choose a month (Control+Up/Down to move years)',
+    //</locale>
 
     /**
-     * @cfg {Number} startDay
-     * Day index at which the week should begin, 0-based (defaults to Sunday)
+     * @cfg {Number} [startDay=undefined]
+     * Day index at which the week should begin, 0-based.
+     *
+     * Defaults to `0` (Sunday).
      */
+    //<locale>
     startDay : 0,
+    //</locale>
 
     /**
      * @cfg {Boolean} showToday
      * False to hide the footer area containing the Today button and disable the keyboard handler for spacebar that
      * selects the current date.
      */
+    //<locale>
     showToday : true,
+    //</locale>
 
     /**
      * @cfg {Date} [minDate=null]
@@ -257,7 +288,9 @@ Ext.define('Ext.picker.Date', {
      * @cfg {String} longDayFormat
      * The format for displaying a date in a longer format.
      */
+    //<locale>
     longDayFormat: 'F d, Y',
+    //</locale>
 
     /**
      * @cfg {Object} keyNavConfig
@@ -296,6 +329,20 @@ Ext.define('Ext.picker.Date', {
         me.nextCls = me.baseCls + '-prevday';
         me.todayCls = me.baseCls + '-today';
         me.dayNames = me.dayNames.slice(me.startDay).concat(me.dayNames.slice(0, me.startDay));
+
+        me.listeners = Ext.apply(me.listeners||{}, {
+            mousewheel: {
+                element: 'eventEl',
+                fn: me.handleMouseWheel,
+                scope: me
+            },
+            click: {
+                element: 'eventEl',
+                fn: me.handleDateClick, 
+                scope: me,
+                delegate: 'a.' + me.baseCls + '-date'
+            }
+        });
         this.callParent();
 
         me.value = me.value ?
@@ -321,7 +368,31 @@ Ext.define('Ext.picker.Date', {
          * all the appropriate cells.
          */
         var me = this,
-            days = new Array(me.numDays);
+            days = new Array(me.numDays),
+            today = Ext.Date.format(new Date(), me.format);
+
+        me.monthBtn = new Ext.button.Split({
+            ownerCt: me,
+            ownerLayout: me.getComponentLayout(),
+            text: '',
+            tooltip: me.monthYearText,
+            listeners: {
+                click: me.showMonthPicker,
+                arrowclick: me.showMonthPicker,
+                scope: me
+            }
+        });
+
+        if (this.showToday) {
+            me.todayBtn = new Ext.button.Button({
+                ownerCt: me,
+                ownerLayout: me.getComponentLayout(),
+                text: Ext.String.format(me.todayText, today),
+                tooltip: Ext.String.format(me.todayTip, today),
+                handler: me.selectToday,
+                scope: me
+            });
+        }
 
         me.callParent();
 
@@ -340,35 +411,24 @@ Ext.define('Ext.picker.Date', {
         me.getTpl('renderTpl').longDayFormat = me.longDayFormat;
     },
 
+    // Do the job of a container layout at this point even though we are not a Container.
+    // TODO: Refactor as a Container.
+    finishRenderChildren: function () {
+        this.callParent();
+        this.monthBtn.finishRender();
+        if (this.showToday) {
+            this.todayBtn.finishRender();
+        }
+    },
+
     // private, inherit docs
     onRender : function(container, position){
-        var me = this,
-            today = Ext.Date.format(new Date(), me.format);
+        var me = this;
 
         me.callParent(arguments);
-
         me.el.unselectable();
-
         me.cells = me.eventEl.select('tbody td');
         me.textNodes = me.eventEl.query('tbody td span');
-
-        me.monthBtn = new Ext.button.Split({
-            ownerCt: me,
-            ownerLayout: me.componentLayout,
-            text: '',
-            tooltip: me.monthYearText,
-            renderTo: me.middleBtnEl
-        });
-        //~ me.middleBtnEl.down('button').addCls(Ext.baseCSSPrefix + 'btn-arrow');
-
-
-        me.todayBtn = new Ext.button.Button({
-            renderTo: me.footerEl,
-            text: Ext.String.format(me.todayText, today),
-            tooltip: Ext.String.format(me.todayTip, today),
-            handler: me.selectToday,
-            scope: me
-        });
     },
 
     // private, inherit docs
@@ -437,10 +497,6 @@ Ext.define('Ext.picker.Date', {
         if(me.showToday){
             me.todayKeyListener = me.eventEl.addKeyListener(Ext.EventObject.SPACE, me.selectToday,  me);
         }
-        me.mon(me.eventEl, 'mousewheel', me.handleMouseWheel, me);
-        me.mon(me.eventEl, 'click', me.handleDateClick,  me, {delegate: 'a.' + me.baseCls + '-date'});
-        me.mon(me.monthBtn, 'click', me.showMonthPicker, me);
-        me.mon(me.monthBtn, 'arrowclick', me.showMonthPicker, me);
         me.update(me.value);
     },
 
@@ -706,7 +762,7 @@ Ext.define('Ext.picker.Date', {
 
         if (date.getMonth() !== month) {
             // 'fix' the JS rolling date conversion if needed
-            date = new Date(year, month, 1).getLastDateOfMonth();
+            date = Ext.Date.getLastDateOfMonth(new Date(year, month, 1));
         }
         me.update(date);
         me.hideMonthPicker();

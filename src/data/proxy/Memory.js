@@ -81,6 +81,7 @@ Ext.define('Ext.data.proxy.Memory', {
         for (i; i < len; i++) {
             recs[i].commit();
         }
+        operation.setCompleted();
         operation.setSuccessful();
         
         Ext.callback(callback, scope || this, [operation]);

@@ -8,7 +8,6 @@
 
 
 /**
- * @class Ext.dd.DD
  * A DragDrop implementation where the linked element follows the
  * mouse cursor during a drag.
  */
@@ -30,18 +29,15 @@ Ext.define('Ext.dd.DD', {
     },
 
     /**
+     * @property {Boolean} scroll
      * When set to true, the utility automatically tries to scroll the browser
      * window when a drag and drop element is dragged near the viewport boundary.
-     * Defaults to true.
-     * @property scroll
-     * @type Boolean
      */
     scroll: true,
 
     /**
      * Sets the pointer offset to the distance between the linked element's top
-     * left corner and the location the element was clicked
-     * @method autoOffset
+     * left corner and the location the element was clicked.
      * @param {Number} iPageX the X coordinate of the click
      * @param {Number} iPageY the Y coordinate of the click
      */
@@ -55,7 +51,6 @@ Ext.define('Ext.dd.DD', {
      * Sets the pointer offset.  You can call this directly to force the
      * offset to be in a particular location (e.g., pass in 0,0 to set it
      * to the center of the object)
-     * @method setDelta
      * @param {Number} iDeltaX the distance from the left
      * @param {Number} iDeltaY the distance from the top
      */
@@ -69,7 +64,6 @@ Ext.define('Ext.dd.DD', {
      * maintaining the cursor location relative to the location on the element
      * that was clicked.  Override this if you want to place the element in a
      * location other than where the cursor is.
-     * @method setDragElPos
      * @param {Number} iPageX the X coordinate of the mousedown or drag event
      * @param {Number} iPageY the Y coordinate of the mousedown or drag event
      */
@@ -86,7 +80,6 @@ Ext.define('Ext.dd.DD', {
      * maintaining the cursor location relative to the location on the element
      * that was clicked.  Override this if you want to place the element in a
      * location other than where the cursor is.
-     * @method alignElWithMouse
      * @param {HTMLElement} el the element to move
      * @param {Number} iPageX the X coordinate of the mousedown or drag event
      * @param {Number} iPageY the Y coordinate of the mousedown or drag event
@@ -125,10 +118,10 @@ Ext.define('Ext.dd.DD', {
      * Saves the most recent position so that we can reset the constraints and
      * tick marks on-demand.  We need to know this so that we can calculate the
      * number of pixels the element is offset from its original position.
-     * @method cachePosition
-     * @param {Number} iPageX (optional) the current x position (this just makes it so we
+     *
+     * @param {Number} [iPageX] the current x position (this just makes it so we
      * don't have to look it up again)
-     * @param {Number} iPageY (optional) the current y position (this just makes it so we
+     * @param {Number} [iPageY] the current y position (this just makes it so we
      * don't have to look it up again)
      */
     cachePosition: function(iPageX, iPageY) {
@@ -145,7 +138,6 @@ Ext.define('Ext.dd.DD', {
     /**
      * Auto-scroll the window if the dragged object has been moved beyond the
      * visible window boundary.
-     * @method autoScroll
      * @param {Number} x the drag element's x position
      * @param {Number} y the drag element's y position
      * @param {Number} h the height of the drag element
@@ -220,7 +212,6 @@ Ext.define('Ext.dd.DD', {
     /**
      * Finds the location the element should be placed if we want to move
      * it to where the mouse location less the click offset would place us.
-     * @method getTargetCoord
      * @param {Number} iPageX the X coordinate of the click
      * @param {Number} iPageY the Y coordinate of the click
      * @return an object that contains the coordinates (Object.x and Object.y)

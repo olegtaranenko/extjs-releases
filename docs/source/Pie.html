@@ -162,13 +162,11 @@ Ext.define('Ext.chart.series.Pie', {
             surface = chart.surface,
             store = chart.store,
             shadow = chart.shadow, i, l, cfg;
-        Ext.applyIf(me, {
-            highlightCfg: {
-                segment: {
-                    margin: 20
-                }
+        config.highlightCfg = Ext.merge({
+            segment: {
+                margin: 20
             }
-        });
+        }, config.highlightCfg);
         Ext.apply(me, config, {
             shadowAttributes: [{
                 &quot;stroke-width&quot;: 6,
@@ -205,12 +203,19 @@ Ext.define('Ext.chart.series.Pie', {
             }
         }
         surface.customAttributes.segment = function(opt) {
-            return me.getSegment(opt);
+            //Browsers will complain if we create a path
+            //element that has no path commands. So ensure a dummy 
+            //path command for an empty path.
+            var ans = me.getSegment(opt);
+            if (!ans.path || ans.path.length === 0) {
+                ans.path = ['M', 0, 0];
+            }
+            return ans;
         };
         me.__excludes = me.__excludes || [];
     },
 
-    //@private updates some onbefore render parameters.
+    // @private updates some onbefore render parameters.
     initialize: function() {
         var me = this,
             store = me.chart.getChartStore();
@@ -261,17 +266,8 @@ Ext.define('Ext.chart.series.Pie', {
         x4 = x + opt.endRho * c2;
         y4 = y + opt.endRho * s2;
 
-        if (Math.abs(x2 - x4) + Math.abs(y2 - y4) &lt; delta) {
-            cm = hsqr2;
-            sm = -hsqr2;
-            flag = 1;
-        }
-
         x6 = x + opt.endRho * cm;
         y6 = y + opt.endRho * sm;
-
-        // TODO(bei): It seems that the canvas engine cannot render half circle command correctly on IE.
-        // Better fix the VML engine for half circles.
 
         if (opt.startRho !== 0) {
             x1 = x + opt.startRho * c1;
@@ -409,7 +405,9 @@ Ext.define('Ext.chart.series.Pie', {
         }
 
         //if not store or store is empty then there's nothing to draw
-        if (!store || !store.getCount()) {
+        if (!store || !store.getCount() || me.seriesIsHidden) {
+            me.hide();
+            me.items = [];
             return;
         }
 
@@ -652,9 +650,13 @@ Ext.define('Ext.chart.series.Pie', {
             theta = Math.atan2(y, x || 1),
             dg = theta * 180 / Math.PI,
             prevDg;
+
+        opt.hidden = false;
+
         if (this.__excludes &amp;&amp; this.__excludes[i]) {
             opt.hidden = true;
         }
+
         function fixAngle(a) {
             if (a &lt; 0) {
                 a += 360;

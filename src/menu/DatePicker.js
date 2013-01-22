@@ -57,7 +57,7 @@
 
     /**
      * @cfg {Number} maxHeight
-     * Not applicable for DatePicker.
+     * @private
      */
 
     /**
@@ -85,7 +85,7 @@
         me.picker = me.down('datepicker');
         /**
          * @event select
-         * @alias Ext.picker.Date#select
+         * @inheritdoc Ext.picker.Date#select
          */
         me.relayEvents(me.picker, ['select']);
 

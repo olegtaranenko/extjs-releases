@@ -2,6 +2,7 @@
  * @class Ext.dom.AbstractHelper
  * @private
  * Abstract base class for {@link Ext.dom.Helper}.
+ * @private
  */
 Ext.define('Ext.dom.AbstractHelper', {
     emptyTags : /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i,
@@ -10,19 +11,29 @@ Ext.define('Ext.dom.AbstractHelper', {
 
     attribXlat: { cls : 'class', htmlFor : 'for' },
 
+    closeTags: {},
+
+    decamelizeName : function () {
+        var camelCaseRe = /([a-z])([A-Z])/g,
+            cache = {};
+
+        function decamel (match, p1, p2) {
+            return p1 + '-' + p2.toLowerCase();
+        }
+
+        return function (s) {
+            return cache[s] || (cache[s] = s.replace(camelCaseRe, decamel));
+        };
+    }(),
+
     generateMarkup: function(spec, buffer) {
         var me = this,
-            attr,
-            val,
-            key,
-            cn,
-            tag,
-            i;
+            attr, val, tag, i, closeTags;
 
         if (typeof spec == "string") {
             buffer.push(spec);
         } else if (Ext.isArray(spec)) {
-            for (i=0; i < spec.length; i++) {
+            for (i = 0; i < spec.length; i++) {
                 if (spec[i]) {
                     me.generateMarkup(spec[i], buffer);
                 }
@@ -37,12 +48,7 @@ Ext.define('Ext.dom.AbstractHelper', {
                     if (!me.confRe.test(attr)) {
                         if (typeof val == "object") {
                             buffer.push(' ', attr, '="');
-                            for (key in val) {
-                                if (val.hasOwnProperty(key)) {
-                                    buffer.push(key, ':', val[key], ';');
-                                }
-                            }
-                            buffer.push('"');
+                            me.generateStyles(val, buffer).push('"');
                         } else {
                             buffer.push(' ', me.attribXlat[attr] || attr, '="', val, '"');
                         }
@@ -55,14 +61,21 @@ Ext.define('Ext.dom.AbstractHelper', {
                 buffer.push('/>');
             } else {
                 buffer.push('>');
-                if ((cn = spec.children || spec.cn)) {
-                    me.generateMarkup(cn, buffer);
-                } else if (spec.html) {
-                    buffer.push(spec.html);
-                } else if (spec.tpl) {
-                    spec.tpl.applyOut(spec.tplData, buffer);
+
+                // Apply the tpl html, and cn specifications
+                if ((val = spec.tpl)) {
+                    val.applyOut(spec.tplData, buffer);
                 }
-                buffer.push('</', tag, '>');
+                if ((val = spec.html)) {
+                    buffer.push(val);
+                }
+                if ((val = spec.cn || spec.children)) {
+                    me.generateMarkup(val, buffer);
+                }
+
+                // we generate a lot of close tags, so cache them rather than push 3 parts
+                closeTags = me.closeTags;
+                buffer.push(closeTags[tag] || (closeTags[tag] = '</' + tag + '>'));
             }
         }
 
@@ -70,10 +83,52 @@ Ext.define('Ext.dom.AbstractHelper', {
     },
 
     /**
+     * Converts the styles from the given object to text. The styles are CSS style names
+     * with their associated value.
+     * 
+     * The basic form of this method returns a string:
+     * 
+     *      var s = Ext.DomHelper.generateStyles({
+     *          backgroundColor: 'red'
+     *      });
+     *      
+     *      // s = 'background-color:red;'
+     *
+     * Alternatively, this method can append to an output array.
+     * 
+     *      var buf = [];
+     *
+     *      ...
+     *
+     *      Ext.DomHelper.generateStyles({
+     *          backgroundColor: 'red'
+     *      }, buf);
+     *
+     * In this case, the style text is pushed on to the array and the array is returned.
+     * 
+     * @param {Object} styles The object describing the styles.
+     * @param {String[]} [buffer] The output buffer.
+     * @return {String/String[]} If buffer is passed, it is returned. Otherwise the style
+     * string is returned.
+     */
+    generateStyles: function (styles, buffer) {
+        var a = buffer || [],
+            name;
+
+        for (name in styles) {
+            if (styles.hasOwnProperty(name)) {
+                a.push(this.decamelizeName(name), ':', styles[name], ';');
+            }
+        }
+
+        return buffer || a.join('');
+    },
+
+    /**
      * Returns the markup for the passed Element(s) config.
      * @param {Object} spec The DOM object spec (and children)
      * @return {String}
-     */ 
+     */
     markup: function(spec) {
         if (typeof spec == "string") {
             return spec;

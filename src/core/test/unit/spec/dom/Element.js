@@ -68,12 +68,7 @@ describe("Ext.dom.Element", function() {
         });
     });
 
-    describe("methods", function() {
-        beforeEach(function() {
-            element = Ext.getBody().createChild({tag: "div"});
-            domEl = element.dom;
-        });
-
+    function describeMethods(){
         describe("set", function() {
             it("should call Ext.core.DomHelper.applyStyles if object passed as first argument has style property", function() {
                 var style = {width:'100px'};
@@ -418,6 +413,39 @@ describe("Ext.dom.Element", function() {
                 expect(typeof(element.clearListeners)).toEqual('function');
             });
         });
+
+        describe("visibilityMode", function(){
+            it('must be able to setVisibilityMode and getVisibilityMode', function(){
+                element.setVisibilityMode(Ext.dom.Element.DISPLAY);
+                expect(element.getVisibilityMode()).toBe(Ext.dom.Element.DISPLAY);
+                
+                element.setVisibilityMode(Ext.dom.Element.VISIBILITY);
+                expect(element.getVisibilityMode()).toBe(Ext.dom.Element.VISIBILITY);
+            });
+        });
+
+    }
+
+    describe('methods', function(){
+        beforeEach(function() {
+            domEl = document.createElement('div');
+            document.body.appendChild(domEl);
+        });
+
+        describe("new Ext.dom.Element", function(){
+            beforeEach(function() {
+                element = new Ext.dom.Element(domEl);
+            });
+            describeMethods();
+        });
+
+        describe("Ext.fly", function(){
+            beforeEach(function(){
+                element = Ext.fly(domEl);
+            });
+            describeMethods();
+        });
+
     });
 
     describe("class methods", function() {

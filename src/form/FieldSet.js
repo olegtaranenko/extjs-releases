@@ -5,7 +5,7 @@
  * config will be rendered as the fieldset's `legend`.
  *
  * While FieldSets commonly contain simple groups of fields, they are general {@link Ext.container.Container Containers}
- * and may therefore contain any type of components in their {@link #items}, including other nested containers.
+ * and may therefore contain any type of components in their {@link #cfg-items}, including other nested containers.
  * The default {@link #layout} for the FieldSet's items is `'anchor'`, but it can be configured to use any other
  * layout type.
  *
@@ -106,6 +106,13 @@ Ext.define('Ext.form.FieldSet', {
     collapsed: false,
 
     /**
+     * @cfg {Boolean} [toggleOnTitleClick=true]
+     * Set to true will add a listener to the titleCmp property for the click event which will execute the
+     * {@link #toggle} method. This option is only used when the {@link #collapsible} property is set to true.
+     */
+    toggleOnTitleClick : true,
+
+    /**
      * @property {Ext.Component} legend
      * The component for the fieldset's legend. Will only be defined if the configuration requires a legend to be
      * created, by setting the {@link #title} or {@link #checkboxToggle} options.
@@ -122,6 +129,8 @@ Ext.define('Ext.form.FieldSet', {
      * The {@link Ext.container.Container#layout} for the fieldset's immediate child items.
      */
     layout: 'anchor',
+    
+    border: 1,
 
     componentLayout: 'fieldset',
 
@@ -145,10 +154,11 @@ Ext.define('Ext.form.FieldSet', {
             legend = me.legend;
 
         if (legend) {
+            // get rid of the ownerCt since it's not a proper item
+            delete legend.ownerCt;
             legend.destroy();
             me.legend = null;
         }
-
         me.callParent();
     },
 
@@ -257,19 +267,30 @@ Ext.define('Ext.form.FieldSet', {
 
     /**
      * Creates the legend title component. This is only called internally, but could be overridden in subclasses to
-     * customize the title component.
+     * customize the title component. If {@link #toggleOnTitleClick} is set to true, a listener for the click event
+     * will toggle the collapsed state of the FieldSet.
      * @return Ext.Component
      * @protected
      */
     createTitleCmp: function() {
-        var me = this;
-        me.titleCmp = Ext.widget({
-            xtype: 'component',
-            html: me.title,
-            cls: me.baseCls + '-header-text',
-            id: me.id + '-legendTitle'
-        });
-        return me.titleCmp;
+        var me  = this,
+            cfg = {
+                xtype : 'component',
+                html  : me.title,
+                cls   : me.baseCls + '-header-text',
+                id    : me.id + '-legendTitle'
+            };
+
+        if (me.collapsible && me.toggleOnTitleClick) {
+            cfg.listeners = {
+                el : {
+                    scope : me,
+                    click : me.toggle
+                }
+            };
+        }
+
+        return (me.titleCmp = Ext.widget(cfg));
     },
 
     /**
@@ -290,6 +311,7 @@ Ext.define('Ext.form.FieldSet', {
             
         me.checkboxCmp = Ext.widget({
             xtype: 'checkbox',
+            hideEmptyLabel: true,
             name: me.checkboxName || me.id + suffix,
             cls: me.baseCls + '-header' + suffix,
             id: me.id + '-legendChk',
@@ -409,7 +431,7 @@ Ext.define('Ext.form.FieldSet', {
             checkboxCmp = me.checkboxCmp,
             operation = expanded ? 'expand' : 'collapse';
 
-        if (!me.rendered || me.fireEvent(operation, me) !== false) {
+        if (!me.rendered || me.fireEvent('before' + operation, me) !== false) {
             expanded = !!expanded;
 
             if (checkboxCmp) {
@@ -422,13 +444,9 @@ Ext.define('Ext.form.FieldSet', {
                 me.addCls(me.baseCls + '-collapsed');
             }
             me.collapsed = !expanded;
-            if (expanded) {
-                // ensure subitems will get rendered and layed out when expanding
-                me.getComponentLayout().childrenChanged = true;
-            }
             if (me.rendered) {
-                me.doComponentLayout();
-                me.fireEvent('after' + operation, me);
+                me.updateLayout();
+                me.fireEvent(operation, me);
             }
         }
         return me;

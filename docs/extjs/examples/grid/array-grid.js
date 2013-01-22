@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 Ext.require([
     'Ext.grid.*',
     'Ext.data.*',
@@ -83,9 +69,8 @@ Ext.onReady(function() {
         }
         return val;
     }
-
-    // create the data store
-    var store = Ext.create('Ext.data.ArrayStore', {
+    
+    Company = Ext.extend(Ext.data.Model, {
         fields: [
            {name: 'company'},
            {name: 'price',      type: 'float'},
@@ -93,6 +78,12 @@ Ext.onReady(function() {
            {name: 'pctChange',  type: 'float'},
            {name: 'lastChange', type: 'date', dateFormat: 'n/j h:ia'}
         ],
+        idProperty: 'company'
+    });
+
+    // create the data store
+    var store = Ext.create('Ext.data.ArrayStore', {
+        model: Company,
         data: myData
     });
 
@@ -100,6 +91,7 @@ Ext.onReady(function() {
     var grid = Ext.create('Ext.grid.Panel', {
         store: store,
         stateful: true,
+        multiSelect: true,
         stateId: 'stateGrid',
         columns: [
             {
@@ -137,6 +129,8 @@ Ext.onReady(function() {
                 dataIndex: 'lastChange'
             },
             {
+                menuDisabled: true,
+                sortable: false,
                 xtype: 'actioncolumn',
                 width: 50,
                 items: [{
@@ -168,8 +162,8 @@ Ext.onReady(function() {
         title: 'Array Grid',
         renderTo: 'grid-example',
         viewConfig: {
-            stripeRows: true
+            stripeRows: true,
+            enableTextSelection: true
         }
     });
 });
-

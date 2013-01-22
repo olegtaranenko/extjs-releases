@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.app.PortalDropZone
  * @extends Ext.dd.DropTarget
@@ -117,11 +103,10 @@ Ext.define('Ext.app.PortalDropZone', {
 
             // make sure proxy width is fluid in different width columns
             proxy.getProxy().setWidth('auto');
-
             if (overPortlet) {
-                proxy.moveProxy(overPortlet.el.dom.parentNode, match ? overPortlet.el.dom : null);
+                dd.panelProxy.moveProxy(overPortlet.el.dom.parentNode, match ? overPortlet.el.dom : null);
             } else {
-                proxy.moveProxy(overColumn.el.dom, null);
+                dd.panelProxy.moveProxy(overColumn.el.dom, null);
             }
 
             this.lastPos = {
@@ -202,4 +187,3 @@ Ext.define('Ext.app.PortalDropZone', {
         Ext.app.PortalDropZone.superclass.unreg.call(this);
     }
 });
-

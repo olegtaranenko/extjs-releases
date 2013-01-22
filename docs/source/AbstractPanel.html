@@ -321,14 +321,6 @@ var panel = new Ext.panel.Panel({
         return this.getDockingRefItems(deep, items);
     },
 
-    setBorder: function(border) {
-        var me = this;
-        me.border = (border !== undefined) ? border : true;
-        if (me.rendered) {
-            me.doComponentLayout();
-        }
-    },
-
     setupRenderTpl: function (renderTpl) {
         this.callParent(arguments);
         this.setupDockingRenderTpl(renderTpl);

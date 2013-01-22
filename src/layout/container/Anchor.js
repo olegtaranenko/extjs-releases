@@ -1,6 +1,4 @@
 /**
- * @class Ext.layout.container.Anchor
- * 
  * This is a layout that enables anchoring of contained elements relative to the container's dimensions.
  * If the container is resized, all anchored items are automatically rerendered according to their
  * `{@link #anchor}` rules.
@@ -123,7 +121,7 @@ Ext.define('Ext.layout.container.Anchor', {
 
     /**
      * @cfg {String} defaultAnchor
-     * Default anchor for all child <b>container</b> items applied if no anchor or specific width is set on the child item.  Defaults to '100%'.
+     * Default anchor for all child **container** items applied if no anchor or specific width is set on the child item.
      */
     defaultAnchor: '100%',
 
@@ -144,10 +142,10 @@ Ext.define('Ext.layout.container.Anchor', {
             anchorSpec = childContext.target.anchorSpec;
 
             if (anchorSpec) {
-                if (childContext.widthAuthority == 2 && anchorSpec.right) {
+                if (childContext.widthModel.calculated && anchorSpec.right) {
                     dimensions |= 1;
                 }
-                if (childContext.heightAuthority == 2 && anchorSpec.bottom) {
+                if (childContext.heightModel.calculated && anchorSpec.bottom) {
                     dimensions |= 2;
                 }
 
@@ -218,11 +216,11 @@ Ext.define('Ext.layout.container.Anchor', {
             childMargins = childContext.getMarginInfo();
             anchorSpec = childContext.target.anchorSpec;
 
-            // Check widthAuthority in case "defaults" has applied an anchor to a component
+            // Check widthModel in case "defaults" has applied an anchor to a component
             // that also has width (which must win). If we did not make this check in this
             // way, we would attempt to calculate a width where it had been configured.
             //
-            if (gotWidth && childContext.widthAuthority == 2) {
+            if (gotWidth && childContext.widthModel.calculated) {
                 width = anchorSpec.right(ownerWidth) - childMargins.width;
                 width = me.adjustWidthAnchor(width, childContext);
 
@@ -230,7 +228,7 @@ Ext.define('Ext.layout.container.Anchor', {
             }
 
             // Repeat for height
-            if (gotHeight && childContext.heightAuthority == 2) {
+            if (gotHeight && childContext.heightModel.calculated) {
                 height = anchorSpec.bottom(ownerHeight) - childMargins.height;
                 height = me.adjustHeightAnchor(height, childContext);
 
@@ -251,8 +249,8 @@ Ext.define('Ext.layout.container.Anchor', {
 
     //<debug>
     sanityCheck: function (ownerContext) {
-        var autoWidth = ownerContext.autoWidth,
-            autoHeight = ownerContext.autoHeight,
+        var shrinkWrapWidth = ownerContext.widthModel.shrinkWrap,
+            shrinkWrapHeight = ownerContext.heightModel.shrinkWrap,
             children = ownerContext.childItems,
             anchorSpec, comp, childContext;
 
@@ -262,20 +260,20 @@ Ext.define('Ext.layout.container.Anchor', {
             anchorSpec = comp.anchorSpec;
 
             if (anchorSpec) {
-                if (childContext.widthAuthority == 2 && anchorSpec.right) {
-                    if (autoWidth) {
+                if (childContext.widthModel.calculated && anchorSpec.right) {
+                    if (shrinkWrapWidth) {
                         Ext.log({
                             level: 'warn',
-                            msg: 'Right anchor on '+comp.id+' in autoWidth container'
+                            msg: 'Right anchor on '+comp.id+' in shrinkWrap width container'
                         });
                     }
                 }
 
-                if (childContext.heightAuthority == 2 && anchorSpec.bottom) {
-                    if (autoHeight) {
+                if (childContext.heightModel.calculated && anchorSpec.bottom) {
+                    if (shrinkWrapHeight) {
                         Ext.log({
                             level: 'warn',
-                            msg: 'Bottom anchor on '+comp.id+' in autoHeight container'
+                            msg: 'Bottom anchor on '+comp.id+' in shrinkWrap height container'
                         });
                     }
                 }

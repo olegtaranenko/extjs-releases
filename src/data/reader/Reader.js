@@ -221,6 +221,7 @@ Ext.define('Ext.data.reader.Reader', {
      * {@link Ext.data.proxy.Proxy#metachange metachange} event which passes this exact same meta
      * object to listeners. However this property is available if it's more convenient to access it
      * via the reader directly in certain cases.
+     * @readonly
      */
     
     // private
@@ -305,25 +306,12 @@ Ext.define('Ext.data.reader.Reader', {
         me.rawData = data;
 
         data = me.getData(data);
-
-        // If we pass an array as the data, we dont use getRoot on the data.
-        // Instead the root equals to the data.
-        var root    = Ext.isArray(data) ? data : me.getRoot(data),
-            success = true,
+        
+        var success = true,
             recordCount = 0,
-            total, value, records, message;
+            records = [],
+            root, total, value, message;
             
-        if (root) {
-            total = root.length;
-        }
-
-        if (me.totalProperty) {
-            value = parseInt(me.getTotal(data), 10);
-            if (!isNaN(value)) {
-                total = value;
-            }
-        }
-
         if (me.successProperty) {
             value = me.getSuccess(data);
             if (value === false || value === 'false') {
@@ -334,13 +322,29 @@ Ext.define('Ext.data.reader.Reader', {
         if (me.messageProperty) {
             message = me.getMessage(data);
         }
+
         
-        if (root) {
-            records = me.extractData(root);
-            recordCount = records.length;
-        } else {
-            recordCount = 0;
-            records = [];
+        // Only try and extract other data if call was successful
+        if (success) {
+            // If we pass an array as the data, we dont use getRoot on the data.
+            // Instead the root equals to the data.
+            root = Ext.isArray(data) ? data : me.getRoot(data);
+            
+            if (root) {
+                total = root.length;
+            }
+
+          if (me.totalProperty) {
+                value = parseInt(me.getTotal(data), 10);
+                if (!isNaN(value)) {
+                    total = value;
+                }
+            }
+
+           if (root) {
+                records = me.extractData(root);
+                recordCount = records.length;
+            }
         }
 
         return new Ext.data.ResultSet({
@@ -378,6 +382,10 @@ Ext.define('Ext.data.reader.Reader', {
             // Create a record with an empty data object.
             // Populate that data object by extracting and converting field values from raw data
             record = new Model(undefined, id, node, convertedValues = {});
+
+            // If the server did not include an id in the response data, the Model constructor will mark the record as phantom.
+            // We  need to set phantom to false here because records created from a server response using a reader by definition are not phantom records.
+            record.phantom = false;
 
             for (j = 0; j < fieldLength; j++) {
                 field = fields[j];
@@ -562,7 +570,9 @@ Ext.define('Ext.data.reader.Reader', {
             totalProp   = me.totalProperty,
             successProp = me.successProperty,
             messageProp = me.messageProperty,
-            accessor;
+            accessor,
+            idField,
+            map;
             
         if (force === true) {
             delete me.extractorFunctions;
@@ -586,6 +596,11 @@ Ext.define('Ext.data.reader.Reader', {
         }
 
         if (idProp) {
+            idField = me.model.prototype.fields.get(idProp);
+            if (idField) {
+                map = idField.mapping;
+                idProp = (map !== undefined && map !== null) ? map : idProp;
+            }
             accessor = me.createAccessor(idProp);
 
             me.getId = function(record) {
@@ -623,7 +638,7 @@ Ext.define('Ext.data.reader.Reader', {
         me.extractorFunctions = extractorFunctions;
     }
 }, function() {
-    Ext.apply(this, {
+    Ext.apply(this.prototype, {
         // Private. Empty ResultSet to return when response is falsy (null|undefined|empty string)
         nullResultSet: new Ext.data.ResultSet({
             total  : 0,

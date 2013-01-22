@@ -1,6 +1,5 @@
 /**
  * Component layout for tabs
- * @class Ext.layout.component.Tab
  * @private
  */
 Ext.define('Ext.layout.component.Tab', {

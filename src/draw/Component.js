@@ -74,13 +74,15 @@ Ext.define('Ext.draw.Component', {
     /**
      * @cfg {Boolean} viewBox
      * Turn on view box support which will scale and position items in the draw component to fit to the component while
-     * maintaining aspect ratio. Note that this scaling can override other sizing settings on yor items. Defaults to true.
+     * maintaining aspect ratio. Note that this scaling can override other sizing settings on your items.
      */
     viewBox: true,
 
+    shrinkWrap: 3,
+    
     /**
      * @cfg {Boolean} autoSize
-     * Turn on autoSize support which will set the bounding div's size to the natural size of the contents. Defaults to false.
+     * Turn on autoSize support which will set the bounding div's size to the natural size of the contents.
      */
     autoSize: false,
 
@@ -172,7 +174,7 @@ Ext.define('Ext.draw.Component', {
         }
     },
 
-    //@private
+    // @private
     autoSizeSurface: function() {
         var me = this,
             items = me.surface.items,
@@ -186,14 +188,8 @@ Ext.define('Ext.draw.Component', {
                 y: -bbox.y + (+Ext.isOpera)
             }
         }, true);
-        if (me.rendered) {
-            me.setSize(width, height);
-            me.surface.setSize(width, height);
-        }
-        else {
-            me.surface.setSize(width, height);
-        }
-        me.el.setSize(width, height);
+        me.surface.setSize(width, height);
+        me.updateLayout();
     },
 
     /**

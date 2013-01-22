@@ -1,7 +1,5 @@
 /**
  * Component layout for editors
- * @class Ext.layout.container.Editor
- * @extends Ext.layout.container.Container
  * @private
  */
 Ext.define('Ext.layout.container.Editor', {

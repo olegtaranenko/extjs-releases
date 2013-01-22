@@ -1,27 +1,14 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 Ext.Loader.setConfig({enabled: true});
 Ext.Loader.setPath('Ext.ux', '../ux');
 Ext.require([
     'Ext.form.Panel',
     'Ext.ux.form.MultiSelect',
-    'Ext.ux.form.ItemSelector'
+    'Ext.ux.form.ItemSelector',
+    'Ext.tip.QuickTipManager'
 ]);
 
 Ext.onReady(function(){
-    
+    Ext.tip.QuickTipManager.init();
     function createDockedItems(fieldId) {
         return [{
             xtype: 'toolbar',
@@ -29,6 +16,12 @@ Ext.onReady(function(){
             items: {
                 text: 'Options',
                 menu: [{
+                    text: 'Get value',
+                    handler: function(){
+                        var value = Ext.getCmp(fieldId).getValue();
+                        Ext.Msg.alert('Value is a split array', value.join(', '));
+                    } 
+                }, {
                     text: 'Set value (2,3)',
                     handler: function(){
                         Ext.getCmp(fieldId).setValue(['2', '3']);
@@ -67,7 +60,7 @@ Ext.onReady(function(){
                 text: 'Clear',
                 handler: function(){
                     var field = Ext.getCmp(fieldId);
-                    if (!field.readOnly && !field.disabled) {
+                    if (!field.disabled) {
                         field.clearValue();
                     }
                 }
@@ -80,6 +73,7 @@ Ext.onReady(function(){
                 text: 'Save',
                 handler: function(){
                     var form = Ext.getCmp(fieldId).up('form').getForm();
+                    form.getValues(true);
                     if (form.isValid()){
                         Ext.Msg.alert('Submitted Values', 'The following will be sent to the server: <br />'+
                             form.getValues(true));
@@ -113,8 +107,7 @@ Ext.onReady(function(){
         }],
         dockedItems: createDockedItems('multiselect-field')
     });
-
-
+    
     var ds = Ext.create('Ext.data.ArrayStore', {
         data: [[123,'One Hundred Twenty Three'],
             ['1', 'One'], ['2', 'Two'], ['3', 'Three'], ['4', 'Four'], ['5', 'Five'],
@@ -133,7 +126,9 @@ Ext.onReady(function(){
         title: 'ItemSelector Test',
         width: 700,
         bodyPadding: 10,
+        height: 300,
         renderTo: 'itemselector',
+        layout: 'fit',
         items:[{
             xtype: 'itemselector',
             name: 'itemselector',
@@ -152,4 +147,3 @@ Ext.onReady(function(){
     });
 
 });
-

@@ -1,5 +1,4 @@
 /**
- * @class Ext.view.BoundListKeyNav
  * A specialized {@link Ext.util.KeyNav} implementation for navigating a {@link Ext.view.BoundList} using
  * the keyboard. The up, down, pageup, pagedown, home, and end keys move the active highlight
  * through the list. The enter key invokes the selection model's select action using the highlighted item.

@@ -1,50 +1,70 @@
 /**
- * @class Ext.Layer
  * An extended {@link Ext.Element} object that supports a shadow and shim, constrain to viewport and
  * automatic maintaining of shadow/shim positions.
- *
- * @cfg {Boolean} [shim=true]
- * False to disable the iframe shim in browsers which need one.
- *
- * @cfg {String/Boolean} [shadow=false]
- * True to automatically create an {@link Ext.Shadow}, or a string indicating the
- * shadow's display {@link Ext.Shadow#mode}. False to disable the shadow.
- *
- * @cfg {Object} [dh={tag: 'div', cls: 'x-layer'}]
- * DomHelper object config to create element with.
- *
- * @cfg {Boolean} [constrain=true]
- * False to disable constrain to viewport.
- *
- * @cfg {String} cls
- * CSS class to add to the element
- *
- * @cfg {Number} [zindex=11000]
- * Starting z-index.
- *
- * @cfg {Number} [shadowOffset=4]
- * Number of pixels to offset the shadow
- *
- * @cfg {Boolean} [useDisplay=false]
- * Defaults to use css offsets to hide the Layer. Specify <tt>true</tt>
- * to use css style <tt>'display:none;'</tt> to hide the Layer.
- *
- * @cfg {String} visibilityCls
- * The CSS class name to add in order to hide this Layer if this layer
- * is configured with <code>{@link #hideMode}: 'asclass'</code>
- *
- * @cfg {String} hideMode
- * A String which specifies how this Layer will be hidden.
- * Values may be<div class="mdetail-params"><ul>
- * <li><code>'display'</code> : The Component will be hidden using the <code>display: none</code> style.</li>
- * <li><code>'visibility'</code> : The Component will be hidden using the <code>visibility: hidden</code> style.</li>
- * <li><code>'offsets'</code> : The Component will be hidden by absolutely positioning it out of the visible area of the document. This
- * is useful when a hidden Component must maintain measurable dimensions. Hiding using <code>display</code> results
- * in a Component having zero dimensions.</li></ul></div>
  */
 Ext.define('Ext.Layer', {
     extend: 'Ext.Element',
     uses: ['Ext.Shadow'],
+
+    /**
+     * @cfg {Boolean} [shim=true]
+     * False to disable the iframe shim in browsers which need one.
+     */
+
+    /**
+     * @cfg {String/Boolean} [shadow=false]
+     * True to automatically create an {@link Ext.Shadow}, or a string indicating the
+     * shadow's display {@link Ext.Shadow#mode}. False to disable the shadow.
+     */
+
+    /**
+     * @cfg {Object} [dh={tag: 'div', cls: 'x-layer'}]
+     * DomHelper object config to create element with.
+     */
+
+    /**
+     * @cfg {Boolean} [constrain=true]
+     * False to disable constrain to viewport.
+     */
+
+    /**
+     * @cfg {String} cls
+     * CSS class to add to the element
+     */
+
+    /**
+     * @cfg {Number} [zindex=11000]
+     * Starting z-index.
+     */
+
+    /**
+     * @cfg {Number} [shadowOffset=4]
+     * Number of pixels to offset the shadow
+     */
+
+    /**
+     * @cfg {Boolean} [useDisplay=false]
+     * Defaults to use css offsets to hide the Layer. Specify <tt>true</tt>
+     * to use css style <tt>'display:none;'</tt> to hide the Layer.
+     */
+
+    /**
+     * @cfg {String} visibilityCls
+     * The CSS class name to add in order to hide this Layer if this layer
+     * is configured with <code>{@link #hideMode}: 'asclass'</code>
+     */
+
+    /**
+     * @cfg {String} hideMode
+     * A String which specifies how this Layer will be hidden.
+     * Values may be:
+     *
+     * - `'display'` : The Component will be hidden using the `display: none` style.
+     * - `'visibility'` : The Component will be hidden using the `visibility: hidden` style.
+     * - `'offsets'` : The Component will be hidden by absolutely positioning it out of the visible area
+     *   of the document. This is useful when a hidden Component must maintain measurable dimensions.
+     *   Hiding using `display` results in a Component having zero dimensions.
+     */
 
     // shims are shared among layer to keep from having 100 iframes
     statics: {
@@ -53,8 +73,8 @@ Ext.define('Ext.Layer', {
 
     /**
      * Creates new Layer.
-     * @param {Object} config (optional) An object with config options.
-     * @param {String/HTMLElement} existingEl (optional) Uses an existing DOM element.
+     * @param {Object} [config] An object with config options.
+     * @param {String/HTMLElement} [existingEl] Uses an existing DOM element.
      * If the element is not found it creates it.
      */
     constructor: function(config, existingEl) {
@@ -188,10 +208,12 @@ Ext.define('Ext.Layer', {
 
     /**
      * @private
-     * <p>Synchronize this Layer's associated elements, the shadow, and possibly the shim.</p>
-     * <p>This code can execute repeatedly in milliseconds,
+     * Synchronize this Layer's associated elements, the shadow, and possibly the shim.
+     *
+     * This code can execute repeatedly in milliseconds,
      * eg: dragging a Component configured liveDrag: true, or which has no ghost method
-     * so code size was sacrificed for efficiency (e.g. no getBox/setBox, no XY calls)</p>
+     * so code size was sacrificed for efficiency (e.g. no getBox/setBox, no XY calls)
+     *
      * @param {Boolean} doShow Pass true to ensure that the shadow is shown.
      */
     sync: function(doShow) {
@@ -487,10 +509,13 @@ Ext.define('Ext.Layer', {
     },
 
     /**
-     * <p>Sets the z-index of this layer and adjusts any shadow and shim z-indexes. The layer z-index is automatically
-     * incremented depending upon the presence of a shim or a shadow in so that it always shows above those two associated elements.</p>
-     * <p>Any shim, will be assigned the passed z-index. A shadow will be assigned the next highet z-index, and the Layer's
-     * element will receive the highest  z-index.
+     * Sets the z-index of this layer and adjusts any shadow and shim z-indexes. The layer
+     * z-index is automatically incremented depending upon the presence of a shim or a
+     * shadow in so that it always shows above those two associated elements.
+     *
+     * Any shim, will be assigned the passed z-index. A shadow will be assigned the next
+     * highet z-index, and the Layer's element will receive the highest  z-index.
+     *
      * @param {Number} zindex The new z-index to set
      * @return {Ext.Layer} The Layer
      */

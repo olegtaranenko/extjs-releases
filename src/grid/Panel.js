@@ -264,7 +264,6 @@
  *         // Use a PagingGridScroller (this is interchangeable with a PagingToolbar)
  *         verticalScrollerType: 'paginggridscroller',
  *         // do not reset the scrollbar when the view refreshs
- *         invalidateScrollerOnRefresh: false,
  *         // infinite scrolling does not support selection
  *         disableSelection: true,
  *         // ...
@@ -327,8 +326,21 @@ Ext.define('Ext.grid.Panel', {
 
     // Required for the Lockable Mixin. These are the configurations which will be copied to the
     // normal and locked sub tablepanels
-    normalCfgCopy: ['invalidateScrollerOnRefresh', 'verticalScroller', 'verticalScrollDock', 'verticalScrollerType', 'scroll'],
-    lockedCfgCopy: ['invalidateScrollerOnRefresh'],
+    bothCfgCopy: [
+        'invalidateScrollerOnRefresh',
+        'hideHeaders',
+        'enableColumnHide',
+        'enableColumnMove',
+        'enableColumnResize',
+        'sortableColumns'
+    ],
+    normalCfgCopy: [ 
+        'verticalScroller', 
+        'verticalScrollDock', 
+        'verticalScrollerType', 
+        'scroll'
+    ],
+    lockedCfgCopy: [],
 
     /**
      * @cfg {Boolean} rowLines False to remove row line styling

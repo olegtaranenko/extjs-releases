@@ -160,8 +160,9 @@ Ext.define('Ext.grid.plugin.DragDrop', {
      * @param {String} dropPosition `"before"` or `"after"` depending on whether the mouse is above or below the midline
      * of the node.
      */
-
+    //<locale>
     dragText : '{0} selected row{1}',
+    //</locale>
 
     /**
      * @cfg {String} ddGroup

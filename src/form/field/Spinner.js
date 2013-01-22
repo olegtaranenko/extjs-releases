@@ -110,6 +110,16 @@ Ext.define('Ext.form.field.Spinner', {
      */
     onSpinDown: Ext.emptyFn,
 
+    triggerTpl: '<td style="{triggerStyle}" valign="top">' +
+                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-0 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-up role="button"></div>' +
+                '</td>' +
+            '</tr>' +
+            '<tr>' +
+                '<td style="{triggerStyle}" valign="top">' +
+                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-1 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-down" role="button"></div>' +
+                '</td>' +
+            '</tr>',
+
     initComponent: function() {
         this.callParent();
 
@@ -179,12 +189,38 @@ Ext.define('Ext.form.field.Spinner', {
         }
     },
 
+    getSubTplMarkup: function() {
+        var me = this,
+            field = Ext.form.field.Base.prototype.getSubTplMarkup.apply(me, arguments);
+
+        return '<table id="' + me.id + '-triggerWrap" class="' + Ext.baseCSSPrefix + 'form-trigger-wrap" cellpadding="0" cellspacing="0">' +
+            '<tbody>' +
+                '<tr><td id="' + me.id + '-inputCell" rowspan="2">' + field + '</td>' +
+                me.getTriggerMarkup() +
+            '</tbody></table>';
+    },
+
+    getTriggerMarkup: function() {
+        var me = this,
+            hideTrigger = (me.readOnly || me.hideTrigger);
+
+        return me.getTpl('triggerTpl').apply({
+            triggerStyle: 'width:' + me.triggerWidth + (hideTrigger ? 'px;display:none' : 'px')
+        });
+    },
+
     /**
-     * @private
-     * Override. Since the triggers are stacked, only measure the width of one of them.
+     * Get the total width of the spinner button area.
+     * @return {Number} The total spinner button width
      */
     getTriggerWidth: function() {
-        return this.hideTrigger || this.readOnly ? 0 : this.spinUpEl.getWidth() + this.triggerWrap.getFrameWidth('lr');
+        var me = this,
+            totalTriggerWidth = 0;
+
+        if (me.triggerWrap && !me.hideTrigger && !me.readOnly) {
+            totalTriggerWidth = me.triggerWidth;
+        }
+        return totalTriggerWidth;
     },
 
     /**

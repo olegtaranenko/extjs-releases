@@ -22,6 +22,17 @@
  * the `initialConfig` property of the FormPanel. Applying {@link Ext.form.Basic BasicForm}
  * configuration settings to `this` will *not* affect the BasicForm's configuration.
  * 
+ *     Ext.define('MyForm', {
+ *         extend: 'Ext.form.Panel',
+ *         constructor: function(config) {
+ *             Ext.applyIf(config, {
+ *                 // defaults for configs that should be passed along to the Basic form constructor go here
+ *                 trackResetOnLoad: true
+ *             });
+ *             this.callParent(arguments);
+ *         }
+ *     });
+ * 
  * The following events fired by the BasicForm will be re-fired by the FormPanel and can therefore be
  * listened for on the FormPanel itself:
  * 

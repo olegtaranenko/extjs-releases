@@ -154,7 +154,7 @@ Ext.define('Ext.menu.Item', {
         '<tpl else>',
             '<a id="{id}-itemEl" class="' + Ext.baseCSSPrefix + 'menu-item-link" href="{href}" <tpl if="hrefTarget">target="{hrefTarget}"</tpl> hidefocus="true" unselectable="on">',
                 '<img id="{id}-iconEl" src="{icon}" class="' + Ext.baseCSSPrefix + 'menu-item-icon {iconCls}" />',
-                '<span id="{id}-textEl" class="' + Ext.baseCSSPrefix + 'menu-item-text" <tpl if="menu">style="margin-right: 17px;"</tpl> >{text}</span>',
+                '<span id="{id}-textEl" class="' + Ext.baseCSSPrefix + 'menu-item-text" <tpl if="arrowCls">style="margin-right: 17px;"</tpl> >{text}</span>',
                 '<img id="{id}-arrowEl" src="{blank}" class="{arrowCls}" />',
             '</a>',
         '</tpl>'
@@ -186,9 +186,8 @@ Ext.define('Ext.menu.Item', {
         }
     },
 
-    blur: function() {
-        this.$focused = false;
-        this.callParent(arguments);
+    getFocusEl: function() {
+        return this.itemEl;
     },
 
     deactivate: function() {
@@ -210,7 +209,7 @@ Ext.define('Ext.menu.Item', {
             me.parentMenu.activeChild = me.menu;
             me.menu.parentItem = me;
             me.menu.parentMenu = me.menu.ownerCt = me.parentMenu;
-            me.menu.showBy(me, me.menuAlign);
+            me.menu.showBy(me, me.menuAlign, ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) ? [-2, -2] : undefined);
         }
     },
 
@@ -241,11 +240,6 @@ Ext.define('Ext.menu.Item', {
         }
     },
 
-    focus: function() {
-        this.$focused = true;
-        this.callParent(arguments);
-    },
-
     getRefItems: function(deep){
         var menu = this.menu,
             items;
@@ -269,7 +263,8 @@ Ext.define('Ext.menu.Item', {
     initComponent: function() {
         var me = this,
             prefix = Ext.baseCSSPrefix,
-            cls = [prefix + 'menu-item'];
+            cls = [prefix + 'menu-item'],
+            menu;
 
         me.addEvents(
             /**
@@ -306,7 +301,9 @@ Ext.define('Ext.menu.Item', {
         me.cls = cls.join(' ');
 
         if (me.menu) {
-            me.menu = Ext.menu.Manager.get(me.menu);
+            menu = me.menu;
+            delete me.menu;
+            me.setMenu(menu);
         }
 
         me.callParent(arguments);
@@ -380,12 +377,15 @@ Ext.define('Ext.menu.Item', {
             delete oldMenu.parentItem;
             delete oldMenu.parentMenu;
             delete oldMenu.ownerCt;
+            delete oldMenu.ownerItem;
+            
             if (destroyMenu === true || (destroyMenu !== false && me.destroyMenu)) {
                 Ext.destroy(oldMenu);
             }
         }
         if (menu) {
             me.menu = Ext.menu.Manager.get(menu);
+            me.menu.ownerItem = me;
         } else {
             me.menu = null;
         }
@@ -398,11 +398,23 @@ Ext.define('Ext.menu.Item', {
     /**
      * Sets the {@link #click} handler of this item
      * @param {Function} fn The handler function
-     * @param {Object} scope (optional) The scope of the handler function
+     * @param {Object} [scope] The scope of the handler function
      */
     setHandler: function(fn, scope) {
         this.handler = fn || null;
         this.scope = scope;
+    },
+    
+    /**
+     * Sets the {@link #icon} on this item.
+     * @param {String} icon The new icon 
+     */
+    setIcon: function(icon){
+        var iconEl = this.iconEl;
+        if (iconEl) {
+            iconEl.src = icon || Ext.BLANK_IMAGE_URL;
+        }
+        this.icon = icon;
     },
 
     /**
@@ -411,7 +423,7 @@ Ext.define('Ext.menu.Item', {
      */
     setIconCls: function(iconCls) {
         var me = this,
-            iconEl;
+            iconEl = me.iconEl;
 
         if (iconEl) {
             if (me.iconCls) {

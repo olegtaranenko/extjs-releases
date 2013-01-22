@@ -1,5 +1,4 @@
 /**
- * @class Ext.util.CSS
  * Utility class for manipulating CSS rules
  * @singleton
  */
@@ -116,10 +115,10 @@ Ext.define('Ext.util.CSS', function() {
         },
 
         /**
-        * Gets all css rules for the document
-        * @param {Boolean} refreshCache true to refresh the internal cache
-        * @return {Object} An object (hash) of rules indexed by selector
-        */
+         * Gets all css rules for the document
+         * @param {Boolean} refreshCache true to refresh the internal cache
+         * @return {Object} An object (hash) of rules indexed by selector
+         */
         getRules : function(refreshCache) {
             if (rules === null || refreshCache) {
                 rules = {};

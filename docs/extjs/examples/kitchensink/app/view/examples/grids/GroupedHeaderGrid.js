@@ -1,5 +1,7 @@
 Ext.define('KitchenSink.view.examples.grids.GroupedHeaderGrid', {
     extend: 'KitchenSink.view.examples.Example',
+    requires: ['KitchenSink.store.Companies'],
+    
     items: [
         {
             xtype: 'grid',
@@ -7,7 +9,7 @@ Ext.define('KitchenSink.view.examples.grids.GroupedHeaderGrid', {
             title: 'Grouped Header Grid',
             frame: true,
             
-            store: Ext.create('KitchenSink.store.Companies'),
+            store: 'Companies',
 
             width: 640,
             height: 400,

@@ -63,17 +63,20 @@ Ext.define('Ext.container.ButtonGroup', {
     alternateClassName: 'Ext.ButtonGroup',
 
 <span id='Ext-container-ButtonGroup-cfg-columns'>    /**
-</span>     * @cfg {Number} columns The `columns` configuration property passed to the
-     * {@link #layout configured layout manager}. See {@link Ext.layout.container.Table#columns}.
+</span>     * @cfg {Number} columns
+     * The `columns` configuration property passed to the {@link #layout configured layout manager}.
+     * See {@link Ext.layout.container.Table#columns}.
      */
 
 <span id='Ext-container-ButtonGroup-cfg-baseCls'>    /**
-</span>     * @cfg {String} [baseCls='x-btn-group']
+</span>     * @cfg {String} baseCls
+     * @inheritdoc
      */
     baseCls: Ext.baseCSSPrefix + 'btn-group',
 
 <span id='Ext-container-ButtonGroup-cfg-layout'>    /**
-</span>     * @cfg {Object} layout  Defaults to &lt;tt&gt;'table'&lt;/tt&gt;.  See {@link Ext.container.Container#layout}.
+</span>     * @cfg {Object} layout
+     * @inheritdoc
      */
     layout: {
         type: 'table'
@@ -82,7 +85,8 @@ Ext.define('Ext.container.ButtonGroup', {
     defaultType: 'button',
 
 <span id='Ext-container-ButtonGroup-cfg-frame'>    /**
-</span>     * @cfg {Boolean} frame  Defaults to &lt;tt&gt;true&lt;/tt&gt;.  See {@link Ext.panel.Panel#frame}.
+</span>     * @cfg {Boolean} frame
+     * @inheritdoc
      */
     frame: true,
 
@@ -156,23 +160,23 @@ Ext.define('Ext.container.ButtonGroup', {
 
 <span id='Ext-container-ButtonGroup-cfg-tools'>    /**
 </span>     * @cfg {Array} tools
-     * Not applicable for ButtonGroup.
+     * @private
      */
 <span id='Ext-container-ButtonGroup-cfg-collapsible'>    /**
 </span>     * @cfg {Boolean} collapsible
-     * Not applicable for ButtonGroup.
+     * @private
      */
 <span id='Ext-container-ButtonGroup-cfg-collapseMode'>    /**
 </span>     * @cfg {Boolean} collapseMode
-     * Not applicable for ButtonGroup.
+     * @private
      */
 <span id='Ext-container-ButtonGroup-cfg-animCollapse'>    /**
 </span>     * @cfg {Boolean} animCollapse
-     * Not applicable for ButtonGroup.
+     * @private
      */
 <span id='Ext-container-ButtonGroup-cfg-closable'>    /**
 </span>     * @cfg {Boolean} closable
-     * Not applicable for ButtonGroup.
+     * @private
      */
 });
 </pre>

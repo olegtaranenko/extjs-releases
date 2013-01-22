@@ -81,25 +81,27 @@
  */
 (function() {
 
-var HIDDEN = 'hidden';
-
-var VISIBILITY      = "visibility",
+var HIDDEN = 'hidden',
+    DOC             = document,
+    VISIBILITY      = "visibility",
     DISPLAY         = "display",
     NONE            = "none",
     XMASKED         = Ext.baseCSSPrefix + "masked",
     XMASKEDRELATIVE = Ext.baseCSSPrefix + "masked-relative",
-    EXTELMASKMSG    = Ext.baseCSSPrefix + "mask-msg";
+    EXTELMASKMSG    = Ext.baseCSSPrefix + "mask-msg",
+    bodyRe          = /^body/i,
 
-// speedy lookup for elements never to box adjust
-var noBoxAdjust = Ext.isStrict ? {
-    select: 1
-}: {
-    input: 1,
-    select: 1,
-    textarea: 1
-};
+//  speedy lookup for elements never to box adjust
+    noBoxAdjust = Ext.isStrict ? {
+        select: 1
+    }: {
+        input: 1,
+        select: 1,
+        textarea: 1
+    },
 
-var Element = Ext.define('Ext.dom.Element', {
+    Element = Ext.define('Ext.dom.Element', {
+
     extend: 'Ext.dom.AbstractElement',
 
     alternateClassName: ['Ext.Element', 'Ext.core.Element'],
@@ -113,15 +115,25 @@ var Element = Ext.define('Ext.dom.Element', {
      * @param {Number} [defer] Milliseconds to defer the focus
      * @return {Ext.dom.Element} this
      */
-    focus: function(defer, /* private */
-                    dom) {
-        var me = this;
+    focus: function(defer, /* private */ dom) {
+        var me = this,
+            scrollTop;
+
         dom = dom || me.dom;
         try {
             if (Number(defer)) {
                 Ext.defer(me.focus, defer, null, [null, dom]);
             } else {
+                
+                // Focusing a large element, the browser attempts to scroll as much of it into view
+                // as possible. We need to override this behaviour.
+                if (dom.offsetHeight > Element.getViewHeight()) {
+                    scrollTop = DOC.body.scrollTop;
+                }
                 dom.focus();
+                if (scrollTop !== undefined) {
+                    DOC.body.scrollTop = scrollTop;
+                }
             }
         } catch(e) {
         }
@@ -175,7 +187,7 @@ var Element = Ext.define('Ext.dom.Element', {
         return this.getAttribute(name, ns);
     },
 
-    getAttribute: (Ext.isIE && !(Ext.isIE9 && document.documentMode === 9)) ?
+    getAttribute: (Ext.isIE && !(Ext.isIE9 && DOC.documentMode === 9)) ?
         function(name, ns) {
             var d = this.dom,
                     type;
@@ -216,8 +228,7 @@ var Element = Ext.define('Ext.dom.Element', {
         if (deep !== true || !vis) {
             return vis;
         }
-
-        while (p && !(/^body/i.test(p.tagName))) {
+        while (p && !(bodyRe.test(p.tagName))) {
             if (!Ext.fly(p, '_isVisible').isVisible()) {
                 return false;
             }
@@ -240,7 +251,7 @@ var Element = Ext.define('Ext.dom.Element', {
      * @return {Ext.dom.Element} this
      */
     enableDisplayMode : function(display) {
-        this.setVisibilityMode(Ext.dom.Element.DISPLAY);
+        this.setVisibilityMode(Element.DISPLAY);
 
         if (!Ext.isEmpty(display)) {
             Element.data(this.dom, 'originalDisplay', display);
@@ -264,7 +275,7 @@ var Element = Ext.define('Ext.dom.Element', {
             mask          = me.maskEl,
             mm;
 
-        if (!(/^body/i.test(dom.tagName) && me.getStyle('position') == 'static')) {
+        if (!(bodyRe.test(dom.tagName) && me.getStyle('position') == 'static')) {
             me.addCls(XMASKEDRELATIVE);
         }
 
@@ -302,13 +313,13 @@ var Element = Ext.define('Ext.dom.Element', {
         // Fix for https://sencha.jira.com/browse/EXTJSIV-19.
         // IE6 strict mode and IE6-9 quirks mode takes off left+right padding when calculating width!
         if (!Ext.supports.IncludePaddingInWidthCalculation && setExpression) {
-            mask.dom.style.setExpression('width', 'this.parentNode.offsetWidth + "px"');
+            mask.dom.style.setExpression('width', 'this.parentNode.clientWidth + "px"');
         }
 
         // Some versions and modes of IE subtract top+bottom padding when calculating height.
         // Different versions from those which make the same error for width!
         if (!Ext.supports.IncludePaddingInHeightCalculation && setExpression) {
-            mask.dom.style.setExpression('height', 'this.parentNode.offsetHeight + "px"');
+            mask.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + "px"');
         }
         // ie will not expand full height automatically
         else if (Ext.isIE && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
@@ -360,7 +371,7 @@ var Element = Ext.define('Ext.dom.Element', {
      * @return {Ext.dom.Element} The new shim element
      */
     createShim : function() {
-        var el = document.createElement('iframe'),
+        var el = DOC.createElement('iframe'),
             shim;
 
         el.frameBorder = '0';
@@ -837,11 +848,16 @@ var Element = Ext.define('Ext.dom.Element', {
 
 }, function() {
 
-    var DOC = document,
-        EC = Ext.cache,
-        El = this,
+    var EC              = Ext.cache,
+        El              = this,
         AbstractElement = Ext.dom.AbstractElement,
-        focusRe = /button|input|textarea|select|object/;
+        focusRe         = /a|button|embed|iframe|img|input|object|select|textarea/i,
+        nonSpaceRe      = /\S/,
+        scriptTagRe     = /(?:<script([^>]*)?>)((\n|\r|.)*?)(?:<\/script>)/ig,
+        replaceScriptTagRe = /(?:<script.*?>)((\n|\r|.)*?)(?:<\/script>)/ig,
+        srcRe           = /\ssrc=([\'\"])(.*?)\1/i,
+        typeRe          = /\stype=([\'\"])(.*?)\1/i,
+        useDocForId = !(Ext.isIE6 || Ext.isIE7 || Ext.isIE8);
 
     El.boxMarkup = '<div class="{0}-tl"><div class="{0}-tr"><div class="{0}-tc"></div></div></div><div class="{0}-ml"><div class="{0}-mr"><div class="{0}-mc"></div></div></div><div class="{0}-bl"><div class="{0}-br"><div class="{0}-bc"></div></div></div>';
     //</!if>
@@ -996,7 +1012,7 @@ var Element = Ext.define('Ext.dom.Element', {
                 nx,
                 ni  = -1;
 
-            if (Ext.dom.Element.data(dom, 'isCleaned') && forceReclean !== true) {
+            if (Element.data(dom, 'isCleaned') && forceReclean !== true) {
                 return me;
             }
 
@@ -1004,7 +1020,7 @@ var Element = Ext.define('Ext.dom.Element', {
                 nx = n.nextSibling;
                 if (n.nodeType == 3) {
                     // Remove empty/whitespace text nodes
-                    if (!(/\S/.test(n.nodeValue))) {
+                    if (!(nonSpaceRe.test(n.nodeValue))) {
                         dom.removeChild(n);
                     // Combine adjacent text nodes
                     } else if (nx && nx.nodeType == 3) {
@@ -1021,13 +1037,13 @@ var Element = Ext.define('Ext.dom.Element', {
                 n = nx;
             }
 
-            Ext.dom.Element.data(dom, 'isCleaned', true);
+            Element.data(dom, 'isCleaned', true);
             return me;
         },
 
         /**
-         * Direct access to the Ext.ElementLoader {@link Ext.ElementLoader#load} method. The method takes the same object
-         * parameter as {@link Ext.ElementLoader#load}
+         * Direct access to the Ext.ElementLoader {@link Ext.ElementLoader#method-load} method. The method takes the same object
+         * parameter as {@link Ext.ElementLoader#method-load}
          * @return {Ext.dom.Element} this
          */
         load : function(options) {
@@ -1041,14 +1057,13 @@ var Element = Ext.define('Ext.dom.Element', {
          */
         getLoader : function() {
             var dom = this.dom,
-                data = Ext.dom.Element.data,
-                loader = data(dom, 'loader');
+                loader = Element.data(dom, 'loader');
 
             if (!loader) {
                 loader = new Ext.ElementLoader({
                     target: this
                 });
-                data(dom, 'loader', loader);
+                Element.data(dom, 'loader', loader);
             }
             return loader;
         },
@@ -1081,16 +1096,13 @@ var Element = Ext.define('Ext.dom.Element', {
             id  = Ext.id();
             html += '<span id="' + id + '"></span>';
 
-            interval = setInterval(function(){
-                if (!document.getElementById(id)) {
+            interval = setInterval(function() {
+                if (!(el = DOC.getElementById(id))) {
                     return false;
                 }
                 clearInterval(interval);
-                var DOC    = document,
-                    hd     = DOC.getElementsByTagName("head")[0],
-                    re     = /(?:<script([^>]*)?>)((\n|\r|.)*?)(?:<\/script>)/ig,
-                    srcRe  = /\ssrc=([\'\"])(.*?)\1/i,
-                    typeRe = /\stype=([\'\"])(.*?)\1/i,
+                Ext.removeNode(el);
+                var hd     = Ext.getHead().dom,
                     match,
                     attrs,
                     srcMatch,
@@ -1098,7 +1110,7 @@ var Element = Ext.define('Ext.dom.Element', {
                     el,
                     s;
 
-                while ((match = re.exec(html))) {
+                while ((match = scriptTagRe.exec(html))) {
                     attrs = match[1];
                     srcMatch = attrs ? attrs.match(srcRe) : false;
                     if (srcMatch && srcMatch[2]) {
@@ -1117,14 +1129,9 @@ var Element = Ext.define('Ext.dom.Element', {
                         }
                     }
                 }
-
-                el = DOC.getElementById(id);
-                if (el) {
-                    Ext.removeNode(el);
-                }
                 Ext.callback(callback, me);
             }, 20);
-            dom.innerHTML = html.replace(/(?:<script.*?>)((\n|\r|.)*?)(?:<\/script>)/ig, '');
+            dom.innerHTML = html.replace(replaceScriptTagRe, '');
             return me;
         },
 
@@ -1149,7 +1156,7 @@ var Element = Ext.define('Ext.dom.Element', {
                 proxy = renderTo ? Ext.DomHelper.append(renderTo, config, true) :
                                    Ext.DomHelper.insertBefore(me.dom, config, true);
 
-            proxy.setVisibilityMode(Ext.dom.Element.DISPLAY);
+            proxy.setVisibilityMode(Element.DISPLAY);
             proxy.hide();
             if (matchBox && me.setBox && me.getBox) { // check to make sure Element.position.js is loaded
                proxy.setBox(me.getBox());
@@ -1162,39 +1169,55 @@ var Element = Ext.define('Ext.dom.Element', {
          * @protected
          * @return {HTMLElement} The parent element
          */
-        getScopeParent: function(){
+        getScopeParent: function() {
             var parent = this.dom.parentNode;
             return Ext.scopeResetCSS ? parent.parentNode : parent;
         },
-        
+
+        /**
+         * Returns true if this element needs an explicit tabIndex to make it focusable. Input fields, text areas, buttons
+         * anchors elements **with an href** etc do not need a tabIndex, but structural elements do.
+         */
+        needsTabIndex: function() {
+            if (this.dom) {
+                if ((this.dom.nodeName === 'a') && (!this.dom.href)) {
+                    return true;
+                }
+                return !focusRe.test(this.dom.nodeName);
+            }
+        },
+
         /**
          * Checks whether this element can be focused.
          * @return {Boolean} True if the element is focusable
          */
         focusable: function () {
             var dom = this.dom,
-                nodeName = dom.nodeName.toLowerCase(),
-                canFocus = false,
-                hasTabIndex = !isNaN(dom.tabIndex);
+                nodeName = dom.nodeName,
+                canFocus = false;
 
             if (!dom.disabled) {
                 if (focusRe.test(nodeName)) {
-                    canFocus = true;
+                    if ((nodeName !== 'a') || dom.href) {
+                        canFocus = true;
+                    }
                 } else {
-                    canFocus = nodeName == 'a' ? dom.href || hasTabIndex : hasTabIndex;
+                    canFocus = !isNaN(dom.tabIndex);
                 }
             }
             return canFocus && this.isVisible(true);
         }
     });
 
-    if (Ext.isIE6 || Ext.isIE7 || Ext.isIE8) {
+    if (Ext.isIE) {
         El.prototype.getById = function (id, asDom) {
             var dom = this.dom,
                 cached, el, ret;
 
             if (dom) {
-                el = dom.all[id];
+                // for normal elements getElementById is the best solution, but if the el is
+                // not part of the document.body, we need to use all[]
+                el = (useDocForId && DOC.getElementById(id)) || dom.all[id];
                 if (el) {
                     if (asDom) {
                         ret = el;
@@ -1220,19 +1243,19 @@ var Element = Ext.define('Ext.dom.Element', {
     El.createAlias({
         /**
          * @method
-         * @alias Ext.dom.Element#on
+         * @inheritdoc Ext.dom.Element#on
          * Shorthand for {@link #on}.
          */
         addListener: 'on',
         /**
          * @method
-         * @alias Ext.dom.Element#un
+         * @inheritdoc Ext.dom.Element#un
          * Shorthand for {@link #un}.
          */
         removeListener: 'un',
         /**
          * @method
-         * @alias Ext.dom.Element#removeAllListeners
+         * @inheritdoc Ext.dom.Element#removeAllListeners
          * Alias for {@link #removeAllListeners}.
          */
         clearListeners: 'removeAllListeners'
@@ -1250,7 +1273,7 @@ var Element = Ext.define('Ext.dom.Element', {
 
     if (Ext.isIE) {
         Ext.getElementById = function (id) {
-            var el = document.getElementById(id),
+            var el = DOC.getElementById(id),
                 detachedBodyEl;
 
             if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl)) {
@@ -1259,11 +1282,11 @@ var Element = Ext.define('Ext.dom.Element', {
 
             return el;
         };
-    } else if (!document.querySelector) {
+    } else if (!DOC.querySelector) {
         Ext.getDetachedBody = Ext.getBody;
 
         Ext.getElementById = function (id) {
-            return document.getElementById(id);
+            return DOC.getElementById(id);
         };
     }
 });

@@ -74,7 +74,8 @@ Ext.define('Ext.menu.Menu', {
 
     /**
      * @cfg {Boolean} autoRender
-     * Not applicable for Menu. Floating is true, so autoRender always happens.
+     * Floating is true, so autoRender always happens.
+     * @private
      */
 
     /**
@@ -94,7 +95,8 @@ Ext.define('Ext.menu.Menu', {
 
     /**
      * @cfg {Boolean} constrain
-     * Not applicable for Menu. Menus are constrained to the document body by default.
+     * Menus are constrained to the document body by default.
+     * @private
      */
     constrain: true,
 
@@ -119,7 +121,7 @@ Ext.define('Ext.menu.Menu', {
 
     /**
      * @cfg {String/Object} layout
-     * Not applicable for Menu.
+     * @private
      */
 
     /**
@@ -239,12 +241,6 @@ Ext.define('Ext.menu.Menu', {
             });
         }
 
-        me.focusEl = me.el.createChild({
-            cls: prefix + 'menu-focus',
-            tabIndex: '-1',
-            html: space
-        });
-
         me.mon(me.el, {
             click: me.onClick,
             mouseover: me.onMouseOver,
@@ -292,8 +288,11 @@ Ext.define('Ext.menu.Menu', {
         }
     },
     
-    getBubbleTarget: function(){
-        return this.parentMenu || this.callParent();
+    getBubbleTarget: function() {
+        // If a submenu, this will have a parentMenu property
+        // If a menu of a Button, it will have an ownerButton property
+        // Else use the default method.
+        return this.parentMenu || this.ownerButton || this.callParent(arguments);
     },
 
     /**
@@ -320,7 +319,7 @@ Ext.define('Ext.menu.Menu', {
         // only blur if focusedItem is not a filter
         if (me.focusedItem && !me.filtered) {
             me.focusedItem.blur();
-            if (!me.focusedItem.$focused) {
+            if (!me.focusedItem.hasFocus) {
                 delete me.focusedItem;
             }
         }
@@ -328,7 +327,7 @@ Ext.define('Ext.menu.Menu', {
 
     // inherit docs
     getFocusEl: function() {
-        return this.focusEl;
+        return this.el;
     },
 
     // inherit docs
@@ -362,8 +361,7 @@ Ext.define('Ext.menu.Menu', {
     lookupItemFromObject: function(cmp) {
         var me = this,
             prefix = Ext.baseCSSPrefix,
-            cls,
-            intercept;
+            cls;
 
         if (!cmp.isComponent) {
             if (!cmp.xtype) {
@@ -379,15 +377,6 @@ Ext.define('Ext.menu.Menu', {
 
         if (!cmp.isMenuItem && !cmp.dock) {
             cls = [prefix + 'menu-item', prefix + 'menu-item-cmp'];
-            intercept = Ext.Function.createInterceptor;
-
-            // Wrap focus/blur to control component focus
-            cmp.focus = intercept(cmp.focus, function() {
-                this.$focused = true;
-            }, cmp);
-            cmp.blur = intercept(cmp.blur, function() {
-                this.$focused = false;
-            }, cmp);
 
             if (!me.plain && (cmp.indent === true || cmp.iconCls === 'no-icon')) {
                 cls.push(prefix + 'menu-item-indent');
@@ -424,7 +413,7 @@ Ext.define('Ext.menu.Menu', {
             return;
         }
 
-        if ((e.getTarget() == me.focusEl.dom) || e.within(me.layout.getRenderTarget())) {
+        if ((e.getTarget() == me.el.dom) || e.within(me.layout.getRenderTarget())) {
             item = me.getItemFromEvent(e) || me.activeItem;
 
             if (item) {
@@ -444,6 +433,8 @@ Ext.define('Ext.menu.Menu', {
         var me = this;
 
         Ext.menu.Manager.unregister(me);
+        delete me.parentMenu;
+        delete me.ownerButton;
         if (me.rendered) {
             me.el.un(me.mouseMonitor);
             me.keyNav.destroy();
@@ -519,15 +510,13 @@ Ext.define('Ext.menu.Menu', {
     /**
      * Shows the floating menu by the specified {@link Ext.Component Component} or {@link Ext.Element Element}.
      * @param {Ext.Component/Ext.Element} component The {@link Ext.Component} or {@link Ext.Element} to show the menu by.
-     * @param {String} position (optional) Alignment position as used by {@link Ext.Element#getAlignToXY}.
+     * @param {String} [position] Alignment position as used by {@link Ext.Element#getAlignToXY}.
      * Defaults to `{@link #defaultAlign}`.
-     * @param {Number[]} offsets (optional) Alignment offsets as used by {@link Ext.Element#getAlignToXY}. Defaults to `undefined`.
+     * @param {Number[]} [offsets] Alignment offsets as used by {@link Ext.Element#getAlignToXY}.
      * @return {Ext.menu.Menu} This Menu.
      */
     showBy: function(cmp, pos, off) {
-        var me = this,
-            xy,
-            region;
+        var me = this;
 
         if (me.floating && cmp) {
             me.layout.autoSize = true;
@@ -541,17 +530,10 @@ Ext.define('Ext.menu.Menu', {
                 me.hidden = true;
             }
 
-            // Component or Element
-            cmp = cmp.el || cmp;
-
-            // Convert absolute to floatParent-relative coordinates if necessary.
-            xy = me.el.getAlignToXY(cmp, pos || me.defaultAlign, off);
-            if (me.floatParent) {
-                region = me.floatParent.getTargetEl().getViewRegion();
-                xy[0] -= region.x;
-                xy[1] -= region.y;
-            }
-            me.showAt(xy);
+            // Align to Component or Element using setPagePosition because normal
+            // show methods are container-relative, and we must align to the requested element/Component
+            me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
+            me.show();
         }
         return me;
     },

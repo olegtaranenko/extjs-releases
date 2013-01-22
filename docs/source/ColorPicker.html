@@ -73,7 +73,7 @@
 
 <span id='Ext-menu-ColorPicker-cfg-maxHeight'>    /**
 </span>     * @cfg {Number} maxHeight
-     * Not applicable for ColorPicker.
+     * @private
      */
 
 <span id='Ext-menu-ColorPicker-property-picker'>    /**
@@ -83,7 +83,7 @@
 
 <span id='Ext-menu-ColorPicker-event-click'>    /**
 </span>     * @event click
-     * Not applicable for ColorPicker.
+     * @private
      */
 
     initComponent : function(){
@@ -108,7 +108,7 @@
 
 <span id='Ext-menu-ColorPicker-event-select'>        /**
 </span>         * @event select
-         * @alias Ext.picker.Color#select
+         * @inheritdoc Ext.picker.Color#select
          */
         me.relayEvents(me.picker, ['select']);
 

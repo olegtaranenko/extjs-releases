@@ -1,11 +1,41 @@
 /**
- * @class Ext.layout.component.Auto
- * @private
+ * The class is the default component layout for {@link Ext.Component} when no explicit
+ * `{@link Ext.Component#componentLayout componentLayout}` is configured.
  *
- * <p>The AutoLayout is the default layout manager delegated by {@link Ext.Component} to
- * render any child Elements when no <tt>{@link Ext.container.Container#layout layout}</tt> is configured.</p>
+ * This class uses template methods to perform the individual aspects of measurement,
+ * calculation and publication of results. The methods called depend on the component's
+ * {@link Ext.AbstractComponent#getSizeModel size model}.
+ * 
+ * ## configured / calculated
+ *
+ * In either of these size models, the dimension of the outer element is of a known size.
+ * The size is found in the `ownerContext` (the {@link Ext.layout.ContextItem} for the owner
+ * component) as either "width" or "height". This value, if available, is passed to the
+ * {@link #publishInnerWidth} or (@link #publishInnerHeight} method, respectively.
+ * 
+ * ## shrinkWrap
+ *
+ * When a dimension uses the `shrinkWrap` size model, that means the content is measured,
+ * then the outer (owner) size is calculated and published.
+ * 
+ * For example, for a shrinkWrap width, the following sequence of calls are made:
+ * 
+ * * {@link Ext.layout.component.Component#measureContentWidth}
+ * * {@link #publishOwnerWidth}
+ *    * {@link #calculateOwnerWidthFromContentWidth}
+ *    * {@link #publishInnerWidth} (in the event of hitting a min/maxWidth constraint)
+ *
+ * ## natural
+ *
+ * When a dimension uses the `natural` size model, the measurement is made on the outer
+ * (owner) element. This size is then used to determine the content area in much the same
+ * way as if the outer element had a `configured` or `calculated` size model.
+ * 
+ * * {@link Ext.layout.component.Component#measureOwnerWidth}
+ * * {@link #publishInnerWidth}
+ *
+ * @protected
  */
-
 Ext.define('Ext.layout.component.Auto', {
 
     /* Begin Definitions */
@@ -19,29 +49,63 @@ Ext.define('Ext.layout.component.Auto', {
     type: 'autocomponent',
 
     /**
-     * @private
+     * @cfg {Boolean} [setHeightInDom=false]
+     * @protected
      * When publishing height of an auto Component, it is usually not written to the DOM.
-     * Setting this to <code>true</code> overrides this behaviour.
+     * Setting this to `true` overrides this behaviour.
      */
     setHeightInDom: false,
 
-    
     /**
-     * @private
+     * @cfg {Boolean} [setWidthInDom=false]
+     * @protected
      * When publishing width of an auto Component, it is usually not written to the DOM.
-     * Setting this to <code>true</code> overrides this behaviour.
+     * Setting this to `true` overrides this behaviour.
      */
     setWidthInDom: false,
 
+    waitForOuterHeightInDom: false,
+    waitForOuterWidthInDom: false,
+
     calculate: function(ownerContext) {
         var me = this,
-            measurement = me.measureAutoDimensions(ownerContext);
+            measurement = me.measureAutoDimensions(ownerContext),
+            heightModel = ownerContext.heightModel,
+            widthModel = ownerContext.widthModel,
+            width, height;
 
+        // It is generally important to process widths before heights, since widths can
+        // often effect heights...
         if (measurement.gotWidth) {
-            me.publishOwnerWidth(ownerContext, measurement.contentWidth);
+            if (widthModel.shrinkWrap) {
+                me.publishOwnerWidth(ownerContext, measurement.contentWidth);
+            } else if (me.publishInnerWidth) {
+                me.publishInnerWidth(ownerContext, measurement.width);
+            }
+        } else if (!widthModel.auto && me.publishInnerWidth) {
+            width = me.waitForOuterWidthInDom ? ownerContext.getDomProp('width')
+                        : ownerContext.getProp('width');
+            if (width === undefined) {
+                me.done = false;
+            } else {
+                me.publishInnerWidth(ownerContext, width);
+            }
         }
+
         if (measurement.gotHeight) {
-            me.publishOwnerHeight(ownerContext, measurement.contentHeight);
+            if (heightModel.shrinkWrap) {
+                me.publishOwnerHeight(ownerContext, measurement.contentHeight);
+            } else if (me.publishInnerHeight) {
+                me.publishInnerHeight(ownerContext, measurement.height);
+            }
+        } else if (!heightModel.auto && me.publishInnerHeight) {
+            height = me.waitForOuterHeightInDom ? ownerContext.getDomProp('height')
+                        : ownerContext.getProp('height');
+            if (height === undefined) {
+                me.done = false;
+            } else {
+               me.publishInnerHeight(ownerContext, height);
+            }
         }
 
         if (!measurement.gotAll) {
@@ -49,18 +113,16 @@ Ext.define('Ext.layout.component.Auto', {
         }
     },
 
+    // OwnerContext padding is always added into contentWidth/Height by all container layouts
+    // so we must subtract it when adding the frameInfo to calculate the owner width/height
+    // because frameInfo includes padding+framing+border
+
     calculateOwnerHeightFromContentHeight: function (ownerContext, contentHeight) {
-        // OwnerContext padding is always added into contentHeight by all container layouts
-        // so we must subtract it when adding the frameInfo to calculate the Component height
-        // because frameInfo includes padding+framing+border
-        return contentHeight - ownerContext.getPaddingInfo().height + ownerContext.getFrameInfo().height;
+        return contentHeight + ownerContext.getFrameInfo().height;
     },
 
     calculateOwnerWidthFromContentWidth: function (ownerContext, contentWidth) {
-        // OwnerContext padding is always added into contentWidth by all container layouts
-        // so we must subtract it when adding the frameInfo to calculate the Component width
-        // because frameInfo includes padding+framing+border
-        return contentWidth - ownerContext.getPaddingInfo().width + ownerContext.getFrameInfo().width;
+        return contentWidth + ownerContext.getFrameInfo().width;
     },
 
     publishOwnerHeight: function (ownerContext, contentHeight) {
@@ -77,12 +139,13 @@ Ext.define('Ext.layout.component.Auto', {
             if (constrainedHeight == height) {
                 dirty = me.setHeightInDom;
             } else {
-                ownerContext.autoHeight = false;
-                ownerContext.heightAuthority = 1;
+                ownerContext.heightModel = me.sizeModels.configured;
                 height = constrainedHeight;
-                // TODO: we might need to invalidate here...
+                if (me.publishInnerHeight) {
+                    me.publishInnerHeight(ownerContext, height);
+                }
             }
-
+            
             ownerContext.setHeight(height, dirty);
         }
     },
@@ -101,10 +164,11 @@ Ext.define('Ext.layout.component.Auto', {
             if (constrainedWidth == width) {
                 dirty = me.setWidthInDom;
             } else {
-                ownerContext.autoWidth = false;
-                ownerContext.widthAuthority = 1;
+                ownerContext.widthModel = me.sizeModels.configured;
                 width = constrainedWidth;
-                // TODO: we might need to invalidate here...
+                if (me.publishInnerWidth) {
+                    me.publishInnerWidth(ownerContext, width);
+                }
             }
 
             ownerContext.setWidth(width, dirty);

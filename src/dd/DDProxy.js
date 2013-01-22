@@ -7,7 +7,6 @@
  */
 
 /**
- * @class Ext.dd.DDProxy
  * A DragDrop implementation that inserts an empty, bordered div into
  * the document that follows the cursor during drag operations.  At the time of
  * the click, the frame div is resized to the dimensions of the linked html
@@ -47,27 +46,24 @@ Ext.define('Ext.dd.DDProxy', {
     },
 
     /**
+     * @property {Boolean} resizeFrame
      * By default we resize the drag frame to be the same size as the element
      * we want to drag (this is to get the frame effect).  We can turn it off
      * if we want a different behavior.
-     * @property resizeFrame
-     * @type Boolean
      */
     resizeFrame: true,
 
     /**
+     * @property {Boolean} centerFrame
      * By default the frame is positioned exactly where the drag element is, so
      * we use the cursor offset provided by Ext.dd.DD.  Another option that works only if
      * you do not have constraints on the obj is to have the drag frame centered
      * around the cursor.  Set centerFrame to true for this effect.
-     * @property centerFrame
-     * @type Boolean
      */
     centerFrame: false,
 
     /**
      * Creates the proxy element if it does not yet exist
-     * @method createFrame
      */
     createFrame: function() {
         var self = this;
@@ -101,7 +97,6 @@ Ext.define('Ext.dd.DDProxy', {
     /**
      * Initialization for the drag frame element.  Must be called in the
      * constructor of all subclasses
-     * @method initFrame
      */
     initFrame: function() {
         this.createFrame();
@@ -118,7 +113,6 @@ Ext.define('Ext.dd.DDProxy', {
     /**
      * Resizes the drag frame to the dimensions of the clicked object, positions
      * it over the object, and finally displays it
-     * @method showFrame
      * @param {Number} iPageX X click position
      * @param {Number} iPageY Y click position
      * @private
@@ -143,7 +137,6 @@ Ext.define('Ext.dd.DDProxy', {
     /**
      * The proxy is automatically resized to the dimensions of the linked
      * element when a drag is initiated, unless resizeFrame is set to false
-     * @method _resizeProxy
      * @private
      */
     _resizeProxy: function() {

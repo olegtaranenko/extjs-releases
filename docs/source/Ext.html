@@ -90,6 +90,16 @@ var Ext = Ext || {};
     }, Ext.buildSettings || {});
 
     Ext.apply(Ext, {
+
+<span id='Ext-property-name'>        /**
+</span>         * @property {String} [name='Ext']
+         * &lt;p&gt;The name of the property in the global namespace (The &lt;code&gt;window&lt;/code&gt; in browser environments) which refers to the current instance of Ext.&lt;/p&gt;
+         * &lt;p&gt;This is usually &lt;code&gt;&quot;Ext&quot;&lt;/code&gt;, but if a sandboxed build of ExtJS is being used, this will be an alternative name.&lt;/p&gt;
+         * &lt;p&gt;If code is being generated for use by &lt;code&gt;eval&lt;/code&gt; or to create a &lt;code&gt;new Function&lt;/code&gt;, and the global instance
+         * of Ext must be referenced, this is the name that should be built into the code.&lt;/p&gt;
+         */
+        name: Ext.sandboxName || 'Ext',
+
 <span id='Ext-property-emptyFn'>        /**
 </span>         * A reusable empty function
          */
@@ -494,7 +504,9 @@ var Ext = Ext || {};
                 if (type == 'function') {
                     // In Safari, NodeList/HTMLCollection both return &quot;function&quot; when using typeof, so we need
                     // to explicitly check them here.
-                    checkLength = value instanceof NodeList || value instanceof HTMLCollection;
+                    if (Ext.isSafari) {
+                        checkLength = value instanceof NodeList || value instanceof HTMLCollection;
+                    }
                 } else {
                     checkLength = true;
                 }
@@ -596,7 +608,7 @@ var Ext = Ext || {};
                 ln = args.length;
                 if (ln &gt; 0) {
                     ln--;
-                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                    args[ln] = 'var Ext=window.' + Ext.name + ';' + args[ln];
                 }
             }
             idx = args.join('');
@@ -618,23 +630,37 @@ var Ext = Ext || {};
                 ln = args.length;
                 if (ln &gt; 0) {
                     ln--;
-                    args[ln] = 'var Ext=window.' + me.getUniqueGlobalNamespace() + ';' + args[ln];
+                    args[ln] = 'var Ext=window.' + Ext.name + ';' + args[ln];
                 }
             }
      
             return Function.prototype.constructor.apply(Function.prototype, args);
         },
 
-<span id='Ext-property-Logger'>        /**
+<span id='Ext-property-globalEval'>        /**
 </span>         * @property
          * @private
+         */
+        globalEval: ('execScript' in global) ? function(code) {
+            global.execScript(code)
+        } : function(code) {
+            (function(){
+                eval(code);
+            })();
+        },
+
+<span id='Ext-property-Logger'>        /**
+</span>         * @private
+         * @property
          */
         Logger: {
             verbose: emptyFn,
             log: emptyFn,
             info: emptyFn,
             warn: emptyFn,
-            error: emptyFn,
+            error: function(message) {
+                throw new Error(message);
+            },
             deprecate: emptyFn
         }
     });
@@ -643,7 +669,7 @@ var Ext = Ext || {};
 </span>     * Old alias to {@link Ext#typeOf}
      * @deprecated 4.0.0 Use {@link Ext#typeOf} instead
      * @method
-     * @alias Ext#typeOf
+     * @inheritdoc Ext#typeOf
      */
     Ext.type = Ext.typeOf;
 

@@ -73,7 +73,7 @@ Ext.define('Ext.slider.Multi', {
                 for (; i &lt; len; i++) {
                     thumb = thumbs[i];
                     thumbConfig = thumb.getElConfig();
-                    thumbConfig.id = me.id + '-thumb-' + i,
+                    thumbConfig.id = me.id + '-thumb-' + i;
                     Ext.DomHelper.generateMarkup(thumbConfig, out);
                 }
             },
@@ -83,8 +83,10 @@ Ext.define('Ext.slider.Multi', {
 
 <span id='Ext-slider-Multi-cfg-value'>    /**
 </span>     * @cfg {Number} value
-     * A value with which to initialize the slider. Defaults to minValue. Setting this will only result in the creation
+     * A value with which to initialize the slider. Setting this will only result in the creation
      * of a single slider thumb; if you want multiple thumbs then use the {@link #values} config instead.
+     *
+     * Defaults to #minValue.
      */
 
 <span id='Ext-slider-Multi-cfg-values'>    /**
@@ -173,9 +175,10 @@ Ext.define('Ext.slider.Multi', {
     useTips : true,
 
 <span id='Ext-slider-Multi-cfg-tipText'>    /**
-</span>     * @cfg {Function} tipText
-     * A function used to display custom text for the slider tip. Defaults to null, which will use the default on the
-     * plugin.
+</span>     * @cfg {Function} [tipText=undefined]
+     * A function used to display custom text for the slider tip.
+     *
+     * Defaults to null, which will use the default on the plugin.
      */
     tipText : null,
 
@@ -267,10 +270,6 @@ Ext.define('Ext.slider.Multi', {
             'dragend'
         );
 
-        if (me.vertical) {
-            Ext.apply(me, Ext.slider.Multi.Vertical);
-        }
-
         me.callParent();
 
         // only can use it if it exists.
@@ -291,7 +290,7 @@ Ext.define('Ext.slider.Multi', {
 
 <span id='Ext-slider-Multi-method-addThumb'>    /**
 </span>     * Creates a new thumb and adds it to the slider
-     * @param {Number} value The initial value to set on the thumb. Defaults to 0
+     * @param {Number} [value=0] The initial value to set on the thumb.
      * @return {Ext.slider.Thumb} The thumb
      */
     addThumb: function(value) {
@@ -366,52 +365,6 @@ Ext.define('Ext.slider.Multi', {
             thumb.el = me.el.getById(me.id + '-thumb-' + i);
             thumb.onRender();
         }
-
-    },
-
-    afterComponentLayout: function() {
-        var me = this,
-            i = 0,
-            thumbs = me.thumbs,
-            len = thumbs.length,
-            thumb,
-            v;
-
-        me.callParent(arguments);
-
-        if (!me.halfThumb) {
-            for (; i &lt; len; i++) {
-                thumb = thumbs[i];
-                if (thumb.value !== undefined) {
-                    v = me.normalizeValue(thumb.value);
-                    if (v !== thumb.value) {
-                        // delete this.value;
-                        me.setValue(i, v, false);
-                    } else {
-                        thumb.move(me.translateValue(v), false);
-                    }
-                }
-            }
-        }
-    },
-
-    // A Once-only method to calculate how to offset the thumb el position from its calculated center position.
-    getHalfThumbSize: function() {
-        var me = this;
-        if (!me.halfThumb) {
-            me.halfThumb = (me.vertical ? me.thumbs[0].el.getHeight() : me.thumbs[0].el.getWidth()) / 2;
-        }
-        return me.halfThumb;
-    },
-
-<span id='Ext-slider-Multi-method-onChange'>    /**
-</span>     * Utility method to set the value of the field when the slider changes.
-     * @param {Object} slider The slider object.
-     * @param {Object} v The new value.
-     * @private
-     */
-    onChange : function(slider, v) {
-        this.setValue(v, undefined, true);
     },
 
 <span id='Ext-slider-Multi-method-initEvents'>    /**
@@ -420,13 +373,39 @@ Ext.define('Ext.slider.Multi', {
      */
     initEvents : function() {
         var me = this;
-
         me.mon(me.el, {
             scope    : me,
             mousedown: me.onMouseDown,
-            keydown  : me.onKeyDown,
-            change : me.onChange
+            keydown  : me.onKeyDown
         });
+    },
+
+<span id='Ext-slider-Multi-method-getTrackpoint'>    /**
+</span>     * @private
+     * Given an `[x, y]` position within the slider's track, calculate how many pixels **from the slider origin**
+     * (left for horizontal Sliders and bottom for vertical Sliders) that point is.
+     *
+     * If the point is outside the range of the Slider's track, the return value is `undefined`
+     * @param {Number[]} xy The point to calculate the track point for
+     */
+    getTrackpoint : function(xy) {
+        var me = this,
+            result,
+            positionProperty,
+            sliderTrack = me.innerEl,
+            trackLength;
+
+        if (me.vertical) {
+            positionProperty = 'top',
+            trackLength = sliderTrack.getHeight();
+        } else {
+            positionProperty = 'left',
+            trackLength = sliderTrack.getWidth();
+        }
+        result = sliderTrack.translatePoints(xy)[positionProperty];
+        if (result &gt;= 0 &amp;&amp; result &lt;= trackLength) {
+            return me.vertical ? trackLength - result : result;
+        }
     },
 
 <span id='Ext-slider-Multi-method-onMouseDown'>    /**
@@ -441,7 +420,7 @@ Ext.define('Ext.slider.Multi', {
             i = 0,
             thumbs = me.thumbs,
             len = thumbs.length,
-            local;
+            trackPoint;
 
         if (me.disabled) {
             return;
@@ -453,45 +432,45 @@ Ext.define('Ext.slider.Multi', {
         }
 
         if (me.clickToChange &amp;&amp; !thumbClicked) {
-            local = me.innerEl.translatePoints(e.getXY());
-            me.onClickChange(local);
+            trackPoint = me.getTrackpoint(e.getXY());
+            if (trackPoint !== undefined) {
+                me.onClickChange(trackPoint);
+            }
         }
         me.focus();
     },
 
 <span id='Ext-slider-Multi-method-onClickChange'>    /**
 </span>     * @private
-     * Moves the thumb to the indicated position. Note that a Vertical implementation is provided in Ext.slider.Multi.Vertical.
+     * Moves the thumb to the indicated position.
      * Only changes the value if the click was within this.clickRange.
-     * @param {Object} local Object containing top and left values for the click event.
+     * @param {Number} trackPoint local pixel offset **from the origin** (left for horizontal and bottom for vertical) along the Slider's axis at which the click event occured.
      */
-    onClickChange : function(local) {
+    onClickChange : function(trackPoint) {
         var me = this,
             thumb, index;
 
-        if (local.top &gt; me.clickRange[0] &amp;&amp; local.top &lt; me.clickRange[1]) {
-            //find the nearest thumb to the click event
-            thumb = me.getNearest(local, 'left');
-            if (!thumb.disabled) {
-                index = thumb.index;
-                me.setValue(index, Ext.util.Format.round(me.reverseValue(local.left), me.decimalPrecision), undefined, true);
-            }
+        // How far along the track *from the origin* was the click.
+        // If vertical, the origin is the bottom of the slider track.
+
+        //find the nearest thumb to the click event
+        thumb = me.getNearest(trackPoint);
+        if (!thumb.disabled) {
+            index = thumb.index;
+            me.setValue(index, Ext.util.Format.round(me.reversePixelValue(trackPoint), me.decimalPrecision), undefined, true);
         }
     },
 
 <span id='Ext-slider-Multi-method-getNearest'>    /**
 </span>     * @private
      * Returns the nearest thumb to a click event, along with its distance
-     * @param {Object} local Object containing top and left values from a click event
-     * @param {String} prop The property of local to compare on. Use 'left' for horizontal sliders, 'top' for vertical ones
+     * @param {Number} trackPoint local pixel position along the Slider's axis to find the Thumb for
      * @return {Object} The closest thumb object and its distance from the click event
      */
-    getNearest: function(local, prop) {
+    getNearest: function(trackPoint) {
         var me = this,
-            localValue = prop == 'top' ? me.innerEl.getHeight() - local[prop] : local[prop],
-            clickValue = me.reverseValue(localValue),
+            clickValue = me.reversePixelValue(trackPoint),
             nearestDistance = (me.maxValue - me.minValue) + 5, //add a small fudge for the end of the slider
-            index = 0,
             nearest = null,
             thumbs = me.thumbs,
             i = 0,
@@ -507,7 +486,6 @@ Ext.define('Ext.slider.Multi', {
 
             if (Math.abs(dist &lt;= nearestDistance)) {
                 nearest = thumb;
-                index = i;
                 nearestDistance = dist;
             }
         }
@@ -552,18 +530,6 @@ Ext.define('Ext.slider.Multi', {
             default:
                 e.preventDefault();
         }
-    },
-
-<span id='Ext-slider-Multi-method-getRatio'>    /**
-</span>     * @private
-     * Returns the ratio of pixels to mapped values. e.g. if the slider is 200px wide and maxValue - minValue is 100,
-     * the ratio is 2
-     * @return {Number} The ratio of pixels to mapped values
-     */
-    getRatio : function() {
-        var w = this.innerEl.getWidth(),
-            v = this.maxValue - this.minValue;
-        return v === 0 ? w : (w/v);
     },
 
 <span id='Ext-slider-Multi-method-normalizeValue'>    /**
@@ -653,7 +619,7 @@ Ext.define('Ext.slider.Multi', {
                     'aria-valuetext': value
                 });
 
-                thumb.move(me.translateValue(value), Ext.isDefined(animate) ? animate !== false : me.animate);
+                thumb.move(me.calculateThumbPosition(value), Ext.isDefined(animate) ? animate !== false : me.animate);
 
                 me.fireEvent('change', me, value, thumb);
                 if (changeComplete) {
@@ -663,25 +629,50 @@ Ext.define('Ext.slider.Multi', {
         }
     },
 
-<span id='Ext-slider-Multi-method-translateValue'>    /**
+<span id='Ext-slider-Multi-method-calculateThumbPosition'>    /**
 </span>     * @private
+     * Given a value within this Slider's range, calculates a Thumb's percentage CSS position to map that value.
      */
-    translateValue : function(v) {
-        var ratio = this.getRatio();
-        return (v * ratio) - (this.minValue * ratio) - this.getHalfThumbSize();
+    calculateThumbPosition : function(v) {
+        return (v - this.minValue) / (this.maxValue - this.minValue) * 100;
     },
 
-<span id='Ext-slider-Multi-method-reverseValue'>    /**
+<span id='Ext-slider-Multi-method-getRatio'>    /**
+</span>     * @private
+     * Returns the ratio of pixels to mapped values. e.g. if the slider is 200px wide and maxValue - minValue is 100,
+     * the ratio is 2
+     * @return {Number} The ratio of pixels to mapped values
+     */
+    getRatio : function() {
+        var me = this,
+            trackLength = this.vertical ? this.innerEl.getHeight() : this.innerEl.getWidth(),
+            valueRange = this.maxValue - this.minValue;
+        return valueRange === 0 ? trackLength : (trackLength / valueRange);
+    },
+
+<span id='Ext-slider-Multi-method-reversePixelValue'>    /**
 </span>     * @private
      * Given a pixel location along the slider, returns the mapped slider value for that pixel.
-     * E.g. if we have a slider 200px wide with minValue = 100 and maxValue = 500, reverseValue(50)
+     * E.g. if we have a slider 200px wide with minValue = 100 and maxValue = 500, reversePixelValue(50)
      * returns 200
      * @param {Number} pos The position along the slider to return a mapped value for
      * @return {Number} The mapped value for the given position
      */
-    reverseValue : function(pos) {
+    reversePixelValue : function(pos) {
         var ratio = this.getRatio();
         return (pos + (this.minValue * ratio)) / ratio;
+    },
+
+<span id='Ext-slider-Multi-method-reversePercentageValue'>    /**
+</span>     * @private
+     * Given a Thumb's percentage posoition along the slider, returns the mapped slider value for that pixel.
+     * E.g. if we have a slider 200px wide with minValue = 100 and maxValue = 500, reversePercentageValue(25)
+     * returns 200
+     * @param {Number} pos The percentage along the slider track to return a mapped value for
+     * @return {Number} The mapped value for the given position
+     */
+    reversePercentageValue : function(pos) {
+        return this.minValue + (this.maxValue - this.minValue) * (pos / 100);
     },
 
     //private
@@ -761,7 +752,7 @@ Ext.define('Ext.slider.Multi', {
                 i = 0;
 
             for (; i &lt; length; i++) {
-                thumbs[i].move(this.translateValue(thumbs[i].value));
+                thumbs[i].move(this.calculateThumbPosition(thumbs[i].value));
             }
         }
     },
@@ -819,32 +810,6 @@ Ext.define('Ext.slider.Multi', {
         }, me);
 
         me.callParent();
-    },
-
-    statics: {
-        // Method overrides to support slider with vertical orientation
-        Vertical: {
-            getRatio : function() {
-                var h = this.innerEl.getHeight(),
-                    v = this.maxValue - this.minValue;
-                return h/v;
-            },
-
-            onClickChange : function(local) {
-                var me = this,
-                    thumb, index, bottom;
-
-                if (local.left &gt; me.clickRange[0] &amp;&amp; local.left &lt; me.clickRange[1]) {
-                    thumb = me.getNearest(local, 'top');
-                    if (!thumb.disabled) {
-                        index = thumb.index;
-                        bottom =  me.reverseValue(me.innerEl.getHeight() - local.top);
-
-                        me.setValue(index, Ext.util.Format.round(me.minValue + bottom, me.decimalPrecision), undefined, true);
-                    }
-                }
-            }
-        }
     }
 });
 </pre>

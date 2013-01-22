@@ -1,7 +1,6 @@
 /**
- * @private
- * @class Ext.layout.component.field.TextArea
  * Layout class for {@link Ext.form.field.TextArea} fields. Handles sizing the textarea field.
+ * @private
  */
 Ext.define('Ext.layout.component.field.TextArea', {
     extend: 'Ext.layout.component.field.Text',
@@ -9,26 +8,16 @@ Ext.define('Ext.layout.component.field.TextArea', {
 
     type: 'textareafield',
 
-
-    /**
-     * Given the target bodyEl dimensions, adjust them if necessary to return the correct final
-     * size based on the text field's {@link Ext.form.field.Text#grow grow config}. Overrides the
-     * textfield layout's implementation to handle height rather than width.
-     * @param {Number} width The bodyEl width
-     * @param {Number} height The bodyEl height
-     * @return {Number[]} [inputElWidth, inputElHeight]
-     */
-    adjustForGrow: function(width, height) {
+    measureContentHeight: function (ownerContext) {
         var me = this,
             owner = me.owner,
-            inputEl, value, max,
-            curWidth, curHeight, calcHeight,
-            result = [width, height];
+            height = me.callParent(arguments),
+            inputContext, inputEl, value, max, curWidth, calcHeight;
 
         if (owner.grow) {
+            inputContext = ownerContext.inputContext;
             inputEl = owner.inputEl;
             curWidth = inputEl.getWidth(true); //subtract border/padding to get the available width for the text
-            curHeight = inputEl.getHeight();
 
             // Get and normalize the field value for measurement
             value = inputEl.dom.value || '&#160;';
@@ -39,16 +28,19 @@ Ext.define('Ext.layout.component.field.TextArea', {
 
             // Find the height that contains the whole text value
             calcHeight = Ext.util.TextMetrics.measure(inputEl, value, curWidth).height +
-                         inputEl.getBorderWidth("tb") + inputEl.getPadding("tb");
+                         inputContext.getBorderInfo().height + inputContext.getPaddingInfo().height;
 
             // Constrain
-            max = owner.growMax;
-            if (Ext.isNumber(height)) {
-                max = Math.min(max, height);
+            calcHeight = Ext.Number.constrain(calcHeight, owner.growMin, owner.growMax);
+            if (height != calcHeight) {
+                height = inputContext.setHeight(calcHeight);
             }
-            result[1] = Ext.Number.constrain(calcHeight, owner.growMin, max);
         }
 
-        return result;
+        return height;
+    },
+    
+    publishInnerHeight: function (ownerContext, height) {
+        ownerContext.inputContext.setHeight(height - this.measureLabelErrorHeight(ownerContext));
     }
 });

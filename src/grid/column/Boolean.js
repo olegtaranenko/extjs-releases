@@ -51,13 +51,17 @@ Ext.define('Ext.grid.column.Boolean', {
      * @cfg {String} trueText
      * The string returned by the renderer when the column value is not falsey.
      */
+    //<locale>
     trueText: 'true',
+    //</locale>
 
     /**
      * @cfg {String} falseText
      * The string returned by the renderer when the column value is falsey (but not undefined).
      */
+    //<locale>
     falseText: 'false',
+    //</locale>
 
     /**
      * @cfg {String} undefinedText

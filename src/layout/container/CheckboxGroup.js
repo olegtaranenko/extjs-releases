@@ -1,23 +1,23 @@
 /**
- * @class Ext.layout.container.CheckboxGroup
- * <p>This layout implements the column arrangement for {@link Ext.form.CheckboxGroup} and {@link Ext.form.RadioGroup}.
+ * This layout implements the column arrangement for {@link Ext.form.CheckboxGroup} and {@link Ext.form.RadioGroup}.
  * It groups the component's sub-items into columns based on the component's
- * {@link Ext.form.CheckboxGroup#columns columns} and {@link Ext.form.CheckboxGroup#vertical} config properties.</p>
- *
+ * {@link Ext.form.CheckboxGroup#columns columns} and {@link Ext.form.CheckboxGroup#vertical} config properties.
  */
 Ext.define('Ext.layout.container.CheckboxGroup', {
     extend: 'Ext.layout.container.Container',
     alias: ['layout.checkboxgroup'],
+    requires: ['Ext.layout.container.HBox'],
 
     childGeneration: 0,
 
     /**
-     * @cfg {Boolean} percentWidthColumns
-     * True to enable left and width element styles using percentages. For example, the
-     * "width:25%" style would be used for 4 columns (assuming no widths or flexes are
-     * specified).
+     * @cfg {Boolean} [autoFlex=true]
+     * By default,  CheckboxGroup allocates all available space to the configured columns meaning that
+     * column are evenly spaced across the contaioner.
+     *
+     * To have each column only be wide enough to fit the container Checkboxes (or Radios), set `autoFlex` to `false`
      */
-    percentWidthColumns: true,
+    autoFlex: true,
 
     type: 'checkboxgroup',
 
@@ -26,27 +26,26 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
     ],
 
     renderTpl: [
-        '<div id="{ownerId}-innerCt" class="{[values.$layout.innerCls]}" role="presentation">',
-            '{% for (var i=0, len=values.columnCount; i<len; ++i) { %}',
-                '<div class="{colCls}"',
-                    '{% if (values.percent) { %}',
-                        ' style="width:{percent}%;left:{[i * values.percent]}%"',
-                    '{% } %}',
-                    '>{% this.renderColumn(out,values,i) %}',
-                '</div>',
-            '{% } %}',
-        '</div>'
+        '<table id="{ownerId}-innerCt" role="presentation" style="{tableStyle}"><tbody><tr>',
+            '<tpl for="columns">',
+                '<td class="{parent.colCls}" valign="top" style="{style}">',
+                    '{% this.renderColumn(out,parent,xindex-1) %}',
+                '</td>',
+            '</tpl>',
+        '</tr></tbody></table>'
     ],
 
     beginLayout: function(ownerContext) {
         var me = this,
-            columns = me.columns,
-            numCols = columns.length,
-            nonFlexedWidth = 0,
-            totalFlex = 0,
-            i, column, columnContext, columnContexts;
+            columns = me.columnEls,
+            numCols,
+            childItems,
+            i, width,
+            autoFlex = me.autoFlex,
+            percentWidthColumns = false;
 
         me.callParent(arguments);
+        childItems = ownerContext.childItems;
 
         // If the child items have changed since the last layout then we need to fixup
         // the association of items to columns:
@@ -55,164 +54,90 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
             me.fixColumns();
         }
 
-        // Clear the innerCt size so it doesn't influence the child items.
-        me.innerCt.setSize(null, null);
-
-        // Sum flexes and widths since columns are either flexed or fixed-width. Also,
-        // build an array of ContextItem's for each columnEl to avoid calling getEl
-        // all the time.
         ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
-        ownerContext.columnContexts = columnContexts = [];
 
-        for (i = 0; i < numCols; ++i) {
-            columnContext = ownerContext.getEl(column = columns[i]);
+        // Child items can grab a flex of the available width, so collect flexes
+        Ext.layout.container.Box.prototype.cacheFlexes.call(me, ownerContext);
 
-            columnContexts.push(columnContext);
-
-            if (!me.percentWidthColumns) {
-                // column.setWidth(null); TODO???
-            }
-
-            if (column.flex) {
-                totalFlex += column.flex;
-                columnContext.flex = column.flex;
-            } else {
-                nonFlexedWidth += column.width;
-                columnContext.setWidth(column.width);
-            }
-        }
-
-        ownerContext.nonFlexedWidth = nonFlexedWidth;
-        ownerContext.totalFlex = totalFlex;
-    },
-
-    cacheElements: function () {
-        var me = this,
-            columns = [],
-            i, el, numCols, width;
-
-        me.callParent();
-        me.columns = columns;
-
-        // all childNodes of innerCt are column divs:
-        for (el = me.innerCt.dom.firstChild; el; el = el.nextSibling) {
-            columns.push(Ext.get(el));
-        }
-
-        // The columns config may be an array of widths. Any value < 1 is taken to be a flex:
-        if (!me.percentWidthColumns) {
+        // The columns config may be an array of widths. Any value < 1 is taken to be a fraction:
+        if (!ownerContext.widthModel.shrinkWrap) {
             numCols = columns.length;
+
+            // If columns is an array of numeric widths
             if (me.columnsArray) {
                 for (i = 0; i < numCols; i++) {
                     width = me.owner.columns[i];
-                    columns[i][(width < 1) ? 'flex' : 'width'] = width;
-                }
-            } else {
-                // this won't run unless we force percentWidthColumns to false
-                for (i = 0; i < numCols; i++) {
-                    columns[i].flex = 1;
+                    columns[i].style.width = (percentWidthColumns |= (width < 1)) ? (width * 100) + '%' : width + 'px';
                 }
             }
+
+            // Otherwise it's the *number* of columns, so use child item width settings
+            else {
+                // this won't run unless we force percentWidthColumns to false
+                for (i = 0; i < numCols; i++) {
+                    if (childItems[i].flex) {
+                        columns[i].style.width = (childItems[i].flex / ownerContext.totalFlex * 100) + '%';
+                        percentWidthColumns = true;
+                    } else if (childItems[i].width) {
+                        columns[i].style.width = childItems[i].width + 'px';
+                        autoFlex = false;
+                    } else if (me.evenColumns) {
+                        columns[i].style.width = (1 / numCols * 100) + '%';
+                        percentWidthColumns = true;
+                    }
+                }
+            }
+
+            // If the columns config was an array of column widths, allow table to auto width
+            if (percentWidthColumns || autoFlex) {
+                me.innerCt.dom.style.tableLayout = 'fixed';
+                me.innerCt.dom.style.width = '100%';
+            } else {
+                me.innerCt.dom.style.tableLayout = 'auto';
+                me.innerCt.dom.style.width = 'auto';
+            }
         }
+    },
+
+    cacheElements: function () {
+        var me = this;
+
+        // Grab defined childEls
+        me.callParent();
+
+        // Grab columns TDs
+        me.columnEls = me.innerCt.query('td.' + me.owner.groupCls);
 
         // we just rendered so the items are in the correct columns:
         me.lastChildGeneration = me.childGeneration;
     },
 
     /*
-     * The owner.columns config is either a number of columns - which means they are all autoWidth to an even width using CSS % widths
-     * or, it may be an array of width values where <1 means it's a flex value and >=1 means it's a required width
+     * Just wait for the child items to all lay themselves out in the width we are configured
+     * to make available to them. Then we can measure our height.
      */
     calculate: function(ownerContext) {
-        var me = this,
-            columns, i, childContext, contentHeight, blocked, childItems, length, height;
+        var me = this;
 
-        me.calculateWidths(ownerContext);
-
-        // Now that the columnEls are positioned and (more importantly) widthed, we need
-        // to wait for the items to finish their layouts before we can properly measure the
-        // columnEls' height. The simplest way to do that is block on the height property
-        // for all the items.
-        //
-        if (me.done) {
-            childItems = ownerContext.childItems;
-            length = childItems.length;
-
-            for (i = 0; i < length; ++i) {
-                childContext = childItems[i];
-                if (!childContext.hasDomProp('height')) {
-                    childContext.domBlock(me, 'height');
-                    blocked = true;
-                }
-            }
-
-            if (blocked) {
-                me.done = false;
-            } else {
-                contentHeight = me.labelEl ? me.labelEl.getHeight() : 0;
-                columns = me.columns;
-                length = columns.length;
-
-                for (i = 0; i < length; ++i) {
-                    height = columns[i].getHeight();
-                    contentHeight = Math.max(contentHeight, height);
-                }
-
-                ownerContext.innerCtContext.setHeight(contentHeight);
-                ownerContext.setContentHeight(contentHeight);
-            }
-        }
-    },
-
-    /**
-     * Calculate the column widths and publish the contentWidth if we can.
-     */
-    calculateWidths: function(ownerContext) {
-        var me = this,
-            columnContexts = ownerContext.columnContexts,
-            numCols = columnContexts.length,
-            contentWidth = 0,
-            targetSize = me.getContainerSize(ownerContext),
-            totalFlex = ownerContext.totalFlex,
-            availableWidth = targetSize.width - ownerContext.nonFlexedWidth,
-            i, columnContext, width;
-
-        if (me.percentWidthColumns) {
-            // We only need to perform width calculations if the columns are *not* all to be
-            // auto width evenly
-            contentWidth = targetSize.width;
-        } else {
-            if (me.autoWidth) {
-                //<debug>
-                if (totalFlex) {
-                    Ext.Error.raise('Cannot combine flex and autoWidth in '+me.type);
-                }
-                //</debug>
-            } else if (!Ext.isNumber(availableWidth)) {
-                // we have already assigned fixed widths to columns (beginLayout), so we
-                // cannot proceed further w/o the target width.
-                me.done = false;
-                return;
-            }
-
-            // Allocate flexes and set x positions
-            for (i = 0; i < numCols; i++) {
-                columnContext = columnContexts[i];
-
-                if (columnContext.flex) {
-                    width = Math.ceil(availableWidth * columnContext.flex / totalFlex);
-                    columnContext.setWidth(width);
-                } else {
-                    width = columnContext.target.width; // already set by beginLayout
-                }
-
-                columnContext.setProp('x', contentWidth);
-                contentWidth += width;
-            }
-        }
-
-        if (!ownerContext.setContentWidth(contentWidth)) {
+        // The columnEls are widthed using their own width attributes, we just need to wait
+        // for all children to have arranged themselves in that width, and then collect our height.
+        if (!ownerContext.getDomProp('containerChildrenDone')) {
             me.done = false;
+        } else {
+            var targetContext = ownerContext.innerCtContext,
+                widthShrinkWrap = ownerContext.widthModel.shrinkWrap,
+                heightShrinkWrap = ownerContext.heightModel.shrinkWrap,
+                shrinkWrap = heightShrinkWrap || widthShrinkWrap,
+                table = targetContext.el.dom,
+                targetPadding = shrinkWrap && targetContext.getPaddingInfo();
+
+            if (widthShrinkWrap) {
+                ownerContext.setContentWidth(table.offsetWidth + targetPadding.width, true);
+            }
+
+            if (heightShrinkWrap) {
+                ownerContext.setContentHeight(table.offsetHeight + targetPadding.height, true);
+            }
         }
     },
 
@@ -305,12 +230,16 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
      * @private
      */
     getColumnCount: function() {
-        var owner = this.owner,
+        var me = this,
+            owner = me.owner,
             ownerColumns = owner.columns;
 
-        if (this.columnsArray) {
+        // Our columns config is an array of numeric widths.
+        // Calculate our total width
+        if (me.columnsArray) {
             return ownerColumns.length;
         }
+
         if (Ext.isNumber(ownerColumns)) {
             return ownerColumns;
         }
@@ -324,11 +253,50 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
     getRenderData: function () {
         var me = this,
             data = me.callParent(),
-            owner = me.owner;
+            owner = me.owner,
+            i = 0, columns = me.getColumnCount(),
+            items = owner.items.items,
+            width,
+            childItem, column, totalFlex,
+            autoFlex = me.autoFlex,
+            percentWidthColumns = false;
 
-        data.colCls = owner.groupCls + ' ' + Ext.baseCSSPrefix + 'box-item';
+        // Calculate total flex
+        if (!me.columnsArray) {
+            for (; i < columns; i++) {
+                if (items[i].flex) {
+                    totalFlex += items[i].flex;
+                }
+            }
+        }
+
+        data.colCls = owner.groupCls;
         data.columnCount = me.getColumnCount();
-        data.percent = me.percentWidthColumns && (100 / data.columnCount);
+
+        data.columns = [];
+        for (i = 0; i < columns; i++) {
+            column = (data.columns[i] = {});
+
+            if (me.columnsArray) {
+                width = me.owner.columns[i];
+                column.style = 'width:' + ((percentWidthColumns |= (width < 1)) ? (width * 100) + '%' : width + 'px');
+            } else {
+                childItem = items[i];
+                if (childItem.flex) {
+                    column.style = 'width:' + (childItem.flex / totalFlex * 100) + '%';
+                    percentWidthColumns = true;
+                } else if (childItem.width) {
+                    column.style = 'width:' + childItem.width + 'px';
+                    autoFlex = false;
+                } else if (me.evenColumns) {
+                    column.style = 'width:' + (1 / columns * 100) + '%';
+                    percentWidthColumns = true;
+                }
+            }
+        }
+
+        // If the columns config was an array of column widths, allow table to auto width
+        data.tableStyle = percentWidthColumns || autoFlex ? 'table-layout:fixed;width:100%' : '';
 
         return data;
     },
@@ -343,8 +311,7 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
             owner = me.owner;
 
         me.columnsArray = Ext.isArray(owner.columns);
-        // percentWidthColumns defaults to true, but only applies if columns is an array:
-        me.percentWidthColumns = me.percentWidthColumns && !me.columnsArray;
+        me.evenColumns = Ext.isNumber(owner.columns);
 
         me.callParent();
     },
@@ -369,4 +336,7 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
 
         renderTpl.renderColumn = this.doRenderColumn;
     }
+}, function() {
+    this.prototype.names = Ext.layout.container.HBox.prototype.names;
+    this.prototype.getNames = Ext.layout.container.HBox.prototype.getNames;
 });

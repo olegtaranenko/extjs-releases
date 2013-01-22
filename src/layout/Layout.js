@@ -15,10 +15,68 @@ Ext.define('Ext.layout.Layout', {
 
     isLayout: true,
     initialized: false,
+    running: false,
 
     autoSizePolicy: {
         setsWidth: 0,
         setsHeight: 0
+    },
+
+    sizeModels: {
+        calculated: {
+            name: 'calculated',
+            auto: false,
+            calculated: true,
+            configured: false,
+            fixed: true,
+            natural: false,
+            shrinkWrap: false
+        },
+        calculatedFromNatural: {
+            name: 'calculatedFromNatural',
+            auto: true,
+            calculated: true,
+            configured: false,
+            fixed: true,
+            natural: true,
+            shrinkWrap: false
+        },
+        calculatedFromShrinkWrap: {
+            name: 'calculatedFromShrinkWrap',
+            auto: true,
+            calculated: true,
+            configured: false,
+            fixed: true,
+            natural: false,
+            shrinkWrap: true
+        },
+        configured: {
+            name: 'configured',
+            auto: false,
+            calculated: false,
+            configured: true,
+            fixed: true,
+            natural: false,
+            shrinkWrap: false
+        },
+        natural: {
+            name: 'natural',
+            auto: true,
+            calculated: false,
+            configured: false,
+            fixed: false,
+            natural: true,
+            shrinkWrap: false
+        },
+        shrinkWrap: {
+            name: 'shrinkWrap',
+            auto: true,
+            calculated: false,
+            configured: false,
+            fixed: false,
+            natural: false,
+            shrinkWrap: true
+        }
     },
 
     statics: {
@@ -155,10 +213,9 @@ Ext.define('Ext.layout.Layout', {
      */
 
     /**
-     * This method (if implemented) is called after all layouts are complete and their
-     * calculations flushed to the DOM. No further layouts will be run and this method
-     * is only called once per layout run. The base implementation for component layouts
-     * caches the `lastComponentSize` box.
+     * This method is called after all layouts are complete and their calculations flushed
+     * to the DOM. No further layouts will be run and this method is only called once per
+     * layout run. The base component layout caches {@link #lastComponentSize}.
      * 
      * This is a write phase and DOM reads should be avoided if possible when overridding
      * this method.
@@ -169,7 +226,9 @@ Ext.define('Ext.layout.Layout', {
      * @param {Ext.layout.ContextItem} ownerContext The context item for the layout's owner
      * component.
      */
-    finishedLayout: Ext.emptyFn,
+    finishedLayout: function () {
+        this.ownerContext = null;
+    },
     
     /**
      * This method (if implemented) is called after all layouts are finished, and all have
@@ -203,23 +262,14 @@ Ext.define('Ext.layout.Layout', {
      *
      * @param {Ext.Component} item
      *
-     * @return {Object} An object describing the sizing done by the layout for this item.
-     *
+     * @return {Object} An object describing the sizing done by the layout for this item or
+     * null if the layout mimics the size policy of its ownerCt (e.g., 'fit' and 'card').
      * @return {Boolean} return.readsWidth True if the natural/auto width of this component
      * is used by the ownerLayout.
-     *
      * @return {Boolean} return.readsHeight True if the natural/auto height of this component
      * is used by the ownerLayout.
-     *
-     * @return {Number} return.setsWidth One of these values:
-     * 
-     *   - 1: The ownerLayout will set this component's width.
-     *   - 0: The ownerLayout will NOT set this component's width.
-     *   - -1: The ownerLayout will set this component's width ONLY IF the ownerCt has a
-     *     fixed width.
-     *
-     * @return {Number} return.setsHeight One of the same values for setsWidth except
-     * this value applies to height.
+     * @return {Boolean} return.setsWidth True if the ownerLayout set this component's width.
+     * @return {Boolean} return.setsHeight True if the ownerLayout set this component's height.
      *
      * @protected
      */
@@ -229,6 +279,29 @@ Ext.define('Ext.layout.Layout', {
 
     isItemBoxParent: function (itemContext) {
         return false;
+    },
+
+    isItemLayoutRoot: function (item) {
+        var sizeModel = item.getSizeModel(),
+            width = sizeModel.width,
+            height = sizeModel.height;
+
+        // If this component has never had a layout and some of its dimensions are set by
+        // its ownerLayout, we cannot be the layoutRoot...
+        if (!item.componentLayout.lastComponentSize && (width.calculated || height.calculated)) {
+            return false;
+        }
+
+        // otherwise an ownerCt whose size is not effected by its content is a root
+        return !width.shrinkWrap && !height.shrinkWrap;
+    },
+
+    isItemShrinkWrap: function (item) {
+        return item.shrinkWrap;
+    },
+
+    isRunning: function () {
+        return !!this.ownerContext;
     },
 
     //-----------------------------------------------------
@@ -253,21 +326,44 @@ Ext.define('Ext.layout.Layout', {
      */
     //-----------------------------------------------------
 
-    getItemsRenderTree: function (items) {
+    getItemsRenderTree: function (items, renderCfgs) {
         var length = items.length,
-            i, item, tree;
+            i, item, itemConfig, result;
 
         if (length) {
-            tree = [];
+            result = [];
             for (i = 0; i < length; ++i) {
                 item = items[i];
-                // Perform layout preprocessing in the bulk render path
-                this.configureItem(item);
-                tree.push(item.getRenderTree());
+
+                // If we are being asked to move an already rendered Component, we must not recalculate its renderTree
+                // and rerun its render process. The Layout's isValidParent check will ensure that the DOM is moved into place.
+                if (!item.rendered) {
+
+                    // If we've already calculated the item's element config, don't calculate it again.
+                    // This may happen if the rendering process mutates the owning Container's items
+                    // collection, and Ext.layout.Container#getRenderTree runs through the collection again.
+                    // Note that the config may be null if a beforerender listener vetoed the operation, so
+                    // we must compare to undefined.
+                    if (renderCfgs && (renderCfgs[item.id] !== undefined)) {
+                        itemConfig = renderCfgs[item.id];
+                    } else {
+                        // Perform layout preprocessing in the bulk render path
+                        this.configureItem(item);
+                        itemConfig = item.getRenderTree();
+                        if (renderCfgs) {
+                            renderCfgs[item.id] = itemConfig;
+                        }
+                    }
+
+                    // itemConfig mey be null if a beforerender listener vetoed the operation.
+                    if (itemConfig) {
+                        result.push(itemConfig);
+                    }
+                }
             }
         }
 
-        return tree;
+        return result;
     },
 
     finishRender: Ext.emptyFn,
@@ -281,7 +377,9 @@ Ext.define('Ext.layout.Layout', {
 
             // Only postprocess items which are being rendered. deferredRender may mean that only one has been rendered.
             if (item.rendering) {
-                item.finishRender();
+
+                // Tell the item at which index in the Container it is
+                item.finishRender(i);
 
                 this.afterRenderItem(item);
             }
@@ -363,7 +461,6 @@ Ext.define('Ext.layout.Layout', {
             this.configureItem(item);
             item.render(target, position);
             this.afterRenderItem(item);
-            this.childrenChanged = true;
         }
     },
 
@@ -380,7 +477,18 @@ Ext.define('Ext.layout.Layout', {
         target.insertBefore(item.el.dom, position || null);
         item.container = Ext.get(target);
         this.configureItem(item);
-        this.childrenChanged = true;
+    },
+
+    /**
+     * This method is called when a child item changes in some way. By default this calls
+     * {@link Ext.AbstractComponent#updateLayout} on this layout's owner.
+     * 
+     * @param {Ext.Component} child The child item that has changed.
+     * @return {Boolean} True if this layout has handled the content change.
+     */
+    onContentChange: function () {
+        this.owner.updateLayout();
+        return true;
     },
 
     /**
@@ -405,7 +513,6 @@ Ext.define('Ext.layout.Layout', {
     },
 
     // Placeholder empty functions for subclasses to extend
-    afterLayout : Ext.emptyFn,
     afterRenderItem: Ext.emptyFn,
     onAdd : Ext.emptyFn,
     onRemove : Ext.emptyFn,

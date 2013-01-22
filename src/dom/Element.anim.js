@@ -1,6 +1,27 @@
 /**
  * @class Ext.dom.Element
  */
+/* ================================
+ * A Note About Wrapped Animations
+ * ================================
+ * A few of the effects below implement two different animations per effect, one wrapping
+ * animation that performs the visual effect and a "no-op" animation on this Element where
+ * no attributes of the element itself actually change. The purpose for this is that the
+ * wrapper is required for the effect to work and so it does the actual animation work, but
+ * we always animate `this` so that the element's events and callbacks work as expected to
+ * the callers of this API.
+ * 
+ * Because of this, we always want each wrap animation to complete first (we don't want to
+ * cut off the visual effect early). To ensure that, we arbitrarily increase the duration of
+ * the element's no-op animation, also ensuring that it has a decent minimum value -- on slow
+ * systems, too-low durations can cause race conditions between the wrap animation and the
+ * element animation being removed out of order. Note that in each wrap's `afteranimate`
+ * callback it will explicitly terminate the element animation as soon as the wrap is complete,
+ * so there's no real danger in making the duration too long.
+ * 
+ * This applies to all effects that get wrapped, including slideIn, slideOut, switchOff and frame.
+ */
+
 Ext.dom.Element.override({
     // @private override base Ext.util.Animate mixin for animate for backwards compatibility
     animate: function(config) {
@@ -143,6 +164,7 @@ Ext.dom.Element.override({
             me.setSize(box.width, box.height);
 
             wrap = me.wrap({
+                id: Ext.id() + '-anim-wrap-for-' + me.id,
                 style: {
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
@@ -314,6 +336,7 @@ Ext.dom.Element.override({
                     wrap.remove();
                 }
                 me.setSize(box.width, box.height);
+                // kill the no-op element animation created below
                 animScope.end();
             });
             // Add configured listeners after
@@ -323,11 +346,13 @@ Ext.dom.Element.override({
         };
 
         me.animate({
-            duration: obj.duration ? obj.duration * 2 : 1000,
+            // See "A Note About Wrapped Animations" at the top of this class:
+            duration: obj.duration ? Math.max(obj.duration, 500) * 2 : 1000,
             listeners: {
-                beforeanimate: beforeAnim,
+                beforeanimate: beforeAnim, // kick off the wrap animation
                 afteranimate: function() {
                     if (wrapAnim && wrapAnim.running) {
+                        // should never get here, but just to be safe
                         wrapAnim.end();
                     }
                 }
@@ -500,11 +525,14 @@ Ext.dom.Element.override({
                 me.clearOpacity();
                 me.setPositioning(position);
                 me.setSize(size);
+                // kill the no-op element animation created below
                 animScope.end();
             });
         };
+        
         me.animate({
-            duration: (obj.duration * 2),
+            // See "A Note About Wrapped Animations" at the top of this class:
+            duration: (Math.max(obj.duration, 500) * 2),
             listeners: {
                 beforeanimate: {
                     fn: beforeAnim
@@ -548,6 +576,7 @@ Ext.dom.Element.override({
             var animScope = this,
                 box = me.getBox(),
                 proxy = Ext.getBody().createChild({
+                    id: me.id + '-anim-proxy',
                     style: {
                         position : 'absolute',
                         'pointer-events': 'none',
@@ -579,12 +608,14 @@ Ext.dom.Element.override({
             });
             proxyAnim.on('afteranimate', function() {
                 proxy.remove();
+                // kill the no-op element animation created below
                 animScope.end();
             });
         };
 
         me.animate({
-            duration: (obj.duration * 2) || 2000,
+            // See "A Note About Wrapped Animations" at the top of this class:
+            duration: (Math.max(obj.duration, 500) * 2) || 2000,
             listeners: {
                 beforeanimate: {
                     fn: beforeAnim

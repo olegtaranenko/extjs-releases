@@ -1,6 +1,4 @@
 /**
- * @class Ext.selection.RowModel
- *
  * Implements row based navigation via keyboard.
  *
  * Must synchronize across grid sections.
@@ -72,6 +70,7 @@ Ext.define('Ext.selection.RowModel', {
              */
             'select'
         );
+        this.views = [];
         this.callParent(arguments);
     },
 
@@ -100,13 +99,20 @@ Ext.define('Ext.selection.RowModel', {
             return;
         }
 
+        // view.el has tabIndex -1 to allow for
+        // keyboard events to be passed to it.
         view.el.set({
             tabIndex: -1
         });
 
-        // view.el has tabIndex -1 to allow for
-        // keyboard events to be passed to it.
-        me.keyNav = new Ext.util.KeyNav(view.el, {
+        // Drive the KeyNav off the View's itemkeydown event so that beforeitemkeydown listeners may veto
+        me.keyNav = new Ext.util.KeyNav({
+            target: view,
+            eventName: 'itemkeydown',
+            processEvent: function(view, record, node, index, event) {
+                event.recordIndex = index;
+                return event;
+            },
             up: me.onKeyUp,
             down: me.onKeyDown,
             right: me.onKeyRight,
@@ -139,7 +145,7 @@ Ext.define('Ext.selection.RowModel', {
     },
 
     // go to last visible record in grid.
-    onKeyEnd: function(e, t) {
+    onKeyEnd: function(e) {
         var me = this,
             last = me.store.getAt(me.store.getCount() - 1);
 
@@ -156,7 +162,7 @@ Ext.define('Ext.selection.RowModel', {
     },
 
     // go to first visible record in grid.
-    onKeyHome: function(e, t) {
+    onKeyHome: function(e) {
         var me = this,
             first = me.store.getAt(0);
 
@@ -173,7 +179,7 @@ Ext.define('Ext.selection.RowModel', {
     },
 
     // Go one page up from the lastFocused record in the grid.
-    onKeyPageUp: function(e, t) {
+    onKeyPageUp: function(e) {
         var me = this,
             rowsVisible = me.getRowsVisible(),
             selIdx,
@@ -182,7 +188,7 @@ Ext.define('Ext.selection.RowModel', {
             currRec;
 
         if (rowsVisible) {
-            selIdx = me.lastFocused ? me.store.indexOf(me.lastFocused) : 0;
+            selIdx = e.recordIndex;
             prevIdx = selIdx - rowsVisible;
             if (prevIdx < 0) {
                 prevIdx = 0;
@@ -203,7 +209,7 @@ Ext.define('Ext.selection.RowModel', {
     },
 
     // Go one page down from the lastFocused record in the grid.
-    onKeyPageDown: function(e, t) {
+    onKeyPageDown: function(e) {
         var me = this,
             rowsVisible = me.getRowsVisible(),
             selIdx,
@@ -212,7 +218,7 @@ Ext.define('Ext.selection.RowModel', {
             currRec;
 
         if (rowsVisible) {
-            selIdx = me.lastFocused ? me.store.indexOf(me.lastFocused) : 0;
+            selIdx = e.recordIndex;
             nextIdx = selIdx + rowsVisible;
             if (nextIdx >= me.store.getCount()) {
                 nextIdx = me.store.getCount() - 1;
@@ -235,7 +241,7 @@ Ext.define('Ext.selection.RowModel', {
 
     // Select/Deselect based on pressing Spacebar.
     // Assumes a SIMPLE selectionmode style
-    onKeyPress: function(e, t) {
+    onKeyPress: function(e) {
         if (e.getKey() === e.SPACE) {
             e.stopEvent();
             var me = this,
@@ -254,7 +260,7 @@ Ext.define('Ext.selection.RowModel', {
     // Navigate one record up. This could be a selection or
     // could be simply focusing a record for discontiguous
     // selection. Provides bounds checking.
-    onKeyUp: function(e, t) {
+    onKeyUp: function(e) {
         var me = this,
             view = me.views[0],
             idx  = me.store.indexOf(me.lastFocused),
@@ -293,7 +299,7 @@ Ext.define('Ext.selection.RowModel', {
     // Navigate one record down. This could be a selection or
     // could be simply focusing a record for discontiguous
     // selection. Provides bounds checking.
-    onKeyDown: function(e, t) {
+    onKeyDown: function(e) {
         var me = this,
             view = me.views[0],
             idx  = me.store.indexOf(me.lastFocused),
@@ -335,18 +341,18 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    onKeyLeft: function(e, t) {
+    onKeyLeft: function(e) {
         this.scrollByDeltaX(-this.deltaScroll);
     },
 
-    onKeyRight: function(e, t) {
+    onKeyRight: function(e) {
         this.scrollByDeltaX(this.deltaScroll);
     },
 
     // Select the record with the event included so that
     // we can take into account ctrlKey, shiftKey, etc
     onRowMouseDown: function(view, record, item, index, e) {
-        view.el.focus();
+        view.focus(false, Ext.isIE ? 200 : false);
         if (!this.allowRightMouseSelection(e)) {
             return;
         }
@@ -431,16 +437,66 @@ Ext.define('Ext.selection.RowModel', {
             record = editingPlugin.getActiveRecord(),
             header = editingPlugin.getActiveColumn(),
             position = view.getPosition(record, header),
-            direction = e.shiftKey ? 'left' : 'right',
-            newPosition  = view.walkCells(position, direction, e, this.preventWrap);
+            direction = e.shiftKey ? 'left' : 'right';
 
-        if (newPosition) {
-            editingPlugin.startEditByPosition(newPosition);
+        do {
+            position  = view.walkCells(position, direction, e, me.preventWrap);
+        } while(position && !view.headerCt.getHeaderAtIndex(position.column).getEditor())
+
+        if (position) {
+            editingPlugin.startEditByPosition(position);
         }
     },
 
     selectByPosition: function(position) {
         var record = this.store.getAt(position.row);
         this.select(record);
+    },
+
+
+    /**
+     * Selects the record immediately following the currently selected record.
+     * @param {Boolean} [keepExisting] True to retain existing selections
+     * @param {Boolean} [suppressEvent] Set to false to not fire a select event
+     * @return {Boolean} `true` if there is a next record, else `false`
+     */
+    selectNext: function(keepExisting, suppressEvent) {
+        var me = this,
+            store = me.store,
+            selection = me.getSelection(),
+            record = selection[selection.length - 1],
+            index = store.indexOf(record) + 1,
+            success;
+
+        if(index === store.getCount() || index === 0) {
+            success = false;
+        } else {
+            me.doSelect(index, keepExisting, suppressEvent);
+            success = true;
+        }
+        return success;
+    },
+
+    /**
+     * Selects the record that precedes the currently selected record.
+     * @param {Boolean} [keepExisting] True to retain existing selections
+     * @param {Boolean} [suppressEvent] Set to false to not fire a select event
+     * @return {Boolean} `true` if there is a previous record, else `false`
+     */
+    selectPrevious: function(keepExisting, suppressEvent) {
+        var me = this,
+            selection = me.getSelection(),
+            record = selection[0],
+            index = me.store.indexOf(record) - 1,
+            success;
+
+        if(index < 0) {
+            success = false;
+        } else {
+            me.doSelect(index, keepExisting, suppressEvent);
+            success = true
+        }
+        return success;
     }
+
 });

@@ -70,8 +70,7 @@ Ext.define('Ext.form.field.Display', {
 
 <span id='Ext-form-field-Display-cfg-htmlEncode'>    /**
 </span>     * @cfg {Boolean} htmlEncode
-     * false to skip HTML-encoding the text when rendering it. This might be useful if you want to
-     * include tags in the field's innerHTML rather than rendering them as string literals per the default logic.
+     * True to escape HTML in text when rendering it.
      */
     htmlEncode: false,
     
@@ -91,6 +90,10 @@ Ext.define('Ext.form.field.Display', {
     initEvents: Ext.emptyFn,
 
     submitValue: false,
+    
+    isDirty: function(){
+        return false;
+    },
 
     isValid: function() {
         return true;
@@ -133,35 +136,36 @@ Ext.define('Ext.form.field.Display', {
     },
         
     getSubTplData: function() {
-        var me = this;
-        me.callParent(arguments);
-        me.subTplData.value = me.getDisplayValue();
-        return me.subTplData;
+        var ret = this.callParent(arguments);
+
+        ret.value = this.getDisplayValue();
+
+        return ret;
     }
 
 <span id='Ext-form-field-Display-cfg-inputType'>    /**
 </span>     * @cfg {String} inputType
-     * Not applicable for Display field.
+     * @private
      */
 <span id='Ext-form-field-Display-cfg-disabled'>    /**
 </span>     * @cfg {Boolean} disabled
-     * Not applicable for Display field.
+     * @private
      */
 <span id='Ext-form-field-Display-cfg-readOnly'>    /**
 </span>     * @cfg {Boolean} readOnly
-     * Not applicable for Display field.
+     * @private
      */
 <span id='Ext-form-field-Display-cfg-validateOnChange'>    /**
 </span>     * @cfg {Boolean} validateOnChange
-     * Not applicable for Display field.
+     * @private
      */
 <span id='Ext-form-field-Display-cfg-checkChangeEvents'>    /**
 </span>     * @cfg {Number} checkChangeEvents
-     * Not applicable for Display field.
+     * @private
      */
 <span id='Ext-form-field-Display-cfg-checkChangeBuffer'>    /**
 </span>     * @cfg {Number} checkChangeBuffer
-     * Not applicable for Display field.
+     * @private
      */
 });
 </pre>

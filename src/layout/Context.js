@@ -257,29 +257,22 @@
  * by the ownerCt's box layout to determine the size of the children.
  *
  * The various forms of interdependence between a container and its children are described by
- * {@link Ext.AbstractComponent#getWidthAuthority} and  {@link Ext.AbstractComponent#getHeightAuthority}.
- * If a component's content either dtermines or influences the width or height, the component
- * is said to be autoWidth or autoHeight, respectively. This does not imply that the natural
- * width or height of the component will be the final width or height. That depends on the
- * widthAuthority and heightAuthority values.
+ * each components' {@link Ext.AbstractComponent#getSizeModel size model}.
  *
  * To facilitate this collaboration, the following pairs of properties are published to the
  * component's {@link Ext.layout.ContextItem ContextItem}:
  *
  *  - width/height: These hold the final size of the component. The layout indicated by the
- *    widthAuthority or heightAuthority is responsible for setting these properties.
+ *    {@link Ext.AbstractComponent#getSizeModel size model} is responsible for setting these.
  *  - contentWidth/contentHeight: These hold size information published by the container
  *    layout or from DOM measurement. These describe the content only. These values are
- *    used by the component layout to determine the outer width/height. They are also used
- *    to determine overflow. All container layouts must publish these values. If a component
- *    has raw content (not container items), it must publish these values if there are
- *    derived classes that might need them.
- *  - measuredWidth/measuredHeight: These hold what would be the component's natural (auto)
- *    width and height. In the case of stretchmax, these are used to determine the final
- *    width or height values. All component layouts must publish these values if the
- *    widthAuthority or heightAuthority is 3.
+ *    used by the component layout to determine the outer width/height when that component
+ *    is {@link Ext.AbstractComponent#shrinkWrap shrink-wrapped}. They are also used to
+ *    determine overflow. All container layouts must publish these values for dimensions
+ *    that are shrink-wrapped. If a component has raw content (not container items), the
+ *    componentLayout must publish these values instead.
  * 
- * @private
+ * @protected
  */
 Ext.define('Ext.layout.Context', {
     requires: [
@@ -289,6 +282,8 @@ Ext.define('Ext.layout.Context', {
         'Ext.fx.Anim',
         'Ext.fx.Manager'
     ],
+
+    remainingLayouts: 0,
 
     /**
      * @property {Number} state One of these values:
@@ -324,6 +319,7 @@ Ext.define('Ext.layout.Context', {
         me.finalizeQueue = me.newQueue();
         me.finishQueue = me.newQueue();
         me.flushQueue = me.newQueue();
+
         /**
          * @property {Ext.util.Queue} layoutQueue
          * List of layouts to perform.
@@ -339,6 +335,71 @@ Ext.define('Ext.layout.Context', {
         this.currentLayout = layout;
         var ownerContext = this.getCmp(layout.owner);
         layout[methodName](ownerContext);
+    },
+
+    cancelComponent: function (comp, isChild) {
+        var me = this,
+            components = comp,
+            isArray = !comp.isComponent,
+            length = isArray ? components.length : 1,
+            i, k, klen, items, layout, newQueue, oldQueue, entry, temp;
+
+        for (i = 0; i < length; ++i) {
+            if (isArray) {
+                comp = components[i];
+            }
+
+            if (!isChild) {
+                oldQueue = me.invalidQueue;
+                klen = oldQueue.length;
+
+                if (klen) {
+                    me.invalidQueue = newQueue = [];
+                    for (k = 0; k < klen; ++k) {
+                        entry = oldQueue[k];
+                        temp = entry.item.target;
+                        if (temp != comp && !temp.isDescendant(comp)) {
+                            newQueue.push(entry);
+                        }
+                    }
+                }
+            }
+
+            layout = comp.componentLayout;
+            me.cancelLayout(layout);
+
+            if (layout.getLayoutItems) {
+                items = layout.getLayoutItems();
+                if (items.length) {
+                    me.cancelComponent(items, true);
+                }
+            }
+
+            if (comp.isContainer && !comp.collapsed) {
+                layout = comp.layout;
+                me.cancelLayout(layout);
+
+                items = layout.getVisibleItems();
+                if (items.length) {
+                    me.cancelComponent(items, true);
+                }
+            }
+        }
+    },
+
+    cancelLayout: function (layout) {
+        var me = this;
+
+        me.completionQueue.remove(layout);
+        me.finalizeQueue.remove(layout);
+        me.finishQueue.remove(layout);
+        me.layoutQueue.remove(layout);
+
+        if (layout.running) {
+            me.layoutDone(layout);
+        }
+
+        layout.ownerContext = null;
     },
 
     /**
@@ -366,10 +427,16 @@ Ext.define('Ext.layout.Context', {
 
         if (len) {
             for (i = 0; i < len; i++) {
-                items[i].flushAnimations();
+                // Each Component may refuse to participate in animations.
+                // This is used by the BoxReorder plugin which drags a Component,
+                // during which that Component must be exempted from layout positioning.
+                if (items[i].target.animate !== false) {
+                    items[i].flushAnimations();
+                }
             }
 
-            // Ensure the first frame fires now to avoid a repaint to the 
+            // Ensure the first frame fires now to avoid a browser repaint with the elements in the "to" state
+            // before they are returned to their "from" state by the animation.
             Ext.fx.Manager.runner();
         }
     },
@@ -434,7 +501,7 @@ Ext.define('Ext.layout.Context', {
         if (length) {
             for (i = 0; i < length; ++i) {
                 layout = layouts[i];
-                if (layout.completed) {
+                if (!layout.running) {
                     me.callLayout(layout, methodName);
                 }
             }
@@ -478,9 +545,19 @@ Ext.define('Ext.layout.Context', {
         var id = el.id,
             items = this.items,
             item = items[id] ||
-                  (items[id] = new Ext.layout.ContextItem({ context: this, target: target, el: el }));
+                  (items[id] = new Ext.layout.ContextItem({ context: this, target: target, el: el, ownerCtContext: this.ownerCtContext }));
 
         return item;
+    },
+
+    handleFailure: function () {
+        // This method should never be called, but is need when layouts fail (hence the
+        // "should never"). We just disconnect any of the layouts from the run and return
+        // them to the state they would be in had the layout completed properly.
+        Ext.Object.each(this.layouts, function (id, layout) {
+            layout.running = false;
+            layout.ownerContext = null;
+        });
     },
 
     /**
@@ -497,46 +574,65 @@ Ext.define('Ext.layout.Context', {
      */
     invalidate: function (components, ownerCtContext, full) {
         var me = this,
-            firstTime = !me.state,
             isArray = !components.isComponent,
-            componentChildrenDone, containerChildrenDone,
-            i, k, comp, item, items, length, componentLayout, layout, props;
-
+            itemCache = me.items,
+            running = me.state > 0,
+            componentChildrenDone, containerChildrenDone, ownerCt,
+            firstTime, i, k, comp, item, items, length, componentLayout, layout, props;
+        me.ownerCtContext = ownerCtContext;
         for (i = 0, length = isArray ? components.length : 1; i < length; ++i) {
             comp = isArray ? components[i] : components;
 
-            if (comp.rendered) {
+            if (comp.rendered && !comp.hidden) {
+                firstTime = !comp.componentLayout.ownerContext;
                 item = me.getCmp(comp);
                 if (firstTime) {
+                    // this must occur before we proceed since it can do many things (like
+                    // add children perhaps)
+                    if (comp.beforeLayout) {
+                        comp.beforeLayout();
+                    }
+
+                    // Normally the firstTime we meet a component is before the context is
+                    // run, but it is possible for components to be added to a run already
+                    // in progress. If so, we have to lookup the ownerCtContext since the
+                    // odds are very high that the new component is a child of something
+                    // already in the run. It is currently unsupported to drag in the
+                    // owner of a running component (that would need to cleanup the
+                    // isTopLevel indicators as well as boxParent tracking).
+                    if (running && !ownerCtContext && (ownerCt = comp.ownerCt)) {
+                        ownerCtContext = itemCache[ownerCt.el.id];
+                    }
+
                     item.init(ownerCtContext);
                 }
-                componentChildrenDone = containerChildrenDone = false;
+                componentChildrenDone = containerChildrenDone = true;
 
                 // A ComponentLayout MUST implement getLayoutItems to allow its children to
                 // be collected. Ext.container.Container does this, but non-Container Components
                 // which manage Components as part of their structure (eg HtmlEditor) must
                 // return child Components through their own implementation of getLayoutItems.
                 componentLayout = comp.componentLayout;
+                componentLayout.ownerContext = item;
                 if (componentLayout.getLayoutItems) {
                     componentLayout.renderChildren();
 
                     items = componentLayout.getLayoutItems();
                     if (items.length) {
                         me.invalidate(items, item, true);
-                    } else {
-                        componentChildrenDone = true;
+                        componentChildrenDone = false;
                     }
                 }
 
                 if (comp.isContainer && !comp.collapsed) {
                     layout = comp.layout;
+                    layout.ownerContext = item;
                     layout.renderChildren();
 
                     items = layout.getVisibleItems();
                     if (items.length) {
                         me.invalidate(items, item, true);
-                    } else {
-                        containerChildrenDone = true;
+                        containerChildrenDone = false;
                     }
                 } else {
                     layout = null;
@@ -564,12 +660,12 @@ Ext.define('Ext.layout.Context', {
                     props.containerChildrenDone = true;
                 }
 
-                me.resetLayout(componentLayout, item);
+                me.resetLayout(componentLayout, item, firstTime);
                 if (layout) {
-                    me.resetLayout(layout, item);
+                    me.resetLayout(layout, item, firstTime);
                 }
 
-                if (item.boxChildren && item.autoWidth) {
+                if (item.boxChildren && item.widthModel.shrinkWrap) {
                     // set a very large width to allow the children to measure their natural
                     // widths (this is cleared once all children have been measured):
                     item.el.setWidth(10000);
@@ -583,6 +679,43 @@ Ext.define('Ext.layout.Context', {
                 }
             }
         }
+    },
+
+    layoutDone: function (layout) {
+        layout.running = false;
+
+        // Once a component layout completes, we can mark it as "done" but we can also
+        // decrement the remainingChildLayouts property on the ownerCtContext. When that
+        // goes to 0, we can mark the ownerCtContext as "childrenDone".
+        if (layout.isComponentLayout) {
+            var ownerContext = layout.ownerContext,
+                ownerCtContext;
+
+            if (ownerContext.measuresBox) {
+                ownerContext.onBoxMeasured(); // be sure to release our boxParent
+            }
+
+            ownerContext.setProp('done', true);
+
+            ownerCtContext = ownerContext.ownerCtContext;
+            if (ownerCtContext) {
+                if (ownerContext.target.ownerLayout.isComponentLayout) {
+                    if (! --ownerCtContext.remainingComponentChildLayouts) {
+                        ownerCtContext.setProp('componentChildrenDone', true);
+                    }
+                } else {
+                    if (! --ownerCtContext.remainingContainerChildLayouts) {
+                        ownerCtContext.setProp('containerChildrenDone', true);
+                    }
+                }
+                if (! --ownerCtContext.remainingChildLayouts) {
+                    ownerCtContext.setProp('childrenDone', true);
+                }
+            }
+        }
+
+        --this.remainingLayouts;
+        ++this.progressCount; // a layout completion is progress
     },
 
     newQueue: function () {
@@ -741,15 +874,13 @@ Ext.define('Ext.layout.Context', {
      * Resets the given layout object. This is called at the start of the run and can also
      * be called during the run by calling {@link #invalidate}.
      */
-    resetLayout: function (layout, ownerContext) {
+    resetLayout: function (layout, ownerContext, firstTime) {
         var me = this,
-            completed = layout.completed,
-            firstTime = !me.state,
             ownerCtContext;
 
         me.currentLayout = layout;
 
-        layout.completed = layout.done = false;
+        layout.done = false;
         layout.pending = true;
         layout.firedTriggers = 0;
 
@@ -757,6 +888,7 @@ Ext.define('Ext.layout.Context', {
 
         if (firstTime) {
             me.layouts[layout.id] = layout; // track the layout for this run by its id
+            layout.running = true;
 
             if (layout.finishedLayout) {
                 me.finishQueue.add(layout);
@@ -764,6 +896,7 @@ Ext.define('Ext.layout.Context', {
 
             // reset or update per-run counters:
 
+            ++me.remainingLayouts;
             ++layout.layoutCount; // the number of whole layouts run for the layout
 
             layout.beginCount = 0; // the number of beginLayout calls
@@ -793,9 +926,10 @@ Ext.define('Ext.layout.Context', {
         } else {
             ++layout.beginCount;
 
-            if (completed) {
+            if (!layout.running) {
                 // back into the mahem with this one:
                 ++me.remainingLayouts;
+                layout.running = true;
 
                 if (layout.isComponentLayout) {
                     // this one is fun... if we call setProp('done', false) that would still
@@ -844,7 +978,7 @@ Ext.define('Ext.layout.Context', {
         me.flushInvalidates();
 
         me.state = 1;
-        me.totalCount = me.remainingLayouts = me.layoutQueue.getCount();
+        me.totalCount = me.layoutQueue.getCount();
 
         // We may start with unflushed data placed by beginLayout calls. Since layouts may
         // use setProp as a convenience, even in a write phase, we don't want to transition
@@ -855,7 +989,7 @@ Ext.define('Ext.layout.Context', {
         me.flush();
 
         // While we have layouts that have not completed...
-        while (me.remainingLayouts && watchDog--) {
+        while ((me.remainingLayouts || me.invalidQueue.length) && watchDog--) {
             if (me.invalidQueue.length) {
                 me.flushInvalidates();
             }
@@ -877,7 +1011,7 @@ Ext.define('Ext.layout.Context', {
                 break;
             }
 
-            if (!me.remainingLayouts) {
+            if (!(me.remainingLayouts || me.invalidQueue.length)) {
                 me.flush();
                 me.flushLayouts('completionQueue', 'completeLayout');
                 me.flushLayouts('finalizeQueue', 'finalizeLayout');
@@ -891,6 +1025,12 @@ Ext.define('Ext.layout.Context', {
         var me = this;
 
         me.state = 2;
+
+        if (me.remainingLayouts) {
+            me.handleFailure();
+            return false;
+        }
+
         me.flush();
 
         // Call finishedLayout on all layouts, but do not clear the queue.
@@ -903,7 +1043,7 @@ Ext.define('Ext.layout.Context', {
 
         me.flushAnimations();
 
-        return !me.remainingLayouts;
+        return true;
     },
 
     /**
@@ -938,8 +1078,7 @@ Ext.define('Ext.layout.Context', {
      */
     runLayout: function (layout) {
         var me = this,
-            ownerContext = me.getCmp(layout.owner),
-            ownerCtContext;
+            ownerContext = me.getCmp(layout.owner);
 
         layout.pending = false;
 
@@ -959,33 +1098,7 @@ Ext.define('Ext.layout.Context', {
         layout.calculate(ownerContext);
 
         if (layout.done) {
-            layout.completed = true;
-
-            // Once a component layout completes, we can mark it as "done" but we can also
-            // decrement the remainingChildLayouts property on the ownerCtContext. When that
-            // goes to 0, we can mark the ownerCtContext as "childrenDone".
-            if (layout.isComponentLayout) {
-                ownerContext.setProp('done', true);
-
-                ownerCtContext = ownerContext.ownerCtContext;
-                if (ownerCtContext) {
-                    if (ownerContext.target.ownerLayout.isComponentLayout) {
-                        if (! --ownerCtContext.remainingComponentChildLayouts) {
-                            ownerCtContext.setProp('componentChildrenDone', true);
-                        }
-                    } else {
-                        if (! --ownerCtContext.remainingContainerChildLayouts) {
-                            ownerCtContext.setProp('containerChildrenDone', true);
-                        }
-                    }
-                    if (! --ownerCtContext.remainingChildLayouts) {
-                        ownerCtContext.setProp('childrenDone', true);
-                    }
-                }
-            }
-
-            --me.remainingLayouts;
-            ++me.progressCount; // a layout completion is progress
+            me.layoutDone(layout);
 
             if (layout.completeLayout) {
                 me.queueCompletion(layout);

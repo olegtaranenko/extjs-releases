@@ -6,7 +6,7 @@
  * that it lines up nicely with other fields. A common use is for grouping a set of related fields under
  * a single label in a form.
  * 
- * The container's configured {@link #items} will be layed out within the field body area according to the
+ * The container's configured {@link #cfg-items} will be layed out within the field body area according to the
  * configured {@link #layout} type. The default layout is `'autocontainer'`.
  * 
  * Like regular fields, FieldContainer can inherit its decoration configuration from the
@@ -99,9 +99,11 @@ Ext.define('Ext.form.FieldContainer', {
         labelable: 'Ext.form.Labelable',
         fieldAncestor: 'Ext.form.FieldAncestor'
     },
+    requires: 'Ext.layout.component.field.FieldContainer',
+
     alias: 'widget.fieldcontainer',
 
-    componentLayout: 'field',
+    componentLayout: 'fieldcontainer',
 
     /**
      * @cfg {Boolean} combineLabels
@@ -115,7 +117,9 @@ Ext.define('Ext.form.FieldContainer', {
      * The string to use when joining the labels of individual sub-fields, when {@link #combineLabels} is
      * set to true. Defaults to ', '.
      */
+    //<locale>
     labelConnector: ', ',
+    //</locale>
 
     /**
      * @cfg {Boolean} combineErrors

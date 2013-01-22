@@ -16,8 +16,7 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-view-DropZone'>/**
-</span> * @class Ext.view.DropZone
- * @private
+</span> * @private
  */
 Ext.define('Ext.view.DropZone', {
     extend: 'Ext.dd.DropZone',
@@ -129,7 +128,7 @@ Ext.define('Ext.view.DropZone', {
             pos = me.getPosition(e, node),
             overRecord = view.getRecord(node),
             draggingRecords = data.records,
-            indicator, indicatorY;
+            indicatorY;
 
         if (!Ext.Array.contains(draggingRecords, overRecord) &amp;&amp; (
             pos == 'before' &amp;&amp; !me.containsRecordAtOffset(draggingRecords, overRecord, -1) ||
