@@ -184,6 +184,10 @@ Ext.define('Ext.form.field.Checkbox', {
         'inputAttrTpl'
     ],
 
+    /*
+     * @property {Boolean} isCheckbox
+     * `true` in this class to identify an objact as an instantiated Checkbox, or subclass thereof.
+     */
     isCheckbox: true,
 
     /**

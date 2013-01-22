@@ -239,6 +239,12 @@ Ext.define('Ext.form.field.Spinner', {
         this.spinDown();
     },
 
+    // private
+    // Handle trigger mouse up gesture; refocuses the input element upon end of spin.
+    onTriggerWrapMousup: function() {
+        this.inputEl.focus();
+    },
+
     /**
      * Triggers the spinner to step up; fires the {@link #spin} and {@link #spinup} events and calls the
      * {@link #onSpinUp} method. Does nothing if the field is {@link #disabled} or if {@link #spinUpEnabled}

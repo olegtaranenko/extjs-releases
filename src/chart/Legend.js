@@ -120,6 +120,12 @@ Ext.define('Ext.chart.Legend', {
     y: 0,
 
     /**
+     * @cfg {String} labelColor
+     * Color to be used for the legend labels, eg '#000'
+     */
+    labelColor: '#000',
+
+    /**
      * @cfg {String} labelFont
      * Font to be used for the legend labels, eg '12px Helvetica'
      */
@@ -415,5 +421,34 @@ Ext.define('Ext.chart.Legend', {
                 me.boxSprite.show(true);
             }
         }
+    },
+    
+    /** toggle
+     * @param {Boolean} Whether to show or hide the legend.
+     *
+     */
+    toggle: function(show) {
+      var me = this,
+          i = 0,
+          items = me.items,
+          len = items.length;
+
+      if (me.boxSprite) {
+          if (show) {
+              me.boxSprite.show(true);
+          } else {
+              me.boxSprite.hide(true);
+          }
+      }
+
+      for (; i < len; ++i) {
+          if (show) {
+            items[i].show(true);
+          } else {
+              items[i].hide(true);
+          }
+      }
+
+      me.visible = show;
     }
 });

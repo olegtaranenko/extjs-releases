@@ -86,5 +86,33 @@ describe("Ext.Element.style", function() {
             testEl.removeCls('jazz').removeCls('bar').removeCls('fff');
             expect(testEl.dom.className).toEqual('foo spud');
         });
-    })
+    });
+
+    describe('getStyle', function(){
+        var el, dom;
+        beforeEach(function(){
+            dom = document.createElement('div');
+            testEl.appendChild(dom);
+            el = new Ext.Element(dom);
+        });
+        afterEach(function(){
+            dom.parentNode.removeChild(dom);
+            el = dom = null;
+        });
+
+        describe('border-*-width', function(){
+            Ext.Array.forEach('top right bottom left'.split(' '), function(side){
+                it('must report the correct border-'+ side +'-width when the border-'+ side +'-style is "solid"', function(){
+                    dom.style.cssText = 'border:5px solid';
+                    expect(el.getStyle('border-'+ side +'-width')).toBe('5px');
+                });
+                it('must report 0px for border-'+ side +'-width when the border-'+ side +'-style is "none"', function(){
+                    dom.style.cssText = 'border:5px solid; border-' + side + '-style:none';
+                    expect(el.getStyle('border-'+ side +'-width')).toBe('0px');
+                });
+            });
+        });
+
+    });
+
 }, "/src/dom/Element.style.js");

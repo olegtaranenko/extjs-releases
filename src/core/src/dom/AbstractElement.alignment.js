@@ -146,14 +146,16 @@ Ext.dom.AbstractElement.override({
 
     // private
     getAnchor: function(){
-        var dom = this.dom;
-            if (!dom) {
-                return;
-            }
-            var anchor = this.self.data.call(this.self, dom, '_anchor');
+        var data = (this.$cache || this.getCache()).data,
+            anchor;
+            
+        if (!this.dom) {
+            return;
+        }
+        anchor = data._anchor;
 
         if(!anchor){
-            anchor = this.self.data.call(this.self, dom, '_anchor', {});
+            anchor = data._anchor = {};
         }
         return anchor;
     },

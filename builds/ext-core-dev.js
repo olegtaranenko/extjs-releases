@@ -1,22 +1,26 @@
 /*
+This file is part of Ext JS 4.1
 
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
+Copyright (c) 2011-2012 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
+Pre-release code in the Ext repository is intended for development purposes only and will
+not always be stable. 
 
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
+Use of pre-release code is permitted with your application at your own risk under standard
+Ext license terms. Public redistribution is prohibited.
 
+For early licensing, please contact us at licensing@sencha.com
+
+Build date: 2012-01-25 03:11:22 (293e284c08c6be1f089d04f63fce48aa8215ebcb)
 */
 /**
  * @class Ext
  * @singleton
  */
 var Ext = Ext || {};
+Ext._startTime = new Date().getTime();
 (function() {
     var global = this,
         objectPrototype = Object.prototype,
@@ -25,10 +29,6 @@ var Ext = Ext || {};
         enumerablesTest = { toString: 1 },
         emptyFn = function(){},
         i;
-
-    if (typeof Ext === 'undefined') {
-        global.Ext = {};
-    }
 
     Ext.global = global;
 
@@ -413,7 +413,7 @@ var Ext = Ext || {};
          */
         isFunction:
         // Safari 3.x and 4.x returns 'function' for typeof <NodeList>, hence we need to fall back to using
-        // Object.prorotype.toString (slower)
+        // Object.prototype.toString (slower)
         (typeof document !== 'undefined' && typeof document.getElementsByTagName('body') === 'function') ? function(value) {
             return toString.call(value) === '[object Function]';
         } : function(value) {
@@ -597,7 +597,7 @@ var Ext = Ext || {};
                 cache = me.functionFactoryCache,
                 idx, fn, ln;
                 
-             if (Ext.enableSandbox) {
+             if (Ext.isSandboxed) {
                 ln = args.length;
                 if (ln > 0) {
                     ln--;
@@ -619,7 +619,7 @@ var Ext = Ext || {};
                 args = Array.prototype.slice.call(arguments),
                 ln;
                 
-            if (Ext.enableSandbox) {
+            if (Ext.isSandboxed) {
                 ln = args.length;
                 if (ln > 0) {
                     ln--;
@@ -1040,243 +1040,265 @@ var version = '4.1.0', Version;
  * @singleton
  */
 
-Ext.String = {
-    trimRegex: /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g,
-    escapeRe: /('|\\)/g,
-    formatRe: /\{(\d+)\}/g,
-    escapeRegexRe: /([-.*+?^${}()|[\]\/\\])/g,
-    basicTrimRe: /^\s+|\s+$/g,
-    whitespaceRe: /\s+/,
-
-    /**
-     * Convert certain characters (&, <, >, and ") to their HTML character equivalents for literal display in web pages.
-     * @param {String} value The string to encode
-     * @return {String} The encoded text
-     * @method
-     */
-    htmlEncode: (function() {
-        var entities = {
+Ext.String = (function() {
+    var trimRegex     = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g,
+        escapeRe      = /('|\\)/g,
+        formatRe      = /\{(\d+)\}/g,
+        escapeRegexRe = /([-.*+?^${}()|[\]\/\\])/g,
+        basicTrimRe   = /^\s+|\s+$/g,
+        whitespaceRe  = /\s+/,
+        varReplace    = /(^[^a-z]*|[^\w])/gi,
+        charToEntity  = {
             '&': '&amp;',
             '>': '&gt;',
             '<': '&lt;',
             '"': '&quot;'
-        }, keys = [], p, regex;
-
-        for (p in entities) {
-            keys.push(p);
-        }
-
-        regex = new RegExp('(' + keys.join('|') + ')', 'g');
-
-        return function(value) {
-            return (!value) ? value : String(value).replace(regex, function(match, capture) {
-                return entities[capture];
-            });
-        };
-    })(),
-
-    /**
-     * Convert certain characters (&, <, >, and ") from their HTML character equivalents.
-     * @param {String} value The string to decode
-     * @return {String} The decoded text
-     * @method
-     */
-    htmlDecode: (function() {
-        var entities = {
+        },
+        entityToChar  = {
             '&amp;': '&',
             '&gt;': '>',
             '&lt;': '<',
             '&quot;': '"'
-        }, keys = [], p, regex;
-
-        for (p in entities) {
-            keys.push(p);
-        }
-
-        regex = new RegExp('(' + keys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
-
-        return function(value) {
-            return (!value) ? value : String(value).replace(regex, function(match, capture) {
-                if (capture in entities) {
-                    return entities[capture];
-                } else {
-                    return String.fromCharCode(parseInt(capture.substr(2), 10));
-                }
-            });
+        },
+        keys = [],
+        key,
+        charToEntityRegex,
+        entityToCharRegex,
+        htmlEncodeReplaceFn = function(match, capture) {
+            return charToEntity[capture];
+        },
+        htmlEncode = function(value) {
+            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
+        },
+        htmlDecodeReplaceFn = function(match, capture) {
+            return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
+        },
+        htmlDecode = function(value) {
+            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
         };
-    })(),
 
-    /**
-     * Appends content to the query string of a URL, handling logic for whether to place
-     * a question mark or ampersand.
-     * @param {String} url The URL to append to.
-     * @param {String} string The content to append to the URL.
-     * @return {String} The resulting URL
-     */
-    urlAppend : function(url, string) {
-        if (!Ext.isEmpty(string)) {
-            return url + (url.indexOf('?') === -1 ? '?' : '&') + string;
+        // Compile RexExps for HTML encode and decode functions
+        for (key in charToEntity) {
+            keys.push(key);
         }
+        charToEntityRegex = new RegExp('(' + keys.join('|') + ')', 'g');
 
-        return url;
-    },
+        keys = [];
+        for (key in entityToChar) {
+            keys.push(key);
+        }
+        entityToCharRegex = new RegExp('(' + keys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
 
-    /**
-     * Trims whitespace from either end of a string, leaving spaces within the string intact.  Example:
-     * @example
-var s = '  foo bar  ';
-alert('-' + s + '-');         //alerts "- foo bar -"
-alert('-' + Ext.String.trim(s) + '-');  //alerts "-foo bar-"
+    return {
 
-     * @param {String} string The string to escape
-     * @return {String} The trimmed string
-     */
-    trim: function(string) {
-        return string.replace(Ext.String.trimRegex, "");
-    },
+        /**
+         * Converts a string of characters into a legal, parseable Javascript `var` name as long as the passed
+         * string contains at least one alphabetic character. Non alphanumeric characters, and *leading* non alphabetic
+         * characters will be removed.
+         * @param {String} s A string to be converted into a `var` name.
+         * @return {String} A legal Javascript `var` name.
+         */
+        createVarName: function(s) {
+            return s.replace(varReplace, '');
+        },
 
-    /**
-     * Capitalize the given string
-     * @param {String} string
-     * @return {String}
-     */
-    capitalize: function(string) {
-        return string.charAt(0).toUpperCase() + string.substr(1);
-    },
+        /**
+         * Convert certain characters (&, <, >, and ") to their HTML character equivalents for literal display in web pages.
+         * @param {String} value The string to encode
+         * @return {String} The encoded text
+         * @method
+         */
+        htmlEncode: htmlEncode,
 
-    /**
-     * Truncate a string and add an ellipsis ('...') to the end if it exceeds the specified length
-     * @param {String} value The string to truncate
-     * @param {Number} length The maximum length to allow before truncating
-     * @param {Boolean} word True to try to find a common word break
-     * @return {String} The converted text
-     */
-    ellipsis: function(value, len, word) {
-        if (value && value.length > len) {
-            if (word) {
-                var vs = value.substr(0, len - 2),
-                index = Math.max(vs.lastIndexOf(' '), vs.lastIndexOf('.'), vs.lastIndexOf('!'), vs.lastIndexOf('?'));
-                if (index !== -1 && index >= (len - 15)) {
-                    return vs.substr(0, index) + "...";
-                }
+        /**
+         * Convert certain characters (&, <, >, and ") from their HTML character equivalents.
+         * @param {String} value The string to decode
+         * @return {String} The decoded text
+         * @method
+         */
+        htmlDecode: htmlDecode,
+
+        /**
+         * Appends content to the query string of a URL, handling logic for whether to place
+         * a question mark or ampersand.
+         * @param {String} url The URL to append to.
+         * @param {String} string The content to append to the URL.
+         * @return {String} The resulting URL
+         */
+        urlAppend : function(url, string) {
+            if (!Ext.isEmpty(string)) {
+                return url + (url.indexOf('?') === -1 ? '?' : '&') + string;
             }
-            return value.substr(0, len - 3) + "...";
+
+            return url;
+        },
+
+        /**
+         * Trims whitespace from either end of a string, leaving spaces within the string intact.  Example:
+         * @example
+    var s = '  foo bar  ';
+    alert('-' + s + '-');         //alerts "- foo bar -"
+    alert('-' + Ext.String.trim(s) + '-');  //alerts "-foo bar-"
+
+         * @param {String} string The string to escape
+         * @return {String} The trimmed string
+         */
+        trim: function(string) {
+            return string.replace(trimRegex, "");
+        },
+
+        /**
+         * Capitalize the given string
+         * @param {String} string
+         * @return {String}
+         */
+        capitalize: function(string) {
+            return string.charAt(0).toUpperCase() + string.substr(1);
+        },
+
+        /**
+         * Uncapitalize the given string
+         * @param {String} string
+         * @return {String}
+         */
+        uncapitalize: function(string) {
+            return string.charAt(0).toLowerCase() + string.substr(1);
+        },
+
+        /**
+         * Truncate a string and add an ellipsis ('...') to the end if it exceeds the specified length
+         * @param {String} value The string to truncate
+         * @param {Number} length The maximum length to allow before truncating
+         * @param {Boolean} word True to try to find a common word break
+         * @return {String} The converted text
+         */
+        ellipsis: function(value, len, word) {
+            if (value && value.length > len) {
+                if (word) {
+                    var vs = value.substr(0, len - 2),
+                    index = Math.max(vs.lastIndexOf(' '), vs.lastIndexOf('.'), vs.lastIndexOf('!'), vs.lastIndexOf('?'));
+                    if (index !== -1 && index >= (len - 15)) {
+                        return vs.substr(0, index) + "...";
+                    }
+                }
+                return value.substr(0, len - 3) + "...";
+            }
+            return value;
+        },
+
+        /**
+         * Escapes the passed string for use in a regular expression
+         * @param {String} string
+         * @return {String}
+         */
+        escapeRegex: function(string) {
+            return string.replace(escapeRegexRe, "\\$1");
+        },
+
+        /**
+         * Escapes the passed string for ' and \
+         * @param {String} string The string to escape
+         * @return {String} The escaped string
+         */
+        escape: function(string) {
+            return string.replace(escapeRe, "\\$1");
+        },
+
+        /**
+         * Utility function that allows you to easily switch a string between two alternating values.  The passed value
+         * is compared to the current string, and if they are equal, the other value that was passed in is returned.  If
+         * they are already different, the first value passed in is returned.  Note that this method returns the new value
+         * but does not change the current string.
+         * <pre><code>
+        // alternate sort directions
+        sort = Ext.String.toggle(sort, 'ASC', 'DESC');
+
+        // instead of conditional logic:
+        sort = (sort == 'ASC' ? 'DESC' : 'ASC');
+           </code></pre>
+         * @param {String} string The current string
+         * @param {String} value The value to compare to the current string
+         * @param {String} other The new value to use if the string already equals the first value passed in
+         * @return {String} The new value
+         */
+        toggle: function(string, value, other) {
+            return string === value ? other : value;
+        },
+
+        /**
+         * Pads the left side of a string with a specified character.  This is especially useful
+         * for normalizing number and date strings.  Example usage:
+         *
+         * <pre><code>
+    var s = Ext.String.leftPad('123', 5, '0');
+    // s now contains the string: '00123'
+           </code></pre>
+         * @param {String} string The original string
+         * @param {Number} size The total length of the output string
+         * @param {String} character (optional) The character with which to pad the original string (defaults to empty string " ")
+         * @return {String} The padded string
+         */
+        leftPad: function(string, size, character) {
+            var result = String(string);
+            character = character || " ";
+            while (result.length < size) {
+                result = character + result;
+            }
+            return result;
+        },
+
+        /**
+         * Allows you to define a tokenized string and pass an arbitrary number of arguments to replace the tokens.  Each
+         * token must be unique, and must increment in the format {0}, {1}, etc.  Example usage:
+         * <pre><code>
+    var cls = 'my-class', text = 'Some text';
+    var s = Ext.String.format('&lt;div class="{0}">{1}&lt;/div>', cls, text);
+    // s now contains the string: '&lt;div class="my-class">Some text&lt;/div>'
+           </code></pre>
+         * @param {String} string The tokenized string to be formatted
+         * @param {String} value1 The value to replace token {0}
+         * @param {String} value2 Etc...
+         * @return {String} The formatted string
+         */
+        format: function(format) {
+            var args = Ext.Array.toArray(arguments, 1);
+            return format.replace(formatRe, function(m, i) {
+                return args[i];
+            });
+        },
+
+        /**
+         * Returns a string with a specified number of repititions a given string pattern.
+         * The pattern be separated by a different string.
+         *
+         *      var s = Ext.String.repeat('---', 4); // = '------------'
+         *      var t = Ext.String.repeat('--', 3, '/'); // = '--/--/--'
+         *
+         * @param {String} pattern The pattern to repeat.
+         * @param {Number} count The number of times to repeat the pattern (may be 0).
+         * @param {String} sep An option string to separate each pattern.
+         */
+        repeat: function(pattern, count, sep) {
+            for (var buf = [], i = count; i--; ) {
+                buf.push(pattern);
+            }
+            return buf.join(sep || '');
+        },
+
+        /**
+         * Splits a string of space separated words into an array, trimming as needed. If the
+         * words are already an array, it is returned.
+         *
+         * @param {String/Array} words
+         */
+        splitWords: function (words) {
+            if (words && typeof words == 'string') {
+                return words.replace(basicTrimRe, '').split(whitespaceRe);
+            }
+            return words || [];
         }
-        return value;
-    },
-
-    /**
-     * Escapes the passed string for use in a regular expression
-     * @param {String} string
-     * @return {String}
-     */
-    escapeRegex: function(string) {
-        return string.replace(Ext.String.escapeRegexRe, "\\$1");
-    },
-
-    /**
-     * Escapes the passed string for ' and \
-     * @param {String} string The string to escape
-     * @return {String} The escaped string
-     */
-    escape: function(string) {
-        return string.replace(Ext.String.escapeRe, "\\$1");
-    },
-
-    /**
-     * Utility function that allows you to easily switch a string between two alternating values.  The passed value
-     * is compared to the current string, and if they are equal, the other value that was passed in is returned.  If
-     * they are already different, the first value passed in is returned.  Note that this method returns the new value
-     * but does not change the current string.
-     * <pre><code>
-    // alternate sort directions
-    sort = Ext.String.toggle(sort, 'ASC', 'DESC');
-
-    // instead of conditional logic:
-    sort = (sort == 'ASC' ? 'DESC' : 'ASC');
-       </code></pre>
-     * @param {String} string The current string
-     * @param {String} value The value to compare to the current string
-     * @param {String} other The new value to use if the string already equals the first value passed in
-     * @return {String} The new value
-     */
-    toggle: function(string, value, other) {
-        return string === value ? other : value;
-    },
-
-    /**
-     * Pads the left side of a string with a specified character.  This is especially useful
-     * for normalizing number and date strings.  Example usage:
-     *
-     * <pre><code>
-var s = Ext.String.leftPad('123', 5, '0');
-// s now contains the string: '00123'
-       </code></pre>
-     * @param {String} string The original string
-     * @param {Number} size The total length of the output string
-     * @param {String} character (optional) The character with which to pad the original string (defaults to empty string " ")
-     * @return {String} The padded string
-     */
-    leftPad: function(string, size, character) {
-        var result = String(string);
-        character = character || " ";
-        while (result.length < size) {
-            result = character + result;
-        }
-        return result;
-    },
-
-    /**
-     * Allows you to define a tokenized string and pass an arbitrary number of arguments to replace the tokens.  Each
-     * token must be unique, and must increment in the format {0}, {1}, etc.  Example usage:
-     * <pre><code>
-var cls = 'my-class', text = 'Some text';
-var s = Ext.String.format('&lt;div class="{0}">{1}&lt;/div>', cls, text);
-// s now contains the string: '&lt;div class="my-class">Some text&lt;/div>'
-       </code></pre>
-     * @param {String} string The tokenized string to be formatted
-     * @param {String} value1 The value to replace token {0}
-     * @param {String} value2 Etc...
-     * @return {String} The formatted string
-     */
-    format: function(format) {
-        var args = Ext.Array.toArray(arguments, 1);
-        return format.replace(Ext.String.formatRe, function(m, i) {
-            return args[i];
-        });
-    },
-
-    /**
-     * Returns a string with a specified number of repititions a given string pattern.
-     * The pattern be separated by a different string.
-     *
-     *      var s = Ext.String.repeat('---', 4); // = '------------'
-     *      var t = Ext.String.repeat('--', 3, '/'); // = '--/--/--'
-     *
-     * @param {String} pattern The pattern to repeat.
-     * @param {Number} count The number of times to repeat the pattern (may be 0).
-     * @param {String} sep An option string to separate each pattern.
-     */
-    repeat: function(pattern, count, sep) {
-        for (var buf = [], i = count; i--; ) {
-            buf.push(pattern);
-        }
-        return buf.join(sep || '');
-    },
-
-    /**
-     * Splits a string of space separated words into an array, trimming as needed. If the
-     * words are already an array, it is returned.
-     *
-     * @param {String/Array} words
-     */
-    splitWords: function (words) {
-        if (words && typeof words == 'string') {
-            return words.replace(Ext.String.basicTrimRe, '').split(Ext.String.whitespaceRe);
-        }
-        return words || [];
-    }
-};
+    };
+})();
 
 /**
  * Old alias to {@link Ext.String#htmlEncode}
@@ -1305,7 +1327,6 @@ Ext.htmlDecode = Ext.String.htmlDecode;
  * @inheritdoc Ext.String#urlAppend
  */
 Ext.urlAppend = Ext.String.urlAppend;
-
 /**
  * @class Ext.Number
  *
@@ -1313,114 +1334,175 @@ Ext.urlAppend = Ext.String.urlAppend;
  * @singleton
  */
 
-(function() {
+Ext.Number = new function() {
 
-var isToFixedBroken = (0.9).toFixed() !== '1';
+    var me = this,
+        isToFixedBroken = (0.9).toFixed() !== '1',
+        math = Math;
 
-Ext.Number = {
-    /**
-     * Checks whether or not the passed number is within a desired range.  If the number is already within the
-     * range it is returned, otherwise the min or max value is returned depending on which side of the range is
-     * exceeded. Note that this method returns the constrained value but does not change the current number.
-     * @param {Number} number The number to check
-     * @param {Number} min The minimum number in the range
-     * @param {Number} max The maximum number in the range
-     * @return {Number} The constrained value if outside the range, otherwise the current value
-     */
-    constrain: function(number, min, max) {
-        number = parseFloat(number);
+    Ext.apply(this, {
+        /**
+         * Checks whether or not the passed number is within a desired range.  If the number is already within the
+         * range it is returned, otherwise the min or max value is returned depending on which side of the range is
+         * exceeded. Note that this method returns the constrained value but does not change the current number.
+         * @param {Number} number The number to check
+         * @param {Number} min The minimum number in the range
+         * @param {Number} max The maximum number in the range
+         * @return {Number} The constrained value if outside the range, otherwise the current value
+         */
+        constrain: function(number, min, max) {
+            number = parseFloat(number);
 
-        if (!isNaN(min)) {
-            number = Math.max(number, min);
-        }
-        if (!isNaN(max)) {
-            number = Math.min(number, max);
-        }
-        return number;
-    },
-
-    /**
-     * Snaps the passed number between stopping points based upon a passed increment value.
-     * @param {Number} value The unsnapped value.
-     * @param {Number} increment The increment by which the value must move.
-     * @param {Number} minValue The minimum value to which the returned value must be constrained. Overrides the increment..
-     * @param {Number} maxValue The maximum value to which the returned value must be constrained. Overrides the increment..
-     * @return {Number} The value of the nearest snap target.
-     */
-    snap : function(value, increment, minValue, maxValue) {
-        var newValue = value,
-            m;
-
-        if (!(increment && value)) {
-            return value;
-        }
-        m = value % increment;
-        if (m !== 0) {
-            newValue -= m;
-            if (m * 2 >= increment) {
-                newValue += increment;
-            } else if (m * 2 < -increment) {
-                newValue -= increment;
+            if (!isNaN(min)) {
+                number = math.max(number, min);
             }
+            if (!isNaN(max)) {
+                number = math.min(number, max);
+            }
+            return number;
+        },
+
+        /**
+         * Snaps the passed number between stopping points based upon a passed increment value.
+         *
+         * The difference between this and {@link #snapInRange} is that {@link #snapInRange} uses the minValue
+         * when calculating snap points:
+         *
+         *     r = Ext.Number.snap(56, 2, 55, 65);        // Returns 56 - snap points are zero based
+         *
+         *     r = Ext.Number.snapInRange(56, 2, 55, 65); // Returns 57 - snap points are based from minValue
+         *
+         * @param {Number} value The unsnapped value.
+         * @param {Number} increment The increment by which the value must move.
+         * @param {Number} minValue The minimum value to which the returned value must be constrained. Overrides the increment.
+         * @param {Number} maxValue The maximum value to which the returned value must be constrained. Overrides the increment.
+         * @return {Number} The value of the nearest snap target.
+         */
+        snap : function(value, increment, minValue, maxValue) {
+            var m;
+
+            // If no value passed, or minValue was passed and value is less than minValue (anything < undefined is false)
+            // Then use the minValue (or zero if the value was undefined)
+            if (value === undefined || value < minValue) {
+                return minValue || 0;
+            }
+
+            if (increment) {
+                m = value % increment;
+                if (m !== 0) {
+                    value -= m;
+                    if (m * 2 >= increment) {
+                        value += increment;
+                    } else if (m * 2 < -increment) {
+                        value -= increment;
+                    }
+                }
+            }
+            return me.constrain(value, minValue,  maxValue);
+        },
+
+        /**
+         * Snaps the passed number between stopping points based upon a passed increment value.
+         *
+         * The difference between this and {@link #snap} is that {@link #snap} does not use the minValue
+         * when calculating snap points:
+         *
+         *     r = Ext.Number.snap(56, 2, 55, 65);        // Returns 56 - snap points are zero based
+         *
+         *     r = Ext.Number.snapInRange(56, 2, 55, 65); // Returns 57 - snap points are based from minValue
+         *
+         * @param {Number} value The unsnapped value.
+         * @param {Number} increment The increment by which the value must move.
+         * @param {Number} [minValue=0] The minimum value to which the returned value must be constrained.
+         * @param {Number} [maxValue=Infinity] The maximum value to which the returned value must be constrained.
+         * @return {Number} The value of the nearest snap target.
+         */
+        snapInRange : function(value, increment, minValue, maxValue) {
+            var tween;
+
+            // default minValue to zero
+            minValue = (minValue || 0);
+
+            // If value is undefined, or less than minValue, use minValue
+            if (value === undefined || value < minValue) {
+                return minValue;
+            }
+
+            // Calculate how many snap points from the minValue the passed value is.
+            if (increment && (tween = ((value - minValue) % increment))) {
+                value -= tween;
+                tween *= 2;
+                if (tween >= increment) {
+                    value += increment;
+                } else if (tween < -increment) {
+                    value -= increment;
+                }
+            }
+
+            // If constraining within a maximum, ensure the maximum is on a snap point
+            if (maxValue !== undefined) {
+                if (value > (maxValue = me.snapInRange(maxValue, increment, minValue))) {
+                    value = maxValue;
+                }
+            }
+
+            return value;
+        },
+
+        /**
+         * Formats a number using fixed-point notation
+         * @param {Number} value The number to format
+         * @param {Number} precision The number of digits to show after the decimal point
+         */
+        toFixed: function(value, precision) {
+            if (isToFixedBroken) {
+                precision = precision || 0;
+                var pow = math.pow(10, precision);
+                return (math.round(value * pow) / pow).toFixed(precision);
+            }
+
+            return value.toFixed(precision);
+        },
+
+        /**
+         * Validate that a value is numeric and convert it to a number if necessary. Returns the specified default value if
+         * it is not.
+
+    Ext.Number.from('1.23', 1); // returns 1.23
+    Ext.Number.from('abc', 1); // returns 1
+
+         * @param {Object} value
+         * @param {Number} defaultValue The value to return if the original value is non-numeric
+         * @return {Number} value, if numeric, defaultValue otherwise
+         */
+        from: function(value, defaultValue) {
+            if (isFinite(value)) {
+                value = parseFloat(value);
+            }
+
+            return !isNaN(value) ? value : defaultValue;
+        },
+
+        /**
+         * Returns a random integer between the specified range (inclusive)
+         * @param {Number} from Lowest value to return.
+         * @param {Number} to Highst value to return.
+         * @return {Number} A random integer within the specified range.
+         */
+        randomInt: function (from, to) {
+           return math.floor(math.random() * (to - from + 1) + from);
         }
-        return Ext.Number.constrain(newValue, minValue,  maxValue);
-    },
+    });
 
     /**
-     * Formats a number using fixed-point notation
-     * @param {Number} value The number to format
-     * @param {Number} precision The number of digits to show after the decimal point
+     * @deprecated 4.0.0 Please use {@link Ext.Number#from} instead.
+     * @member Ext
+     * @method num
+     * @inheritdoc Ext.Number#from
      */
-    toFixed: function(value, precision) {
-        if (isToFixedBroken) {
-            precision = precision || 0;
-            var pow = Math.pow(10, precision);
-            return (Math.round(value * pow) / pow).toFixed(precision);
-        }
-
-        return value.toFixed(precision);
-    },
-
-    /**
-     * Validate that a value is numeric and convert it to a number if necessary. Returns the specified default value if
-     * it is not.
-
-Ext.Number.from('1.23', 1); // returns 1.23
-Ext.Number.from('abc', 1); // returns 1
-
-     * @param {Object} value
-     * @param {Number} defaultValue The value to return if the original value is non-numeric
-     * @return {Number} value, if numeric, defaultValue otherwise
-     */
-    from: function(value, defaultValue) {
-        if (isFinite(value)) {
-            value = parseFloat(value);
-        }
-
-        return !isNaN(value) ? value : defaultValue;
-    },
-
-    /**
-     * Returns a random integer between the specified range (inclusive)
-     * @param {Number} from Lowest value to return.
-     * @param {Number} to Highst value to return.
-     * @return {Number} A random integer within the specified range.
-     */
-    randomInt: function (from, to) {
-       return Math.floor(Math.random() * (to - from + 1) + from);
-    }
-};
-
-})();
-
-/**
- * @deprecated 4.0.0 Please use {@link Ext.Number#from} instead.
- * @member Ext
- * @method num
- * @inheritdoc Ext.Number#from
- */
-Ext.num = function() {
-    return Ext.Number.from.apply(this, arguments);
+    Ext.num = function() {
+        return me.from.apply(this, arguments);
+    };
 };
 /**
  * @class Ext.Array
@@ -2450,7 +2532,37 @@ Ext.num = function() {
          * @return {Array} An array containing the removed items.
          * @method
          */
-        splice: splice
+        splice: splice,
+
+        /**
+         * Pushes new items onto the end of an Array.
+         *
+         * Passed parameters may be single items, or arrays of items. If an Array is found in the argument list, all its
+         * elements are pushed into the end of the target Array.
+         *
+         * @param {Array} target The Array onto which to push new items
+         * @param {Object...} elements The elements to add to the array. Each parameter may
+         * be an Array, in which case all the elements of that Array will be pushed into the end of the
+         * destination Array.
+         * @return {Array} An array containing all the new items push onto the end.
+         *
+         */
+        push: function(array) {
+            var len = arguments.length,
+                i = 1,
+                newItem;
+
+            if (array === undefined) {
+                array = [];
+            } else if (!Ext.isArray(array)) {
+                array = [array];
+            }
+            for (; i < len; i++) {
+                newItem = arguments[i];
+                Array.prototype.push[Ext.isArray(newItem) ? 'apply' : 'call'](array, newItem);
+            }
+            return array;
+        }
     };
 
     /**
@@ -4606,7 +4718,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
                     utilDate.formatCodeToRegex("Y", 1), // year
                     utilDate.formatCodeToRegex("m", 2), // month
                     utilDate.formatCodeToRegex("d", 3), // day
-                    utilDate.formatCodeToRegex("h", 4), // hour
+                    utilDate.formatCodeToRegex("H", 4), // hour
                     utilDate.formatCodeToRegex("i", 5), // minute
                     utilDate.formatCodeToRegex("s", 6), // second
                     {c:"ms = results[7] || '0'; ms = parseInt(ms, 10)/Math.pow(10, ms.length - 3);\n"}, // decimal fraction of a second (minimum = 1 digit, maximum = unlimited)
@@ -6604,7 +6716,6 @@ var noArgs = [],
      *     iPhone.getPrice(); // 500;
      *     iPhone.getOperatingSystem(); // 'iOS'
      *     iPhone.getHasTouchScreen(); // true;
-     *     iPhone.hasTouchScreen(); // true
      */
     ExtClass.registerPreprocessor('config', function(Class, data) {
         var config = data.config,
@@ -9392,7 +9503,7 @@ var noArgs = [],
     Ext.disableCacheBuster = function (disable, path) {
         var date = new Date();
         date.setTime(date.getTime() + (disable ? 10*365 : -1) * 24*60*60*1000);
-        data = date.toGMTString();
+        date = date.toGMTString();
         document.cookie = 'ext-cache=1; expires=' + date + '; path='+(path || '/');
     };
 
@@ -9948,21 +10059,6 @@ Ext.deprecated = function (suggestion) {
 })();
 
 
-
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.JSON
  * Modified version of Douglas Crockford's JSON.js that doesn't
@@ -9971,40 +10067,45 @@ If you are unsure which license is appropriate for your use, please contact the 
  * @singleton
  */
 Ext.JSON = new(function() {
-    var useHasOwn = !! {}.hasOwnProperty,
+    var me = this,
+    encodingFunction,
+    decodingFunction,
+    useNative = null,
+    useHasOwn = !! {}.hasOwnProperty,
     isNative = function() {
-        var useNative = null;
-
-        return function() {
-            if (useNative === null) {
-                useNative = Ext.USE_NATIVE_JSON && window.JSON && JSON.toString() == '[object JSON]';
-            }
-
-            return useNative;
-        };
-    }(),
+        if (useNative === null) {
+            useNative = Ext.USE_NATIVE_JSON && window.JSON && JSON.toString() == '[object JSON]';
+        }
+        return useNative;
+    },
     pad = function(n) {
         return n < 10 ? "0" + n : n;
     },
     doDecode = function(json) {
         return eval("(" + json + ')');
     },
-    doEncode = function(o) {
-        if (!Ext.isDefined(o) || o === null) {
+    doEncode = function(o, newline) {
+        // http://jsperf.com/is-undefined
+        if (o === null || o === undefined) {
             return "null";
-        } else if (Ext.isArray(o)) {
-            return encodeArray(o);
         } else if (Ext.isDate(o)) {
             return Ext.JSON.encodeDate(o);
         } else if (Ext.isString(o)) {
             return encodeString(o);
+        }
+        // Allow custom zerialization by adding a toJSON method to any object type.
+        // Date/String have a toJSON in some environments, so check these first.
+        else if (o.toJSON) {
+            return o.toJSON();
+        } else if (Ext.isArray(o)) {
+            return encodeArray(o, newline);
         } else if (typeof o == "number") {
             //don't use isNumber here, since finite checks happen inside isNumber
             return isFinite(o) ? String(o) : "null";
         } else if (Ext.isBoolean(o)) {
             return String(o);
         } else if (Ext.isObject(o)) {
-            return encodeObject(o);
+            return encodeObject(o, newline);
         } else if (typeof o === "function") {
             return "null";
         }
@@ -10027,11 +10128,50 @@ Ext.JSON = new(function() {
             return typeof c === 'string' ? c : '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
         }) + '"';
     },
-    encodeArray = function(o) {
-        var a = ["[", ""],
-        // Note empty string in case there are no serializable members.
-        len = o.length,
-        i;
+
+    encodeArrayPretty = function(o, newline) {
+        var len = o.length,
+            cnewline = newline + '   ',
+            sep = ',' + cnewline,
+            a = ["[", cnewline], // Note newline in case there are no members
+            i;
+
+        for (i = 0; i < len; i += 1) {
+            a.push(doEncode(o[i], cnewline), sep);
+        }
+
+        // Overwrite trailing comma (or empty string)
+        a[a.length - 1] = newline + ']';
+
+        return a.join('');
+    },
+
+    encodeObjectPretty = function(o, newline) {
+        var cnewline = newline + '   ',
+            sep = ',' + cnewline,
+            a = ["{", cnewline], // Note newline in case there are no members
+            i;
+
+        for (i in o) {
+            if (!useHasOwn || o.hasOwnProperty(i)) {
+                a.push(doEncode(i) + ': ' + doEncode(o[i], cnewline), sep);
+            }
+        }
+
+        // Overwrite trailing comma (or empty string)
+        a[a.length - 1] = newline + '}';
+
+        return a.join('');
+    },
+
+    encodeArray = function(o, newline) {
+        if (newline) {
+            return encodeArrayPretty(o, newline);
+        }
+
+        var a = ["[", ""], // Note empty string in case there are no serializable members.
+            len = o.length,
+            i;
         for (i = 0; i < len; i += 1) {
             a.push(doEncode(o[i]), ',');
         }
@@ -10039,10 +10179,14 @@ Ext.JSON = new(function() {
         a[a.length - 1] = ']';
         return a.join("");
     },
-    encodeObject = function(o) {
-        var a = ["{", ""],
-        // Note empty string in case there are no serializable members.
-        i;
+
+    encodeObject = function(o, newline) {
+        if (newline) {
+            return encodeObjectPretty(o, newline);
+        }
+
+        var a = ["{", ""], // Note empty string in case there are no serializable members.
+            i;
         for (i in o) {
             if (!useHasOwn || o.hasOwnProperty(i)) {
                 a.push(doEncode(i), ":", doEncode(o[i]), ',');
@@ -10054,18 +10198,32 @@ Ext.JSON = new(function() {
     };
 
     /**
-     * <p>Encodes a Date. This returns the actual string which is inserted into the JSON string as the literal expression.
-     * <b>The returned value includes enclosing double quotation marks.</b></p>
-     * <p>The default return format is "yyyy-mm-ddThh:mm:ss".</p>
-     * <p>To override this:</p><pre><code>
-Ext.JSON.encodeDate = function(d) {
-    return Ext.Date.format(d, '"Y-m-d"');
-};
-     </code></pre>
+     * The function which {@link #encode} uses to encode all javascript values to their JSON representations
+     * when {@link Ext#USE_NATIVE_JSON} is `false`.
+     * 
+     * This is made public so that it can be replaced with a custom implementation.
+     *
+     * @param {Object} o Any javascript value to be converted to its JSON representation
+     * @return {String} The JSON representation of the passed value.
+     * @method
+     */
+    me.encodeValue = doEncode;
+
+    /**
+     * Encodes a Date. This returns the actual string which is inserted into the JSON string as the literal expression.
+     * **The returned value includes enclosing double quotation marks.**
+     *
+     * The default return format is "yyyy-mm-ddThh:mm:ss".
+     *
+     * To override this:
+     *    Ext.JSON.encodeDate = function(d) {
+     *        return Ext.Date.format(d, '"Y-m-d"');
+     *    };
+     *
      * @param {Date} d The Date to encode
      * @return {String} The string literal to use in a JSON string.
      */
-    this.encodeDate = function(o) {
+    me.encodeDate = function(o) {
         return '"' + o.getFullYear() + "-"
         + pad(o.getMonth() + 1) + "-"
         + pad(o.getDate()) + "T"
@@ -10075,21 +10233,22 @@ Ext.JSON.encodeDate = function(d) {
     };
 
     /**
-     * Encodes an Object, Array or other value
+     * Encodes an Object, Array or other value.
+     * 
+     * If the environment's native JSON encoding is not being used ({@link Ext#USE_NATIVE_JSON} is not set, or the environment does not support it), then 
+     * ExtJS's encoding will be used. This allows the developer to add a `toJSON` method to their classes which need serializing to return a valid
+     * JSON representation of the object.
+     * 
      * @param {Object} o The variable to encode
      * @return {String} The JSON string
      */
-    this.encode = function() {
-        var ec;
-        return function(o) {
-            if (!ec) {
-                // setup encoding function on first access
-                ec = isNative() ? JSON.stringify : doEncode;
-            }
-            return ec(o);
-        };
-    }();
-
+    me.encode = function(o) {
+        if (!encodingFunction) {
+            // setup encoding function on first access
+            encodingFunction = isNative() ? JSON.stringify : me.encodeValue;
+        }
+        return encodingFunction(o);
+    };
 
     /**
      * Decodes (parses) a JSON string to an object. If the JSON is invalid, this function throws a SyntaxError unless the safe option is set.
@@ -10097,28 +10256,24 @@ Ext.JSON.encodeDate = function(d) {
      * @param {Boolean} safe (optional) Whether to return null or throw an exception if the JSON is invalid.
      * @return {Object} The resulting object
      */
-    this.decode = function() {
-        var dc;
-        return function(json, safe) {
-            if (!dc) {
-                // setup decoding function on first access
-                dc = isNative() ? JSON.parse : doDecode;
+    me.decode = function(json, safe) {
+        if (!decodingFunction) {
+            // setup decoding function on first access
+            decodingFunction = isNative() ? JSON.parse : doDecode;
+        }
+        try {
+            return decodingFunction(json);
+        } catch (e) {
+            if (safe === true) {
+                return null;
             }
-            try {
-                return dc(json);
-            } catch (e) {
-                if (safe === true) {
-                    return null;
-                }
-                Ext.Error.raise({
-                    sourceClass: "Ext.JSON",
-                    sourceMethod: "decode",
-                    msg: "You're trying to decode an invalid JSON String: " + json
-                });
-            }
-        };
-    }();
-
+            Ext.Error.raise({
+                sourceClass: "Ext.JSON",
+                sourceMethod: "decode",
+                msg: "You're trying to decode an invalid JSON String: " + json
+            });
+        }
+    };
 })();
 /**
  * Shorthand for {@link Ext.JSON#encode}
@@ -10134,8 +10289,6 @@ Ext.encode = Ext.JSON.encode;
  * @inheritdoc Ext.JSON#decode
  */
 Ext.decode = Ext.JSON.decode;
-
-
 /**
  * @class Ext
  *
@@ -10189,11 +10342,6 @@ Ext.apply(Ext, {
      * True to automatically purge event listeners during garbageCollection.
      */
     enableListenerCollection: true,
-
-    /**
-     * True to enable sandboxing (defaults to false).
-     */
-    enableSandbox: false,
     
     /**
      * Generates unique ids. If the element already has an id, it is unchanged
@@ -10608,6 +10756,13 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * load your javascript, in which case it will be handled for you).
          */
         scopeResetCSS : Ext.buildSettings.scopeResetCSS,
+        
+        /**
+         * @property {String} resetCls
+         * The css class used to wrap Ext components when the {@link #scopeResetCSS} option
+         * is used.
+         */
+        resetCls: Ext.buildSettings.baseCSSPrefix + 'reset',
 
         /**
          * @property {Boolean} enableNestedListenerRemoval
@@ -12040,11 +12195,10 @@ Ext.define('Ext.perf.Accumulator', function () {
         set.max = Math.max(set.max, time);
     }
 
-    function leaveFrame () {
-        var time = getTimestamp(), // do this first
+    function leaveFrame (time) {
+        var totalTime = time ? time : (getTimestamp() - this.time), // do this first
             me = this, // me = frame
-            accum = me.accum,
-            totalTime = time - me.time;
+            accum = me.accum;
 
         ++accum.count;
         if (! --accum.depth) {
@@ -12198,29 +12352,33 @@ Ext.define('Ext.perf.Accumulator', function () {
                 methods = typeof methodName == 'string' ? [methodName] : methodName,
                 klass, statik, i, parts, length, name, src;
 
-            if (typeof className == 'string') {
-                klass = Ext.global;
-                parts = className.split('.');
-                for (i = 0, length = parts.length; i < length; ++i) {
-                    klass = klass[parts[i]];
-                }
-            } else {
-                klass = className;
-            }
-
-            for (i = 0, length = methods.length; i < length; ++i) {
-                name = methods[i];
-                statik = name.charAt(0) == '!';
-
-                if (statik) {
-                    name = name.substring(1);
+            var tapFunc = function(){
+                if (typeof className == 'string') {
+                    klass = Ext.global;
+                    parts = className.split('.');
+                    for (i = 0, length = parts.length; i < length; ++i) {
+                        klass = klass[parts[i]];
+                    }
                 } else {
-                    statik = !(name in klass.prototype);
+                    klass = className;
                 }
 
-                src = statik ? klass : klass.prototype;
-                src[name] = makeTap(me, src[name]);
-            }
+                for (i = 0, length = methods.length; i < length; ++i) {
+                    name = methods[i];
+                    statik = name.charAt(0) == '!';
+
+                    if (statik) {
+                        name = name.substring(1);
+                    } else {
+                        statik = !(name in klass.prototype);
+                    }
+
+                    src = statik ? klass : klass.prototype;
+                    src[name] = makeTap(me, src[name]);
+                }
+            };
+
+            Ext.ClassManager.onCreated(tapFunc, me, className);
 
             return me;
         }
@@ -12376,6 +12534,8 @@ Ext.define('Ext.perf.Monitor', {
                 }
             };
         }
+
+        this.currentConfig = config;
 
         Ext.Object.each(config, function (accumName, taps) {
             var accum = Ext.Perf.get(accumName);
@@ -13029,21 +13189,6 @@ Ext.supports = {
 Ext.supports.init(); // run the "early" detections now
 
 
-
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.util.DelayedTask
  * 
@@ -13117,6 +13262,13 @@ Ext.util.DelayedTask = function(fn, scope, args) {
 };
 Ext.require('Ext.util.DelayedTask', function() {
 
+    /**
+     * Represents single event type that an Observable object listens to.
+     * All actual listeners are tracked inside here.  When the event fires,
+     * it calls all the registered listener functions.
+     *
+     * @private
+     */
     Ext.util.Event = Ext.extend(Object, (function() {
         function createBuffered(handler, listener, o, scope) {
             listener.task = new Ext.util.DelayedTask();
@@ -13144,6 +13296,10 @@ Ext.require('Ext.util.DelayedTask', function() {
         }
 
         return {
+            /**
+             * @property {Boolean} isEvent
+             * `true` in this class to identify an objact as an instantiated Event, or subclass thereof.
+             */
             isEvent: true,
 
             constructor: function(observable, name) {
@@ -13339,7 +13495,19 @@ Ext.EventManager = {
      * Holds references to any onReady functions
      * @private
      */
-    readyEvent: new Ext.util.Event(),
+    readyEvent:
+        (function () {
+            var event = new Ext.util.Event();
+            event.fire = function () {
+                  if (!/(^|[ ;])ext-pause=1/.test(document.cookie)) {
+                      Ext._beforeReadyTime = new Date().getTime();
+                      event.self.prototype.fire.apply(event, arguments);
+                      Ext._afterReadytime = new Date().getTime();
+                  }
+                //
+            }
+            return event;
+        })(),
 
     /**
      * Check the ready state for old IE versions
@@ -13406,6 +13574,7 @@ Ext.EventManager = {
 
         // only unbind these events once
         if (!Ext.isReady) {
+            Ext._readyTime = new Date().getTime();
             Ext.isReady = true;
 
             if (document.addEventListener) {
@@ -13734,7 +13903,7 @@ Ext.EventManager = {
         if (!el) {
             return;
         }
-        cache = el.$cache;
+        cache = (el.$cache || el.getCache());
         events = cache.events;
 
         for (eventName in events) {
@@ -14302,8 +14471,12 @@ Ext.EventManager.un = Ext.EventManager.removeListener;
                 Ext.isBorderBox = true;
             }
 
-            htmlCls.push(baseCSSPrefix + (Ext.isBorderBox ? 'border-box' : 'strict'));
-            if (!Ext.isStrict) {
+            if(Ext.isBorderBox) {
+                htmlCls.push(baseCSSPrefix + 'border-box');
+            }
+            if (Ext.isStrict) {
+                htmlCls.push(baseCSSPrefix + 'strict');
+            } else {
                 htmlCls.push(baseCSSPrefix + 'quirks');
             }
             Ext.fly(html, '_internal').addCls(htmlCls);
@@ -15632,18 +15805,21 @@ Ext.define('Ext.dom.AbstractElement', {
                     extEl = cache.el;
                     extEl.dom = dom;
                 } else {
-                    extEl = new El(dom);
+                    // Force new element if there's a cache but no el attached
+                    extEl = new El(dom, !!cache);
                 }
                 return extEl;
             } else if (el.tagName) { // dom element
                 if (!(id = el.id)) {
                     id = Ext.id(el);
                 }
-                if (Ext.cache[id] && Ext.cache[id].el) {
+                cache = Ext.cache[id];
+                if (cache && cache.el) {
                     extEl = Ext.cache[id].el;
                     extEl.dom = el;
                 } else {
-                    extEl = new El(el);
+                    // Force new element if there's a cache but no el attached
+                    extEl = new El(el, !!cache);
                 }
                 return extEl;
             } else if (el instanceof me) {
@@ -15693,23 +15869,6 @@ Ext.define('Ext.dom.AbstractElement', {
             return el;
         },
 
-        // private method for getting and setting element data
-        data: function(el, key, value) {
-            el = this.get(el);
-            if (!el) {
-                return null;
-            }
-            var c = Ext.cache[el.id].data;
-            if (!c) {
-                c = Ext.cache[el.id].data = {};
-            }
-            if (arguments.length == 2) {
-                return c[key];
-            } else {
-                return (c[key] = value);
-            }
-        },
-
         addMethods: function() {
             this.override.apply(this, arguments);
         },
@@ -15724,6 +15883,8 @@ myElement.dom.className = Ext.core.Element.mergeClsList(this.initialClasses, 'x-
          * @param {Mixed} clsList1 A string of class names, or an array of class names.
          * @param {Mixed} clsList2 A string of class names, or an array of class names.
          * @return {Array} An array of strings representing remaining unique, merged class names. If class names were added to the first list, the <code>changed</code> property will be <code>true</code>.
+         * @static
+         * @inheritable
          */
         mergeClsList: function() {
             var clsList, clsHash = {},
@@ -15765,6 +15926,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @param {Mixed} existingClsList A string of class names, or an array of class names.
          * @param {Mixed} removeClsList A string of class names, or an array of class names to remove from <code>existingClsList</code>.
          * @return {Array} An array of strings representing remaining class names. If class names were removed, the <code>changed</code> property will be <code>true</code>.
+         * @static
+         * @inheritable
          */
         removeCls: function(existingClsList, removeClsList) {
             var clsHash = {},
@@ -15802,6 +15965,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use visibility to hide element
          * @static
+         * @inheritable
          */
         VISIBILITY: 1,
 
@@ -15809,6 +15973,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use display to hide element
          * @static
+         * @inheritable
          */
         DISPLAY: 2,
 
@@ -15816,6 +15981,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use offsets to hide element
          * @static
+         * @inheritable
          */
         OFFSETS: 3
     },
@@ -16041,26 +16207,45 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     },
 
     getVisibilityMode: function() {
-        var data = (this.$cache || this).data,
-            mode = data.visibilityMode;
+        // Only flyweights won't have a $cache object, by calling getCache the cache
+        // will be created for future accesses. As such, we're eliminating the method
+        // call since it's mostly redundant
+        var data = (this.$cache || this.getCache()).data,
+            visMode = data.visibilityMode;
 
-        if (mode === undefined) {
-            data.visibilityMode = (mode = this.self.DISPLAY);
+        if (visMode === undefined) {
+            data.visibilityMode = visMode = this.self.DISPLAY;
         }
-
-        return mode;
+        
+        return visMode;
     },
 
     /**
      * Use this to change the visisbiliy mode between {@link #VISIBILITY}, {@link #DISPLAY} or {@link #OFFSETS}.
      */
     setVisibilityMode: function(mode) {
-        (this.$cache || this).data.visibilityMode = mode;
+        (this.$cache || this.getCache()).data.visibilityMode = mode;
         return this;
+    },
+    
+    getCache: function() {
+        var me = this,
+            id = me.dom.id || Ext.id(me.dom);
+
+        // Note that we do not assign an ID to the calling object here.
+        // An Ext.dom.Element will have one assigned at construction, and an Ext.dom.AbstractElement.Fly must not have one.
+        // We assign an ID to the DOM element if it does not have one.
+        me.$cache = Ext.cache[id] || (Ext.cache[id] = {
+            data: {},
+            events: {}
+        });     
+            
+        return me.$cache;
     }
+    
 }, function() {
     var AbstractElement = this,
-        validIdRe = /^[a-z0-9_\-]+$/i;
+        validIdRe = /^[a-z_][a-z0-9_\-]*$/i;
 
     Ext.getDetachedBody = function () {
         var detachedEl = AbstractElement.detachedBodyEl;
@@ -16095,51 +16280,86 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     };
 
     this.addStatics({
+        /**
+         * @class Ext.dom.AbstractElement.Fly
+         * A non-persistent wrapper for a DOM element which may be used to execute methods of {@link Ext.Dom.Element}
+         * upon a DOM element without creating an instance of {@link Ext.dom.Element}.
+         *
+         * A **singleton** instance of this class is returned when you use {@link Ext#fly}
+         *
+         * Because it is a singleton, this Flyweight does not have an ID, and must be used and discarded in a single line.
+         * You should not keep and use the reference to this singleton over multiple lines because methods that you call
+         * may themselves make use of {@link Ext#fly} and may change the DOM element to which the instance refers.
+         */
         Fly: new Ext.Class({
             extend: AbstractElement,
+
+            /**
+             * @property {Boolean} isFly
+             * This is `true` to identify Element flyweights
+             */
+            isFly: true,
 
             constructor: function(dom) {
                 this.dom = dom;
             },
-            
+
+            /**
+             * @private
+             * Attach this fliyweight instance to the passed DOM element.
+             *
+             * Note that a flightweight does **not** have an ID, and does not acquire the ID of the DOM element.
+             */
             attach: function (dom) {
-                var me = this;
-                me.dom = dom;
-                me.id = dom.id;
-                return me;
+
+                // Attach to the passed DOM element. The same code as in Ext.Fly
+                this.dom = dom;
+                // Use cached data if there is existing cached data for the referenced DOM element,
+                // otherwise it will be created when needed by getCache.
+                this.$cache = dom.id ? Ext.cache[dom.id] : null;
+                return this;
             }
         }),
 
         _flyweights: {},
 
         /**
-         * Gets the globally shared flyweight Element, with the passed node as the active element. Do not store a reference
-         * to this element - the dom node can be overwritten by other code. {@link Ext#fly} is alias for
-         * {@link Ext.dom.AbstractElement#fly}.
+         * Gets the singleton {@link Ext.dom.AbstractElement.Fly flyweight} element, with the passed node as the active element.
+         * 
+         * Because it is a singleton, this Flyweight does not have an ID, and must be used and discarded in a single line.
+         * You may not keep and use the reference to this singleton over multiple lines because methods that you call
+         * may themselves make use of {@link Ext#fly} and may change the DOM element to which the instance refers.
+         *  
+         * {@link Ext#fly} is alias for {@link Ext.dom.AbstractElement#fly}.
          *
          * Use this to make one-time references to DOM elements which are not going to be accessed again either by
          * application code, or by Ext's classes. If accessing an element which will be processed regularly, then {@link
          * Ext#get Ext.get} will be more appropriate to take advantage of the caching provided by the Ext.dom.Element
          * class.
          *
-         * @param {String/HTMLElement} el The dom node or id
+         * @param {String/HTMLElement} dom The dom node or id
          * @param {String} [named] Allows for creation of named reusable flyweights to prevent conflicts (e.g.
          * internally Ext uses "_global")
-         * @return {Ext.dom.Element} The shared Element object (or null if no matching element was found)
+         * @return {Ext.dom.AbstractElement.Fly} The singleton flyweight object (or null if no matching element was found)
          * @static
          */
-        fly: function(el, named) {
+        fly: function(dom, named) {
             var fly = null,
                 _flyweights = AbstractElement._flyweights;
 
             named = named || '_global';
 
-            el = Ext.getDom(el);
+            dom = Ext.getDom(dom);
 
-            if (el) {
+            if (dom) {
                 fly = _flyweights[named] || (_flyweights[named] = new AbstractElement.Fly());
-                fly.dom = el;
-                fly.data = {};
+
+                // Attach to the passed DOM element.
+                // This code performs the same function as Fly.attach, but inline it for efficiency
+                fly.dom = dom;
+                // Use cached data if there is existing cached data for the referenced DOM element,
+                // otherwise it will be created when needed by getCache.
+                fly.$cache = dom.id ? Ext.cache[dom.id] : null;
             }
             return fly;
         }
@@ -16189,7 +16409,6 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
 });
 
 })();
-
 /**
  * @class Ext.dom.AbstractElement
  */
@@ -16839,14 +17058,16 @@ Ext.dom.AbstractElement.override({
 
     // private
     getAnchor: function(){
-        var dom = this.dom;
-            if (!dom) {
-                return;
-            }
-            var anchor = this.self.data.call(this.self, dom, '_anchor');
+        var data = (this.$cache || this.getCache()).data,
+            anchor;
+            
+        if (!this.dom) {
+            return;
+        }
+        anchor = data._anchor;
 
         if(!anchor){
-            anchor = this.self.data.call(this.self, dom, '_anchor', {});
+            anchor = data._anchor = {};
         }
         return anchor;
     },
@@ -17998,7 +18219,8 @@ Element.override({
         mask: function(msg, msgCls, transparent) {
             var me = this,
                 dom = me.dom,
-                el = Ext.Element.data(dom, 'mask'),
+                data = (me.$cache || me.getCache()).data,
+                el = data.mask,
                 mask,
                 size,
                 cls = '',
@@ -18027,7 +18249,7 @@ Element.override({
 
             size = me.getSize();
 
-            Ext.Element.data(dom, 'mask', mask);
+            data.mask = mask;
 
             if (dom === document.body) {
                 size.height = window.innerHeight;
@@ -18054,17 +18276,17 @@ Element.override({
          */
         unmask: function() {
             var me = this,
-                dom = me.dom,
-                mask = Ext.Element.data(dom, 'mask'),
+                data = (me.$cache || me.getCache()).data,
+                mask = data.mask,
                 prefix = Ext.baseCSSPrefix;
 
             if (mask) {
                 mask.remove();
-                Ext.Element.data(dom, 'mask', undefined);
+                delete data.mask;
             }
             me.removeCls([prefix + 'masked', prefix + 'masked-relative']);
 
-            if (dom === document.body) {
+            if (me.dom === document.body) {
                 Ext.EventManager.unOrientationChange(me.orientationHandler, me);
                 delete me.orientationHandler;
             }
@@ -20014,13 +20236,15 @@ var HIDDEN = 'hidden',
      * @return {Ext.dom.Element} this
      */
     enableDisplayMode : function(display) {
-        this.setVisibilityMode(Element.DISPLAY);
+        var me = this;
+        
+        me.setVisibilityMode(Element.DISPLAY);
 
         if (!Ext.isEmpty(display)) {
-            Element.data(this.dom, 'originalDisplay', display);
+            (me.$cache || me.getCache()).data.originalDisplay = display;
         }
 
-        return this;
+        return me;
     },
 
     /**
@@ -20034,41 +20258,46 @@ var HIDDEN = 'hidden',
         var me            = this,
             dom           = me.dom,
             setExpression = dom.style.setExpression,
-            dh            = Ext.DomHelper,
-            mask          = me.maskEl,
-            mm;
+            data          = (me.$cache || me.getCache()).data,
+            maskEl        = data.maskEl,
+            maskMsg       = data.maskMsg;
 
         if (!(bodyRe.test(dom.tagName) && me.getStyle('position') == 'static')) {
             me.addCls(XMASKEDRELATIVE);
         }
-
-        msgCls = msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG;
-        if (mask) {
-            mm = me.maskMsgEl;
-            mm.dom.className = msgCls;
-            mm.dom.firstChild.innerHTML = msg;
-        } else {
-            dh.append(dom, [{
-                cls : Ext.baseCSSPrefix + "mask"
-            }, {
-                cls : msgCls,
-                cn  : {
-                    tag: 'div',
-                    html: msg || ''
-                }
-            }]);
-            mm = me.maskMsgEl = Ext.get(dom.lastChild);
-            mask = me.maskEl = Ext.get(mm.dom.previousSibling);
+        
+        // We always needs to recreate the mask since the DOM element may have been re-created
+        if (maskEl) {
+            maskEl.remove();
+        }
+        
+        if (maskMsg) {
+            maskMsg.remove();
         }
 
+        Ext.DomHelper.append(dom, [{
+            cls : Ext.baseCSSPrefix + "mask"
+        }, {
+            cls : msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG,
+            cn  : {
+                tag: 'div',
+                html: msg || ''
+            }
+        }]);
+            
+        maskMsg = Ext.get(dom.lastChild);
+        maskEl = Ext.get(maskMsg.dom.previousSibling);
+        data.maskMsg = maskMsg;
+        data.maskEl = maskEl;
+
         me.addCls(XMASKED);
-        mask.setDisplayed(true);
+        maskEl.setDisplayed(true);
 
         if (typeof msg == 'string') {
-            mm.setDisplayed(true);
-            mm.center(me);
+            maskMsg.setDisplayed(true);
+            maskMsg.center(me);
         } else {
-            mm.setDisplayed(false);
+            maskMsg.setDisplayed(false);
         }
         // NOTE: CSS expressions are resource intensive and to be used only as a last resort
         // These expressions are removed as soon as they are no longer necessary - in the unmask method.
@@ -20076,19 +20305,19 @@ var HIDDEN = 'hidden',
         // Fix for https://sencha.jira.com/browse/EXTJSIV-19.
         // IE6 strict mode and IE6-9 quirks mode takes off left+right padding when calculating width!
         if (!Ext.supports.IncludePaddingInWidthCalculation && setExpression) {
-            mask.dom.style.setExpression('width', 'this.parentNode.clientWidth + "px"');
+            maskEl.dom.style.setExpression('width', 'this.parentNode.clientWidth + "px"');
         }
 
         // Some versions and modes of IE subtract top+bottom padding when calculating height.
         // Different versions from those which make the same error for width!
         if (!Ext.supports.IncludePaddingInHeightCalculation && setExpression) {
-            mask.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + "px"');
+            maskEl.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + "px"');
         }
         // ie will not expand full height automatically
         else if (Ext.isIE && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
-            mask.setSize(undefined, elHeight || me.getHeight());
+            maskEl.setSize(undefined, elHeight || me.getHeight());
         }
-        return mask;
+        return maskEl;
     },
 
     /**
@@ -20096,16 +20325,29 @@ var HIDDEN = 'hidden',
      */
     unmask : function() {
         var me      = this,
-            mask    = me.maskEl;
+            data    = (me.$cache || me.getCache()).data,
+            maskEl  = data.maskEl,
+            maskMsg = data.maskMsg,
+            style;
 
-        if (mask) {
+        if (maskEl) {
+            style = maskEl.dom.style;
             // Remove resource-intensive CSS expressions as soon as they are not required.
-            if (mask.dom.style.clearExpression) {
-                mask.dom.style.clearExpression('width');
-                mask.dom.style.clearExpression('height');
+            if (style.clearExpression) {
+                style.clearExpression('width');
+                style.clearExpression('height');
             }
-            mask.setDisplayed(false);
-            me.maskMsgEl.setDisplayed(false);
+            
+            if (maskEl) {
+                maskEl.remove();
+                delete data.maskEl;
+            }
+            
+            if (maskMsg) {
+                maskMsg.remove();
+                delete data.maskMsg;
+            }
+            
             me.removeCls([XMASKED, XMASKEDRELATIVE]);
         }
     },
@@ -20115,17 +20357,19 @@ var HIDDEN = 'hidden',
      * @return {Boolean}
      */
     isMasked : function() {
-        var me = this,
-            mask = Element.data(me.dom, 'mask'),
-            maskMsg = Element.data(me.dom, 'maskMsg');
+        var me      = this,
+            data    = (me.$cache || me.getCache()).data,
+            maskEl  = data.maskEl,
+            maskMsg = data.maskMsg,
+            hasMask = false; 
 
-        if (mask && mask.isVisible()) {
+        if (maskEl && maskEl.isVisible()) {
             if (maskMsg) {
                 maskMsg.center(me);
             }
-            return true;
+            hasMask = true;
         }
-        return false;
+        return hasMask;
     },
 
     /**
@@ -20161,12 +20405,14 @@ var HIDDEN = 'hidden',
         var config;
         if(typeof key != 'object' || Ext.isArray(key)){
             config = {
+                target: this,
                 key: key,
                 fn: fn,
                 scope: scope
             };
         }else{
             config = {
+                target: this,
                 key : key.key,
                 shift : key.shift,
                 ctrl : key.ctrl,
@@ -20175,7 +20421,7 @@ var HIDDEN = 'hidden',
                 scope: scope
             };
         }
-        return new Ext.util.KeyMap(this, config);
+        return new Ext.util.KeyMap(config);
     },
 
     /**
@@ -20183,8 +20429,10 @@ var HIDDEN = 'hidden',
      * @param {Object} config The KeyMap config. See {@link Ext.util.KeyMap} for more details
      * @return {Ext.util.KeyMap} The KeyMap created
      */
-    addKeyMap : function(config){
-        return new Ext.util.KeyMap(this, config);
+    addKeyMap : function(config) {
+        return new Ext.util.KeyMap(Ext.apply({
+            target: this
+        }, config));
     },
 
     //  Mouse events
@@ -20646,6 +20894,9 @@ var HIDDEN = 'hidden',
                     continue;
                 }
                 el = o.el;
+                if (!el) {
+                    continue;
+                }
                 d = el.dom;
                 // -------------------------------------------------------
                 // Determining what is garbage:
@@ -20769,13 +21020,14 @@ var HIDDEN = 'hidden',
          * can pass true.
          */
         clean : function(forceReclean) {
-            var me  = this,
-                dom = me.dom,
-                n   = dom.firstChild,
-                nx,
-                ni  = -1;
+            var me   = this,
+                dom  = me.dom,
+                data = (me.$cache || me.getCache()).data,
+                n    = dom.firstChild,
+                ni   = -1,
+                nx;
 
-            if (Element.data(dom, 'isCleaned') && forceReclean !== true) {
+            if (data.isCleaned && forceReclean !== true) {
                 return me;
             }
 
@@ -20800,7 +21052,7 @@ var HIDDEN = 'hidden',
                 n = nx;
             }
 
-            Element.data(dom, 'isCleaned', true);
+            data.isCleaned = true;
             return me;
         },
 
@@ -20819,14 +21071,14 @@ var HIDDEN = 'hidden',
          * @return {Ext.ElementLoader} The loader
          */
         getLoader : function() {
-            var dom = this.dom,
-                loader = Element.data(dom, 'loader');
+            var me = this,
+                data = (me.$cache || me.getCache()).data,
+                loader = data.loader;
 
             if (!loader) {
-                loader = new Ext.ElementLoader({
-                    target: this
+                data.loader = loader = new Ext.ElementLoader({
+                    target: me
                 });
-                Element.data(dom, 'loader', loader);
             }
             return loader;
         },
@@ -20992,7 +21244,7 @@ var HIDDEN = 'hidden',
                             ret = cached.el;
                             ret.dom = el;
                         } else {
-                            ret = El.addToCache(new Element(el));
+                            ret = new Element(el);
                         }
                     }
                     return ret;
@@ -21457,12 +21709,10 @@ Ext.dom.Element.override({
     animate: function(config) {
         var me = this,
             listeners,
-            anim;
-            
-        if (!me.id) {
-            me = Ext.get(me.dom);
-        }
-        if (!Ext.fx.Manager.hasFxBlock(me.id)) {
+            anim,
+            animId = me.dom.id || Ext.id(me.dom);
+
+        if (!Ext.fx.Manager.hasFxBlock(animId)) {
             // Bit of gymnastics here to ensure our internal listeners get bound first
             if (config.listeners) {
                 listeners = config.listeners;
@@ -21504,7 +21754,8 @@ Ext.dom.Element.override({
         });
 
         animConfig = {
-            target: me,
+            // Pass the DOM reference. That's tested first so will be converted to an Ext.fx.Target fastest.
+            target: me.dom,
             remove: config.remove,
             alternate: config.alternate || false,
             duration: duration,
@@ -21576,7 +21827,7 @@ Ext.dom.Element.override({
         beforeAnim = function() {
             var animScope = this,
                 listeners = obj.listeners,
-                box, position, restoreSize, anim, wrap;
+                box, originalStyles, anim, wrap;
 
             if (!slideOut) {
                 me.fixDisplay();
@@ -21590,7 +21841,7 @@ Ext.dom.Element.override({
                 box.width = me.dom.scrollWidth;
             }
 
-            position = me.getPositioning();
+            originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
             me.setSize(box.width, box.height);
 
             wrap = me.wrap({
@@ -21599,7 +21850,7 @@ Ext.dom.Element.override({
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
             });
-            wrap.setPositioning(position);
+            wrap.setPositioning(me.getPositioning());
             if (wrap.isStyle('position', 'static')) {
                 wrap.position('relative');
             }
@@ -21749,23 +22000,18 @@ Ext.dom.Element.override({
 
             // In the absence of a callback, this listener MUST be added first
             wrapAnim.on('afteranimate', function() {
+                me.setStyle(originalStyles);
                 if (slideOut) {
-                    me.setPositioning(position);
                     if (obj.useDisplay) {
                         me.setDisplayed(false);
                     } else {
                         me.hide();
                     }
                 }
-                else {
-                    me.clearPositioning();
-                    me.setPositioning(position);
-                }
                 if (wrap.dom) {
                     wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
                     wrap.remove();
                 }
-                me.setSize(box.width, box.height);
                 // kill the no-op element animation created below
                 animScope.end();
             });
@@ -22424,19 +22670,23 @@ var Element = Ext.dom.Element,
     ORIGINALDISPLAY = 'originalDisplay',
     VISMODE = 'visibilityMode',
     ISVISIBLE = 'isVisible',
-    getDisplay = function(dom){
-        var d = Element.data(dom, ORIGINALDISPLAY);
-        if(d === undefined){
-            Element.data(dom, ORIGINALDISPLAY, d = '');
+    getDisplay = function(el){
+        var data = (el.$cache || el.getCache()).data,
+            display = data[ORIGINALDISPLAY];
+            
+        if (display === undefined) {
+            data[ORIGINALDISPLAY] = display = '';
         }
-        return d;
+        return display;
     },
-    getVisMode = function(dom){
-        var m = Element.data(dom, VISMODE);
-        if(m === undefined){
-            Element.data(dom, VISMODE, m = 1);
+    getVisMode = function(el){
+        var data = (el.$cache || el.getCache()).data,
+            visMode = data[VISMODE];
+            
+        if (visMode === undefined) {
+            data[VISMODE] = visMode = Ext.dom.Element.VISIBILITY;
         }
-        return m;
+        return visMode;
     };
 
 Element.override({
@@ -22456,7 +22706,7 @@ Element.override({
     setVisible : function(visible, animate){
         var me = this, isDisplay, isVisibility, isOffsets, isNosize,
             dom = me.dom,
-            visMode = getVisMode(dom);
+            visMode = getVisMode(me);
 
 
         // hideMode string override
@@ -22529,14 +22779,16 @@ Element.override({
             }
             me.animate(Ext.applyIf({
                 callback: function() {
-                    visible || me.setVisible(false).setOpacity(1);
+                    if (!visible) {
+                        me.setVisible(false).setOpacity(1);
+                    }
                 },
                 to: {
                     opacity: (visible) ? 1 : 0
                 }
             }, animate));
         }
-        Element.data(dom, ISVISIBLE, visible);  //set logical visibility state
+        (me.$cache || me.getCache()).data[ISVISIBLE] = visible;
         return me;
     },
 
@@ -22547,8 +22799,8 @@ Element.override({
      * upon current logical visibility state
      */
     hasMetrics  : function(){
-        var dom = this.dom;
-        return this.isVisible() || (getVisMode(dom) == Ext.dom.Element.OFFSETS) || (getVisMode(dom) == Ext.dom.Element.VISIBILITY);
+        var visMode = getVisMode(this);
+        return this.isVisible() || (visMode == Ext.dom.Element.OFFSETS) || (visMode == Ext.dom.Element.VISIBILITY);
     },
 
     /**
@@ -22569,7 +22821,7 @@ Element.override({
      */
     setDisplayed : function(value) {
         if(typeof value == "boolean"){
-           value = value ? getDisplay(this.dom) : NONE;
+           value = value ? getDisplay(this) : NONE;
         }
         this.setStyle(DISPLAY, value);
         return this;
@@ -22580,7 +22832,7 @@ Element.override({
         var me = this;
         if (me.isStyle(DISPLAY, NONE)) {
             me.setStyle(VISIBILITY, HIDDEN);
-            me.setStyle(DISPLAY, getDisplay(this.dom)); // first try reverting to default
+            me.setStyle(DISPLAY, getDisplay(me)); // first try reverting to default
             if (me.isStyle(DISPLAY, NONE)) { // if that fails, default to block
                 me.setStyle(DISPLAY, "block");
             }
@@ -23495,6 +23747,7 @@ Element.override({
             // value down. Using getBoundingClientRect instead of offsetWidth allows us to get the precise
             // subpixel measurements so we can force them to always be rounded up. See
             // https://bugzilla.mozilla.org/show_bug.cgi?id=458617
+            // Rounding up ensures that the width includes the full width of the text contents.
         } else if (Ext.supports.BoundingClientRect) {
             rect = dom.getBoundingClientRect();
             width = rect.right - rect.left;
@@ -23507,10 +23760,14 @@ Element.override({
 
         // IE9 Direct2D dimension rounding bug
         if (!hidden && Ext.supports.Direct2DBug) {
+            // get the fractional portion of the sub-pixel precision width of the element's text contents
             floating = me.adjustDirect2DDimension('width');
             if (preciseWidth) {
                 width += floating;
             }
+            // IE9 also measures fonts with sub-pixel precision, but unlike Gecko, instead of rounding the offsetWidth down,
+            // it rounds to the nearest integer.  This means that in order to ensure that the width includes the full
+            // width of the text contents we need to increment the width by 1 only if the fractional portion is less than 0.5
             else if (floating > 0 && floating < 0.5) {
                 width++;
             }
@@ -23747,25 +24004,25 @@ Element.override({
         var me = this,
             dom = me.dom,
             display = me.getStyle('display'),
-            inlineDisplay = dom.style['display'],
-            inlinePosition = dom.style['position'],
+            inlineDisplay = dom.style.display,
+            inlinePosition = dom.style.position,
             originIndex = dimension === 'width' ? 0 : 1,
             floating;
 
         if (display === 'inline') {
-            dom.style['display'] = 'inline-block';
+            dom.style.display = 'inline-block';
         }
 
-        dom.style['position'] = display.match(adjustDirect2DTableRe) ? 'absolute' : 'static';
+        dom.style.position = display.match(adjustDirect2DTableRe) ? 'absolute' : 'static';
 
         // floating will contain digits that appears after the decimal point
         // if height or width are set to auto we fallback to msTransformOrigin calculation
         floating = (parseFloat(me.getStyle(dimension)) || parseFloat(dom.currentStyle.msTransformOrigin.split(' ')[originIndex]) * 2) % 1;
 
-        dom.style['position'] = inlinePosition;
+        dom.style.position = inlinePosition;
 
         if (display === 'inline') {
-            dom.style['display'] = inlineDisplay;
+            dom.style.display = inlineDisplay;
         }
 
         return floating;
@@ -23777,15 +24034,15 @@ Element.override({
      */
     clip : function() {
         var me = this,
-            dom = me.dom;
+            data = (me.$cache || me.getCache()).data;
 
-        if (!Element.data(dom, ISCLIPPED)) {
-            Element.data(dom, ISCLIPPED, true);
-            Element.data(dom, ORIGINALCLIP, {
+        if (!data[ISCLIPPED]) {
+            data[ISCLIPPED] = true;
+            data[ORIGINALCLIP] = {
                 o: me.getStyle(OVERFLOW),
                 x: me.getStyle(OVERFLOWX),
                 y: me.getStyle(OVERFLOWY)
-            });
+            };
             me.setStyle(OVERFLOW, HIDDEN);
             me.setStyle(OVERFLOWX, HIDDEN);
             me.setStyle(OVERFLOWY, HIDDEN);
@@ -23799,12 +24056,12 @@ Element.override({
      */
     unclip : function() {
         var me = this,
-            dom = me.dom,
+            data = (me.$cache || me.getCache()).data,
             clip;
 
-        if (Element.data(dom, ISCLIPPED)) {
-            Element.data(dom, ISCLIPPED, false);
-            clip = Element.data(dom, ORIGINALCLIP);
+        if (data[ISCLIPPED]) {
+            data[ISCLIPPED] = true;
+            clip = data[ORIGINALCLIP];
             if (clip.o) {
                 me.setStyle(OVERFLOW, clip.o);
             }
@@ -23819,7 +24076,8 @@ Element.override({
     },
 
     /**
-     * Returns an object with properties matching the styles requested.
+     * Returns an object with properties matching the styles requested as computed by the browser based upon applicable
+     * CSS rules as well as inline styles.
      *
      * For example:
      *
@@ -23829,17 +24087,24 @@ Element.override({
      *
      *     {'color': '#FFFFFF', 'font-size': '13px', 'width': '100px'}
      *
+     * If ```true``` is passed as the last parameter, *inline* styles are returned instead of computed styles.
+     *
      * @param {String...} styles A variable number of style names
      * @return {Object} The style object
      */
     getStyles : function() {
         var styles = {},
             len = arguments.length,
-            i = 0, style;
+            i = 0, style,
+            inline = false;
 
+        if (arguments[len - 1] === true) {
+            --len;
+            inline = true;
+        }
         for (; i < len; ++i) {
             style = arguments[i];
-            styles[style] = this.getStyle(style);
+            styles[style] = inline ? this.dom.style[Ext.Element.normalize(style)] : this.getStyle(style);
         }
         return styles;
     },
@@ -24060,13 +24325,13 @@ Element.override({
 
 })();
 
+// This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
+// the same object.
+Ext.dom.Element.prototype.styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
+
 Ext.onReady(function () {
     var opacityRe = /alpha\(opacity=(.*)\)/i,
         trimRe = /^\s+|\s+$/g;
-
-    // This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
-    // the same object.
-    Ext.dom.Element.prototype.styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
 
     // Ext.supports flags are not populated until onReady...
     if (!Ext.supports.Opacity && Ext.isIE) {
@@ -24105,6 +24370,25 @@ Ext.onReady(function () {
     // else there is no work around for the lack of opacity support. Should not be a
     // problem given that this has been supported for a long time now...
 });
+
+// override getStyle for border-*-width
+if (Ext.isIEQuirks || Ext.isIE && Ext.ieVersion <= 8){
+    Ext.Array.forEach('Top Right Bottom Left'.split(' '), function(side){
+        var borderWidth = 'border' + side + 'Width',
+            borderStyle = 'border' + side + 'Style';
+
+        Ext.dom.Element.prototype.styleHooks['border-' + side.toLowerCase() + '-width'] = {
+            name: borderWidth,
+            get: function (dom) {
+                var currentStyle = dom.currentStyle;
+                if (currentStyle[borderStyle] == 'none'){
+                    return '0px';
+                }
+                return currentStyle[borderWidth];
+            }
+        };
+    });
+}
 
 /**
  * @class Ext.dom.Element
@@ -24199,6 +24483,10 @@ Ext.define('Ext.dom.CompositeElementLite', {
         this.el = new Ext.dom.AbstractElement.Fly();
     },
 
+    /**
+     * @property {Boolean} isComposite
+     * `true` in this class to identify an objact as an instantiated CompositeElement, or subclass thereof.
+     */
     isComposite: true,
 
     // private
@@ -24257,11 +24545,12 @@ Ext.define('Ext.dom.CompositeElementLite', {
             element,
             i;
 
+        fn = Ext.dom.Element.prototype[fn];
         for (i = 0; i < ln; i++) {
             element = elements[i];
 
             if (element) {
-                Ext.dom.Element.prototype[fn].apply(this.getElement(element), args);
+                fn.apply(this.getElement(element), args);
             }
         }
         return this;
@@ -24497,6 +24786,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
      * @return {Ext.dom.CompositeElementLite/Ext.dom.CompositeElement}
      * @member Ext.dom.Element
      * @method select
+     * @static
      */
    Ext.dom.Element.select = function(selector, root) {
         var elements;
@@ -24571,6 +24861,7 @@ Ext.define('Ext.dom.CompositeElement', {
      * @return {Ext.CompositeElementLite/Ext.CompositeElement}
      * @member Ext.dom.Element
      * @method select
+     * @static
      */
 
     Ext.dom.Element.select = function(selector, unique, root) {
@@ -24599,4 +24890,4 @@ Ext.select = Ext.Element.select;
 
 
 
-
+Ext._endTime = new Date().getTime();

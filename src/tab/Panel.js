@@ -603,7 +603,7 @@ Ext.define('Ext.tab.Panel', {
      * @ignore
      * Makes sure we remove the corresponding Tab when an item is removed
      */
-    onRemove: function(item, autoDestroy) {
+    onRemove: function(item, destroying) {
         var me = this;
 
         item.un({

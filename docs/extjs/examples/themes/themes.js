@@ -569,7 +569,7 @@ function getGrid () {
             {header: "Price",        width: 75,  sortable: true, dataIndex: 'price'},
             {header: "Change",       width: 75,  sortable: true, dataIndex: 'change'},
             {header: "% Change",     width: 75,  sortable: true, dataIndex: 'pctChange'},
-            {header: "Last Updated", width: 85,  sortable: true, renderer: Ext.util.Format.dateRenderer('m/d/Y'), dataIndex: 'lastChange'}
+            {header: "Last Updated", width: 85,  sortable: true, xtype: 'datecolumn', dataIndex: 'lastChange'}
         ],
         loadMask: true,
 
@@ -728,7 +728,6 @@ function getDatePicker () {
         rtl: rtl,
         border: false,
         items: {
-            border: true,
             xtype: 'datepicker'
         }
     };

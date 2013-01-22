@@ -126,9 +126,13 @@ Ext.define('Ext.form.field.Trigger', {
     componentLayout: 'triggerfield',
 
     initComponent: function() {
-        var me = this;
+        var me = this,
+            tempEl;
+
+        // Measure width of a trigger element.
         if (!me.triggerWidth) {
-            Ext.form.field.Trigger.prototype.triggerWidth = parseInt(Ext.util.CSS.getRule('.' + Ext.baseCSSPrefix + 'form-trigger').style.width, 10);
+            Ext.form.field.Trigger.prototype.triggerWidth = (tempEl = Ext.getBody().createChild({style: 'position:absolute', cls: Ext.baseCSSPrefix + 'form-trigger'})).getWidth();
+            tempEl.remove();
         }
         me.wrapFocusCls = me.triggerWrapCls + '-focus';
         me.callParent(arguments);
@@ -143,17 +147,25 @@ Ext.define('Ext.form.field.Trigger', {
             me.getTriggerMarkup() +
             '</tr></tbody></table>';
     },
+    
+    getSubTplData: function(){
+        var me = this,
+            data = me.callParent(),
+            readOnly = me.readOnly === true,
+            editable = me.editable !== false;
+        
+        return Ext.apply(data, {
+            editableCls: (readOnly || !editable) ? ' ' + Ext.baseCSSPrefix + 'trigger-noedit' : '',
+            readOnly: !editable || readOnly
+        });  
+    },
 
     getLabelableRenderData: function() {
         var me = this,
             triggerWrapCls = me.triggerWrapCls,
             result = me.callParent(arguments);
 
-        // forced because of Ext.form.Text
-        me.subTplData.readOnly = (me.editable === false || me.readOnly === true);
-
         return Ext.applyIf(result, {
-            editableCls: (me.readOnly || !me.editable) ? ' ' + Ext.baseCSSPrefix + 'trigger-noedit' : '',
             triggerWrapCls: triggerWrapCls,
             triggerMarkup: me.getTriggerMarkup()
         });
@@ -217,37 +229,7 @@ Ext.define('Ext.form.field.Trigger', {
 
         me.doc = Ext.getDoc();
         me.initTrigger();
-        me.updateEditState();
         me.triggerEl.unselectable();
-    },
-
-    updateEditState: function() {
-        var me = this,
-            inputEl = me.inputEl,
-            triggerCell = me.triggerCell,
-            noeditCls = Ext.baseCSSPrefix + 'trigger-noedit',
-            displayed,
-            readOnly;
-
-        if (me.rendered) {
-            if (me.readOnly) {
-                inputEl.addCls(noeditCls);
-                readOnly = true;
-                displayed = false;
-            } else {
-                if (me.editable) {
-                    inputEl.removeCls(noeditCls);
-                    readOnly = false;
-                } else {
-                    inputEl.addCls(noeditCls);
-                    readOnly = true;
-                }
-                displayed = !me.hideTrigger;
-            }
-
-            triggerCell.setDisplayed(displayed);
-            inputEl.dom.readOnly = readOnly;
-        }
     },
 
     /**
@@ -267,7 +249,7 @@ Ext.define('Ext.form.field.Trigger', {
     setHideTrigger: function(hideTrigger) {
         if (hideTrigger != this.hideTrigger) {
             this.hideTrigger = hideTrigger;
-            this.updateEditState();
+            this.updateLayout();
         }
     },
 
@@ -281,7 +263,7 @@ Ext.define('Ext.form.field.Trigger', {
     setEditable: function(editable) {
         if (editable != this.editable) {
             this.editable = editable;
-            this.updateEditState();
+            this.updateLayout();
         }
     },
 
@@ -295,7 +277,7 @@ Ext.define('Ext.form.field.Trigger', {
     setReadOnly: function(readOnly) {
         if (readOnly != this.readOnly) {
             this.readOnly = readOnly;
-            this.updateEditState();
+            this.updateLayout();
         }
     },
 
@@ -309,10 +291,18 @@ Ext.define('Ext.form.field.Trigger', {
             me.triggerRepeater = new Ext.util.ClickRepeater(triggerWrap, {
                 preventDefault: true,
                 handler: me.onTriggerWrapClick,
+                listeners: {
+                    mouseup: me.onTriggerWrapMousup,
+                    scope: me
+                },
                 scope: me
             });
         } else {
-            me.mon(triggerWrap, 'click', me.onTriggerWrapClick, me);
+            me.mon(triggerWrap, {
+                click: me.onTriggerWrapClick,
+                mouseup: me.onTriggerWrapMousup,
+                scope: me
+            });
         }
 
         triggerEl.setVisibilityMode(Ext.Element.DISPLAY);
@@ -434,6 +424,11 @@ Ext.define('Ext.form.field.Trigger', {
             }
         }
     },
+
+    // private
+    // Handle trigger mouse up gesture. To be implemented in subclasses.
+    // Currently the Spinner subclass refocuses the input element upon end of spin.
+    onTriggerWrapMousup: Ext.emptyFn,
 
     /**
      * @method onTriggerClick

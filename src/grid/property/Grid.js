@@ -76,11 +76,6 @@ Ext.define('Ext.grid.property.Grid', {
      */
 
     /**
-     * @cfg {Object} source
-     * A data object to use as the data source of the grid (see {@link #setSource} for details).
-     */
-
-    /**
      * @cfg {Object} customRenderers
      * An object containing name/value pairs of custom renderer type definitions that allow
      * the grid to support custom rendering of fields.  By default, the grid supports strongly-typed rendering

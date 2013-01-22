@@ -273,6 +273,7 @@ Ext.define('Ext.layout.container.Card', {
         var me = this,
             owner = me.owner,
             oldCard = me.activeItem,
+            rendered = owner.rendered,
             newIndex;
 
         newCard = me.parseActiveItem(newCard);
@@ -287,7 +288,7 @@ Ext.define('Ext.layout.container.Card', {
         // Is this a valid, different card?
         if (newCard && oldCard != newCard) {
             // If the card has not been rendered yet, now is the time to do so.
-            if (!newCard.rendered) {
+            if (rendered && !newCard.rendered) {
                 me.renderItem(newCard, me.getRenderTarget(), owner.items.length);
                 me.afterRenderItem(newCard);
             }
@@ -300,23 +301,24 @@ Ext.define('Ext.layout.container.Card', {
                 return false;
             }
 
-            me.owner.suspendLayouts();
-
-            if (oldCard) {
-                if (me.hideInactive) {
-                    oldCard.hide();
-                    oldCard.hiddenByLayout = true;
+            owner.suspendLayouts();
+            if (rendered) {
+                if (oldCard) {
+                    if (me.hideInactive) {
+                        oldCard.hide();
+                        oldCard.hiddenByLayout = true;
+                    }
+                    oldCard.fireEvent('deactivate', oldCard, newCard);
                 }
-                oldCard.fireEvent('deactivate', oldCard, newCard);
-            }
-            // Make sure the new card is shown
-            if (newCard.hidden) {
-                newCard.show();
+                // Make sure the new card is shown
+                if (newCard.hidden) {
+                    newCard.show();
+                }
             }
 
             me.activeItem = newCard;
 
-            me.owner.resumeLayouts(true);
+            owner.resumeLayouts(true);
 
             newCard.fireEvent('activate', newCard, oldCard);
 

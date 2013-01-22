@@ -34,11 +34,10 @@ Ext.define('Ext.perf.Accumulator', function () {
         set.max = Math.max(set.max, time);
     }
 
-    function leaveFrame () {
-        var time = getTimestamp(), // do this first
+    function leaveFrame (time) {
+        var totalTime = time ? time : (getTimestamp() - this.time), // do this first
             me = this, // me = frame
-            accum = me.accum,
-            totalTime = time - me.time;
+            accum = me.accum;
 
         ++accum.count;
         if (! --accum.depth) {
@@ -192,29 +191,33 @@ Ext.define('Ext.perf.Accumulator', function () {
                 methods = typeof methodName == 'string' ? [methodName] : methodName,
                 klass, statik, i, parts, length, name, src;
 
-            if (typeof className == 'string') {
-                klass = Ext.global;
-                parts = className.split('.');
-                for (i = 0, length = parts.length; i < length; ++i) {
-                    klass = klass[parts[i]];
-                }
-            } else {
-                klass = className;
-            }
-
-            for (i = 0, length = methods.length; i < length; ++i) {
-                name = methods[i];
-                statik = name.charAt(0) == '!';
-
-                if (statik) {
-                    name = name.substring(1);
+            var tapFunc = function(){
+                if (typeof className == 'string') {
+                    klass = Ext.global;
+                    parts = className.split('.');
+                    for (i = 0, length = parts.length; i < length; ++i) {
+                        klass = klass[parts[i]];
+                    }
                 } else {
-                    statik = !(name in klass.prototype);
+                    klass = className;
                 }
 
-                src = statik ? klass : klass.prototype;
-                src[name] = makeTap(me, src[name]);
-            }
+                for (i = 0, length = methods.length; i < length; ++i) {
+                    name = methods[i];
+                    statik = name.charAt(0) == '!';
+
+                    if (statik) {
+                        name = name.substring(1);
+                    } else {
+                        statik = !(name in klass.prototype);
+                    }
+
+                    src = statik ? klass : klass.prototype;
+                    src[name] = makeTap(me, src[name]);
+                }
+            };
+
+            Ext.ClassManager.onCreated(tapFunc, me, className);
 
             return me;
         }

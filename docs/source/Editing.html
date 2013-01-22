@@ -444,18 +444,13 @@ Ext.define('Ext.grid.plugin.Editing', {
     getEditingContext: function(record, columnHeader) {
         var me = this,
             grid = me.grid,
-            store = grid.store,
             view = grid.getView(),
             node = view.getNode(record),
-            rowIdx, colIdx, tableView, node, value;
+            rowIdx, colIdx, value;
 
-        if (Ext.isNumber(columnHeader)) {
-            // look up column header if numeric column index was passed
-            colIdx = columnHeader;
-            columnHeader = grid.headerCt.getHeaderAtIndex(colIdx);
-        } else {
-            colIdx = columnHeader.getIndex();
-        }
+        // Coerce the column index to the closest visible column
+        columnHeader = grid.headerCt.getVisibleHeaderClosestToIndex(Ext.isNumber(columnHeader) ? columnHeader : columnHeader.getIndex());
+        colIdx = columnHeader.getIndex();
 
         view = columnHeader.ownerCt.lockableInjected ? (columnHeader.locked ? view.lockedView : view.normalView) : view;
 

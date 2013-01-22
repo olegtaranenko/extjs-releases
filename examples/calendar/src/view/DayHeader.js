@@ -72,12 +72,12 @@ Ext.define('Ext.calendar.view.DayHeader', {
 
     // private
     moveNext: function(noRefresh) {
-        this.moveDays(this.dayCount, noRefresh);
+        return this.moveDays(this.dayCount, noRefresh);
     },
 
     // private
     movePrev: function(noRefresh) {
-        this.moveDays( - this.dayCount, noRefresh);
+        return this.moveDays( - this.dayCount, noRefresh);
     },
 
     // private

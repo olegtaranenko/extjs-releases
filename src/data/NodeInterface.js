@@ -219,6 +219,10 @@ Ext.define('Ext.data.NodeInterface', {
 
         getPrototypeBody: function() {
             return {
+                /**
+                 * @property {Boolean} isNode
+                 * `true` in this class to identify an objact as an instantiated Node, or subclass thereof.
+                 */
                 isNode: true,
                 
                 constructor: function() {

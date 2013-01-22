@@ -379,7 +379,7 @@ Ext.define('Ext.draw.Surface', {
                     width: width,
                     height: height,
                     fill: 'url(#' + gradientId + ')',
-                    zIndex: -1000
+                    zIndex: -1
                 });
             } else if (config.fill) {
                 me.background = me.add({
@@ -389,7 +389,7 @@ Ext.define('Ext.draw.Surface', {
                     width: width,
                     height: height,
                     fill: config.fill,
-                    zIndex: -1000
+                    zIndex: -1
                 });
             } else if (config.image) {
                 me.background = me.add({
@@ -399,9 +399,11 @@ Ext.define('Ext.draw.Surface', {
                     width: width,
                     height: height,
                     src: config.image,
-                    zIndex: -1000
+                    zIndex: -1
                 });
             }
+            // prevent me.background to jeopardize me.items.getBBox
+            me.background.bboxExcluded = true;
         }
     },
 
@@ -418,16 +420,6 @@ Ext.define('Ext.draw.Surface', {
      * @param {Number} h The new height of the canvas.
      */
     setSize: function(w, h) {
-        if (this.background) {
-            this.background.setAttributes(Ext.apply(this.viewBox === true ? {
-                width: w,
-                height: h,
-                x: 0,
-                y: 0
-            } : this.viewBox || {}, { 
-                hidden: false
-            }), true);
-        }
         this.applyViewBox();
     },
 
@@ -682,8 +674,8 @@ Ext.define('Ext.draw.Surface', {
     applyViewBox: function() {
         var me = this,
             viewBox = me.viewBox,
-            width = me.width,
-            height = me.height,
+            width = me.width || 1, // Avoid problems in division
+            height = me.height || 1,
             viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight,
             relativeHeight, relativeWidth, size;
 
@@ -708,9 +700,36 @@ Ext.define('Ext.draw.Surface', {
                 dy: -viewBoxY,
                 scale: size
             };
+            
+            if (me.background) {
+                me.background.setAttributes(Ext.apply({}, {
+                    x: viewBoxX,
+                    y: viewBoxY,
+                    width: width / size,
+                    height: height / size
+                }, { hidden: false }), true);
+            }
+        } else {
+            if (me.background && width && height) {
+                me.background.setAttributes(Ext.apply({x: 0, y: 0, width: width, height: height}, { hidden: false }), true);
+            }
         }
     },
 
+
+    getBBox: function (sprite, isWithoutTransform) {
+        var realPath = this["getPath" + sprite.type](sprite);
+        if (isWithoutTransform) {
+            sprite.bbox.plain = sprite.bbox.plain || Ext.draw.Draw.pathDimensions(realPath);
+            return sprite.bbox.plain;
+        }
+        if (sprite.dirtyTransform) {
+            this.applyTransformations(sprite, true);
+        }
+        sprite.bbox.transform = sprite.bbox.transform || Ext.draw.Draw.pathDimensions(Ext.draw.Draw.mapPath(realPath, sprite.matrix));
+        return sprite.bbox.transform;
+    },
+    
     transformToViewBox: function (x, y) {
         if (this.viewBoxShift) {
             var me = this, shift = me.viewBoxShift;
@@ -721,31 +740,32 @@ Ext.define('Ext.draw.Surface', {
     },
 
     // @private
-    applyTransformations: function(sprite) {
+    applyTransformations: function(sprite, onlyMatrix) {
+        if (sprite.type == 'text') {
+            // TODO: getTextBBox function always take matrix into account no matter whether `isWithoutTransform` is true. Fix that.
             sprite.bbox.transform = 0;
-            this.transform(sprite);
+            this.transform(sprite, false);
+        }
 
+
+        sprite.dirtyTransform = false;
+        
         var me = this,
-            dirty = false,
             attr = sprite.attr;
 
         if (attr.translation.x != null || attr.translation.y != null) {
             me.translate(sprite);
-            dirty = true;
         }
         if (attr.scaling.x != null || attr.scaling.y != null) {
             me.scale(sprite);
-            dirty = true;
         }
         if (attr.rotation.degrees != null) {
             me.rotate(sprite);
-            dirty = true;
         }
-        if (dirty) {
-            sprite.bbox.transform = 0;
-            this.transform(sprite);
-            sprite.transformations = [];
-        }
+        
+        sprite.bbox.transform = 0;
+        this.transform(sprite, onlyMatrix);
+        sprite.transformations = [];
     },
 
     // @private
@@ -787,7 +807,7 @@ Ext.define('Ext.draw.Surface', {
             centerY = sprite.attr.scaling.centerY;
 
         if (!Ext.isNumber(centerX) || !Ext.isNumber(centerY)) {
-            bbox = this.getBBox(sprite);
+            bbox = this.getBBox(sprite, true);
             centerX = !Ext.isNumber(centerX) ? bbox.x + bbox.width / 2 : centerX;
             centerY = !Ext.isNumber(centerY) ? bbox.y + bbox.height / 2 : centerY;
         }
@@ -838,7 +858,7 @@ Ext.define('Ext.draw.Surface', {
     // @private
     getPathrect: function (el) {
         var a = el.attr;
-        return this.rectPath(a.x, a.y, a.width, a.height, a.r);
+        return this.rectPath(a.x || 0, a.y || 0, a.width || 0, a.height || 0, a.r || 0);
     },
 
     // @private
@@ -943,9 +963,5 @@ Ext.define('Ext.draw.Surface', {
     destroy: function() {
         delete this.domRef;
         this.removeAll();
-        if (this.background) {
-            this.background.destroy;
-            delete this.background;
-        }
     }
 });

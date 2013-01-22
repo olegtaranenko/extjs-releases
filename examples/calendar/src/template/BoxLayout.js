@@ -106,10 +106,6 @@ Ext.define('Ext.calendar.template.BoxLayout', {
         }, []).join('');
     },
     
-    apply: function(values) {
-        return this.applyTemplate.apply(this, arguments);
-    },
-    
     getTodayText : function(){
         var dt = Ext.Date.format(new Date(), 'l, F j, Y'),
             todayText = this.showTodayText !== false ? this.todayText : '',
@@ -123,4 +119,7 @@ Ext.define('Ext.calendar.template.BoxLayout', {
         fmt = this.weekCount == 1 ? 'D j' : 'j';
         return todayText.length > 0 ? todayText + timeText : Ext.Date.format(new Date(), fmt) + timeText;
     }
+}, 
+function() {
+    this.createAlias('apply', 'applyTemplate');
 });

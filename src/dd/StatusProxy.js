@@ -22,13 +22,15 @@ Ext.define('Ext.dd.StatusProxy', {
     constructor: function(config) {
         var me = this;
 
+        config = config || {};
+
         Ext.apply(me, {
             hideMode: 'visibility',
             hidden: true,
             floating: true,
             id: me.id || Ext.id(),
             cls: Ext.baseCSSPrefix + 'dd-drag-proxy ' + this.dropNotAllowed,
-            shadow: !config || config.shadow !== false,
+            shadow: config.shadow || false,
             renderTo: Ext.getDetachedBody()
         });
         me.callParent(arguments);
@@ -167,6 +169,7 @@ Ext.define('Ext.dd.StatusProxy', {
         var me = this;
     
         me.hide(true);
+        me.el.removeCls(Ext.baseCSSPrefix + 'dd-drag-repair');
         if (typeof me.callback == "function") {
             me.callback.call(me.scope || me);
         }

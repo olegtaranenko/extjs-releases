@@ -70,20 +70,14 @@ Ext.define('Ext.fx.Manager', {
 
         me.useCSS3 = useCSS3;
 
-        // dom id
-        if (Ext.isString(target)) {
-            target = Ext.get(target);
-        }
-        // dom element
-        if (target && target.tagName) {
-            target = Ext.get(target);
-            targetObj = new Ext.fx.target['Element' + (useCSS3 ? 'CSS' : '')](target);
-            me.targets.add(targetObj);
-            return targetObj;
-        }
-        if (Ext.isObject(target)) {
+        if (target) {
+            // dom element, string or fly
+            if (target.tagName || Ext.isString(target) || target.isFly) {
+                target = Ext.get(target);
+                targetObj = new Ext.fx.target['Element' + (useCSS3 ? 'CSS' : '')](target);
+            }
             // Element
-            if (target.dom) {
+            else if (target.dom) {
                 targetObj = new Ext.fx.target['Element' + (useCSS3 ? 'CSS' : '')](target);
             }
             // Element Composite

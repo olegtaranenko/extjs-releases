@@ -5,6 +5,7 @@
  */
 Ext.define('Ext.tip.QuickTip', {
     extend: 'Ext.tip.ToolTip',
+    alias: 'widget.quicktip',
     alternateClassName: 'Ext.QuickTip',
 
     /**
@@ -199,7 +200,8 @@ Ext.define('Ext.tip.QuickTip', {
             }
         }
 
-        elTarget = Ext.get(target);
+        // Should be a fly.
+        elTarget = Ext.fly(target, '_quicktip-target');
         cfg = me.tagConfig;
         ns = cfg.namespace;
         tipConfig = me.getTipCfg(e);
@@ -210,7 +212,7 @@ Ext.define('Ext.tip.QuickTip', {
             // Change our target element to match that from which the tip text attribute was read.
             if (tipConfig.target) {
                 target = tipConfig.target;
-                elTarget = Ext.get(target);
+                elTarget = Ext.fly(target, '_quicktip-target');
             }
             autoHide = elTarget.getAttribute(ns + cfg.hide);
 

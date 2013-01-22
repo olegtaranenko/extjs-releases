@@ -68,18 +68,21 @@ Ext.define('Ext.dom.AbstractElement', {
                     extEl = cache.el;
                     extEl.dom = dom;
                 } else {
-                    extEl = new El(dom);
+                    // Force new element if there's a cache but no el attached
+                    extEl = new El(dom, !!cache);
                 }
                 return extEl;
             } else if (el.tagName) { // dom element
                 if (!(id = el.id)) {
                     id = Ext.id(el);
                 }
-                if (Ext.cache[id] && Ext.cache[id].el) {
+                cache = Ext.cache[id];
+                if (cache && cache.el) {
                     extEl = Ext.cache[id].el;
                     extEl.dom = el;
                 } else {
-                    extEl = new El(el);
+                    // Force new element if there's a cache but no el attached
+                    extEl = new El(el, !!cache);
                 }
                 return extEl;
             } else if (el instanceof me) {
@@ -129,23 +132,6 @@ Ext.define('Ext.dom.AbstractElement', {
             return el;
         },
 
-        // private method for getting and setting element data
-        data: function(el, key, value) {
-            el = this.get(el);
-            if (!el) {
-                return null;
-            }
-            var c = Ext.cache[el.id].data;
-            if (!c) {
-                c = Ext.cache[el.id].data = {};
-            }
-            if (arguments.length == 2) {
-                return c[key];
-            } else {
-                return (c[key] = value);
-            }
-        },
-
         addMethods: function() {
             this.override.apply(this, arguments);
         },
@@ -160,6 +146,8 @@ myElement.dom.className = Ext.core.Element.mergeClsList(this.initialClasses, 'x-
          * @param {Mixed} clsList1 A string of class names, or an array of class names.
          * @param {Mixed} clsList2 A string of class names, or an array of class names.
          * @return {Array} An array of strings representing remaining unique, merged class names. If class names were added to the first list, the <code>changed</code> property will be <code>true</code>.
+         * @static
+         * @inheritable
          */
         mergeClsList: function() {
             var clsList, clsHash = {},
@@ -201,6 +189,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @param {Mixed} existingClsList A string of class names, or an array of class names.
          * @param {Mixed} removeClsList A string of class names, or an array of class names to remove from <code>existingClsList</code>.
          * @return {Array} An array of strings representing remaining class names. If class names were removed, the <code>changed</code> property will be <code>true</code>.
+         * @static
+         * @inheritable
          */
         removeCls: function(existingClsList, removeClsList) {
             var clsHash = {},
@@ -238,6 +228,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use visibility to hide element
          * @static
+         * @inheritable
          */
         VISIBILITY: 1,
 
@@ -245,6 +236,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use display to hide element
          * @static
+         * @inheritable
          */
         DISPLAY: 2,
 
@@ -252,6 +244,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use offsets to hide element
          * @static
+         * @inheritable
          */
         OFFSETS: 3
     },
@@ -477,26 +470,45 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     },
 
     getVisibilityMode: function() {
-        var data = (this.$cache || this).data,
-            mode = data.visibilityMode;
+        // Only flyweights won't have a $cache object, by calling getCache the cache
+        // will be created for future accesses. As such, we're eliminating the method
+        // call since it's mostly redundant
+        var data = (this.$cache || this.getCache()).data,
+            visMode = data.visibilityMode;
 
-        if (mode === undefined) {
-            data.visibilityMode = (mode = this.self.DISPLAY);
+        if (visMode === undefined) {
+            data.visibilityMode = visMode = this.self.DISPLAY;
         }
-
-        return mode;
+        
+        return visMode;
     },
 
     /**
      * Use this to change the visisbiliy mode between {@link #VISIBILITY}, {@link #DISPLAY} or {@link #OFFSETS}.
      */
     setVisibilityMode: function(mode) {
-        (this.$cache || this).data.visibilityMode = mode;
+        (this.$cache || this.getCache()).data.visibilityMode = mode;
         return this;
+    },
+    
+    getCache: function() {
+        var me = this,
+            id = me.dom.id || Ext.id(me.dom);
+
+        // Note that we do not assign an ID to the calling object here.
+        // An Ext.dom.Element will have one assigned at construction, and an Ext.dom.AbstractElement.Fly must not have one.
+        // We assign an ID to the DOM element if it does not have one.
+        me.$cache = Ext.cache[id] || (Ext.cache[id] = {
+            data: {},
+            events: {}
+        });     
+            
+        return me.$cache;
     }
+    
 }, function() {
     var AbstractElement = this,
-        validIdRe = /^[a-z0-9_\-]+$/i;
+        validIdRe = /^[a-z_][a-z0-9_\-]*$/i;
 
     Ext.getDetachedBody = function () {
         var detachedEl = AbstractElement.detachedBodyEl;
@@ -531,51 +543,86 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     };
 
     this.addStatics({
+        /**
+         * @class Ext.dom.AbstractElement.Fly
+         * A non-persistent wrapper for a DOM element which may be used to execute methods of {@link Ext.Dom.Element}
+         * upon a DOM element without creating an instance of {@link Ext.dom.Element}.
+         *
+         * A **singleton** instance of this class is returned when you use {@link Ext#fly}
+         *
+         * Because it is a singleton, this Flyweight does not have an ID, and must be used and discarded in a single line.
+         * You should not keep and use the reference to this singleton over multiple lines because methods that you call
+         * may themselves make use of {@link Ext#fly} and may change the DOM element to which the instance refers.
+         */
         Fly: new Ext.Class({
             extend: AbstractElement,
+
+            /**
+             * @property {Boolean} isFly
+             * This is `true` to identify Element flyweights
+             */
+            isFly: true,
 
             constructor: function(dom) {
                 this.dom = dom;
             },
-            
+
+            /**
+             * @private
+             * Attach this fliyweight instance to the passed DOM element.
+             *
+             * Note that a flightweight does **not** have an ID, and does not acquire the ID of the DOM element.
+             */
             attach: function (dom) {
-                var me = this;
-                me.dom = dom;
-                me.id = dom.id;
-                return me;
+
+                // Attach to the passed DOM element. The same code as in Ext.Fly
+                this.dom = dom;
+                // Use cached data if there is existing cached data for the referenced DOM element,
+                // otherwise it will be created when needed by getCache.
+                this.$cache = dom.id ? Ext.cache[dom.id] : null;
+                return this;
             }
         }),
 
         _flyweights: {},
 
         /**
-         * Gets the globally shared flyweight Element, with the passed node as the active element. Do not store a reference
-         * to this element - the dom node can be overwritten by other code. {@link Ext#fly} is alias for
-         * {@link Ext.dom.AbstractElement#fly}.
+         * Gets the singleton {@link Ext.dom.AbstractElement.Fly flyweight} element, with the passed node as the active element.
+         * 
+         * Because it is a singleton, this Flyweight does not have an ID, and must be used and discarded in a single line.
+         * You may not keep and use the reference to this singleton over multiple lines because methods that you call
+         * may themselves make use of {@link Ext#fly} and may change the DOM element to which the instance refers.
+         *  
+         * {@link Ext#fly} is alias for {@link Ext.dom.AbstractElement#fly}.
          *
          * Use this to make one-time references to DOM elements which are not going to be accessed again either by
          * application code, or by Ext's classes. If accessing an element which will be processed regularly, then {@link
          * Ext#get Ext.get} will be more appropriate to take advantage of the caching provided by the Ext.dom.Element
          * class.
          *
-         * @param {String/HTMLElement} el The dom node or id
+         * @param {String/HTMLElement} dom The dom node or id
          * @param {String} [named] Allows for creation of named reusable flyweights to prevent conflicts (e.g.
          * internally Ext uses "_global")
-         * @return {Ext.dom.Element} The shared Element object (or null if no matching element was found)
+         * @return {Ext.dom.AbstractElement.Fly} The singleton flyweight object (or null if no matching element was found)
          * @static
          */
-        fly: function(el, named) {
+        fly: function(dom, named) {
             var fly = null,
                 _flyweights = AbstractElement._flyweights;
 
             named = named || '_global';
 
-            el = Ext.getDom(el);
+            dom = Ext.getDom(dom);
 
-            if (el) {
+            if (dom) {
                 fly = _flyweights[named] || (_flyweights[named] = new AbstractElement.Fly());
-                fly.dom = el;
-                fly.data = {};
+
+                // Attach to the passed DOM element.
+                // This code performs the same function as Fly.attach, but inline it for efficiency
+                fly.dom = dom;
+                // Use cached data if there is existing cached data for the referenced DOM element,
+                // otherwise it will be created when needed by getCache.
+                fly.$cache = dom.id ? Ext.cache[dom.id] : null;
             }
             return fly;
         }

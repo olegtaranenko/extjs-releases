@@ -106,7 +106,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
             hidden  : true,
             ownerCt : layout.owner, // To enable the Menu to ascertain a valid zIndexManager owner in the same tree
             ownerLayout: layout,
-            iconCls : Ext.baseCSSPrefix + layout.owner.getXType() + '-more-icon',
+            iconCls : Ext.baseCSSPrefix + me.getOwnerType(layout.owner) + '-more-icon',
             ui      : layout.owner instanceof Ext.toolbar.Toolbar ? 'default-toolbar' : 'default',
             menu    : me.menu,
             getSplitCls: function() { return '';}

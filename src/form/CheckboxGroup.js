@@ -183,8 +183,7 @@ Ext.define('Ext.form.CheckboxGroup', {
      * @param {String} [query] An additional query to add to the selector.
      */
     getBoxes: function(query) {
-        query = query || '';
-        return this.query('[isCheckbox]' + query);
+        return this.query('[isCheckbox]' + (query||''));
     },
 
     /**

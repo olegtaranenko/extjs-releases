@@ -43,6 +43,8 @@ Ext.define('Ext.picker.Date', {
     childEls: [
         'inner', 'eventEl', 'prevEl', 'nextEl', 'middleBtnEl', 'footerEl'
     ],
+    
+    border: true,
 
     renderTpl: [
         '<div id="{id}-inner">',

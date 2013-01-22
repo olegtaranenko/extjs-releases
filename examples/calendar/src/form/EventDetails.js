@@ -94,6 +94,7 @@ Ext.define('Ext.calendar.form.EventDetails', {
         });
         this.dateRangeField = new Ext.calendar.form.field.DateRange({
             fieldLabel: 'When',
+            singleLine: false,
             anchor: '90%'
         });
         this.reminderField = new Ext.calendar.form.field.ReminderCombo({

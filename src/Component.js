@@ -249,28 +249,47 @@ Ext.define('Ext.Component', {
      * programatically {@link Ext.Component#render rendered}.
      *
      * For {@link #floating} Components which are added to a Container, the ZIndexManager is acquired from the first
-     * ancestor Container found which is floating, or if not found the global {@link Ext.WindowManager ZIndexManager} is
+     * ancestor Container found which is floating. If no floating ancestor is found, the global {@link Ext.WindowManager ZIndexManager} is
      * used.
      *
-     * See {@link #floating} and {@link #floatParent}
+     * See {@link #floating} and {@link #zIndexParent}
+     * @readonly
      */
 
     /**
      * @property {Ext.Container} floatParent
-     * Only present for {@link #floating} Components which were inserted as descendant items of floating Containers.
+     * Only present for {@link #floating} Components which were inserted as child items of Containers.
      *
      * Floating Components that are programatically {@link Ext.Component#render rendered} will not have a `floatParent`
      * property.
      *
-     * For {@link #floating} Components which are child items of a Container, the floatParent will be the floating
-     * ancestor Container which is responsible for the base z-index value of all its floating descendants. It provides
-     * a {@link Ext.ZIndexManager ZIndexManager} which provides z-indexing services for all its descendant floating
-     * Components.
+     * For {@link #floating} Components which are child items of a Container, the floatParent will be the owning Container.
      *
      * For example, the dropdown {@link Ext.view.BoundList BoundList} of a ComboBox which is in a Window will have the
      * Window as its `floatParent`
      *
      * See {@link #floating} and {@link #zIndexManager}
+     * @readonly
+     */
+
+    /**
+     * @property {Ext.Container} zIndexParent
+     * Only present for {@link #floating} Components which were inserted as child items of Containers, and which have a floating
+     * Container in their containment ancestry.
+     *
+     * For {@link #floating} Components which are child items of a Container, the zIndexParent will be a floating
+     * ancestor Container which is responsible for the base z-index value of all its floating descendants. It provides
+     * a {@link Ext.ZIndexManager ZIndexManager} which provides z-indexing services for all its descendant floating
+     * Components.
+     *
+     * Floating Components that are programatically {@link Ext.Component#render rendered} will not have a `zIndexParent`
+     * property.
+     *
+     * For example, the dropdown {@link Ext.view.BoundList BoundList} of a ComboBox which is in a Window will have the
+     * Window as its `zIndexParent`, and will always show above that Window, wherever the Window is placed in the z-index stack.
+     *
+     * See {@link #floating} and {@link #zIndexManager}
+     * @readonly
      */
 
     /**
@@ -383,6 +402,7 @@ Ext.define('Ext.Component', {
      *     });
      *
      * @template
+     * @protected
      */
     initComponent: function() {
         var me = this;
@@ -607,9 +627,6 @@ Ext.define('Ext.Component', {
         return pos || null;
     },
 
-    /**
-     * @private Template method called after a Component has been positioned.
-     */
     afterSetPosition: function(ax, ay) {
         this.onPosition(ax, ay);
         this.fireEvent('move', this, ax, ay);
@@ -843,9 +860,30 @@ Ext.define('Ext.Component', {
         return me;
     },
 
+    /**
+     * Invoked before the Component is shown.
+     *
+     * @method
+     * @template
+     * @protected
+     */
     beforeShow: Ext.emptyFn,
 
-    // Private. Override in subclasses where more complex behaviour is needed.
+    /**
+     * Allows addition of behavior to the show operation. After
+     * calling the superclass's onShow, the Component will be visible.
+     *
+     * Override in subclasses where more complex behaviour is needed.
+     *
+     * Gets passed the same parameters as #show.
+     *
+     * @param {String/Ext.Element} [animateTarget]
+     * @param {Function} [callback]
+     * @param {Object} [scope]
+     *
+     * @template
+     * @protected
+     */
     onShow: function() {
         var me = this;
 
@@ -856,6 +894,18 @@ Ext.define('Ext.Component', {
         }
     },
 
+    /**
+     * Invoked after the Component is shown (after #onShow is called).
+     *
+     * Gets passed the same parameters as #show.
+     *
+     * @param {String/Ext.Element} [animateTarget]
+     * @param {Function} [callback]
+     * @param {Object} [scope]
+     *
+     * @template
+     * @protected
+     */
     afterShow: function(animateTarget, cb, scope) {
         var me = this,
             fromBox,
@@ -899,6 +949,17 @@ Ext.define('Ext.Component', {
         }
     },
 
+    /**
+     * Invoked after the #afterShow method is complete.
+     *
+     * Gets passed the same `callback` and `scope` parameters that #afterShow received.
+     *
+     * @param {Function} [callback]
+     * @param {Object} [scope]
+     *
+     * @template
+     * @protected
+     */
     onShowComplete: function(cb, scope) {
         var me = this;
         if (me.floating) {
@@ -936,7 +997,21 @@ Ext.define('Ext.Component', {
         return me;
     },
 
-    // Possibly animate down to a target element.
+    /**
+     * Possibly animates down to a target element.
+     *
+     * Allows addition of behavior to the hide operation. After
+     * calling the superclass’s onHide, the Component will be hidden.
+     *
+     * Gets passed the same parameters as #hide.
+     *
+     * @param {String/Ext.Element/Ext.Component} [animateTarget]
+     * @param {Function} [callback]
+     * @param {Object} [scope]
+     *
+     * @template
+     * @protected
+     */
     onHide: function(animateTarget, cb, scope) {
         var me = this,
             ghostPanel,
@@ -974,6 +1049,17 @@ Ext.define('Ext.Component', {
         }
     },
 
+    /**
+     * Invoked after the Component has been hidden.
+     *
+     * Gets passed the same `callback` and `scope` parameters that #onHide received.
+     *
+     * @param {Function} [callback]
+     * @param {Object} [scope]
+     *
+     * @template
+     * @protected
+     */
     afterHide: function(cb, scope) {
         var me = this;
         delete me.hiddenByLayout;
@@ -987,9 +1073,11 @@ Ext.define('Ext.Component', {
     },
 
     /**
-     * @private
+     * Allows addition of behavior to the destroy operation.
+     * After calling the superclass’s onDestroy, the Component will be destroyed.
+     *
      * @template
-     * Template method to contribute functionality at destroy time.
+     * @protected
      */
     onDestroy: function() {
         var me = this;
@@ -1033,7 +1121,7 @@ Ext.define('Ext.Component', {
             focusElDom;
 
 
-        if (me.rendered && !me.isDestroyed && (focusEl = me.getFocusEl())) {
+        if (me.rendered && !me.isDestroyed && me.isVisible(true) && (focusEl = me.getFocusEl())) {
 
             // getFocusEl might return a Component if a Container wishes to delegate focus to a descendant.
             // Window can do this via its defaultFocus configuration which can reference a Button.
@@ -1217,7 +1305,7 @@ Ext.define('Ext.Component', {
             target = Ext.getBody();
             if (Ext.scopeResetCSS) {
                 me.proxyWrap = target = Ext.getBody().createChild({
-                    cls: Ext.baseCSSPrefix + 'reset'
+                    cls: Ext.resetCls
                 });
             }
             me.proxy = me.el.createProxy(Ext.baseCSSPrefix + 'proxy-el', target, true);

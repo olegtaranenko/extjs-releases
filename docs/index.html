@@ -3,6 +3,7 @@
 <head>
   <title>Sencha Docs - Ext JS 4.1</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
   <meta name="fragment" content="!">
 
   <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
@@ -38,9 +39,12 @@
   <script type="text/javascript" src="app.js"></script>
   <script type="text/javascript" src="resources/prettify/prettify.js"></script>
 
-  <link rel='canonical' href='http://docs.sencha.com/ext-js/4-1/' /><meta name='description' content='Ext JS 4.1 API Documentation from Sencha. Class documentation, Guides and Videos on how to create Javascript applications with Ext JS 4' />
+  <link rel='canonical' href='http://docs.sencha.com/ext-js/4-1/' /><meta name='description' content='Ext JS 4.1 API Documentation from Sencha. Class documentation, Guides and Videos on how to create Javascript applications with Ext JS 4' /><script type='text/javascript'>
+Docs.forceInlineExamples=false;
+</script>
 
-<script type="text/javascript">Docs.exampleBaseUrl = "../examples/";</script></head>
+
+</head>
 <body id="ext-body">
 
   <div id="loading"><span class="title"></span><span class="logo"></span></div>
@@ -59,8 +63,9 @@
     <section>
         <div class="auto_columns two">
             <div class="column">
-                <h2>Welcome to <strong>Ext JS 4.1 Beta</strong>!</h2>
-                <p class="intro">Ext JS 4.1 is a pure JavaScript application framework that works everywhere from IE6 to Chrome 16. It enables you to create the best cross-platform applications using nothing but a browser, and has a phenomenal API.</p>
+                <h2>Welcome to <strong>Ext JS 4</strong>!</h2>
+                <p class="intro">Ext JS 4 is a pure JavaScript application framework that works everywhere from IE6 to Chrome 11. It enables you to create the best cross-platform applications using nothing but a browser, and has a phenomenal API.</p>
+                <p class="intro">This is the biggest upgrade we've ever made to Ext JS and we think you're going to love it.</p>
                 <p class="button-group">
                     <a href="#!/example" class="button-link">View the Examples</a>
                     <a href="http://www.sencha.com/forum/forumdisplay.php?79-Ext-JS-Community-Forums-4.x" class="more-icon">Discuss Ext JS 4 on the forum</a>
@@ -71,13 +76,12 @@
                 <div class="auto_columns two right">
                     <div class="column">
                         <h3>What&rsquo;s New</h3>
-                        <p>We have also been posting summaries of new features and changes to <a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">our blog</a>:</p>
+                        <p>We have also been posting summaries of new features and changes to <a href="http://www.sencha.com/blog/">our blog</a>:</p>
                         <ul class="type13">
-                             <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Performance enhancement over 4.0</a></li>
-                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Grid</a></li>
-                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Border Layout</a></li>
-                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">XTemplate</a></li>
-                                <li><a href="http://www.sencha.com/blog/whats-new-in-ext-js-4-1/">Overrides</a></li>
+                            <li><a href="#!/guide/drawing_and_charting">Drawing &amp; Charting</a></li>
+                            <li><a href="http://www.sencha.com/blog/ext-js-4-anatomy-of-a-model/">Anatomy of a Model</a></li>
+                            <li><a href="#!/guide/data">Data Package</a></li>
+                            <li><a href="http://www.sencha.com/blog/countdown-to-ext-js-4-dynamic-loading-and-new-class-system/">Dynamic Loading and the New Class System</a></li>
                         </ul>
                         <p><a href="http://www.sencha.com/products/extjs4-preview/" class="more-icon">Learn more on sencha.com</a></p>
                         <p><a href="#!/api" class="more-icon">API Docs</a></p>
@@ -98,7 +102,6 @@
 <div class="news">
     <div class="l">
         <h1>SDK Updates</h1>
-        <div class="item"><span class="date">Dec 23</span> Ext 4.1.0 Beta 1 Released</div>
         <div class="item"><span class="date">Oct 19</span> Ext 4.0.7 Released</div>
         <div class="item"><span class="date">Aug 30</span> Ext 4.0.6 Released (support subscribers only)</div>
         <div class="item"><span class="date">Jul 24</span> Ext 4.0.5 Released (support subscribers only)</div>
@@ -165,6 +168,7 @@
 <div class='right-column'>
 <h3>DOM & Browser</h3>
 <div class='links'>
+<a href="#!/api/Ext.dom.AbstractElement.Fly" rel="Ext.dom.AbstractElement.Fly" class="docClass">Ext.dom.AbstractElement.Fly</a>
 <a href="#!/api/Ext.dom.CompositeElement" rel="Ext.dom.CompositeElement" class="docClass">Ext.dom.CompositeElement</a>
 <a href="#!/api/Ext.dom.CompositeElementLite" rel="Ext.dom.CompositeElementLite" class="docClass">Ext.dom.CompositeElementLite</a>
 <a href="#!/api/Ext.dom.Element" rel="Ext.dom.Element" class="docClass">Ext.dom.Element</a>
@@ -622,6 +626,7 @@
 </div>
 <h3>DataView</h3>
 <div class='links'>
+<a href="#!/api/Ext.ux.DataView.Animated" rel="Ext.ux.DataView.Animated" class="docClass">Ext.ux.DataView.Animated</a>
 <a href="#!/api/Ext.ux.DataView.DragSelector" rel="Ext.ux.DataView.DragSelector" class="docClass">Ext.ux.DataView.DragSelector</a>
 <a href="#!/api/Ext.ux.DataView.Draggable" rel="Ext.ux.DataView.Draggable" class="docClass">Ext.ux.DataView.Draggable</a>
 <a href="#!/api/Ext.ux.DataView.LabelEditor" rel="Ext.ux.DataView.LabelEditor" class="docClass">Ext.ux.DataView.LabelEditor</a>
@@ -704,7 +709,7 @@
 </ul>
         </div>
 
-  <div id='footer-content' style='display: none'>Ext JS 4.1.0 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> 3.2.1. <a href='http://www.sencha.com/legal/terms-of-use/'>Terms of Use</a></div>
+  <div id='footer-content' style='display: none'>Ext JS 4.1.0 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> 3.3.1. <a href='http://www.sencha.com/legal/terms-of-use/'>Terms of Use</a></div>
 
   
 

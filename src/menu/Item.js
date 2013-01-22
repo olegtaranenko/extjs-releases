@@ -141,6 +141,17 @@ Ext.define('Ext.menu.Item', {
      * Whether or not this item is plain text/html with no icon or visual activation. Defaults to `false`.
      * @markdown
      */
+    /**
+     * @cfg {String/Object} tooltip
+     * The tooltip for the button - can be a string to be used as innerHTML (html tags are accepted) or
+     * QuickTips config object.
+     */
+
+    /**
+     * @cfg {String} tooltipType
+     * The type of tooltip to use. Either 'qtip' for QuickTips or 'title' for title attribute.
+     */
+    tooltipType: 'qtip',
 
     arrowCls: Ext.baseCSSPrefix + 'menu-item-arrow',
 
@@ -224,7 +235,14 @@ Ext.define('Ext.menu.Item', {
     },
 
     deferHideParentMenus: function() {
+        var ancestor;
         Ext.menu.Manager.hideAll();
+
+        // If we have just hidden all Menus, transfer focus to the first visible ancestor if any.
+        ancestor = this.up(':not([hidden])');
+        if (ancestor) {
+            ancestor.focus();
+        }
     },
 
     expandMenu: function(delay) {
@@ -332,6 +350,15 @@ Ext.define('Ext.menu.Item', {
         }
     },
 
+    // private
+    beforeDestroy: function() {
+        var me = this;
+        if (me.rendered) {
+            me.clearTip();
+        }
+        me.callParent();
+    },
+
     onDestroy: function() {
         var me = this;
 
@@ -359,6 +386,16 @@ Ext.define('Ext.menu.Item', {
             arrowCls: me.menu ? me.arrowCls : '',
             blank: blank
         });
+    },
+
+    onRender: function() {
+        var me = this;
+
+        me.callParent(arguments);
+
+        if (me.tooltip) {
+            me.setTooltip(me.tooltip, true);
+        }
     },
     
     /**
@@ -453,5 +490,50 @@ Ext.define('Ext.menu.Item', {
             // cannot just call layout on the component due to stretchmax
             me.ownerCt.updateLayout();
         }
+    },
+
+    getTipAttr: function(){
+        return this.tooltipType == 'qtip' ? 'data-qtip' : 'title';
+    },
+
+    //private
+    clearTip: function() {
+        if (Ext.isObject(this.tooltip)) {
+            Ext.tip.QuickTipManager.unregister(this.itemEl);
+        }
+    },
+
+    /**
+     * Sets the tooltip for this menu item.
+     *
+     * @param {String/Object} tooltip This may be:
+     *
+     *   - **String** : A string to be used as innerHTML (html tags are accepted) to show in a tooltip
+     *   - **Object** : A configuration object for {@link Ext.tip.QuickTipManager#register}.
+     *
+     * @return {Ext.menu.Item} this
+     */
+    setTooltip: function(tooltip, initial) {
+        var me = this;
+
+        if (me.rendered) {
+            if (!initial) {
+                me.clearTip();
+            }
+
+            if (Ext.isObject(tooltip)) {
+                Ext.tip.QuickTipManager.register(Ext.apply({
+                    target: me.itemEl.id
+                },
+                tooltip));
+                me.tooltip = tooltip;
+            } else {
+                me.itemEl.dom.setAttribute(me.getTipAttr(), tooltip);
+            }
+        } else {
+            me.tooltip = tooltip;
+        }
+
+        return me;
     }
 });

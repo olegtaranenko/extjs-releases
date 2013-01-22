@@ -45,6 +45,7 @@ Ext.define('Ext.dom.CompositeElement', {
      * @return {Ext.CompositeElementLite/Ext.CompositeElement}
      * @member Ext.dom.Element
      * @method select
+     * @static
      */
 
     Ext.dom.Element.select = function(selector, unique, root) {

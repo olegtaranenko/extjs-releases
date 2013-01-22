@@ -28,6 +28,7 @@
  *             {text: 'Department (Yrs)', xtype:'templatecolumn', tpl:'{dep} ({senority})'}
  *         ],
  *         width: 400,
+ *         forceFit: true,
  *         renderTo: Ext.getBody()
  *     });
  *
@@ -241,7 +242,7 @@ Ext.define('Ext.grid.column.Column', {
      */
 
     /**
-     * @private
+     * @property {Boolean} isHeader
      * Set in this class to identify, at runtime, instances which are not instances of the
      * HeaderContainer base class, but are in fact, the subclass: Header.
      */
@@ -416,12 +417,21 @@ Ext.define('Ext.grid.column.Column', {
     },
 
     /**
-     * Returns the true grid column index associated with this column only if this column is a base level Column. If it
+     * Returns the index of this column only if this column is a base level Column. If it
      * is a group column, it returns `false`.
      * @return {Number}
      */
     getIndex: function() {
         return this.isGroupColumn ? false : this.getOwnerHeaderCt().getHeaderIndex(this);
+    },
+    
+    /**
+     * Returns the index of this column in the list of *visible* columns only if this column is a base level Column. If it
+     * is a group column, it returns `false`.
+     * @return {Number}
+     */
+    getVisibleIndex: function() {
+        return this.isGroupColumn ? false : Ext.Array.indexOf(this.getOwnerHeaderCt().getVisibleGridColumns(), this);
     },
 
     beforeRender: function() {

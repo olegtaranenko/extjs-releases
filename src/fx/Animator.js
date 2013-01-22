@@ -67,6 +67,10 @@ Ext.define('Ext.fx.Animator', {
 
     /* End Definitions */
 
+    /**
+     * @property {Boolean} isAnimator
+     * `true` in this class to identify an objact as an instantiated Animator, or subclass thereof.
+     */
     isAnimator: true,
 
     /**
@@ -393,5 +397,14 @@ keyframes : {
     end: function() {
         var me = this;
         me.fireEvent('afteranimate', me, me.startTime, new Date() - me.startTime);
+    },
+    
+    isReady: function() {
+        return this.paused === false && this.running === false && this.iterations > 0;
+    },
+    
+    isRunning: function() {
+        // Explicitly return false, we don't want to be run continuously by the manager
+        return false;
     }
 });

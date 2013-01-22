@@ -79,7 +79,7 @@ Ext.define('Ext.form.field.Field', {
         this.addEvents(
             /**
              * @event change
-             * Fires when a user-initiated change is detected in the value of the field.
+             * Fires when the value of a field is changed via the {@link #setValue} method.
              * @param {Ext.form.field.Field} this
              * @param {Object} newValue The new value
              * @param {Object} oldValue The original value
@@ -163,7 +163,7 @@ Ext.define('Ext.form.field.Field', {
     isEqual: function(value1, value2) {
         return String(value1) === String(value2);
     },
-    
+
     /**
      * Returns whether two values are logically equal.
      * Similar to {@link #isEqual}, however null or undefined values will be treated as empty strings.
@@ -173,7 +173,7 @@ Ext.define('Ext.form.field.Field', {
      * @return {Boolean} True if the values are equal, false if inequal.
      */
     isEqualAsString: function(value1, value2){
-        return String(Ext.value(value1, '')) === String(Ext.value(value2, ''));    
+        return String(Ext.value(value1, '')) === String(Ext.value(value2, ''));
     },
 
     /**
@@ -292,7 +292,7 @@ Ext.define('Ext.form.field.Field', {
      */
     isDirty : function() {
         var me = this;
-        return !me.disabled && typeof me.originalValue != 'undefined' && !me.isEqual(me.getValue(), me.originalValue);
+        return !me.disabled && !me.isEqual(me.getValue(), me.originalValue);
     },
 
     /**

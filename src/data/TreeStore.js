@@ -14,8 +14,10 @@
  * # Reading Nested Data
  *
  * For the tree to read nested data, the {@link Ext.data.reader.Reader} must be configured with a root property,
- * so the reader can find nested data for each node. If a root is not specified, it will default to
- * 'children'.
+ * so the reader can find nested data for each node (if a root is not specified, it will default to
+ * 'children'). This will tell the tree to look for any nested tree nodes by the same keyword, i.e., 'children'.
+ * If a root is specified in the config make sure that any nested nodes with children have the same name.
+ * Note that setting {@link #defaultRootProperty} accomplishes the same thing.
  */
 Ext.define('Ext.data.TreeStore', {
     extend: 'Ext.data.AbstractStore',
@@ -207,12 +209,6 @@ Ext.define('Ext.data.TreeStore', {
             me.setRootNode(root);
         }
 
-        /**
-         * @event sort
-         * Fires when this TreeStore is sorted.
-         * @param {Ext.data.NodeInterface} node The node that is sorted.
-         */
-
         //<deprecated since=0.99>
         if (Ext.isDefined(me.nodeParameter)) {
             if (Ext.isDefined(Ext.global.console)) {
@@ -323,8 +319,8 @@ Ext.define('Ext.data.TreeStore', {
         var me = this,
             proxy = me.getProxy(),
             reader = proxy.getReader(),
-            data = node.raw || node.data,
-            dataRoot, children;
+            data = node.raw || node[node.persistenceProperty],
+            dataRoot;
 
         Ext.Array.remove(me.removed, node);
 
@@ -510,28 +506,49 @@ Ext.define('Ext.data.TreeStore', {
      * Fills a node with a series of child records.
      * @private
      * @param {Ext.data.NodeInterface} node The node to fill
-     * @param {Ext.data.Model[]} records The records to add
+     * @param {Ext.data.Model[]} newNodes The records to add
      */
-    fillNode: function(node, records) {
+    fillNode: function(node, newNodes) {
         var me = this,
-            ln = records ? records.length : 0,
-            i = 0, sortCollection;
+            ln = newNodes ? newNodes.length : 0,
+            sorters = me.sorters,
+            i, sortCollection,
+            needsIndexSort = false,
+            performLocalSort = ln && me.sortOnLoad && !me.remoteSort && sorters && sorters.items && sorters.items.length,
+            node1, node2;
 
-        Ext.Array.sort(records, me.sortByIndex);
+        // See if there are any differing index values in the new nodes. If not, then we do not have to sortByIndex
+        for (i = 1; i < ln; i++) {
+            node1 = newNodes[i];
+            node2 = newNodes[i - 1];
+            if (needsIndexSort = (node1[node1.persistenceProperty].index != node2[node2.persistenceProperty].index)) {
+                break;
+            }
+        }
 
-        if (ln && me.sortOnLoad && !me.remoteSort && me.sorters && me.sorters.items) {
+        // If there is a set of local sorters defined.
+        if (performLocalSort) {
+            // If sorting by index is needed, sort by index first
+            if (needsIndexSort) {
+                me.sorters.insert(0, me.indexSorter);
+            }
             sortCollection = new Ext.util.MixedCollection();
-            sortCollection.addAll(records);
+            sortCollection.addAll(newNodes);
             sortCollection.sort(me.sorters.items);
-            records = sortCollection.items;
+            newNodes = sortCollection.items;
+
+            // Remove the index sorter
+            me.sorters.remove(me.indexSorter);
+        } else if (needsIndexSort) {
+            Ext.Array.sort(newNodes, me.sortByIndex);
         }
 
         node.set('loaded', true);
-        for (; i < ln; i++) {
-            node.appendChild(records[i], undefined, true);
+        for (i = 0; i < ln; i++) {
+            node.appendChild(newNodes[i], undefined, true);
         }
 
-        return records;
+        return newNodes;
     },
 
     /**
@@ -542,7 +559,7 @@ Ext.define('Ext.data.TreeStore', {
      * @return {Number}
      */
     sortByIndex: function(node1, node2) {
-        return node1.data.index - node2.data.index;
+        return node1[node1.persistenceProperty].index - node2[node2.persistenceProperty].index;
     },
 
     // inherit docs
@@ -576,7 +593,10 @@ Ext.define('Ext.data.TreeStore', {
 
     // inherit docs
     removeAll: function() {
-        this.getRootNode().destroy(true);
+        var root = this.getRootNode();
+        if (root) {
+            root.destroy(true);
+        }
         this.fireEvent('clear', this);
     },
 
@@ -593,4 +613,9 @@ Ext.define('Ext.data.TreeStore', {
         }
         me.fireEvent('sort', me);
     }
+}, function() {
+    var proto = this.prototype;
+    proto.indexSorter = new Ext.util.Sorter({
+        sorterFn: proto.sortByIndex
+    });
 });

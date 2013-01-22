@@ -8,10 +8,9 @@ Ext.define('Ext.layout.component.field.HtmlEditor', {
 
     type: 'htmleditor',
 
-    // Flags to say that the item is autoheighting itself based upon a managed width.
-    // This Component's component layout explicitly manages the toolbar's width.
+    // Flags to say that the item is autosizing itself.
     toolbarSizePolicy: {
-        setsWidth: 1,
+        setsWidth: 0,
         setsHeight: 0
     },
 
@@ -49,11 +48,5 @@ Ext.define('Ext.layout.component.field.HtmlEditor', {
         } else {
             me.done = false;
         }
-    },
-
-    publishInnerWidth: function (ownerContext, width) {
-        var innerWidth = width - ownerContext.bodyCellContext.getFrameInfo().width;
-
-        ownerContext.toolbarContext.setWidth(innerWidth);
     }
 });

@@ -117,11 +117,23 @@ Ext.onReady(function() {
         menu : menu,
         arrowAlign: 'bottom'
     });
-    
+
     renderButtons('Split Buttons (Arrow on bottom)', genericConfig, {
         cls: 'floater',
         defaultType: 'splitbutton',
         menu : menu,
         arrowAlign: 'bottom'
+    });
+
+    renderButtons('Text align: left', genericConfig, {
+        cls: 'floater',
+        textAlign: 'left',
+        width: 200
+    });
+
+    renderButtons('Text align: right', genericConfig, {
+        cls: 'floater',
+        textAlign: 'right',
+        width: 200
     });
 });

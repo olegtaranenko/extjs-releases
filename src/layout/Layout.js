@@ -9,10 +9,10 @@ Ext.define('Ext.layout.Layout', {
 
     uses: [ 'Ext.layout.Context' ],
 
-    /* Begin Definitions */
-
-    /* End Definitions */
-
+    /**
+     * @property {Boolean} isLayout
+     * `true` in this class to identify an objact as an instantiated Layout, or subclass thereof.
+     */
     isLayout: true,
     initialized: false,
     running: false,
@@ -527,14 +527,12 @@ Ext.define('Ext.layout.Layout', {
         var me = this,
             el = item.el,
             owner = me.owner,
-            removeClasses = [];
+            removeClasses;
 
         if (item.rendered) {
-            if (me.itemCls) {
-                removeClasses.push(me.itemCls);
-            }
+            removeClasses = me.itemCls || [];
             if (owner.itemCls) {
-                removeClasses.push(owner.itemCls);
+                removeClasses = Ext.Array.push(removeClasses, owner.itemCls);
             }
             if (removeClasses.length) {
                 el.removeCls(removeClasses);

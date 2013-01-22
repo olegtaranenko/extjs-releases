@@ -7,6 +7,13 @@ Ext.define('Ext.layout.component.field.TextArea', {
     alias: 'layout.textareafield',
 
     type: 'textareafield',
+    
+    canGrowWidth: false,
+    
+    beginLayout: function(ownerContext){
+        this.callParent(arguments);
+        ownerContext.target.inputEl.setStyle('height', '');
+    },
 
     measureContentHeight: function (ownerContext) {
         var me = this,
@@ -14,7 +21,7 @@ Ext.define('Ext.layout.component.field.TextArea', {
             height = me.callParent(arguments),
             inputContext, inputEl, value, max, curWidth, calcHeight;
 
-        if (owner.grow) {
+        if (owner.grow && !ownerContext.state.growHandled) {
             inputContext = ownerContext.inputContext;
             inputEl = owner.inputEl;
             curWidth = inputEl.getWidth(true); //subtract border/padding to get the available width for the text
@@ -32,15 +39,13 @@ Ext.define('Ext.layout.component.field.TextArea', {
 
             // Constrain
             calcHeight = Ext.Number.constrain(calcHeight, owner.growMin, owner.growMax);
-            if (height != calcHeight) {
-                height = inputContext.setHeight(calcHeight);
-            }
+            inputContext.setHeight(calcHeight);
+            ownerContext.state.growHandled = true;
+            
+            // Now that we've set the inputContext, we need to recalculate the width
+            inputContext.domBlock(me, 'height');
+            height = NaN;
         }
-
         return height;
-    },
-    
-    publishInnerHeight: function (ownerContext, height) {
-        ownerContext.inputContext.setHeight(height - this.measureLabelErrorHeight(ownerContext));
     }
 });

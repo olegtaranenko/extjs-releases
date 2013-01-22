@@ -71,19 +71,19 @@ Ext.define('Ext.flash.Component', {
     alias: 'widget.flash',
 
 <span id='Ext-flash-Component-cfg-flashVersion'>    /**
-</span>     * @cfg {String} flashVersion
+</span>     * @cfg {String} [flashVersion=&quot;9.0.115&quot;]
      * Indicates the version the flash content was published for.
      */
     flashVersion : '9.0.115',
 
 <span id='Ext-flash-Component-cfg-backgroundColor'>    /**
-</span>     * @cfg {String} backgroundColor
+</span>     * @cfg {String} [backgroundColor=&quot;#ffffff&quot;]
      * The background color of the SWF movie.
      */
     backgroundColor: '#ffffff',
 
 <span id='Ext-flash-Component-cfg-wmode'>    /**
-</span>     * @cfg {String} wmode
+</span>     * @cfg {String} [wmode=&quot;opaque&quot;]
      * The wmode of the flash object. This can be used to control layering.
      * Set to 'transparent' to ignore the {@link #backgroundColor} and make the background of the Flash
      * movie transparent.
@@ -112,7 +112,7 @@ Ext.define('Ext.flash.Component', {
      */
 
 <span id='Ext-flash-Component-cfg-swfWidth'>    /**
-</span>     * @cfg {String/Number} [swfWidth=undefined]
+</span>     * @cfg {String/Number} [swfWidth=&quot;100%&quot;]
      * The width of the embedded SWF movie inside the component.
      *
      * Defaults to &quot;100%&quot; so that the movie matches the width of the component.
@@ -120,7 +120,7 @@ Ext.define('Ext.flash.Component', {
     swfWidth: '100%',
 
 <span id='Ext-flash-Component-cfg-swfHeight'>    /**
-</span>     * @cfg {String/Number} [swfHeight=undefined]
+</span>     * @cfg {String/Number} [swfHeight=&quot;100%&quot;]
      * The height of the embedded SWF movie inside the component.
      *
      * Defaults to &quot;100%&quot; so that the movie matches the height of the component.
@@ -128,7 +128,7 @@ Ext.define('Ext.flash.Component', {
     swfHeight: '100%',
 
 <span id='Ext-flash-Component-cfg-expressInstall'>    /**
-</span>     * @cfg {Boolean} expressInstall
+</span>     * @cfg {Boolean} [expressInstall=false]
      * True to prompt the user to install flash if not installed. Note that this uses
      * Ext.FlashComponent.EXPRESS_INSTALL_URL, which should be set to the local resource.
      */
@@ -170,35 +170,41 @@ Ext.define('Ext.flash.Component', {
             'failure'
         );
     },
+    
+    beforeRender: function(){
+        this.callParent();
+        
+        Ext.applyIf(this.renderData, {
+            swfId: this.getSwfId()
+        });
+    },
 
-    onRender: function() {
+    afterRender: function() {
         var me = this,
-            params, vars, undef,
-            swfId = me.getSwfId();
+            flashParams = Ext.apply({}, me.flashParams), 
+            flashVars = Ext.apply({}, me.flashVars);
 
-        me.renderData.swfId = swfId;
+        me.callParent();
 
-        me.callParent(arguments);
-
-        params = Ext.apply({
+        Ext.apply({
             allowScriptAccess: 'always',
             bgcolor: me.backgroundColor,
             wmode: me.wmode
-        }, me.flashParams);
+        }, flashParams);
 
-        vars = Ext.apply({
+        Ext.apply({
             allowedDomain: document.location.hostname
-        }, me.flashVars);
+        }, flashVars);
 
         new swfobject.embedSWF(
             me.url,
-            swfId,
+            me.getSwfId(),
             me.swfWidth,
             me.swfHeight,
             me.flashVersion,
-            me.expressInstall ? me.statics.EXPRESS_INSTALL_URL : undef,
-            vars,
-            params,
+            me.expressInstall ? me.statics.EXPRESS_INSTALL_URL : undefined,
+            flashVars,
+            flashParams,
             me.flashAttributes,
             Ext.bind(me.swfCallback, me)
         );

@@ -41,7 +41,7 @@ Ext.onReady(function(){
         renderTo: 'basic',
         width: 550,
         height: 100,
-        bodyStyle: 'padding:10px;',
+        bodyPadding: 10,
         items:[{
             xtype: 'button',
             id: 'basic-button',
@@ -105,7 +105,7 @@ Ext.onReady(function(){
         renderTo: 'right-aligned',
         width: 550,
         height: 100,
-        bodyStyle: 'padding:10px;',
+        bodyPadding: 10,
         items:[{
             xtype: 'button',
             id: 'right-button',
@@ -132,7 +132,7 @@ Ext.onReady(function(){
         height: 150,
         modal: true,
         closeAction: 'hide',
-        bodyStyle: 'padding:10px;',
+        bodyPadding: 10,
         items:[{
             xtype: 'button',
             id: 'win-button',
@@ -183,8 +183,7 @@ Ext.onReady(function(){
         title: 'Ext Word Processor',
         renderTo: 'word-proc',
         width: 500,
-        autoHeight: true,
-        bodyStyle: 'padding:5px;',
+        bodyPadding: 5,
         layout: 'fit',
         bbar: Ext.create('Ext.ux.StatusBar', {
             id: 'word-status',

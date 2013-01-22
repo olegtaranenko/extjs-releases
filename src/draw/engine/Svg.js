@@ -131,16 +131,6 @@ Ext.define('Ext.draw.engine.Svg', {
         sprite.fireEvent("render", sprite);
         return el;
     },
-
-    getBBox: function (sprite, isWithoutTransform) {
-        var realPath = this["getPath" + sprite.type](sprite);
-        if (isWithoutTransform) {
-            sprite.bbox.plain = sprite.bbox.plain || Ext.draw.Draw.pathDimensions(realPath);
-            return sprite.bbox.plain;
-        }
-        sprite.bbox.transform = sprite.bbox.transform || Ext.draw.Draw.pathDimensions(Ext.draw.Draw.mapPath(realPath, sprite.matrix));
-        return sprite.bbox.transform;
-    },
     
     getBBoxText: function (sprite) {
         var bbox = {},
@@ -188,7 +178,7 @@ Ext.define('Ext.draw.engine.Svg', {
         return this._defs || (this._defs = this.createSvgElement("defs"));
     },
 
-    transform: function(sprite) {
+    transform: function(sprite, matrixOnly) {
         var me = this,
             matrix = new Ext.draw.Matrix(),
             transforms = sprite.transformations,
@@ -210,24 +200,26 @@ Ext.define('Ext.draw.engine.Svg', {
             }
         }
         sprite.matrix = matrix;
-        sprite.el.set({transform: matrix.toSvg()});
+        if (!matrixOnly) {
+            sprite.el.set({transform: matrix.toSvg()});
+        }
     },
 
-    setSize: function(w, h) {
+    setSize: function(width, height) {
         var me = this,
             el = me.el;
         
-        w = +w || me.width;
-        h = +h || me.height;
-        me.width = w;
-        me.height = h;
+        width = +width || me.width;
+        height = +height || me.height;
+        me.width = width;
+        me.height = height;
 
-        el.setSize(w, h);
+        el.setSize(width, height);
         el.set({
-            width: w,
-            height: h
+            width: width,
+            height: height
         });
-        me.callParent([w, h]);
+        me.callParent([width, height]);
     },
 
     /**
@@ -268,8 +260,8 @@ Ext.define('Ext.draw.engine.Svg', {
     render: function (container) {
         var me = this;
         if (!me.el) {
-            var width = me.width || 10,
-                height = me.height || 10,
+            var width = me.width || 0,
+                height = me.height || 0,
                 el = me.createSvgElement('svg', {
                     xmlns: "http:/" + "/www.w3.org/2000/svg",
                     version: 1.1,
@@ -437,7 +429,9 @@ Ext.define('Ext.draw.engine.Svg', {
         }
         if (sprite.dirty) {
             this.applyAttrs(sprite);
-            this.applyTransformations(sprite);
+            if (sprite.dirtyTransform) {
+                this.applyTransformations(sprite);
+            }
         }
     },
 

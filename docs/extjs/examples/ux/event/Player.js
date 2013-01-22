@@ -110,6 +110,8 @@ Ext.define('Ext.ux.event.Player', {
      */
     speed: 1.0,
 
+    stallTime: 0,
+
     tagPathRegEx: /(\w+)(?:\[(\d+)\])?/,
     
     constructor: function (config) {
@@ -179,6 +181,30 @@ Ext.define('Ext.ux.event.Player', {
         return el;
     },
 
+    getTimeIndex: function () {
+        var t = this.getTimestamp() - this.stallTime;
+        return t * this.speed;
+    },
+
+    makeToken: function (eventDescriptor, signal) {
+        var me = this,
+            t0;
+
+        eventDescriptor[signal] = true;
+
+        eventDescriptor.defer = function () {
+            eventDescriptor[signal] = false;
+            t0 = me.getTime();
+        };
+
+        eventDescriptor.finish = function () {
+            eventDescriptor[signal] = true;
+            me.stallTime += me.getTime() - t0;
+
+            me.schedule();
+        };
+    },
+
     /**
      * This method is called after an event has been played to prepare for the next event.
      * @param {Object} eventDescriptor The descriptor of the event just played.
@@ -214,12 +240,25 @@ Ext.define('Ext.ux.event.Player', {
                 Ext.applyIf({ type: 'mouseup' }, eventDescriptor),
                 Ext.applyIf({ type: 'click' }, eventDescriptor)
             ];
-            delete tmp[0].screenshot;
-            delete tmp[1].screenshot;
-            Ext.Array.replace(queue, index, 1, tmp);
+
+            me.replaceEvent(index, tmp);
         }
 
         return queue[index] || null;
+    },
+
+    replaceEvent: function (index, events) {
+        for (var t, i = 0, n = events.length; i < n; ++i) {
+            if (i) {
+                t = events[i-1];
+                delete t.afterplay;
+                delete t.screenshot;
+
+                delete events[i].beforeplay;
+            }
+        }
+
+        Ext.Array.replace(this.eventQueue, index, 1, events);
     },
 
     /**
@@ -233,7 +272,6 @@ Ext.define('Ext.ux.event.Player', {
             eventDescriptor;
 
         while ((eventDescriptor = me.peekEvent()) !== null) {
-           
             if (animations && animations.getCount()) {
                 return true;
             }
@@ -243,7 +281,7 @@ Ext.define('Ext.ux.event.Player', {
                     return false;
                 }
                 me.nextEvent(eventDescriptor);
-            } else if (eventDescriptor.ts <= me.timeIndex &&
+            } else if (eventDescriptor.ts <= me.getTimeIndex() &&
                        me.fireEvent('beforeplay', me, eventDescriptor) !== false &&
                        me.playEvent(eventDescriptor)) {
                 if(window.__x && eventDescriptor.screenshot) {
@@ -270,17 +308,7 @@ Ext.define('Ext.ux.event.Player', {
 
         // only fire keyframe event (and setup the eventDescriptor) once...
         if (!eventDescriptor.defer) {
-            eventDescriptor.done = true;
-
-            eventDescriptor.defer = function () {
-                eventDescriptor.done = false;
-            };
-
-            eventDescriptor.finish = function () {
-                eventDescriptor.done = true;
-                me.schedule();
-            };
-
+            me.makeToken(eventDescriptor, 'done');
             me.fireEvent('keyframe', me, eventDescriptor);
         }
 
@@ -307,8 +335,35 @@ Ext.define('Ext.ux.event.Player', {
             return false;
         }
 
-        event = me.translateEvent(eventDescriptor, target);
-        me.injectEvent(target, event);
+        if (!me.playEventHook(eventDescriptor, 'beforeplay')) {
+            return false;
+        }
+
+        if (!eventDescriptor.injected) {
+            eventDescriptor.injected = true;
+            event = me.translateEvent(eventDescriptor, target);
+            me.injectEvent(target, event);
+        }
+
+        return me.playEventHook(eventDescriptor, 'afterplay');
+    },
+
+    playEventHook: function (eventDescriptor, hookName) {
+        var me = this,
+            doneName = hookName + '.done',
+            firedName = hookName + '.fired',
+            hook = eventDescriptor[hookName];
+
+        if (hook && !eventDescriptor[doneName]) {
+            if (!eventDescriptor[firedName]) {
+                eventDescriptor[firedName] = true;
+                me.makeToken(eventDescriptor, doneName);
+
+                me.eventScope[hook](eventDescriptor);
+            }
+            return false;
+        }
+
         return true;
     },
 
@@ -325,7 +380,7 @@ Ext.define('Ext.ux.event.Player', {
             modKeys = eventDescriptor.modKeys || '',
             xy;
 
-        if ('xy' in eventDescriptor) {
+        if ('x' in eventDescriptor) {
             event.xy = xy = Ext.fly(target).getXY();
             xy[0] += eventDescriptor.x;
             xy[1] += eventDescriptor.y;
@@ -373,7 +428,6 @@ Ext.define('Ext.ux.event.Player', {
         var me = this;
 
         me.timer = null;
-        me.timeIndex = me.getTimestamp() * me.speed;
 
         if (me.processEvents()) {
             me.schedule();

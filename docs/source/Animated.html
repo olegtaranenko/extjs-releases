@@ -15,15 +15,13 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext-ux-DataViewTransition'>/**
-</span> * @class Ext.ux.DataViewTransition
- * @extends Object
- * @author Ed Spencer (http://sencha.com)
+  <pre class="prettyprint lang-js"><span id='Ext-ux-DataView-Animated'>/**
+</span> * @author Ed Spencer (http://sencha.com)
  * Transition plugin for DataViews
  */
 Ext.define('Ext.ux.DataView.Animated', {
 
-<span id='Ext-ux-DataViewTransition-property-defaults'>    /**
+<span id='Ext-ux-DataView-Animated-property-defaults'>    /**
 </span>     * @property defaults
      * @type Object
      * Default configuration options for all DataViewTransition instances
@@ -33,7 +31,7 @@ Ext.define('Ext.ux.DataView.Animated', {
         idProperty: 'id'
     },
     
-<span id='Ext-ux-DataViewTransition-method-constructor'>    /**
+<span id='Ext-ux-DataView-Animated-method-constructor'>    /**
 </span>     * Creates the plugin instance, applies defaults
      * @constructor
      * @param {Object} config Optional config object
@@ -42,12 +40,12 @@ Ext.define('Ext.ux.DataView.Animated', {
         Ext.apply(this, config || {}, this.defaults);
     },
 
-<span id='Ext-ux-DataViewTransition-method-init'>    /**
+<span id='Ext-ux-DataView-Animated-method-init'>    /**
 </span>     * Initializes the transition plugin. Overrides the dataview's default refresh function
      * @param {Ext.view.View} dataview The dataview
      */
     init: function(dataview) {
-<span id='Ext-ux-DataViewTransition-property-dataview'>        /**
+<span id='Ext-ux-DataView-Animated-property-dataview'>        /**
 </span>         * @property dataview
          * @type Ext.view.View
          * Reference to the DataView this instance is bound to
@@ -64,14 +62,14 @@ Ext.define('Ext.ux.DataView.Animated', {
             }, this);
         }, dataview);
         
-<span id='Ext-ux-DataViewTransition-property-dataviewID'>        /**
+<span id='Ext-ux-DataView-Animated-property-dataviewID'>        /**
 </span>         * @property dataviewID
          * @type String
          * The string ID of the DataView component. This is used internally when animating child objects
          */
         this.dataviewID = dataview.id;
         
-<span id='Ext-ux-DataViewTransition-property-cachedStoreData'>        /**
+<span id='Ext-ux-DataView-Animated-property-cachedStoreData'>        /**
 </span>         * @property cachedStoreData
          * @type Object
          * A cache of existing store data, keyed by id. This is used to determine
@@ -266,7 +264,7 @@ Ext.define('Ext.ux.DataView.Animated', {
         }
     },
     
-<span id='Ext-ux-DataViewTransition-method-cacheStoreData'>    /**
+<span id='Ext-ux-DataView-Animated-method-cacheStoreData'>    /**
 </span>     * Caches the records from a store locally for comparison later
      * @param {Ext.data.Store} store The store to cache data from
      */
@@ -278,7 +276,7 @@ Ext.define('Ext.ux.DataView.Animated', {
         }, this);
     },
     
-<span id='Ext-ux-DataViewTransition-method-getExisting'>    /**
+<span id='Ext-ux-DataView-Animated-method-getExisting'>    /**
 </span>     * Returns all records that were already in the DataView
      * @return {Object} All existing records
      */
@@ -286,7 +284,7 @@ Ext.define('Ext.ux.DataView.Animated', {
         return this.cachedStoreData;
     },
     
-<span id='Ext-ux-DataViewTransition-method-getExistingCount'>    /**
+<span id='Ext-ux-DataView-Animated-method-getExistingCount'>    /**
 </span>     * Returns the total number of items that are currently visible in the DataView
      * @return {Number} The number of existing items
      */
@@ -301,7 +299,7 @@ Ext.define('Ext.ux.DataView.Animated', {
         return count;
     },
     
-<span id='Ext-ux-DataViewTransition-method-getAdded'>    /**
+<span id='Ext-ux-DataView-Animated-method-getAdded'>    /**
 </span>     * Returns all records in the given store that were not already present
      * @param {Ext.data.Store} store The updated store instance
      * @return {Object} Object of records not already present in the dataview in format {id: record}
@@ -318,7 +316,7 @@ Ext.define('Ext.ux.DataView.Animated', {
         return added;
     },
     
-<span id='Ext-ux-DataViewTransition-method-getRemoved'>    /**
+<span id='Ext-ux-DataView-Animated-method-getRemoved'>    /**
 </span>     * Returns all records that are present in the DataView but not the new store
      * @param {Ext.data.Store} store The updated store instance
      * @return {Array} Array of records that used to be present
@@ -336,7 +334,7 @@ Ext.define('Ext.ux.DataView.Animated', {
         return removed;
     },
     
-<span id='Ext-ux-DataViewTransition-method-getRemaining'>    /**
+<span id='Ext-ux-DataView-Animated-method-getRemaining'>    /**
 </span>     * Returns all records that are already present and are still present in the new store
      * @param {Ext.data.Store} store The updated store instance
      * @return {Object} Object of records that are still present from last time in format {id: record}

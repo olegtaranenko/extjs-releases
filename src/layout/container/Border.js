@@ -72,7 +72,7 @@
  */
 Ext.define('Ext.layout.container.Border', {
 
-    alias: ['layout.border'],
+    alias: 'layout.border',
 
     extend: 'Ext.layout.container.Container',
 
@@ -83,7 +83,9 @@ Ext.define('Ext.layout.container.Border', {
 
     targetCls: Ext.baseCSSPrefix + 'border-layout-ct',
 
-    itemCls: Ext.baseCSSPrefix + 'border-item ' + Ext.baseCSSPrefix + 'box-item',
+    itemCls: [Ext.baseCSSPrefix + 'border-item', Ext.baseCSSPrefix + 'box-item'],
+
+    type: 'border',
 
     /**
      * @cfg {Boolean} split

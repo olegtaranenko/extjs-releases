@@ -27,12 +27,10 @@ Ext.dom.Element.override({
     animate: function(config) {
         var me = this,
             listeners,
-            anim;
-            
-        if (!me.id) {
-            me = Ext.get(me.dom);
-        }
-        if (!Ext.fx.Manager.hasFxBlock(me.id)) {
+            anim,
+            animId = me.dom.id || Ext.id(me.dom);
+
+        if (!Ext.fx.Manager.hasFxBlock(animId)) {
             // Bit of gymnastics here to ensure our internal listeners get bound first
             if (config.listeners) {
                 listeners = config.listeners;
@@ -74,7 +72,8 @@ Ext.dom.Element.override({
         });
 
         animConfig = {
-            target: me,
+            // Pass the DOM reference. That's tested first so will be converted to an Ext.fx.Target fastest.
+            target: me.dom,
             remove: config.remove,
             alternate: config.alternate || false,
             duration: duration,
@@ -146,7 +145,7 @@ Ext.dom.Element.override({
         beforeAnim = function() {
             var animScope = this,
                 listeners = obj.listeners,
-                box, position, restoreSize, anim, wrap;
+                box, originalStyles, anim, wrap;
 
             if (!slideOut) {
                 me.fixDisplay();
@@ -160,7 +159,7 @@ Ext.dom.Element.override({
                 box.width = me.dom.scrollWidth;
             }
 
-            position = me.getPositioning();
+            originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
             me.setSize(box.width, box.height);
 
             wrap = me.wrap({
@@ -169,7 +168,7 @@ Ext.dom.Element.override({
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
             });
-            wrap.setPositioning(position);
+            wrap.setPositioning(me.getPositioning());
             if (wrap.isStyle('position', 'static')) {
                 wrap.position('relative');
             }
@@ -319,23 +318,18 @@ Ext.dom.Element.override({
 
             // In the absence of a callback, this listener MUST be added first
             wrapAnim.on('afteranimate', function() {
+                me.setStyle(originalStyles);
                 if (slideOut) {
-                    me.setPositioning(position);
                     if (obj.useDisplay) {
                         me.setDisplayed(false);
                     } else {
                         me.hide();
                     }
                 }
-                else {
-                    me.clearPositioning();
-                    me.setPositioning(position);
-                }
                 if (wrap.dom) {
                     wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
                     wrap.remove();
                 }
-                me.setSize(box.width, box.height);
                 // kill the no-op element animation created below
                 animScope.end();
             });

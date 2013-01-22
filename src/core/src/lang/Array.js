@@ -1032,7 +1032,37 @@
          * @return {Array} An array containing the removed items.
          * @method
          */
-        splice: splice
+        splice: splice,
+
+        /**
+         * Pushes new items onto the end of an Array.
+         *
+         * Passed parameters may be single items, or arrays of items. If an Array is found in the argument list, all its
+         * elements are pushed into the end of the target Array.
+         *
+         * @param {Array} target The Array onto which to push new items
+         * @param {Object...} elements The elements to add to the array. Each parameter may
+         * be an Array, in which case all the elements of that Array will be pushed into the end of the
+         * destination Array.
+         * @return {Array} An array containing all the new items push onto the end.
+         *
+         */
+        push: function(array) {
+            var len = arguments.length,
+                i = 1,
+                newItem;
+
+            if (array === undefined) {
+                array = [];
+            } else if (!Ext.isArray(array)) {
+                array = [array];
+            }
+            for (; i < len; i++) {
+                newItem = arguments[i];
+                Array.prototype.push[Ext.isArray(newItem) ? 'apply' : 'call'](array, newItem);
+            }
+            return array;
+        }
     };
 
     /**

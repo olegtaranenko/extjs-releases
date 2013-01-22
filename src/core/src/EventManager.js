@@ -37,7 +37,19 @@ Ext.EventManager = {
      * Holds references to any onReady functions
      * @private
      */
-    readyEvent: new Ext.util.Event(),
+    readyEvent:
+        (function () {
+            var event = new Ext.util.Event();
+            event.fire = function () {
+                  if (!/(^|[ ;])ext-pause=1/.test(document.cookie)) {
+                      Ext._beforeReadyTime = new Date().getTime();
+                      event.self.prototype.fire.apply(event, arguments);
+                      Ext._afterReadytime = new Date().getTime();
+                  }
+                //
+            }
+            return event;
+        })(),
 
     /**
      * Check the ready state for old IE versions
@@ -104,6 +116,7 @@ Ext.EventManager = {
 
         // only unbind these events once
         if (!Ext.isReady) {
+            Ext._readyTime = new Date().getTime();
             Ext.isReady = true;
 
             if (document.addEventListener) {
@@ -434,7 +447,7 @@ Ext.EventManager = {
         if (!el) {
             return;
         }
-        cache = el.$cache;
+        cache = (el.$cache || el.getCache());
         events = cache.events;
 
         for (eventName in events) {
@@ -1002,8 +1015,12 @@ Ext.EventManager.un = Ext.EventManager.removeListener;
                 Ext.isBorderBox = true;
             }
 
-            htmlCls.push(baseCSSPrefix + (Ext.isBorderBox ? 'border-box' : 'strict'));
-            if (!Ext.isStrict) {
+            if(Ext.isBorderBox) {
+                htmlCls.push(baseCSSPrefix + 'border-box');
+            }
+            if (Ext.isStrict) {
+                htmlCls.push(baseCSSPrefix + 'strict');
+            } else {
                 htmlCls.push(baseCSSPrefix + 'quirks');
             }
             Ext.fly(html, '_internal').addCls(htmlCls);

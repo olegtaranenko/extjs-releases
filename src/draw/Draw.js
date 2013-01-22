@@ -335,6 +335,7 @@ Ext.define('Ext.draw.Draw', {
                     }
                     Ext.Array.erase(points, i, 1);
                     ln = points.length;
+                    i--;
                 }
             seg = points[i];
             segLn = seg.length;
@@ -713,56 +714,78 @@ Ext.define('Ext.draw.Draw', {
         }
         return outputList;
     },
-
+    
+    bezier : function (a, b, c, d, x) {
+        if (x === 0) {
+            return a;
+        } 
+        else if (x === 1) {
+            return d;
+        }
+        var du = 1 - x,
+            d3 = du * du * du,
+            r = x / du;
+        return d3 * (a + r * (3 * b + r * (3 * c + d * r)));
+    },
+    
+    bezierDim : function (a, b, c, d) {
+        var points = [], r;
+        // The min and max happens on boundary or b' == 0
+        if (a + 3 * c == d + 3 * b) {   
+            r = a - b;
+            r /= 2 * (a - b - b + c);
+            if ( r < 1 && r > 0) {
+                points.push(r);
+            }
+        } else {
+            // b'(x) / -3 = (a-3b+3c-d)x^2+ (-2a+4b-2c)x + (a-b)
+            // delta = -4 (-b^2+a c+b c-c^2-a d+b d)
+            var A = a - 3 * b + 3 * c - d,
+                top = 2 * (a - b - b + c),
+                C = a - b,
+                delta = top * top - 4 * A * C,
+                bottom = A + A,
+                s;
+            if (delta === 0) {
+                r = top / bottom;
+                if (r < 1 && r > 0) {
+                    points.push(r);
+                }
+            } else if (delta > 0) {
+                s = Math.sqrt(delta);
+                r = (s + top) / bottom;
+                
+                if (r < 1 && r > 0) {
+                    points.push(r);
+                }
+                
+                r = (top - s) / bottom;
+                
+                if (r < 1 && r > 0) {
+                    points.push(r);
+                }
+            }
+        }
+        var min = Math.min(a, d), max = Math.max(a, d);
+        for (var i = 0; i < points.length; i++) {
+            min = Math.min(min, this.bezier(a, b, c, d, points[i]));
+            max = Math.max(max, this.bezier(a, b, c, d, points[i]));
+        }
+        return [min, max];
+    },
+    
     curveDim: function (p1x, p1y, c1x, c1y, c2x, c2y, p2x, p2y) {
-        var a = (c2x - 2 * c1x + p1x) - (p2x - 2 * c2x + c1x),
-            b = 2 * (c1x - p1x) - 2 * (c2x - c1x),
-            c = p1x - c1x,
-            t1 = (-b + Math.sqrt(b * b - 4 * a * c)) / 2 / a,
-            t2 = (-b - Math.sqrt(b * b - 4 * a * c)) / 2 / a,
-            y = [p1y, p2y],
-            x = [p1x, p2x],
-            dot;
-        if (Math.abs(t1) > 1e12) {
-            t1 = 0.5;
-        }
-        if (Math.abs(t2) > 1e12) {
-            t2 = 0.5;
-        }
-        if (t1 > 0 && t1 < 1) {
-            dot = this.findDotAtSegment(p1x, p1y, c1x, c1y, c2x, c2y, p2x, p2y, t1);
-            x.push(dot.x);
-            y.push(dot.y);
-        }
-        if (t2 > 0 && t2 < 1) {
-            dot = this.findDotAtSegment(p1x, p1y, c1x, c1y, c2x, c2y, p2x, p2y, t2);
-            x.push(dot.x);
-            y.push(dot.y);
-        }
-        a = (c2y - 2 * c1y + p1y) - (p2y - 2 * c2y + c1y);
-        b = 2 * (c1y - p1y) - 2 * (c2y - c1y);
-        c = p1y - c1y;
-        t1 = (-b + Math.sqrt(b * b - 4 * a * c)) / 2 / a;
-        t2 = (-b - Math.sqrt(b * b - 4 * a * c)) / 2 / a;
-        if (Math.abs(t1) > 1e12) {
-            t1 = 0.5;
-        }
-        if (Math.abs(t2) > 1e12) {
-            t2 = 0.5;
-        }
-        if (t1 > 0 && t1 < 1) {
-            dot = this.findDotAtSegment(p1x, p1y, c1x, c1y, c2x, c2y, p2x, p2y, t1);
-            x.push(dot.x);
-            y.push(dot.y);
-        }
-        if (t2 > 0 && t2 < 1) {
-            dot = this.findDotAtSegment(p1x, p1y, c1x, c1y, c2x, c2y, p2x, p2y, t2);
-            x.push(dot.x);
-            y.push(dot.y);
-        }
+        var x = this.bezierDim(p1x, c1x, c2x, p2x),
+            y = this.bezierDim(p1y, c1y, c2y, p2y);
         return {
-            min: {x: Math.min.apply(0, x), y: Math.min.apply(0, y)},
-            max: {x: Math.max.apply(0, x), y: Math.max.apply(0, y)}
+            min: {
+                x: x[0],
+                y: y[0]
+            },
+            max: {
+                x: x[1],
+                y: y[1]
+            }
         };
     },
 

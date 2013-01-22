@@ -176,7 +176,9 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     onColumnAdd: function(column) {
-        this.setField(column);
+        if (!column.isGroupHeader) {
+            this.setField(column);
+        }
     },
 
     onColumnRemove: function(column) {
@@ -184,16 +186,20 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     onColumnResize: function(column, width) {
-        column.getEditor().setWidth(width - 2);
-        if (this.isVisible()) {
-            this.reposition();
+        if (!column.isGroupHeader) {
+            column.getEditor().setWidth(width - 2);
+            if (this.isVisible()) {
+                this.reposition();
+            }
         }
     },
 
     onColumnHide: function(column) {
-        column.getEditor().hide();
-        if (this.isVisible()) {
-            this.reposition();
+        if (!column.isGroupHeader) {
+            column.getEditor().hide();
+            if (this.isVisible()) {
+                this.reposition();
+            }
         }
     },
 
@@ -206,38 +212,47 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     onColumnMove: function(column, fromIdx, toIdx) {
-        var field = column.getEditor();
-        if (this.items.indexOf(field) != toIdx) {
-            this.move(fromIdx, toIdx);
+        if (!column.isGroupHeader) {
+            var field = column.getEditor();
+            if (this.items.indexOf(field) != toIdx) {
+                this.move(fromIdx, toIdx);
+            }
         }
     },
 
     onFieldAdd: function(map, fieldId, column) {
         var me = this,
-            colIdx = me.editingPlugin.grid.headerCt.getHeaderIndex(column),
-            field = column.getEditor({ xtype: 'displayfield' });
+            colIdx,
+            field;
 
-        me.insert(colIdx, field);
+        if (!column.isGroupHeader) {
+            colIdx = me.editingPlugin.grid.headerCt.getHeaderIndex(column);
+            field = column.getEditor({ xtype: 'displayfield' });
+            me.insert(colIdx, field);
+        }
     },
 
     onFieldRemove: function(map, fieldId, column) {
         var me = this,
+            field,
+            fieldEl;
+
+        if (!column.isGroupHeader) {
             field = column.getEditor(),
             fieldEl = field.el;
-        me.remove(field, false);
-        if (fieldEl) {
-            fieldEl.remove();
+            me.remove(field, false);
+            if (fieldEl) {
+                fieldEl.remove();
+            }
         }
     },
 
     onFieldReplace: function(map, fieldId, column, oldColumn) {
-        var me = this;
-        me.onFieldRemove(map, fieldId, oldColumn);
+        this.onFieldRemove(map, fieldId, oldColumn);
     },
 
     clearFields: function() {
-        var me = this,
-            map = me.columns;
+        var map = this.columns;
         map.each(function(fieldId) {
             map.removeAtKey(fieldId);
         });
@@ -381,7 +396,7 @@ Ext.define('Ext.grid.RowEditor', {
             // other components to RowEditor later on.  Don't want to mess with
             // indices.
             return me.query('>[isFormField]')[fieldInfo];
-        } else if (fieldInfo instanceof Ext.grid.column.Column) {
+        } else if (fieldInfo.isHeader && !fieldInfo.isGroupHeader) {
             return fieldInfo.getEditor();
         }
     },
@@ -521,7 +536,6 @@ Ext.define('Ext.grid.RowEditor', {
     startEdit: function(record, columnHeader) {
         var me = this,
             grid = me.editingPlugin.grid,
-            view = grid.getView(),
             store = grid.store,
             context = me.context = Ext.apply(me.editingPlugin.context, {
                 view: grid.getView(),
@@ -583,9 +597,8 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     onShow: function() {
-        var me = this;
-        me.callParent(arguments);
-        me.reposition();
+        this.callParent(arguments);
+        this.reposition();
     },
 
     onHide: function() {
@@ -607,20 +620,14 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     getToolTip: function() {
-        var me = this,
-            tip;
-
-        if (!me.tooltip) {
-            tip = me.tooltip = new Ext.tip.ToolTip({
-                cls: Ext.baseCSSPrefix + 'grid-row-editor-errors',
-                title: me.errorsText,
-                autoHide: false,
-                closable: true,
-                closeAction: 'disable',
-                anchor: 'left'
-            });
-        }
-        return me.tooltip;
+        return this.tooltip || (this.tooltip = new Ext.tip.ToolTip({
+            cls: Ext.baseCSSPrefix + 'grid-row-editor-errors',
+            title: this.errorsText,
+            autoHide: false,
+            closable: true,
+            closeAction: 'disable',
+            anchor: 'left'
+        }));
     },
 
     hideToolTip: function() {

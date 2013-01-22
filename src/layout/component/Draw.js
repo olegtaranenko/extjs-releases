@@ -25,7 +25,7 @@ Ext.define('Ext.layout.component.Draw', {
             if (target.autoSize) {
                 return bbox.width + paddingInfo.width;
             } else {
-                return undefined;
+                return bbox.x + bbox.width + paddingInfo.width;
             }
         } else {
             if (ownerContext.heightModel.shrinkWrap) {
@@ -45,7 +45,7 @@ Ext.define('Ext.layout.component.Draw', {
             if (target.autoSize) {
                 return bbox.height + paddingInfo.height;
             } else {
-                return undefined;
+                return bbox.y + bbox.height + paddingInfo.height;
             }
         } else {
             if (ownerContext.widthModel.shrinkWrap) {
@@ -71,8 +71,7 @@ Ext.define('Ext.layout.component.Draw', {
 
         // We don't want the cost of getProps, so we just use the props data... this is ok
         // because all the props have been calculated by this time
-
-        this.owner.surface.setSize(props.contentWidth - paddingInfo.width, props.contentHeight - paddingInfo.height);
+        this.owner.setSurfaceSize(props.contentWidth - paddingInfo.width, props.contentHeight - paddingInfo.height);
         
         // calls afterComponentLayout, so we want the surface to be sized before that:
         this.callParent(arguments);

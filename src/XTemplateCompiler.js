@@ -61,7 +61,9 @@ Ext.define('Ext.XTemplateCompiler', {
     // XTemplateParser callouts
 
     doText: function (text) {
-        this.body.push('out.push(\'', text.replace(this.aposRe, "\\'"), '\')\n');
+        text = text.replace(this.aposRe, "\\'");
+        text = text.replace(this.newLineRe, '\\n');
+        this.body.push('out.push(\'', text, '\')\n');
     },
 
     doExpr: function (expr) {
@@ -322,6 +324,7 @@ Ext.define('Ext.XTemplateCompiler', {
         return $;
     },
 
+    newLineRe: /\r\n|\r|\n/g,
     aposRe: /[']/g,
     intRe:  /^\s*(\d+)\s*$/,
     tagRe:  /([\w-\.\#]+)(?:\:([\w\.]*)(?:\((.*?)?\))?)?(\s?[\+\-\*\/]\s?[\d\.\+\-\*\/\(\)]+)?/

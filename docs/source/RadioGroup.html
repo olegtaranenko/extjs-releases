@@ -93,8 +93,8 @@ Ext.define('Ext.form.RadioGroup', {
     // private
     groupCls : Ext.baseCSSPrefix + 'form-radio-group',
 
-    getBoxes: function() {
-        return this.query('[isRadio]');
+    getBoxes: function(query) {
+        return this.query('[isRadio]' + (query||''));
     },
     
     checkChange: function() {

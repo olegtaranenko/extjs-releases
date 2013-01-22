@@ -101,6 +101,8 @@ Ext.define('Ext.layout.ContextItem', {
         me.triggers = {};
         me.domTriggers = {};
 
+        me.flushedProps = {};
+
         // the current set of property values:
         me.props = {};
 
@@ -317,11 +319,13 @@ Ext.define('Ext.layout.ContextItem', {
         },
 
         paddingInfo: function (me) {
-            var info = {
-                top   : me.getStyle('padding-top'),
-                right : me.getStyle('padding-right'),
-                bottom: me.getStyle('padding-bottom'),
-                left  : me.getStyle('padding-left')
+            // if this context item's target is a framed component the padding is on the frameBody, not on the main el
+            var item = me.frameBodyContext || me,
+                info = {
+                top   : item.getStyle('padding-top'),
+                right : item.getStyle('padding-right'),
+                bottom: item.getStyle('padding-bottom'),
+                left  : item.getStyle('padding-left')
             };
 
             info.width = info.left + info.right;
@@ -332,21 +336,7 @@ Ext.define('Ext.layout.ContextItem', {
     },
 
     checkCache: function (entry) {
-        var me = this,
-            cacheKey = me.cacheKey,
-            bucket, cache, ret;
-
-//        Genarated cache key cannot include configured styles like bodyPadding/bodyStyle etc, so we must always
-//        get the style from the DOM.
-//        if (cacheKey) {
-//            cache = me.context.cache || (me.context.cache = {});
-//            bucket = cache[cacheKey] || (cache[cacheKey] = {});
-//            ret = bucket[entry] || (bucket[entry] = me.cacheMissHandlers[entry](me));
-//        } else {
-            ret = me.cacheMissHandlers[entry](me);
-//        }
-
-        return ret;
+        return this.cacheMissHandlers[entry](this);
     },
 
     clearAllBlocks: function (name) {
@@ -491,7 +481,6 @@ Ext.define('Ext.layout.ContextItem', {
         var me = this,
             dirty = me.dirty,
             state = me.state,
-            target = me.target,
             targetEl = me.el;
 
         me.dirtyCount = 0;
@@ -524,7 +513,7 @@ Ext.define('Ext.layout.ContextItem', {
 
         if (dirty) {
             delete me.dirty;
-            me.writeProps(dirty);
+            me.writeProps(dirty, true);
         }
     },
 
@@ -572,7 +561,7 @@ Ext.define('Ext.layout.ContextItem', {
 
                 // Otherwise, undo just the animated properties so the animation can proceed from the old layout.
                 else {
-                    me.writeProps(anim.from, true);
+                    me.writeProps(anim.from);
                 }
                 me.el.animate(anim);
                 
@@ -666,7 +655,7 @@ Ext.define('Ext.layout.ContextItem', {
     getFrameInfo: function () {
         var me = this,
             info = me.frameInfo,
-            frame, padding, border;
+            frame, border;
 
         if (!info) {
             frame = me.getFraming();
@@ -962,7 +951,7 @@ Ext.define('Ext.layout.ContextItem', {
         var me = this,
             items, len, i;
 
-        me.writeProps(me.props, true);
+        me.revertProps(me.props);
 
         if (deep && me.wrapsComponent) {
             // Rollback the state of child Components
@@ -977,6 +966,20 @@ Ext.define('Ext.layout.ContextItem', {
                 items[i].redo();
             }
         }
+    },
+
+    revertProps: function (props) {
+        var name,
+            flushed = this.flushedProps,
+            reverted = {};
+
+        for (name in props) {
+            if (flushed.hasOwnProperty(name)) {
+                reverted[name] = props[name];
+            }
+        }
+
+        this.writeProps(reverted);
     },
 
     /**
@@ -1148,18 +1151,8 @@ Ext.define('Ext.layout.ContextItem', {
             frameBody = me.frameBodyContext;
             if (frameBody){
                 frameInfo = me.getFrameInfo();
-                padding = me.getPaddingInfo();
-                frameBody.setHeight(height - frameInfo.height - padding.height, dirty);
+                frameBody.setHeight(height - frameInfo.height, dirty);
             }
-
-            // Attempting to publish the height of a non CSS3 framed Header resulted in 20
-            // because the measured height was 15 and the frame+border was 5. We really need
-            // to measure the final DOM size after all layouts are done and flushed.
-            /*if (owner.frameMC) {
-                frameContext = ownerContext.frameContext ||
-                        (ownerContext.frameContext = ownerContext.getEl('frameMC'));
-                height += (frameContext.paddingInfo || frameContext.getPaddingInfo()).height;
-            }*/
         }
 
         return height;
@@ -1182,7 +1175,7 @@ Ext.define('Ext.layout.ContextItem', {
             width = 0;
         }
         if (!me.wrapsComponent) {
-            if (me.setProp('width', width, dirty)) {
+            if (!me.setProp('width', width, dirty)) {
                 return NaN;
             }
         } else {
@@ -1195,8 +1188,7 @@ Ext.define('Ext.layout.ContextItem', {
             frameBody = me.frameBodyContext;
             if (frameBody) {
                 frameInfo = me.getFrameInfo();
-                padding = me.getPaddingInfo();
-                frameBody.setWidth(width - frameInfo.width - padding.width, dirty);
+                frameBody.setWidth(width - frameInfo.width, dirty);
             }
 
             /*if (owner.frameMC) {
@@ -1223,7 +1215,7 @@ Ext.define('Ext.layout.ContextItem', {
         var me = this,
             items, len, i;
 
-        me.writeProps(me.lastBox, true);
+        me.revertProps(me.lastBox);
 
         if (deep && me.wrapsComponent) {
             // Rollback the state of child Components
@@ -1249,15 +1241,14 @@ Ext.define('Ext.layout.ContextItem', {
         }
     },
 
-    writeProps: function(dirtyProps, silent) {
-        
+    writeProps: function(dirtyProps, flushing) {
         if (!(dirtyProps && typeof dirtyProps == 'object')) {
             //<debug warn>
             Ext.Logger.warn('writeProps expected dirtyProps to be an object');
             //</debug>
             return;
         }
-        
+
         var me = this,
             el = me.el,
             styles = {},
@@ -1277,7 +1268,9 @@ Ext.define('Ext.layout.ContextItem', {
             height = dirtyProps.height,
             isBorderBox = me.isBorderBoxValue,
             target = me.target,
-            max = Math.max;
+            max = Math.max,
+            paddingWidth = 0,
+            paddingHeight = 0;
 
         // Process non-style properties:
         if ('displayed' in dirtyProps) {
@@ -1286,9 +1279,10 @@ Ext.define('Ext.layout.ContextItem', {
 
         // Unblock any hard blocks (domBlocks) and copy dom styles into 'styles'
         for (propName in dirtyProps) {
-            if (!silent) {
+            if (flushing) {
                 me.fireTriggers('domTriggers', propName);
                 me.clearBlocks('domBlocks', propName);
+                me.flushedProps[propName] = 1;
             }
 
             info = styleInfo[propName];
@@ -1332,13 +1326,18 @@ Ext.define('Ext.layout.ContextItem', {
                 throw Error("Needed to have gotten the borderInfo and paddingInfo when the width or height was setProp'd");
             }
             //</debug>
+            if(!me.frameBodyContext) {
+                // Padding needs to be removed only if the element is not framed.
+                paddingWidth = me.paddingInfo.width;
+                paddingHeight = me.paddingInfo.height;
+            }
             if (width) {
-                width = max(parseInt(width, 10) - (me.borderInfo.width + me.paddingInfo.width), 0);
+                width = max(parseInt(width, 10) - (me.borderInfo.width + paddingWidth), 0);
                 styles.width = width + 'px';
                 ++styleCount;
             }
             if (height) {
-                height = max(parseInt(height, 10) - (me.borderInfo.height + me.paddingInfo.height), 0);
+                height = max(parseInt(height, 10) - (me.borderInfo.height + paddingHeight), 0);
                 styles.height = height + 'px';
                 ++styleCount;
             }
@@ -1367,6 +1366,7 @@ Ext.define('Ext.layout.ContextItem', {
         childrenDone:           faux,
         componentChildrenDone:  faux,
         containerChildrenDone:  faux,
+        containerLayoutDone:    faux,
         displayed:              faux,
         done:                   faux,
         x:                      faux,

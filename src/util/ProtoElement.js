@@ -5,11 +5,21 @@
  * addBodyCls in Panel to share logic with addCls in AbstractComponent.
  * @private
  */
+
+/*
+ * The dirty implementation in this class is quite naive. The reasoning for this is that the dirty state
+ * will only be used in very specific circumstances, specifically, after the render process has begun but
+ * the component is not yet rendered to the DOM. As such, we want it to perform as quickly as possible
+ * so it's not as fully featured as you may expect.
+ */
 Ext.define('Ext.util.ProtoElement', function () {
     var splitWords = Ext.String.splitWords,
         toMap = Ext.Array.toMap;
 
     return {
+        
+        isProtoEl: true,
+        
         /**
          * The property name for the className on the data object passed to {@link #writeTo}.
          */
@@ -19,6 +29,11 @@ Ext.define('Ext.util.ProtoElement', function () {
          * The property name for the style on the data object passed to {@link #writeTo}.
          */
         styleProp: 'style',
+        
+        /**
+         * The property name for the removed classes on the data object passed to {@link #writeTo}.
+         */
+        removedProp: 'removed',
 
         /**
          * True if the style must be converted to text during {@link #writeTo}. When used to
@@ -34,6 +49,7 @@ Ext.define('Ext.util.ProtoElement', function () {
 
             me.classList = splitWords(me.cls);
             me.classMap = toMap(me.classList);
+            delete me.cls;
 
             if (Ext.isFunction(me.style)) {
                 me.styleFn = me.style;
@@ -43,8 +59,17 @@ Ext.define('Ext.util.ProtoElement', function () {
             } else if (me.style) {
                 me.style = Ext.apply({}, me.style); // don't edit the given object
             }
-
-            delete me.cls;
+        },
+        
+        /**
+         * Indicates that the current state of the object has been flushed to the DOM, so we need
+         * to track any subsequent changes
+         */
+        flush: function(){
+            this.flushClassList = [];
+            this.removedClasses = {};
+            // clear the style, it will be recreated if we add anything new
+            delete this.style;
         },
 
         /**
@@ -58,13 +83,19 @@ Ext.define('Ext.util.ProtoElement', function () {
                 length = add.length,
                 list = me.classList,
                 map = me.classMap,
-                i, c;
+                flushList = me.flushClassList,
+                i = 0,
+                c;
 
-            for (i = 0; i < length; ++i) {
+            for (; i < length; ++i) {
                 c = add[i];
                 if (!map[c]) {
                     map[c] = true;
                     list.push(c);
+                    if (flushList) {
+                        flushList.push(c);
+                        delete me.removedClasses[c];
+                    }
                 }
             }
 
@@ -92,11 +123,18 @@ Ext.define('Ext.util.ProtoElement', function () {
                 remove = toMap(splitWords(cls)),
                 length = list.length,
                 map = me.classMap,
+                removedClasses = me.removedClasses,
                 i, c;
 
             for (i = 0; i < length; ++i) {
                 c = list[i];
                 if (remove[c]) {
+                    if (removedClasses) {
+                        if (map[c]) {
+                            removedClasses[c] = true;
+                            Ext.Array.remove(me.flushClassList, c);
+                        }
+                    }
                     delete map[c];
                 } else {
                     newList.push(c);
@@ -131,12 +169,14 @@ Ext.define('Ext.util.ProtoElement', function () {
 
         /**
          * Writes style and class properties to given object.
-         * Styles will be written to #styleProp and class names to #clsProp.
+         * Styles will be written to {@link #styleProp} and class names to {@link #clsProp}.
          * @param {Object} to
          * @return {Object} to
          */
         writeTo: function (to) {
             var me = this,
+                classList = me.flushClassList || me.classList,
+                removedClasses = me.removedClasses,
                 style;
 
             if (me.styleFn) {
@@ -146,10 +186,17 @@ Ext.define('Ext.util.ProtoElement', function () {
                 style = me.style;
             }
 
-            to[me.clsProp] = me.classList.join(' ');
+            to[me.clsProp] = classList.join(' ');
 
             if (style) {
                 to[me.styleProp] = me.styleIsText ? Ext.DomHelper.generateStyles(style) : style;
+            }
+            
+            if (removedClasses) {
+                removedClasses = Ext.Object.getKeys(removedClasses);
+                if (removedClasses.length) {
+                    to[me.removedProp] = removedClasses.join(' ');
+                }
             }
 
             return to;

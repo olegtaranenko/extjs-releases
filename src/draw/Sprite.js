@@ -184,6 +184,11 @@ Ext.define('Ext.draw.Sprite', {
     dirtyPath: true,
     dirtyFont: true,
     zIndexDirty: true,
+
+    /**
+     * @property {Boolean} isSprite
+     * `true` in this class to identify an objact as an instantiated Sprite, or subclass thereof.
+     */
     isSprite: true,
     zIndex: 0,
     fontProperties: [
@@ -290,6 +295,7 @@ Ext.define('Ext.draw.Sprite', {
             hasSurface = !!me.surface,
             custom = hasSurface && me.surface.customAttributes || {},
             spriteAttrs = me.attr,
+            dirtyBBox = false,
             attr, i, translate, translation, rotate, rotation, scale, scaling;
 
         attrs = Ext.apply({}, attrs);
@@ -309,6 +315,7 @@ Ext.define('Ext.draw.Sprite', {
             attr = pathProps[i];
             if (attr in attrs && attrs[attr] !== spriteAttrs[attr]) {
                 me.dirtyPath = true;
+                dirtyBBox = true;
                 break;
             }
         }
@@ -321,52 +328,67 @@ Ext.define('Ext.draw.Sprite', {
         // Flag font/text change
         if ('text' in attrs) {
             me.dirtyFont = true;
+            dirtyBBox = true;
         }
 
         for (i = 0; i < fontPropsLength; i++) {
             attr = fontProps[i];
             if (attr in attrs && attrs[attr] !== spriteAttrs[attr]) {
                 me.dirtyFont = true;
+                dirtyBBox = true;
                 break;
             }
         }
 
-        translate = attrs.translate;
+        translate = attrs.translate || attrs.translation;
         translation = spriteAttrs.translation;
         if (translate) {
             if ((translate.x && translate.x !== translation.x) ||
                 (translate.y && translate.y !== translation.y)) {
-                Ext.apply(translation, translate);
                 me.dirtyTransform = true;
+                Ext.apply(translation, translate);
             }
             delete attrs.translate;
+            delete attrs.translation;
         }
 
-        rotate = attrs.rotate;
+        rotate = attrs.rotate || attrs.rotation;
         rotation = spriteAttrs.rotation;
         if (rotate) {
             if ((rotate.x && rotate.x !== rotation.x) ||
                 (rotate.y && rotate.y !== rotation.y) ||
                 (rotate.degrees && rotate.degrees !== rotation.degrees)) {
-                Ext.apply(rotation, rotate);
                 me.dirtyTransform = true;
+                Ext.apply(rotation, rotate);
             }
             delete attrs.rotate;
+            delete attrs.rotation;
         }
 
-        scale = attrs.scale;
+        scale = attrs.scale || attrs.scaling;
         scaling = spriteAttrs.scaling;
         if (scale) {
             if ((scale.x && scale.x !== scaling.x) ||
                 (scale.y && scale.y !== scaling.y) ||
                 (scale.cx && scale.cx !== scaling.cx) ||
                 (scale.cy && scale.cy !== scaling.cy)) {
-                Ext.apply(scaling, scale);
                 me.dirtyTransform = true;
+                Ext.apply(scaling, scale);
             }
             delete attrs.scale;
+            delete attrs.scaling;
         }
 
+        if (!me.dirtyTransform && dirtyBBox) {
+            if (spriteAttrs.scaling.x === null ||
+                spriteAttrs.scaling.y === null ||
+                spriteAttrs.rotation.y === null ||
+                spriteAttrs.rotation.y === null) {
+                // If the bbox is changed, then the bbox based transforms should be invalidated.
+                me.dirtyTransform = true;
+            }
+        }
+        
         Ext.apply(spriteAttrs, attrs);
         me.dirty = true;
 

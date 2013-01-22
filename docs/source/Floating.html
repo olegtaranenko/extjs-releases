@@ -75,12 +75,10 @@ Ext.define('Ext.util.Floating', {
         me.setFloatParent(me.ownerCt);
         delete me.ownerCt;
 
-        if (me.registerWithManager !== false) {
-            if (me.zIndexParent) {
-                me.zIndexParent.registerFloatingItem(me);
-            } else {
-                Ext.WindowManager.register(me);
-            }
+        if (me.zIndexParent) {
+            me.zIndexParent.registerFloatingItem(me);
+        } else {
+            Ext.WindowManager.register(me);
         }
     },
 
@@ -116,10 +114,10 @@ Ext.define('Ext.util.Floating', {
 
     onFloatParentHide: function() {
         var me = this;
-        
-        if (me.hideOnParentHide !== false) {
-            me.showOnParentShow = me.isVisible();
+
+        if (me.hideOnParentHide !== false &amp;&amp; me.isVisible()) {
             me.hide();
+            me.showOnParentShow = true;
         }
     },
 
@@ -136,14 +134,9 @@ Ext.define('Ext.util.Floating', {
     // If this is a Container, then it will have rebased any managed floating Components,
     // and so the next available z-index will be approximately 10000 above that.
     setZIndex: function(index) {
-        var me = this,
-            mask = me.loadMask;
-            
+        var me = this;
+
         me.el.setZIndex(index);
-        
-        if (mask &amp;&amp; mask.onZIndexChange) {
-            mask.onZIndexChange(index);
-        }
 
         // Next item goes 10 above;
         index += 10;
@@ -169,7 +162,11 @@ Ext.define('Ext.util.Floating', {
      */
     doConstrain: function(constrainTo) {
         var me = this,
-            vector = me.getConstrainVector(constrainTo || me.el.getScopeParent()),
+
+            // Calculate the constrain vector to coerce our position to within our
+            // constrainTo setting. getConstrainVector will provide a default constraint
+            // region if there is no explicit constrainTo, *and* there is no floatParent owner Component.
+            vector = me.getConstrainVector(constrainTo),
             xy;
 
         if (vector) {
@@ -194,7 +191,7 @@ Ext.define('Ext.util.Floating', {
 
         if (me.constrain || me.constrainHeader) {
             el = me.constrainHeader ? me.header.el : me.el;
-            constrainTo = constrainTo || (me.floatParent &amp;&amp; me.floatParent.getTargetEl()) || me.container;
+            constrainTo = constrainTo || (me.floatParent &amp;&amp; me.floatParent.getTargetEl()) || me.container || me.el.getScopeParent();
             return el.getConstrainVector(constrainTo);
         }
     },
@@ -235,10 +232,15 @@ Ext.define('Ext.util.Floating', {
         if (me.zIndexParent) {
             me.zIndexParent.toFront(true);
         }
-        if (me.zIndexManager.bringToFront(me)) {
-            if (!Ext.isDefined(preventFocus)) {
-                preventFocus = !me.focusOnToFront;
-            }
+        
+        if (!Ext.isDefined(preventFocus)) {
+            preventFocus = !me.focusOnToFront;
+        }
+        
+        if (preventFocus) {
+            me.preventFocusOnActivate = true;
+        }
+        if (me.zIndexManager.bringToFront(me)) {    
             if (!preventFocus) {
                 // Kick off a delayed focus request.
                 // If another floating Component is toFronted before the delay expires
@@ -246,6 +248,7 @@ Ext.define('Ext.util.Floating', {
                 me.focus(false, true);
             }
         }
+        delete me.preventFocusOnActivate;
         return me;
     },
 
@@ -268,7 +271,7 @@ Ext.define('Ext.util.Floating', {
             if (me.el.shadow &amp;&amp; !me.maximized) {
                 me.el.enableShadow(true);
             }
-            if (me.modal) {
+            if (me.modal &amp;&amp; !me.preventFocusOnActivate) {
                 me.focus(false, true);
             }
             me.fireEvent('activate', me);

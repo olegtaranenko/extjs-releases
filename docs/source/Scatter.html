@@ -303,6 +303,7 @@ Ext.define('Ext.chart.series.Scatter', {
             i, attr;
         for (i = 0; i &lt; ln; i++) {
             attr = Ext.apply({}, shadowAttributes[i]);
+            // TODO: fix this with setAttributes
             if (attr.translate) {
                 attr.translate.x += (bbox.x + bbox.width) / 2;
                 attr.translate.y += (bbox.y + bbox.height) / 2;

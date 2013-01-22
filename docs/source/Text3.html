@@ -87,9 +87,8 @@ Ext.define('Ext.form.field.Text', {
 <span id='Ext-form-field-Text-cfg-stripCharsRe'>    /**
 </span>     * @cfg {RegExp} stripCharsRe
      * A JavaScript RegExp object used to strip unwanted content from the value
-     * before validation. If `stripCharsRe` is specified,
-     * every character matching `stripCharsRe` will be removed before fed to validation.
-     * This does not change the value of the field.
+     * during input. If `stripCharsRe` is specified,
+     * every *character sequence* matching `stripCharsRe` will be removed.
      */
 
 <span id='Ext-form-field-Text-cfg-size'>    /**
@@ -298,9 +297,13 @@ Ext.define('Ext.form.field.Text', {
             'keypress'
         );
 
-        if (me.grow) {
-            me.shrinkWrap |= 1; // width must shrinkWrap
-        }
+        me.setGrowSizePolicy();
+    },
+    
+    setGrowSizePolicy: function(){
+        if (this.grow) {
+            this.shrinkWrap |= 1; // width must shrinkWrap
+        }    
     },
 
     // private

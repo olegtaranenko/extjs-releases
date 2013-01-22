@@ -726,23 +726,21 @@ Ext.define('Ext.chart.series.Area', {
     },
 
     // @private
-    hideAll: function() {
+    hideAll: function(index) {
         var me = this;
-        if (!isNaN(me._index)) {
-            me.__excludes[me._index] = true;
-            me.areas[me._index].hide(true);
-            me.redraw();
-        }
+        index = (isNaN(me._index) ? index : me._index) || 0;
+        me.__excludes[index] = true;
+        me.areas[index].hide(true);
+        me.redraw();
     },
 
     // @private
-    showAll: function() {
+    showAll: function(index) {
         var me = this;
-        if (!isNaN(me._index)) {
-            me.__excludes[me._index] = false;
-            me.areas[me._index].show(true);
-            me.redraw();
-        }
+        index = (isNaN(me._index) ? index : me._index) || 0;
+        me.__excludes[index] = false;
+        me.areas[index].show(true);
+        me.redraw();
     },
 
     redraw: function() {

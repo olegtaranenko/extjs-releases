@@ -17,6 +17,13 @@
                 "status": "updated"
             },
             {
+                "text": "Ext JS Calendar",
+                "url": "calendar/index.html",
+                "icon": "calendar.gif",
+                "desc": "Example Calendar application. Demonstrates the new Day, Week and Month views and how to combine them.",
+                "status": "new"
+            },
+            {
                 "text": "Web Desktop",
                 "url": "desktop/desktop.html",
                 "icon": "desktop.gif",

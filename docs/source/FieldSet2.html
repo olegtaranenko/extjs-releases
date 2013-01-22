@@ -305,6 +305,7 @@ Ext.define('Ext.form.FieldSet', {
                     click : me.toggle
                 }
             };
+            cfg.cls += ' ' + me.baseCls + '-header-text-collapsible'
         }
 
         return (me.titleCmp = Ext.widget(cfg));
@@ -409,10 +410,18 @@ Ext.define('Ext.form.FieldSet', {
      * @return {Ext.form.FieldSet} this
      */
     setTitle: function(title) {
-        var me = this;
+        var me = this,
+            legend = me.legend;
+            
         me.title = title;
-        me.initLegend();
-        me.titleCmp.update(title);
+        if (me.rendered) {
+            if (!me.legend) {
+                me.legend = legend = Ext.widget(me.createLegendCt());
+                legend.ownerLayout.configureItem(legend);
+                legend.render(me.el, 0);
+            }
+            me.titleCmp.update(title);
+        }
         return me;
     },
 
@@ -467,6 +476,20 @@ Ext.define('Ext.form.FieldSet', {
             }
         }
         return me;
+    },
+    
+    getRefItems: function(deep) {
+        var refItems = this.callParent(arguments),
+            legend = this.legend;
+
+        // Prepend legend items to ensure correct order
+        if (legend) {
+            refItems.unshift(legend);
+            if (deep) {
+                refItems.unshift.apply(refItems, legend.getRefItems(true));
+            }
+        }
+        return refItems;
     },
 
 <span id='Ext-form-FieldSet-method-toggle'>    /**

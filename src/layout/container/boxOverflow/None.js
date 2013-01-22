@@ -24,7 +24,7 @@ Ext.define('Ext.layout.container.boxOverflow.None', {
             plan = ownerContext.state.boxPlan,
             overflow;
 
-        if (plan.tooNarrow) {
+        if (plan && plan.tooNarrow) {
             overflow = me.handleOverflow(ownerContext);
 
             if (overflow) {
@@ -58,6 +58,20 @@ Ext.define('Ext.layout.container.boxOverflow.None', {
      */
     getItem: function(item) {
         return this.layout.owner.getComponent(item);
+    },
+    
+    getOwnerType: function(owner){
+        var type = '';
+        
+        if (owner.is('toolbar')) {
+            type = 'toolbar';
+        } else if (owner.is('tabbar')) {
+            type = 'tabbar';
+        } else {
+            type = owner.getXType();
+        }
+        
+        return type;
     },
 
     getPrefixConfig: Ext.emptyFn,

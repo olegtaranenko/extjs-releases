@@ -506,15 +506,9 @@ Ext.define('Ext.form.field.HtmlEditor', {
 
         me.toolbar = toolbar;
     },
-
-    onDisable: function() {
-        this.bodyEl.mask();
-        this.callParent(arguments);
-    },
-
-    onEnable: function() {
-        this.bodyEl.unmask();
-        this.callParent(arguments);
+    
+    getMaskTarget: function(){
+        return this.bodyEl;    
     },
 
     /**

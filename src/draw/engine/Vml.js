@@ -30,7 +30,7 @@ Ext.define('Ext.draw.engine.Vml', {
     zoom: 21600,
     coordsize: 1000,
     coordorigin: '0 0',
-
+    zIndexShift: 0,
     // VML uses CSS z-index and therefore doesn't need sprites to be kept in zIndex order
     orderSpritesByZIndex: false,
 
@@ -203,6 +203,7 @@ Ext.define('Ext.draw.engine.Vml', {
         }
         el.id = sprite.id;
         sprite.el = Ext.get(el);
+        sprite.el.setStyle('zIndex', - me.zIndexShift);
         me.el.appendChild(el);
         if (type !== 'image') {
             skew = me.createNode("skew");
@@ -217,17 +218,6 @@ Ext.define('Ext.draw.engine.Vml', {
         };
         sprite.fireEvent("render", sprite);
         return sprite.el;
-    },
-
-    // @private - Get bounding box for the sprite.  The Sprite itself has the public method.
-    getBBox: function (sprite, isWithoutTransform) {
-        var realPath = this["getPath" + sprite.type](sprite);
-        if (isWithoutTransform) {
-            sprite.bbox.plain = sprite.bbox.plain || Ext.draw.Draw.pathDimensions(realPath);
-            return sprite.bbox.plain;
-        }
-        sprite.bbox.transform = sprite.bbox.transform || Ext.draw.Draw.pathDimensions(Ext.draw.Draw.mapPath(realPath, sprite.matrix));
-        return sprite.bbox.transform;
     },
 
     getBBoxText: function (sprite) {
@@ -353,10 +343,26 @@ Ext.define('Ext.draw.engine.Vml', {
     },
 
     setZIndex: function(sprite) {
-        if (sprite.el) {
-            if (sprite.attr.zIndex != undefined) {
-                sprite.el.setStyle('zIndex', sprite.attr.zIndex);
-            }
+        var me = this,
+            zIndex = sprite.attr.zIndex,
+            shift = me.zIndexShift;
+        if (zIndex < shift) {
+            // This means bad thing happened.
+            // The algorithm below will guarantee O(n) time.
+            me.items.each(function (sprite) {
+                if ((zIndex = sprite.attr.zIndex) && zIndex < shift) { // zIndex is no longer useful this case
+                    shift = zIndex;
+                }
+            });
+            me.zIndexShift = shift;
+            me.items.each(function (sprite) {
+                if (sprite.el) {
+                    sprite.el.setStyle('zIndex', sprite.attr.zIndex - shift);
+                }
+                sprite.zIndexDirty = false;
+            });
+        } else if (sprite.el) {
+            sprite.el.setStyle('zIndex', zIndex - shift);
             sprite.zIndexDirty = false;
         }
     },
@@ -605,7 +611,7 @@ Ext.define('Ext.draw.engine.Vml', {
         height = height || me.height;
         me.width = width;
         me.height = height;
-
+        
         if (me.el) {
             // Size outer div
             if (width != undefined) {
@@ -614,11 +620,10 @@ Ext.define('Ext.draw.engine.Vml', {
             if (height != undefined) {
                 me.el.setHeight(height);
             }
-
-            me.callParent(arguments);
         }
+        
+        me.callParent(arguments);
     },
-
 
     /**
      * @private Using the current viewBox property and the surface's width and height, calculate the
@@ -681,7 +686,7 @@ Ext.define('Ext.draw.engine.Vml', {
             me.span = doc.createElement("span");
             Ext.get(me.span).addCls(me.measureSpanCls);
             el.appendChild(me.span);
-            me.el.setSize(me.width || 10, me.height || 10);
+            me.el.setSize(me.width || 0, me.height || 0);
             container.appendChild(el);
             me.el.on({
                 scope: me,
@@ -735,7 +740,7 @@ Ext.define('Ext.draw.engine.Vml', {
         };
     },
 
-    transform: function(sprite) {
+    transform: function(sprite, matrixOnly) {
         var me = this,
             bbox = me.getBBox(sprite, true),
             cx = bbox.x + bbox.width * 0.5,
@@ -774,12 +779,17 @@ Ext.define('Ext.draw.engine.Vml', {
             }
         }
 
+        sprite.matrix = matrix.clone();
+
+        if (matrixOnly) {
+            return;
+        }
+        
         if (shift) {
             matrix.prepend(shift.scale, 0, 0, shift.scale, shift.dx * shift.scale, shift.dy * shift.scale);
+            deltaScaleX *= shift.scale;
+            deltaScaleY *= shift.scale;
         }
-
-        sprite.matrix = matrix;
-
 
         // Hide element while we transform
 

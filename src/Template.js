@@ -111,6 +111,10 @@ Ext.define('Ext.Template', {
         }
     },
 
+    /**
+     * @property {Boolean} isTemplate
+     * `true` in this class to identify an objact as an instantiated Template, or subclass thereof.
+     */
     isTemplate: true,
 
     /**

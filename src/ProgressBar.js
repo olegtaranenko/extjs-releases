@@ -47,11 +47,6 @@ Ext.define('Ext.ProgressBar', {
     */
 
    /**
-    * @cfg {String} [text='']
-    * The progress bar text (defaults to '')
-    */
-
-   /**
     * @cfg {String/HTMLElement/Ext.Element} textEl
     * The element to render the progress text to (defaults to the progress bar's internal text element)
     */

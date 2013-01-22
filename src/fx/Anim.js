@@ -54,6 +54,10 @@ Ext.define('Ext.fx.Anim', {
 
     /* End Definitions */
 
+    /**
+     * @property {Boolean} isAnimation
+     * `true` in this class to identify an objact as an instantiated Anim, or subclass thereof.
+     */
     isAnimation: true,
 
     /**
@@ -294,9 +298,6 @@ from : {
             'lastframe'
         );
         me.mixins.observable.constructor.call(me);
-        if (config.callback) {
-            me.on('afteranimate', config.callback, config.scope);
-        }
         Ext.fx.Manager.addAnim(me);
     },
 
@@ -451,6 +452,7 @@ from : {
         me.running = false;
         Ext.fx.Manager.removeAnim(me);
         me.fireEvent('afteranimate', me, me.startTime);
+        Ext.callback(me.callback, me.scope, [me, me.startTime]);
     },
     
     isReady: function() {

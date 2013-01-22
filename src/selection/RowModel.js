@@ -310,7 +310,11 @@ Ext.define('Ext.selection.RowModel', {
         if (idx + 1 < me.store.getCount()) {
             record = me.store.getAt(idx + 1);
             if (me.selected.getCount() === 0) {
-                me.doSelect(record);
+                if (!e.ctrlKey) {
+                    me.doSelect(record);
+                } else {
+                    me.setLastFocused(record);
+                }
                 //view.focusRow(idx + 1);
             } else if (e.shiftKey && me.lastFocused) {
                 if (me.isSelected(me.lastFocused) && me.isSelected(record)) {

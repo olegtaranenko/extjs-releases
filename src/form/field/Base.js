@@ -91,6 +91,7 @@ Ext.define('Ext.form.field.Base', {
     /**
      * @cfg {Ext.XTemplate} fieldSubTpl
      * The content of the field body is defined by this config option.
+     * @private
      */
     fieldSubTpl: [ // note: {id} here is really {inputId}, but {cmpId} is available
         '<input id="{id}" type="{type}" {inputAttrTpl}',
@@ -418,6 +419,7 @@ Ext.define('Ext.form.field.Base', {
     onRender : function() {
         var me = this;
         me.callParent(arguments);
+        me.onLabelableRender();
         me.renderActiveError();
     },
 
@@ -574,6 +576,15 @@ Ext.define('Ext.form.field.Base', {
         return me.mixins.field.setValue.call(me, value);
     },
 
+    onBoxReady: function() {
+        var me = this;
+        me.callParent();
+        
+        if (me.setReadOnlyOnBoxReady) {
+            me.setReadOnly(me.readOnly);
+        }
+            
+    },
 
     //private
     onDisable: function() {
@@ -621,6 +632,8 @@ Ext.define('Ext.form.field.Base', {
         me.readOnly = readOnly;
         if (inputEl) {
             inputEl.dom.readOnly = readOnly;
+        } else if (me.rendering) {
+            me.setReadOnlyOnBoxReady = true;
         }
         me.fireEvent('writeablechange', me, readOnly);
     },

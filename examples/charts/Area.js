@@ -1,5 +1,5 @@
 Ext.require('Ext.chart.*');
-Ext.require(['Ext.Window', 'Ext.fx.target.Sprite', 'Ext.layout.container.Fit']);
+Ext.require(['Ext.Window', 'Ext.fx.target.Sprite', 'Ext.layout.container.Fit', 'Ext.window.MessageBox']);
 
 Ext.onReady(function () {
     
@@ -67,8 +67,12 @@ Ext.onReady(function () {
         tbar: [{
             text: 'Save Chart',
             handler: function() {
-                chart.save({
-                    type: "image/png"
+                Ext.MessageBox.confirm('Confirm Download', 'Would you like to download the chart as an image?', function(choice){
+                    if(choice == 'yes'){
+                        chart.save({
+                            type: 'image/png'
+                        });
+                    }
                 });
             }
         }, {

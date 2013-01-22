@@ -108,6 +108,10 @@ Ext.define('Ext.AbstractComponent', {
 
     /* End Definitions */
 
+    /**
+     * @property {Boolean} isComponent
+     * `true` in this class to identify an objact as an instantiated Component, or subclass thereof.
+     */
     isComponent: true,
 
     getAutoId: function() {
@@ -234,6 +238,7 @@ Ext.define('Ext.AbstractComponent', {
      *
      * Upon rendering, any created child elements may be automatically imported into object properties using the
      * {@link #renderSelectors} and {@link #childEls} options.
+     * @protected
      */
     renderTpl: '{%this.renderContent(out,values)%}',
 
@@ -962,6 +967,17 @@ Ext.define('Ext.AbstractComponent', {
         me.getId();
 
         me.setupProtoEl();
+        
+        // initComponent, beforeRender, or event handlers may have set the style or cls property since the protoEl was set up
+        // so we must apply styles and classes here too.
+        if (me.cls) {
+            me.initialCls = me.cls;
+            me.protoEl.addCls(me.cls);
+        }
+        if (me.style) {
+            me.initialStyle = me.style;
+            me.protoEl.setStyle(me.style);
+        }
 
         me.mons = [];
         me.renderData = me.renderData || {};
@@ -1091,7 +1107,13 @@ Ext.define('Ext.AbstractComponent', {
 
     animate: function(animObj) {
         var me = this,
-            to;
+            hasToWidth,
+            hasToHeight,
+            toHeight,
+            toWidth,
+            to,
+            clearsWidth,
+            clearsHeight;
 
         animObj = animObj || {};
         to = animObj.to || {};
@@ -1099,20 +1121,31 @@ Ext.define('Ext.AbstractComponent', {
         if (Ext.fx.Manager.hasFxBlock(me.id)) {
             return me;
         }
+        
+        hasToWidth = Ext.isDefined(to.width);
+        if (hasToWidth) {
+            toWidth = Ext.Number.constrain(to.width, me.minWidth, me.maxWidth);
+        }
+        
+        hasToHeight = Ext.isDefined(to.height);
+        if (hasToHeight) {
+            toHeight = Ext.Number.constrain(to.height, me.minHeight, me.maxHeight);
+        }
+        
         // Special processing for animating Component dimensions.
-        if (!animObj.dynamic && (to.height || to.width)) {
+        if (!animObj.dynamic && (hasToWidth || hasToHeight)) {
             var curWidth = (animObj.from ? animObj.from.width : undefined) || me.getWidth(),
                 w = curWidth,
                 curHeight = (animObj.from ? animObj.from.height : undefined) || me.getHeight(),
                 h = curHeight,
                 needsResize = false;
 
-            if (to.height && to.height > curHeight) {
-                h = to.height;
+            if (hasToHeight && toHeight > curHeight) {
+                h = toHeight;
                 needsResize = true;
             }
-            if (to.width && to.width > curWidth) {
-                w = to.width;
+            if (hasToWidth && toWidth > curWidth) {
+                w = toWidth;
                 needsResize = true;
             }
 
@@ -1120,8 +1153,8 @@ Ext.define('Ext.AbstractComponent', {
             // of the Component, but then clip it by sizing its encapsulating element back to original dimensions.
             // The animation will then progressively reveal the larger content.
             if (needsResize) {
-                var clearWidth = !Ext.isNumber(me.width),
-                    clearHeight = !Ext.isNumber(me.height);
+                clearWidth = !Ext.isNumber(me.width);
+                clearHeight = !Ext.isNumber(me.height);
 
                 me.setSize(w, h, me.ownerCt);
                 me.el.setSize(curWidth, curHeight);
@@ -1131,6 +1164,13 @@ Ext.define('Ext.AbstractComponent', {
                 if (clearHeight) {
                     delete me.height;
                 }
+            }
+            if (hasToWidth) {
+                to.width = toWidth;
+            }
+            
+            if (hasToHeight) {
+                to.height = toHeight;
             }
         }
         return me.mixins.animate.animate.apply(me, arguments);
@@ -1562,13 +1602,15 @@ Ext.define('Ext.AbstractComponent', {
 
         // initComponent, beforeRender, or event handlers may have set the style or cls property since the protoEl was set up
         // so we must apply styles and classes here too.
-        if (me.cls) {
+        if (me.cls && me.cls != me.initialCls) {
             targetEl.addCls(me.cls);
             delete me.cls;
+            delete me.initialCls;
         }
-        if (me.style) {
+        if (me.style && me.style != me.initialStyle) {
             targetEl.setStyle(me.style);
             delete me.style;
+            delete me.initialStyle;
         }
 
         if (x !== undefined) {
@@ -1577,7 +1619,11 @@ Ext.define('Ext.AbstractComponent', {
         if (y !== undefined) {
             targetEl.setStyle('top', y + 'px');
         }
-        if (!me.getFrameInfo()) {
+
+        // Framed components need their width/height to apply to the frame, which is
+        // best handled in layout at present.
+        // If we're using the content box model, we also cannot assign initial sizes since we do not know the border widths to subtract
+        if (!me.getFrameInfo() && Ext.isBorderBox) {
             width = me.width;
             height = me.height;
 
@@ -1761,9 +1807,12 @@ Ext.define('Ext.AbstractComponent', {
      * @return {Ext.container.Container} The matching ancestor Container (or `undefined` if no match was found).
      */
     up: function(selector) {
-        var result = this.ownerCt;
+        // Use bubble target to navigate upwards so that Components can implement their own hierarchy.
+        // For example Menus implement getBubbleTarget because they have a parentMenu or ownerButton as an
+        // upward link depending upon how they are owned and triggered.
+        var result = this.getBubbleTarget();
         if (selector) {
-            for (; result; result = result.ownerCt) {
+            for (; result; result = result.getBubbleTarget()) {
                 if (Ext.ComponentQuery.is(result, selector)) {
                     return result;
                 }
@@ -2096,7 +2145,7 @@ Ext.define('Ext.AbstractComponent', {
     isVisible: function(deep) {
         var me = this,
             child = me,
-            visible = !me.hidden,
+            visible = me.rendered && !me.hidden,
             ancestor = me.ownerCt;
 
         // Clear hiddenOwnerCt property
@@ -2105,7 +2154,7 @@ Ext.define('Ext.AbstractComponent', {
             return false;
         }
 
-        if (deep && visible && me.rendered && ancestor) {
+        if (deep && visible && ancestor) {
             while (ancestor) {
                 // If any ancestor is hidden, then this is hidden.
                 // If an ancestor Panel (only Panels have a collapse method) is collapsed,
@@ -2124,6 +2173,16 @@ Ext.define('Ext.AbstractComponent', {
         }
         return visible;
     },
+    
+    onBoxReady: function(){
+        var me = this;
+        
+        if (me.disableOnBoxReady) {
+            me.onDisable();
+        } else if (me.enableOnBoxReady) {
+            me.onEnable();
+        }
+    },
 
     /**
      * Enable the component
@@ -2132,15 +2191,12 @@ Ext.define('Ext.AbstractComponent', {
     enable: function(silent) {
         var me = this;
 
+        delete me.disableOnBoxReady;
         me.removeCls(me.disabledCls);
         if (me.rendered) {
             me.onEnable();
         } else {
-            me.on({
-                boxready: me.onEnable,
-                scope: me,
-                single: true
-            });
+            me.enableOnBoxReady = true;
         }
 
         me.disabled = false;
@@ -2160,15 +2216,12 @@ Ext.define('Ext.AbstractComponent', {
     disable: function(silent) {
         var me = this;
 
+        delete me.enableOnBoxReady;
         me.addCls(me.disabledCls);
         if (me.rendered) {
             me.onDisable();
         } else {
-            me.on({
-                boxready: me.onDisable,
-                scope: me,
-                single: true
-            });
+            me.disableOnBoxReady = true;
         }
 
         me.disabled = true;
@@ -2181,7 +2234,13 @@ Ext.define('Ext.AbstractComponent', {
         return me;
     },
 
-    // @private
+    /**
+     * Allows addition of behavior to the enable operation.
+     * After calling the superclass’s onEnable, the Component will be enabled.
+     *
+     * @template
+     * @protected
+     */
     onEnable: function() {
         if (this.maskOnDisable) {
             this.el.dom.disabled = false;
@@ -2189,7 +2248,13 @@ Ext.define('Ext.AbstractComponent', {
         }
     },
 
-    // @private
+    /**
+     * Allows addition of behavior to the disable operation.
+     * After calling the superclass’s onDisable, the Component will be disabled.
+     *
+     * @template
+     * @protected
+     */
     onDisable : function() {
         if (this.maskOnDisable) {
             this.el.dom.disabled = true;
@@ -2198,19 +2263,23 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     mask: function() {
-        var me = this,
-            box = me.lastBox,
+        var box = this.lastBox,
+            target = this.getMaskTarget(),
             args = [];
 
         // Pass it the height of our element if we know it.
         if (box) {
             args[2] = box.height;
         }
-        me.el.mask.apply(me.el, args);
+        target.mask.apply(target, args);
     },
 
     unmask: function() {
-        this.el.unmask();
+        this.getMaskTarget().unmask();
+    },
+    
+    getMaskTarget: function(){
+        return this.el
     },
 
     /**
@@ -2398,12 +2467,21 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * @private
      * Method to manage awareness of when components are added to their
-     * respective Container, firing an added event.
-     * References are established at add time rather than at render time.
+     * respective Container, firing an #added event. References are
+     * established at add time rather than at render time.
+     *
+     * Allows addition of behavior when a Component is added to a
+     * Container. At this stage, the Component is in the parent
+     * Container's collection of child items. After calling the
+     * superclass's onAdded, the ownerCt reference will be present,
+     * and if configured with a ref, the refOwner will be set.
+     *
      * @param {Ext.container.Container} container Container which holds the component
      * @param {Number} pos Position at which the component was added
+     *
+     * @template
+     * @protected
      */
     onAdded : function(container, pos) {
         this.ownerCt = container;
@@ -2411,21 +2489,49 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * @private
      * Method to manage awareness of when components are removed from their
-     * respective Container, firing an removed event. References are properly
+     * respective Container, firing a #removed event. References are properly
      * cleaned up after removing a component from its owning container.
+     *
+     * Allows addition of behavior when a Component is removed from
+     * its parent Container. At this stage, the Component has been
+     * removed from its parent Container's collection of child items,
+     * but has not been destroyed (It will be destroyed if the parent
+     * Container's autoDestroy is true, or if the remove call was
+     * passed a truthy second parameter). After calling the
+     * superclass's onRemoved, the ownerCt and the refOwner will not
+     * be present.
+     * @param {Boolean} destroying Will be passed as true if the Container performing the remove operation will delete this
+     * Component upon remove.
+     *
+     * @template
+     * @protected
      */
-    onRemoved : function() {
+    onRemoved : function(destroying) {
         var me = this;
 
         me.fireEvent('removed', me, me.ownerCt);
         delete me.ownerCt;
     },
 
-    // @private
+    /**
+     * Invoked before the Component is destroyed.
+     *
+     * @method
+     * @template
+     * @protected
+     */
     beforeDestroy : Ext.emptyFn,
-    // @private
+
+    /**
+     * Allows addition of behavior to the resize operation.
+     *
+     * Called when Ext.resizer.Resizer#drag event is fired.
+     *
+     * @method
+     * @template
+     * @protected
+     */
     onResize : Ext.emptyFn,
 
     /**
@@ -2707,11 +2813,15 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * Called by the layout system when the Component has been layed out.
+     * Called by the layout system after the Component has been layed out.
+     *
      * @param {Number} width The width that was set
      * @param {Number} height The height that was set
      * @param {Number} oldWidth The old width. <code>undefined</code> if this was the initial layout.
      * @param {Number} oldHeight The old height. <code>undefined</code> if this was the initial layout.
+     *
+     * @template
+     * @protected
      */
     afterComponentLayout: function(width, height, oldWidth, oldHeight) {
         if (++this.componentLayoutCounter === 1) {
@@ -2725,8 +2835,12 @@ Ext.define('Ext.AbstractComponent', {
     /**
      * Occurs before componentLayout is run. Returning false from this method will prevent the componentLayout from
      * being executed.
+     *
      * @param {Number} adjWidth The box-adjusted width that was set
      * @param {Number} adjHeight The box-adjusted height that was set
+     *
+     * @template
+     * @protected
      */
     beforeComponentLayout: function(width, height) {
         return true;
@@ -2800,9 +2914,13 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * @private
-     * @template
      * Template method called after a Component has been positioned.
+     *
+     * @param {Number} x
+     * @param {Number} y
+     *
+     * @template
+     * @protected
      */
     afterSetPosition: function(x, y) {
         this.onPosition(x, y);
@@ -2830,11 +2948,14 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * @private
      * Called after the component is moved, this method is empty by default but can be implemented by any
      * subclass that needs to perform custom logic after a move occurs.
+     *
      * @param {Number} x The new x position
      * @param {Number} y The new y position
+     *
+     * @template
+     * @protected
      */
     onPosition: Ext.emptyFn,
 

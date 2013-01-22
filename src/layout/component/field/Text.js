@@ -8,6 +8,8 @@ Ext.define('Ext.layout.component.field.Text', {
     requires: ['Ext.util.TextMetrics'],
 
     type: 'textfield',
+    
+    canGrowWidth: true,
 
     measureContentWidth: function (ownerContext) {
         var me = this,
@@ -16,7 +18,7 @@ Ext.define('Ext.layout.component.field.Text', {
             inputContext = ownerContext.inputContext,
             inputEl, value, calcWidth, max, min;
 
-        if (owner.grow) {
+        if (owner.grow && me.canGrowWidth && !ownerContext.state.growHandled) {
             inputEl = owner.inputEl;
 
             // Find the width that contains the whole text value
@@ -29,11 +31,17 @@ Ext.define('Ext.layout.component.field.Text', {
 
             // Constrain
             calcWidth = Ext.Number.constrain(calcWidth, owner.growMin, max);
-            if (width != calcWidth) {
-                width = inputContext.setWidth(calcWidth);
-            }
+            inputContext.setWidth(calcWidth);
+            ownerContext.state.growHandled = true;
+            
+            // Now that we've set the inputContext, we need to recalculate the width
+            inputContext.domBlock(me, 'width');
+            width = NaN;
         }
-
         return width;
+    },
+    
+    publishInnerHeight: function (ownerContext, height) {
+        ownerContext.inputContext.setHeight(height - this.measureLabelErrorHeight(ownerContext));
     }
 });

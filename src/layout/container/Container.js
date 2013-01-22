@@ -377,17 +377,15 @@ Ext.define('Ext.layout.container.Container', {
      */
     configureItem: function(item) {
         var me = this,
-            itemCls = me.itemCls,
-            ownerItemCls = me.owner.itemCls;
+            ownerItemCls = me.owner.itemCls,
+            addClasses = me.itemCls || [];
 
         me.callParent(arguments);
 
-        if (itemCls) {
-            item.addCls(itemCls);
-        }
         if (ownerItemCls) {
-            item.addCls(ownerItemCls);
+            addClasses = Ext.Array.push(addClasses, ownerItemCls);
         }
+        item.addCls(addClasses);
     },
 
     doRenderBody: function (out, renderData) {

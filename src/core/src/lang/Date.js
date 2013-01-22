@@ -967,7 +967,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
                     utilDate.formatCodeToRegex("Y", 1), // year
                     utilDate.formatCodeToRegex("m", 2), // month
                     utilDate.formatCodeToRegex("d", 3), // day
-                    utilDate.formatCodeToRegex("h", 4), // hour
+                    utilDate.formatCodeToRegex("H", 4), // hour
                     utilDate.formatCodeToRegex("i", 5), // minute
                     utilDate.formatCodeToRegex("s", 6), // second
                     {c:"ms = results[7] || '0'; ms = parseInt(ms, 10)/Math.pow(10, ms.length - 3);\n"}, // decimal fraction of a second (minimum = 1 digit, maximum = unlimited)

@@ -779,33 +779,31 @@ Ext.define('Ext.chart.series.Bar', {
     },
 
     // @private hide all markers
-    hideAll: function() {
+    hideAll: function(index) {
         var axes = this.chart.axes;
-        if (!isNaN(this._index)) {
-            if (!this.__excludes) {
-                this.__excludes = [];
-            }
-            this.__excludes[this._index] = true;
-            this.drawSeries();
-            axes.each(function(axis) {
-                axis.drawAxis();
-            });
+        index = (isNaN(this._index) ? index : this._index) || 0;
+        if (!this.__excludes) {
+            this.__excludes = [];
         }
+        this.__excludes[index] = true;
+        this.drawSeries();
+        axes.each(function(axis) {
+            axis.drawAxis();
+        });
     },
 
     // @private show all markers
-    showAll: function() {
+    showAll: function(index) {
         var axes = this.chart.axes;
-        if (!isNaN(this._index)) {
-            if (!this.__excludes) {
-                this.__excludes = [];
-            }
-            this.__excludes[this._index] = false;
-            this.drawSeries();
-            axes.each(function(axis) {
-                axis.drawAxis();
-            });
+        index = (isNaN(this._index) ? index : this._index) || 0;
+        if (!this.__excludes) {
+            this.__excludes = [];
         }
+        this.__excludes[index] = false;
+        this.drawSeries();
+        axes.each(function(axis) {
+            axis.drawAxis();
+        });
     },
 
 <span id='Ext-chart-series-Bar-method-getLegendColor'>    /**

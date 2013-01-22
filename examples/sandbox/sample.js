@@ -101,7 +101,7 @@ MyDesktop.GridWindow = Ext.extend(Ext.app.Module, {
                             iconCls:'add'
                         }, '-', {
                             text:'Options',
-                            tooltip:'Blah blah blah blaht',
+                            tooltip:'Modify options',
                             iconCls:'option'
                         },'-',{
                             text:'Remove Something',

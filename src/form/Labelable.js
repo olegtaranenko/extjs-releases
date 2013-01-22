@@ -92,6 +92,7 @@ Ext.define("Ext.form.Labelable", {
      *
      * When the triggerCell or side error cell are hidden or shown, the input cell's colspan
      * is recalculated to maintain the correct 3 visible column count.
+     * @private
      */
     labelableRenderTpl: [
 
@@ -393,7 +394,17 @@ Ext.define("Ext.form.Labelable", {
      * own initialization.
      */
     initLabelable: function() {
-        var me = this;
+        var me = this,
+            padding = me.padding;
+
+        // This Component is rendered as a table. Padding doesn't work on tables
+        // Before padding can be applied to the encapsulating table element, copy the padding into
+        // an extraMargins property which is to be added to all computed margins post render :(
+        if (padding) {
+            me.padding = undefined;
+            me.extraMargins = Ext.Element.parseBox(padding);
+        }
+
         me.addCls(me.formItemCls);
         
         // Prevent first render of active error, at Field render time from signalling a change from undefined to "
@@ -409,7 +420,7 @@ Ext.define("Ext.form.Labelable", {
             'errorchange'
         );
     },
-    
+
     /**
      * Returns the label for the field. Defaults to simply returning the {@link #fieldLabel} config. Can be overridden
      * to provide
@@ -499,10 +510,13 @@ Ext.define("Ext.form.Labelable", {
      */
     getLabelableRenderData: function() {
         var me = this,
-            data;
+            cls = '',
+            data,
+            tempEl;
 
         if (!Ext.form.Labelable.errorIconWidth) {
-            Ext.form.Labelable.errorIconWidth = parseInt(Ext.util.CSS.getRule('.' + Ext.baseCSSPrefix + 'form-invalid-icon').style.width, 10);
+            Ext.form.Labelable.errorIconWidth = (tempEl = Ext.getBody().createChild({style: 'position:absolute', cls: Ext.baseCSSPrefix + 'form-invalid-icon'})).getWidth();
+            tempEl.remove();
         }
 
         data = Ext.copyTo({
@@ -524,6 +538,21 @@ Ext.define("Ext.form.Labelable", {
         me.getInsertionRenderData(data, me.labelableInsertions);
 
         return data;
+    },
+
+    onLabelableRender: function() {
+        var me = this,
+            margins,
+            side,
+            style = {};
+
+        if (me.extraMargins) {
+            margins = me.el.getMargin();
+            for (side in margins) {
+                style['margin-' + side] = (margins[side] + me.extraMargins[side]) + 'px';
+            }
+            me.el.setStyle(style);
+        }
     },
 
     /**

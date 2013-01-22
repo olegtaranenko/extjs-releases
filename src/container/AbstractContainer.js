@@ -193,19 +193,32 @@ Ext.define('Ext.container.AbstractContainer', {
     suspendLayout : false,
 
     /**
-     * @cfg {Boolean} autoDestroy
+     * @cfg {Boolean} [autoDestroy=true]
      * If true the container will automatically destroy any contained component that is removed
      * from it, else destruction must be handled manually.
      */
     autoDestroy : true,
 
      /**
-      * @cfg {String} defaultType
+      * @cfg {String} [defaultType="panel"]
       * The default {@link Ext.Component xtype} of child Components to create in this Container when
       * a child item is specified as a raw configuration object, rather than as an instantiated Component.
       */
     defaultType: 'panel',
+    
+    /**
+     * @cfg {Boolean} [detachOnRemove=true]
+     * True to move any component to the {@link Ext#getDetachedBody detachedBody} when the component is
+     * removed from this container. This option is only applicable when the component is not destroyed while
+     * being removed, see {@link #autoDestroy} and {@link #method-remove}. If this option is set to false, the DOM
+     * of the component will remain in the current place until it is explicitly moved.
+     */
+    detachOnRemove: true,
 
+    /*
+     * @property {Boolean} isContainer
+     * `true` in this class to identify an objact as an instantiated Container, or subclass thereof.
+     */
     isContainer : true,
 
     /**
@@ -405,7 +418,15 @@ Ext.define('Ext.container.AbstractContainer', {
         return me;
     },
 
-    // @private
+    /**
+     * Invoked after the Container has laid out (and rendered if necessary)
+     * its child Components.
+     *
+     * @param {Ext.layout.container.Container} layout
+     *
+     * @template
+     * @protected
+     */
     afterLayout : function(layout) {
         ++this.layoutCounter;
         this.fireEvent('afterlayout', this, layout);
@@ -569,7 +590,32 @@ Ext.define('Ext.container.AbstractContainer', {
         return ret;
     },
 
+    /**
+     * This method is invoked after a new Component has been added. It
+     * is passed the Component which has been added. This method may
+     * be used to update any internal structure which may depend upon
+     * the state of the child items.
+     *
+     * @param {Ext.Component} component
+     * @param {Number} position
+     *
+     * @template
+     * @protected
+     */
     onAdd : Ext.emptyFn,
+
+    /**
+     * This method is invoked after a new Component has been
+     * removed. It is passed the Component which has been
+     * removed. This method may be used to update any internal
+     * structure which may depend upon the state of the child items.
+     *
+     * @param {Ext.Component} component
+     * @param {Boolean} autoDestroy
+     *
+     * @template
+     * @protected
+     */
     onRemove : Ext.emptyFn,
 
     /**
@@ -618,7 +664,17 @@ Ext.define('Ext.container.AbstractContainer', {
         return item;
     },
 
-    // @private
+    /**
+     * This method is invoked before adding a new child Component. It
+     * is passed the new Component, and may be used to modify the
+     * Component, or prepare the Container in some way. Returning
+     * false aborts the add operation.
+     *
+     * @param {Ext.Component} item
+     *
+     * @template
+     * @protected
+     */
     onBeforeAdd : function(item) {
         var me = this,
             border = item.border;
@@ -672,23 +728,31 @@ Ext.define('Ext.container.AbstractContainer', {
     doRemove : function(component, autoDestroy) {
         var me = this,
             layout = me.layout,
-            hasLayout = layout && me.rendered;
+            hasLayout = layout && me.rendered,
+            destroying = autoDestroy === true || (autoDestroy !== false && me.autoDestroy);
 
+        autoDestroy = autoDestroy === true || (autoDestroy !== false && me.autoDestroy);
         me.items.remove(component);
-        component.onRemoved();
+        component.onRemoved(destroying);
 
         if (hasLayout) {
             layout.onRemove(component);
         }
 
-        me.onRemove(component, autoDestroy);
+        me.onRemove(component, destroying);
 
-        if (autoDestroy === true || (autoDestroy !== false && me.autoDestroy)) {
+        // Destroy if we were explicitly told to, or we're defaulting to our autoDestroy configuration
+        if (destroying) {
             component.destroy();
         }
-
-        if (hasLayout && !autoDestroy) {
-            layout.afterRemove(component);
+        // Only have the layout perform remove postprocessing if the Component is not being destroyed
+        else {
+            if (hasLayout) {
+                layout.afterRemove(component);       
+            }
+            if (me.detachOnRemove && component.rendered) {
+                Ext.getDetachedBody().appendChild(component.getEl());
+            }
         }
     },
 
@@ -968,6 +1032,9 @@ Ext.define('Ext.container.AbstractContainer', {
     /**
      * Occurs before componentLayout is run. Returning false from this method
      * will prevent the containerLayout from being executed.
+     *
+     * @template
+     * @protected
      */
     beforeLayout: function() {
         return true;

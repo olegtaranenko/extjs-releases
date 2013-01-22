@@ -10,7 +10,7 @@
 Ext.define("Ext.util.Sortable", {
     /**
      * @property {Boolean} isSortable
-     * Flag denoting that this object is sortable. Always true.
+     * `true` in this class to identify an objact as an instantiated Sortable, or subclass thereof.
      */
     isSortable: true,
 

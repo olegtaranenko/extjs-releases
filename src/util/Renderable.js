@@ -131,15 +131,48 @@ Ext.define('Ext.util.Renderable', {
         '{%this.renderDockedItems(out,values,1);%}'
     ],
 
-    // @private
+    /**
+     * Allows addition of behavior after rendering is complete. At this stage the Component’s Element
+     * will have been styled according to the configuration, will have had any configured CSS class
+     * names added, and will be in the configured visibility and the configured enable state.
+     *
+     * @template
+     * @protected
+     */
     afterRender : function() {
-        var me = this;
+        var me = this,
+            data = {},
+            protoEl = me.protoEl,
+            target = me.getTargetEl(),
+            item;
 
         me.finishRenderChildren();
 
         if (me.styleHtmlContent) {
-            me.getTargetEl().addCls(me.styleHtmlCls);
+            target.addCls(me.styleHtmlCls);
         }
+        
+        protoEl.writeTo(data);
+        
+        // Here we apply any styles that were set on the protoEl during the rendering phase
+        // A majority of times this will not happen, but we still need to handle it
+        
+        item = data.removed;
+        if (item) {
+            target.removeCls(item);
+        }
+        
+        item = data.cls;
+        if (item.length) {
+            target.addCls(item);
+        }
+        
+        item = data.style;
+        if (data.style) {
+            target.setStyle(item);
+        }
+        
+        me.protoEl = null;
 
         // If this is the outermost Container, lay it out as soon as it is rendered.
         if (!me.ownerCt) {
@@ -171,9 +204,11 @@ Ext.define('Ext.util.Renderable', {
         if (hasX || hasY) {
             me.setPosition(me.x, me.y);
         }
+        me.onBoxReady();
         me.fireEvent('boxready', me);
-
     },
+    
+    onBoxReady: Ext.emptyFn,
 
     /**
      * Sets references to elements inside the component. This applies {@link #renderSelectors}
@@ -416,8 +451,8 @@ Ext.define('Ext.util.Renderable', {
             };
 
         me.initStyles(me.protoEl);
-        me.protoEl.writeTo(config, 'cls', 'style');
-        me.protoEl = null;
+        me.protoEl.writeTo(config);
+        me.protoEl.flush();
 
         if (Ext.isString(autoEl)) {
             config.tag = autoEl;
@@ -582,13 +617,19 @@ Ext.define('Ext.util.Renderable', {
     },
 
     /**
-     * @protected
-     * <p>Template method called when this Component's DOM structure is created.</p>
-     * <p>At this point, this Component's (And all descendants') DOM structure <i>exists</i> but it has not been layed out (positioned and sized).</p>
-     * <p>Subclasses which override this to gain access to the structure at render time should call the parent class's
-     * method before attempting to access any child elements of the Component.</p>
+     * Template method called when this Component's DOM structure is created.
+     *
+     * At this point, this Component's (and all descendants') DOM structure *exists* but it has not
+     * been layed out (positioned and sized).
+     *
+     * Subclasses which override this to gain access to the structure at render time should
+     * call the parent class's method before attempting to access any child elements of the Component.
+     *
      * @param {Ext.core.Element} parentNode The parent Element in which this Component's encapsulating element is contained.
      * @param {Number} containerIdx The index within the parent Container's child collection of this Component.
+     *
+     * @template
+     * @protected
      */
     onRender: function(parentNode, containerIdx) {
         var me = this,
@@ -601,12 +642,12 @@ Ext.define('Ext.util.Renderable', {
         if (Ext.scopeResetCSS && !me.ownerCt) {
             // If this component's el is the body element, we add the reset class to the html tag
             if (el.dom == Ext.getBody().dom) {
-                el.parent().addCls(Ext.baseCSSPrefix + 'reset');
+                el.parent().addCls(Ext.resetCls);
             }
             else {
                 // Else we wrap this element in an element that adds the reset class.
                 me.resetEl = el.wrap({
-                    cls: Ext.baseCSSPrefix + 'reset'
+                    cls: Ext.resetCls
                 });
             }
         }
@@ -630,9 +671,10 @@ Ext.define('Ext.util.Renderable', {
             lastBox = lastBox || {};
             lastBox.y = y;
         }
-        // framed components need their width/height to apply to the frame, which is
-        // best handled in layout at present
-        if (!me.getFrameInfo()) {
+        // Framed components need their width/height to apply to the frame, which is
+        // best handled in layout at present.
+        // If we're using the content box model, we also cannot assign initial sizes since we do not know the border widths to subtract
+        if (!me.getFrameInfo() && Ext.isBorderBox) {
             width = me.width;
             height = me.height;
 
@@ -815,7 +857,9 @@ Ext.define('Ext.util.Renderable', {
                     if (oldFrameBL) {
                         oldFrameBL.remove();
                     }
-                    oldFrameML.remove();
+                    if (oldFrameML) {
+                        oldFrameML.remove();
+                    }
                 }
             }
             else {
@@ -878,30 +922,8 @@ Ext.define('Ext.util.Renderable', {
                 top = info[1];
             }
 
-            // We actually pass a string in the form of '[type][tl][tr]px [type][br][bl]px' as
-            // the background position of this.el from the CSS to indicate to IE that this component needs
-            // framing. We parse it here and change the markup accordingly.
-            if (parseInt(left, 10) >= 1000000 && parseInt(top, 10) >= 1000000) {
-                max = Math.max;
-
-                frameInfo = {
-                    // Table markup starts with 110, div markup with 100.
-                    table: left.substr(0, 3) == '110',
-
-                    // Determine if we are dealing with a horizontal or vertical component
-                    vertical: top.substr(0, 3) == '110',
-
-                    // Get and parse the different border radius sizes
-                    top:    max(left.substr(3, 2), left.substr(5, 2)),
-                    right:  max(left.substr(5, 2), top.substr(3, 2)),
-                    bottom: max(top.substr(3, 2), top.substr(5, 2)),
-                    left:   max(top.substr(5, 2), left.substr(3, 2))
-                };
-
-                frameInfo.maxWidth = max(frameInfo.top, frameInfo.right, frameInfo.bottom, frameInfo.left);
-                frameInfo.width = frameInfo.left + frameInfo.right;
-                frameInfo.height = frameInfo.top + frameInfo.bottom;
-
+            frameInfo = me.calculateFrame(left, top);
+            if (frameInfo) {
                 // Just to be sure we set the background image of the el to none.
                 el.setStyle('background-image', 'none');
             }
@@ -927,6 +949,38 @@ Ext.define('Ext.util.Renderable', {
         me.frame = !!frameInfo;
         me.frameSize = frameInfo || false;
 
+        return frameInfo;
+    },
+    
+    calculateFrame: function(left, top){
+        // We actually pass a string in the form of '[type][tl][tr]px [direction][br][bl]px' as
+        // the background position of this.el from the CSS to indicate to IE that this component needs
+        // framing. We parse it here.
+        if (!(parseInt(left, 10) >= 1000000 && parseInt(top, 10) >= 1000000)) {
+            return;
+        }
+        var max = Math.max,
+            tl = parseInt(left.substr(3, 2), 10),
+            tr = parseInt(left.substr(5, 2), 10),
+            br = parseInt(top.substr(3, 2), 10),
+            bl = parseInt(top.substr(5, 2), 10),
+            frameInfo = {
+                // Table markup starts with 110, div markup with 100.
+                table: left.substr(0, 3) == '110',
+
+                // Determine if we are dealing with a horizontal or vertical component
+                vertical: top.substr(0, 3) == '110',
+
+                // Get and parse the different border radius sizes
+                top:    max(tl, tr),
+                right:  max(tr, br),
+                bottom: max(bl, br),
+                left:   max(tl, bl)
+            };
+
+        frameInfo.maxWidth = max(frameInfo.top, frameInfo.right, frameInfo.bottom, frameInfo.left);
+        frameInfo.width = frameInfo.left + frameInfo.right;
+        frameInfo.height = frameInfo.top + frameInfo.bottom;
         return frameInfo;
     },
 

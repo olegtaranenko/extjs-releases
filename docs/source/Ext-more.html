@@ -68,11 +68,6 @@ Ext.apply(Ext, {
 </span>     * True to automatically purge event listeners during garbageCollection.
      */
     enableListenerCollection: true,
-
-<span id='Ext-property-enableSandbox'>    /**
-</span>     * True to enable sandboxing (defaults to false).
-     */
-    enableSandbox: false,
     
 <span id='Ext-method-id'>    /**
 </span>     * Generates unique ids. If the element already has an id, it is unchanged
@@ -489,6 +484,13 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * load your javascript, in which case it will be handled for you).
          */
         scopeResetCSS : Ext.buildSettings.scopeResetCSS,
+        
+<span id='Ext-property-resetCls'>        /**
+</span>         * @property {String} resetCls
+         * The css class used to wrap Ext components when the {@link #scopeResetCSS} option
+         * is used.
+         */
+        resetCls: Ext.buildSettings.baseCSSPrefix + 'reset',
 
 <span id='Ext-property-enableNestedListenerRemoval'>        /**
 </span>         * @property {Boolean} enableNestedListenerRemoval

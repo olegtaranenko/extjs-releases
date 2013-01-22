@@ -37,11 +37,18 @@ h1 {
 #app-logo .logo-top,
 #app-logo .logo-bottom {
     height: 0;
+    font-size: 0;
+    line-height: 0;
+    padding: 0;
     overflow: hidden;
     margin: 0 1px;
+    border: 0;
     border-top-width: 1px;
     border-top-style: solid;
     border-color: #9F2727;
+}
+.x-ie #app-logo .logo-top {
+    margin-bottom: -1px;
 }
 .ext-border-box #app-logo .logo-top,
 .ext-border-box #app-logo .logo-bottom {

@@ -162,6 +162,10 @@ Ext.define('Ext.button.Button', {
     alternateClassName: 'Ext.Button',
     /* End Definitions */
 
+    /*
+     * @property {Boolean} isAction
+     * `true` in this class to identify an objact as an instantiated Button, or subclass thereof.
+     */
     isButton: true,
     componentLayout: 'button',
 
@@ -354,9 +358,18 @@ Ext.define('Ext.button.Button', {
 
 <span id='Ext-button-Button-cfg-href'>    /**
 </span>     * @cfg {String} href
-     * The URL to visit when the button is clicked. Specifying this config is equivalent to specifying:
+     * The URL to open when the button is clicked. Specifying this config causes the Button to be
+     * rendered with an anchor (An `&lt;a&gt;` element) as its active element, referencing the specified URL.
      *
-     *     handler: function() { window.location = &quot;http://www.sencha.com&quot; }
+     * This is better than specifying a click handler of
+     *
+     *     function() { window.location = &quot;http://www.sencha.com&quot; }
+     *
+     * because the UI will provide meaningful hints to the user as to what to expect upon clicking
+     * the button, and will also allow the user to open in a new tab or window, bookmark or drag the URL, or directly save
+     * the URL stream to disk.
+     *
+     * See also the {@link #hrefTarget} config.
      */
     
 <span id='Ext-button-Button-cfg-hrefTarget'>    /**
@@ -384,7 +397,10 @@ Ext.define('Ext.button.Button', {
     renderTpl: [
         '&lt;em id=&quot;{id}-btnWrap&quot;&lt;tpl if=&quot;splitCls&quot;&gt; class=&quot;{splitCls}&quot;&lt;/tpl&gt;&gt;',
             '&lt;tpl if=&quot;href&quot;&gt;',
-                '&lt;a id=&quot;{id}-btnEl&quot; href=&quot;{href}&quot; class=&quot;{btnCls}&quot; target=&quot;{hrefTarget}&quot;&lt;tpl if=&quot;tabIndex&quot;&gt; tabIndex=&quot;{tabIndex}&quot;&lt;/tpl&gt; role=&quot;link&quot;&gt;',
+                '&lt;a id=&quot;{id}-btnEl&quot; href=&quot;{href}&quot; class=&quot;{btnCls}&quot; target=&quot;{hrefTarget}&quot;',
+                    '&lt;tpl if=&quot;tabIndex&quot;&gt; tabIndex=&quot;{tabIndex}&quot;&lt;/tpl&gt;',
+                    ' role=&quot;link&quot;&gt;',
+                    '&lt;tpl if=&quot;disabled&quot;&gt; disabled=&quot;disabled&quot;&lt;/tpl&gt;',
                     '&lt;span id=&quot;{id}-btnInnerEl&quot; class=&quot;{baseCls}-inner&quot;&gt;',
                         '{text}',
                     '&lt;/span&gt;',
@@ -394,11 +410,13 @@ Ext.define('Ext.button.Button', {
                 '&lt;button id=&quot;{id}-btnEl&quot; type=&quot;{type}&quot; class=&quot;{btnCls}&quot; hidefocus=&quot;true&quot;',
                     // the autocomplete=&quot;off&quot; is required to prevent Firefox from remembering
                     // the button's disabled state between page reloads.
-                    '&lt;tpl if=&quot;tabIndex&quot;&gt; tabIndex=&quot;{tabIndex}&quot;&lt;/tpl&gt; role=&quot;button&quot; autocomplete=&quot;off&quot;&gt;',
+                    '&lt;tpl if=&quot;tabIndex&quot;&gt; tabIndex=&quot;{tabIndex}&quot;&lt;/tpl&gt;',
+                    '&lt;tpl if=&quot;disabled&quot;&gt; disabled=&quot;disabled&quot;&lt;/tpl&gt;',
+                    ' role=&quot;button&quot; autocomplete=&quot;off&quot;&gt;',
                     '&lt;span id=&quot;{id}-btnInnerEl&quot; class=&quot;{baseCls}-inner&quot; style=&quot;{innerSpanStyle}&quot;&gt;',
                         '{text}',
                     '&lt;/span&gt;',
-                    '&lt;span id=&quot;{id}-btnIconEl&quot; class=&quot;{baseCls}-icon {iconCls}&quot;&lt;tpl if=&quot;iconUrl&quot;&gt; style=&quot;background-image:url({iconUrl})&quot;&lt;/tpl&gt;&gt;&amp;#160;&lt;/span&gt;',
+                    '&lt;span id=&quot;{id}-btnIconEl&quot; class=&quot;{baseCls}-icon {iconCls}&quot;&lt;tpl if=&quot;iconUrl&quot;&gt; style=&quot;background-image:url({iconUrl})&quot;&lt;/tpl&gt;&gt;&lt;/span&gt;',
                 '&lt;/button&gt;',
             '&lt;/tpl&gt;',
         '&lt;/em&gt;',
@@ -491,6 +509,8 @@ Ext.define('Ext.button.Button', {
      * This is calculated at first render time by creating a hidden button and measuring its insides.
      */
     persistentPadding: undefined,
+
+    shrinkWrap: 3,
 
     // inherit docs
     initComponent: function() {
@@ -719,7 +739,9 @@ Ext.define('Ext.button.Button', {
                 btnListeners.mousemove = me.onMouseMove;
             }
         } else {
-            btnListeners = {};
+            btnListeners = {
+                scope: me
+            };
         }
 
         // Check if the button has a menu
@@ -730,7 +752,8 @@ Ext.define('Ext.button.Button', {
                 hide: me.onMenuHide
             });
 
-            me.keyMap = new Ext.util.KeyMap(me.el, {
+            me.keyMap = new Ext.util.KeyMap({
+                target: me.el,
                 key: Ext.EventObject.DOWN,
                 handler: me.onDownKey,
                 scope: me
@@ -782,6 +805,7 @@ Ext.define('Ext.button.Button', {
 
         return {
             href     : me.getHref(),
+            disabled : me.disabled,
             hrefTarget: me.hrefTarget,
             type     : me.type,
             btnCls   : me.getBtnCls(),
@@ -826,7 +850,7 @@ Ext.define('Ext.button.Button', {
     },
 
     getBtnCls: function() {
-        return this.align ? this.baseCls + '-' + this.align : '';
+        return this.textAlign ? this.baseCls + '-' + this.textAlign : '';
     },
 
 <span id='Ext-button-Button-method-setIconCls'>    /**
@@ -1270,6 +1294,9 @@ Ext.define('Ext.button.Button', {
 
         me.callParent(arguments);
 
+        if (me.btnEl) {
+            me.btnEl.dom.disabled = false;
+        }
         me.removeClsWithUI('disabled');
 
         return me;
@@ -1281,6 +1308,9 @@ Ext.define('Ext.button.Button', {
 
         me.callParent(arguments);
 
+        if (me.btnEl) {
+            me.btnEl.dom.disabled = true;
+        }
         me.addClsWithUI('disabled');
         me.removeClsWithUI(me.overCls);
 

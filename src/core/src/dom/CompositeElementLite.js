@@ -82,6 +82,10 @@ Ext.define('Ext.dom.CompositeElementLite', {
         this.el = new Ext.dom.AbstractElement.Fly();
     },
 
+    /**
+     * @property {Boolean} isComposite
+     * `true` in this class to identify an objact as an instantiated CompositeElement, or subclass thereof.
+     */
     isComposite: true,
 
     // private
@@ -140,11 +144,12 @@ Ext.define('Ext.dom.CompositeElementLite', {
             element,
             i;
 
+        fn = Ext.dom.Element.prototype[fn];
         for (i = 0; i < ln; i++) {
             element = elements[i];
 
             if (element) {
-                Ext.dom.Element.prototype[fn].apply(this.getElement(element), args);
+                fn.apply(this.getElement(element), args);
             }
         }
         return this;
@@ -380,6 +385,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
      * @return {Ext.dom.CompositeElementLite/Ext.dom.CompositeElement}
      * @member Ext.dom.Element
      * @method select
+     * @static
      */
    Ext.dom.Element.select = function(selector, root) {
         var elements;

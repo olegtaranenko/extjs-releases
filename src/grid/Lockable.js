@@ -51,9 +51,6 @@ Ext.define('Ext.grid.Lockable', {
      * and viewConfig will be overwritten by the normalViewConfig.
      */
 
-    // private variable to track whether or not the spacer is hidden/visible
-    spacerHidden: true,
-
     headerCounter: 0,
 
     /**

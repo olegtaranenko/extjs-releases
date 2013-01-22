@@ -146,9 +146,9 @@ Ext.define('Ext.grid.header.DropZone', {
             
         if (data.header.el.dom === node) {
             doPosition = false;
-        } else if (header.restrictReorder) {
+        } else {
             to = me.getLocation(e, node).header;
-            doPosition = from.ownerCt == to.ownerCt;
+            doPosition = (from.ownerCt === to.ownerCt) || (!from.ownerCt.sealed && !to.ownerCt.sealed);
         }
         
         if (doPosition) {
@@ -215,17 +215,17 @@ Ext.define('Ext.grid.header.DropZone', {
                 // Remove dragged header from where it was.
                 if (fromCt !== toCt) {
                     fromCt.remove(dragHeader, false);
-                }
 
-                // Dragged the last header out of the fromCt group... The fromCt group must die
-                if (fromCt.isGroupHeader) {
-                    if (!fromCt.items.getCount()) {
-                        groupCt = fromCt.ownerCt;
-                        groupCt.remove(fromCt, false);
-                        fromCt.el.dom.parentNode.removeChild(fromCt.el.dom);
-                    } else {
-                        fromCt.minWidth = fromCt.getWidth() - dragHeader.getWidth();
-                        fromCt.setWidth(fromCt.minWidth);
+                    // Dragged the last header out of the fromCt group... The fromCt group must die
+                    if (fromCt.isGroupHeader) {
+                        if (!fromCt.items.getCount()) {
+                            groupCt = fromCt.ownerCt;
+                            groupCt.remove(fromCt, false);
+                            fromCt.el.dom.parentNode.removeChild(fromCt.el.dom);
+                        } else {
+                            fromCt.minWidth = fromCt.getWidth() - dragHeader.getWidth();
+                            fromCt.setWidth(fromCt.minWidth);
+                        }
                     }
                 }
 
@@ -240,13 +240,16 @@ Ext.define('Ext.grid.header.DropZone', {
                 // Therefore a child header may not flex; it must contribute a fixed width.
                 // But we restore the flex value when moving back into the main header container
                 if (toCt.isGroupHeader) {
-                    dragHeader.savedFlex = dragHeader.flex;
-                    delete dragHeader.flex;
-                    dragHeader.width = dragHeader.getWidth();
-                    // When there was previously a flex, we need to ensure we don't count for the
-                    // border twice.
-                    toCt.minWidth = toCt.getWidth() + dragHeader.getWidth() - (dragHeader.savedFlex ? 1 : 0);
-                    toCt.setWidth(toCt.minWidth);
+                    // Adjust the width of the "to" group header only if we dragged in from somewhere else.
+                    if (toCt !== fromCt) {
+                        dragHeader.savedFlex = dragHeader.flex;
+                        delete dragHeader.flex;
+                        dragHeader.width = dragHeader.getWidth();
+                        // When there was previously a flex, we need to ensure we don't count for the
+                        // border twice.
+                        toCt.minWidth = toCt.getWidth() + dragHeader.getWidth() - (dragHeader.savedFlex ? 1 : 0);
+                        toCt.setWidth(toCt.minWidth);
+                    }
                 } else {
                     if (dragHeader.savedFlex) {
                         dragHeader.flex = dragHeader.savedFlex;

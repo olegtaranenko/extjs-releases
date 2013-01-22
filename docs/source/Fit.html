@@ -107,6 +107,32 @@ Ext.define('Ext.layout.container.Fit', {
        return this.sizePolicies[mode];
     },
 
+    beginLayout: function(ownerContext) {
+        var me = this,
+            childItems,
+            length,
+            i = 0, itemContext;
+
+        me.callParent(arguments);
+
+        // Clear any dimensions which we set before calculation, in case the current settings affect the available size.
+        // This particularly effects self-sizing containers such as fields, in which the target element is naturally sized,
+        // and should not be stretched by a sized child item.
+        if (ownerContext.targetContext.el.dom.tagName === 'TD') {
+            childItems = ownerContext.childItems;
+            length = childItems.length;
+            for (i = 0; i &lt; length; ++i) {
+                itemContext = childItems[i];
+                if (itemContext.heightModel.calculated) {
+                    itemContext.target.el.dom.style.height = '';
+                }
+                if (itemContext.widthModel.calculated) {
+                    itemContext.target.el.dom.style.width = '';
+                }
+            }
+        }
+    },
+
     // @private
     calculate : function (ownerContext) {
         var me = this,
@@ -119,14 +145,32 @@ Ext.define('Ext.layout.container.Fit', {
                 ownerContext: ownerContext,
                 targetSize: me.getContainerSize(ownerContext)
             },
+            calcWidth = ownerContext.widthModel.shrinkWrap,
+            calcHeight = ownerContext.heightModel.shrinkWrap,
+            padWidth = 0,
+            padHeight = 0,
+            padding,
             i;
 
         for (i = 0; i &lt; length; ++i) {
             info.index = i;
             me.fitItem(childItems[i], info);
         }
+        
+        if (calcHeight || calcWidth) {
+            padding = ownerContext.targetContext.getPaddingInfo();
+            
+            if (calcWidth) {
+                padWidth = padding.width;
+            }
+            
+            if (calcHeight) {
+                padHeight = padding.height;
+            }
+            
+        }
 
-        if (!ownerContext.setContentSize(info.contentWidth, info.contentHeight)) {
+        if (!ownerContext.setContentSize(info.contentWidth + padWidth, info.contentHeight + padHeight)) {
             me.done = false;
         }
     },
@@ -201,6 +245,7 @@ Ext.define('Ext.layout.container.Fit', {
         itemContext.setWidth(info.targetSize.width - info.margins.width);
     }
 });
+
 </pre>
 </body>
 </html>

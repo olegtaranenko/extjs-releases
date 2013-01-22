@@ -87,15 +87,6 @@ Ext.define('Ext.LoadMask', {
     // Private. Masks are not focusable
     focusOnToFront: false,
     
-    // Although we want the mask to float, we don't want the z-index to be managed by the manager.
-    // Rather, we want to set any z-index based upon the index of the owning component. If there is
-    // no owning component or it's not floating, we set the z-index to something sufficiently small
-    // so that it doesn't interfere with other floating components. The owning component will notify
-    // the mask if the z-index changes
-    registerWithManager: false,
-    
-    defaultZIndex: 100,
-
     /**
      * Creates new LoadMask.
      * @param {Ext.Component} comp The Component you wish to mask. The the mask will be automatically sized 
@@ -129,7 +120,7 @@ Ext.define('Ext.LoadMask', {
             me.bindStore(me.store, true);
         }
     },
-    
+
     bindComponent: function(comp){
         var me = this,
             listeners = {
@@ -152,7 +143,7 @@ Ext.define('Ext.LoadMask', {
         Ext.container.Container.onContainerHide(me.onContainerHide, me);
         Ext.container.Container.onContainerShow(me.onContainerShow, me);
     },
-    
+
     onComponentAdded: function(owner){
         var me = this;      
         delete me.activeOwner;
@@ -167,10 +158,10 @@ Ext.define('Ext.LoadMask', {
         owner = me.floatParent.ownerCt;
         if (me.rendered && me.isVisible() && owner) {
             me.floatOwner = owner;
-            me.mon(owner, 'afterlayout', me.setupMask, me, {single: true});
+            me.mon(owner, 'afterlayout', me.sizeMask, me, {single: true});
         }
     },
-    
+
     onComponentRemoved: function(owner){
         var me = this,
             activeOwner = me.activeOwner,
@@ -180,7 +171,7 @@ Ext.define('Ext.LoadMask', {
             me.mun(activeOwner, 'move', me.sizeMask, me);
         }
         if (floatOwner) {
-            me.mun(floatOwner, 'afterlayout', me.setupMask, me);
+            me.mun(floatOwner, 'afterlayout', me.sizeMask, me);
         }
         delete me.activeOwner;
         delete me.floatOwner;
@@ -190,24 +181,24 @@ Ext.define('Ext.LoadMask', {
         this.callParent(arguments);
         this.container = this.floatParent.getContentTarget();
     },
-    
+
     onContainerShow: function(container){
         if (this.isActiveContainer(container)) {
             this.onComponentShow();
         }
     },
-    
+
     onContainerHide: function(container){
         if (this.isActiveContainer(container)) {
             this.onComponentHide();
         }
     },
-    
+
     isActiveContainer: function(container){
         var owner = this.getOwner();
         return owner.isDescendantOf(container);
     },
-    
+
     onComponentHide: function(){
         var me = this;
         
@@ -216,7 +207,7 @@ Ext.define('Ext.LoadMask', {
             me.showNext = true;
         }
     },
-    
+
     onComponentShow: function(){
         if (this.showNext) {
             this.show();
@@ -253,7 +244,7 @@ Ext.define('Ext.LoadMask', {
             me.onBeforeLoad();
         }
     },
-    
+
     getStoreListeners: function(){
         return {
             beforeload: this.onBeforeLoad,
@@ -268,11 +259,11 @@ Ext.define('Ext.LoadMask', {
             this.onLoad();
         }
     },
-    
+
     getOwner: function(){
         return this.ownerCt || this.floatParent;    
     },
-    
+
     getMaskTarget: function(){
         var owner = this.getOwner();
         return this.useTargetEl ? owner.getTargetEl() : owner.getEl();
@@ -283,7 +274,7 @@ Ext.define('Ext.LoadMask', {
         var me = this,
             owner = me.getOwner(),
             origin;
-            
+
         if (!me.disabled) {
             me.loading = true;
             // If the owning Component has not been layed out, defer so that the ZIndexManager
@@ -301,24 +292,27 @@ Ext.define('Ext.LoadMask', {
             }
         }
     },
-    
+
     maybeShow: function(){
         var me = this,
             owner = me.getOwner();
-            
-        if (me.loading && owner.rendered && owner.isVisible(true)) {
+
+        if (!owner.isVisible(true)) {
+            me.showNext = true;
+        }
+        else if (me.loading && owner.rendered) {
             me.show();
         }
     }, 
-    
+
     getMaskEl: function(){
         var me = this;
-        if (!me.maskEl) {
-            me.maskEl = Ext.getBody().createChild({
-                cls: me.maskCls
-            });
-        }
-        return me.maskEl;
+        return me.maskEl || (me.maskEl = me.el.insertSibling({
+            cls: me.maskCls,
+            style: {
+                zIndex: me.el.getStyle('zIndex') - 2
+            }
+        }, 'before'));
     },
 
     onShow: function() {
@@ -334,7 +328,7 @@ Ext.define('Ext.LoadMask', {
             msgEl.parent().hide();
         }
     },
-    
+
     hide: function(){
         //<debug>
         if (this.isElement) {
@@ -346,12 +340,12 @@ Ext.define('Ext.LoadMask', {
         delete this.showNext;  
         return this.callParent(arguments);
     },
-    
+
     onHide: function(){
         this.callParent();
         this.getMaskEl().hide();   
     },
-    
+
     show: function(){
         //<debug>
         if (this.isElement) {
@@ -365,49 +359,13 @@ Ext.define('Ext.LoadMask', {
 
     afterShow: function() {
         this.callParent(arguments);
-        this.setupMask();
-    },
-    
-    setupMask: function(){
         this.sizeMask();
-        this.setupZIndexes();    
     },
-    
-    // override, we never want to bring the mask to the front
-    toFront: Ext.emptyFn,
-    
-    setZIndex: function(index){
-        if (this.rendered) {
-            this.getMaskEl().setStyle('z-index', ++index);
-            this.el.setStyle('z-index', ++index);
-        }
-        return index;
-    },
-    
-    onZIndexChange: function(index){
-        this.setZIndex(index);
-    },
-    
-    setupZIndexes: function() {
-        var me = this,
-            active = me.activeOwner,
-            owner = me.getOwner(),
-            zIndex;
-            
-        if (!active && owner && owner.floating) {
-            active = owner;
-        } 
-        if (active) {
-            // only need to set a z-index if we're floating
-            zIndex = active.getEl().getZIndex();
-            if (isNaN(zIndex)) {
-                // something sufficiently low so we don't conflict with floating items
-                zIndex = me.defaultZIndex;
-            }
-        } else {
-            zIndex = me.defaultZIndex;
-        }
-        me.setZIndex(zIndex);
+
+    setZIndex: function(index) {
+        var me = this;
+        me.getMaskEl().setStyle('zIndex', index - 1);
+        return me.mixins.floating.setZIndex.apply(me, arguments);
     },
 
     // private
@@ -415,7 +373,7 @@ Ext.define('Ext.LoadMask', {
         this.loading = false;
         this.hide();
     },
-    
+
     onDestroy: function(){
         var me = this;
         Ext.destroy(me.maskEl);

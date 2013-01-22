@@ -5,6 +5,18 @@ Ext.require([
     'Ext.state.*'
 ]);
 
+Ext.define('Company', {
+    extend: 'Ext.data.Model',
+    fields: [
+       {name: 'company'},
+       {name: 'price',      type: 'float'},
+       {name: 'change',     type: 'float'},
+       {name: 'pctChange',  type: 'float'},
+       {name: 'lastChange', type: 'date', dateFormat: 'n/j h:ia'}
+    ],
+    idProperty: 'company'
+});
+
 Ext.onReady(function() {
     Ext.QuickTips.init();
     
@@ -69,21 +81,10 @@ Ext.onReady(function() {
         }
         return val;
     }
-    
-    Company = Ext.extend(Ext.data.Model, {
-        fields: [
-           {name: 'company'},
-           {name: 'price',      type: 'float'},
-           {name: 'change',     type: 'float'},
-           {name: 'pctChange',  type: 'float'},
-           {name: 'lastChange', type: 'date', dateFormat: 'n/j h:ia'}
-        ],
-        idProperty: 'company'
-    });
 
     // create the data store
     var store = Ext.create('Ext.data.ArrayStore', {
-        model: Company,
+        model: 'Company',
         data: myData
     });
 

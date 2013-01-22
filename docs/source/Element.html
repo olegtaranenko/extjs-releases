@@ -268,13 +268,15 @@ var HIDDEN = 'hidden',
      * @return {Ext.dom.Element} this
      */
     enableDisplayMode : function(display) {
-        this.setVisibilityMode(Element.DISPLAY);
+        var me = this;
+        
+        me.setVisibilityMode(Element.DISPLAY);
 
         if (!Ext.isEmpty(display)) {
-            Element.data(this.dom, 'originalDisplay', display);
+            (me.$cache || me.getCache()).data.originalDisplay = display;
         }
 
-        return this;
+        return me;
     },
 
 <span id='Ext-dom-Element-method-mask'>    /**
@@ -288,41 +290,46 @@ var HIDDEN = 'hidden',
         var me            = this,
             dom           = me.dom,
             setExpression = dom.style.setExpression,
-            dh            = Ext.DomHelper,
-            mask          = me.maskEl,
-            mm;
+            data          = (me.$cache || me.getCache()).data,
+            maskEl        = data.maskEl,
+            maskMsg       = data.maskMsg;
 
         if (!(bodyRe.test(dom.tagName) &amp;&amp; me.getStyle('position') == 'static')) {
             me.addCls(XMASKEDRELATIVE);
         }
-
-        msgCls = msgCls ? EXTELMASKMSG + &quot; &quot; + msgCls : EXTELMASKMSG;
-        if (mask) {
-            mm = me.maskMsgEl;
-            mm.dom.className = msgCls;
-            mm.dom.firstChild.innerHTML = msg;
-        } else {
-            dh.append(dom, [{
-                cls : Ext.baseCSSPrefix + &quot;mask&quot;
-            }, {
-                cls : msgCls,
-                cn  : {
-                    tag: 'div',
-                    html: msg || ''
-                }
-            }]);
-            mm = me.maskMsgEl = Ext.get(dom.lastChild);
-            mask = me.maskEl = Ext.get(mm.dom.previousSibling);
+        
+        // We always needs to recreate the mask since the DOM element may have been re-created
+        if (maskEl) {
+            maskEl.remove();
+        }
+        
+        if (maskMsg) {
+            maskMsg.remove();
         }
 
+        Ext.DomHelper.append(dom, [{
+            cls : Ext.baseCSSPrefix + &quot;mask&quot;
+        }, {
+            cls : msgCls ? EXTELMASKMSG + &quot; &quot; + msgCls : EXTELMASKMSG,
+            cn  : {
+                tag: 'div',
+                html: msg || ''
+            }
+        }]);
+            
+        maskMsg = Ext.get(dom.lastChild);
+        maskEl = Ext.get(maskMsg.dom.previousSibling);
+        data.maskMsg = maskMsg;
+        data.maskEl = maskEl;
+
         me.addCls(XMASKED);
-        mask.setDisplayed(true);
+        maskEl.setDisplayed(true);
 
         if (typeof msg == 'string') {
-            mm.setDisplayed(true);
-            mm.center(me);
+            maskMsg.setDisplayed(true);
+            maskMsg.center(me);
         } else {
-            mm.setDisplayed(false);
+            maskMsg.setDisplayed(false);
         }
         // NOTE: CSS expressions are resource intensive and to be used only as a last resort
         // These expressions are removed as soon as they are no longer necessary - in the unmask method.
@@ -330,19 +337,19 @@ var HIDDEN = 'hidden',
         // Fix for https://sencha.jira.com/browse/EXTJSIV-19.
         // IE6 strict mode and IE6-9 quirks mode takes off left+right padding when calculating width!
         if (!Ext.supports.IncludePaddingInWidthCalculation &amp;&amp; setExpression) {
-            mask.dom.style.setExpression('width', 'this.parentNode.clientWidth + &quot;px&quot;');
+            maskEl.dom.style.setExpression('width', 'this.parentNode.clientWidth + &quot;px&quot;');
         }
 
         // Some versions and modes of IE subtract top+bottom padding when calculating height.
         // Different versions from those which make the same error for width!
         if (!Ext.supports.IncludePaddingInHeightCalculation &amp;&amp; setExpression) {
-            mask.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + &quot;px&quot;');
+            maskEl.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + &quot;px&quot;');
         }
         // ie will not expand full height automatically
         else if (Ext.isIE &amp;&amp; !(Ext.isIE7 &amp;&amp; Ext.isStrict) &amp;&amp; me.getStyle('height') == 'auto') {
-            mask.setSize(undefined, elHeight || me.getHeight());
+            maskEl.setSize(undefined, elHeight || me.getHeight());
         }
-        return mask;
+        return maskEl;
     },
 
 <span id='Ext-dom-Element-method-unmask'>    /**
@@ -350,16 +357,29 @@ var HIDDEN = 'hidden',
      */
     unmask : function() {
         var me      = this,
-            mask    = me.maskEl;
+            data    = (me.$cache || me.getCache()).data,
+            maskEl  = data.maskEl,
+            maskMsg = data.maskMsg,
+            style;
 
-        if (mask) {
+        if (maskEl) {
+            style = maskEl.dom.style;
             // Remove resource-intensive CSS expressions as soon as they are not required.
-            if (mask.dom.style.clearExpression) {
-                mask.dom.style.clearExpression('width');
-                mask.dom.style.clearExpression('height');
+            if (style.clearExpression) {
+                style.clearExpression('width');
+                style.clearExpression('height');
             }
-            mask.setDisplayed(false);
-            me.maskMsgEl.setDisplayed(false);
+            
+            if (maskEl) {
+                maskEl.remove();
+                delete data.maskEl;
+            }
+            
+            if (maskMsg) {
+                maskMsg.remove();
+                delete data.maskMsg;
+            }
+            
             me.removeCls([XMASKED, XMASKEDRELATIVE]);
         }
     },
@@ -369,17 +389,19 @@ var HIDDEN = 'hidden',
      * @return {Boolean}
      */
     isMasked : function() {
-        var me = this,
-            mask = Element.data(me.dom, 'mask'),
-            maskMsg = Element.data(me.dom, 'maskMsg');
+        var me      = this,
+            data    = (me.$cache || me.getCache()).data,
+            maskEl  = data.maskEl,
+            maskMsg = data.maskMsg,
+            hasMask = false; 
 
-        if (mask &amp;&amp; mask.isVisible()) {
+        if (maskEl &amp;&amp; maskEl.isVisible()) {
             if (maskMsg) {
                 maskMsg.center(me);
             }
-            return true;
+            hasMask = true;
         }
-        return false;
+        return hasMask;
     },
 
 <span id='Ext-dom-Element-method-createShim'>    /**
@@ -415,12 +437,14 @@ var HIDDEN = 'hidden',
         var config;
         if(typeof key != 'object' || Ext.isArray(key)){
             config = {
+                target: this,
                 key: key,
                 fn: fn,
                 scope: scope
             };
         }else{
             config = {
+                target: this,
                 key : key.key,
                 shift : key.shift,
                 ctrl : key.ctrl,
@@ -429,7 +453,7 @@ var HIDDEN = 'hidden',
                 scope: scope
             };
         }
-        return new Ext.util.KeyMap(this, config);
+        return new Ext.util.KeyMap(config);
     },
 
 <span id='Ext-dom-Element-method-addKeyMap'>    /**
@@ -437,8 +461,10 @@ var HIDDEN = 'hidden',
      * @param {Object} config The KeyMap config. See {@link Ext.util.KeyMap} for more details
      * @return {Ext.util.KeyMap} The KeyMap created
      */
-    addKeyMap : function(config){
-        return new Ext.util.KeyMap(this, config);
+    addKeyMap : function(config) {
+        return new Ext.util.KeyMap(Ext.apply({
+            target: this
+        }, config));
     },
 
     //  Mouse events
@@ -900,6 +926,9 @@ var HIDDEN = 'hidden',
                     continue;
                 }
                 el = o.el;
+                if (!el) {
+                    continue;
+                }
                 d = el.dom;
                 // -------------------------------------------------------
                 // Determining what is garbage:
@@ -1023,13 +1052,14 @@ var HIDDEN = 'hidden',
          * can pass true.
          */
         clean : function(forceReclean) {
-            var me  = this,
-                dom = me.dom,
-                n   = dom.firstChild,
-                nx,
-                ni  = -1;
+            var me   = this,
+                dom  = me.dom,
+                data = (me.$cache || me.getCache()).data,
+                n    = dom.firstChild,
+                ni   = -1,
+                nx;
 
-            if (Element.data(dom, 'isCleaned') &amp;&amp; forceReclean !== true) {
+            if (data.isCleaned &amp;&amp; forceReclean !== true) {
                 return me;
             }
 
@@ -1054,7 +1084,7 @@ var HIDDEN = 'hidden',
                 n = nx;
             }
 
-            Element.data(dom, 'isCleaned', true);
+            data.isCleaned = true;
             return me;
         },
 
@@ -1073,14 +1103,14 @@ var HIDDEN = 'hidden',
          * @return {Ext.ElementLoader} The loader
          */
         getLoader : function() {
-            var dom = this.dom,
-                loader = Element.data(dom, 'loader');
+            var me = this,
+                data = (me.$cache || me.getCache()).data,
+                loader = data.loader;
 
             if (!loader) {
-                loader = new Ext.ElementLoader({
-                    target: this
+                data.loader = loader = new Ext.ElementLoader({
+                    target: me
                 });
-                Element.data(dom, 'loader', loader);
             }
             return loader;
         },
@@ -1246,7 +1276,7 @@ var HIDDEN = 'hidden',
                             ret = cached.el;
                             ret.dom = el;
                         } else {
-                            ret = El.addToCache(new Element(el));
+                            ret = new Element(el);
                         }
                     }
                     return ret;

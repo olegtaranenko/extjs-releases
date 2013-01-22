@@ -98,6 +98,16 @@ Ext.onReady(function() {
                         }
                     }
                 }
+            }, {
+                text: 'Change Titles',
+                listeners: {
+                    click: function () {
+                        var panels = viewport.query('panel');
+                        Ext.each(panels, function (panel) {
+                            panel.setTitle(panel.title + '!');
+                        })
+                    }
+                }
             }]
         },{
             region: 'east',

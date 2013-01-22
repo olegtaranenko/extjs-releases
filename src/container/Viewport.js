@@ -134,6 +134,10 @@ Ext.define('Ext.container.Viewport', {
      * @private
      */
 
+    /**
+     * @property {Boolean} isViewport
+     * `true` in this class to identify an objact as an instantiated Viewport, or subclass thereof.
+     */
     isViewport: true,
 
     ariaRole: 'application',

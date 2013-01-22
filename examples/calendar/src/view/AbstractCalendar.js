@@ -822,6 +822,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
     /**
      * Updates the view to contain the passed date
      * @param {Date} dt The date to display
+     * @return {Date} The new view start date
      */
     moveTo: function(dt, noRefresh) {
         if (Ext.isDate(dt)) {
@@ -836,6 +837,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
 
     /**
      * Updates the view to the next consecutive date(s)
+     * @return {Date} The new view start date
      */
     moveNext: function(noRefresh) {
         return this.moveTo(Ext.calendar.util.Date.add(this.viewEnd, {days: 1}));
@@ -843,6 +845,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
 
     /**
      * Updates the view to the previous consecutive date(s)
+     * @return {Date} The new view start date
      */
     movePrev: function(noRefresh) {
         var days = Ext.calendar.util.Date.diffDays(this.viewStart, this.viewEnd) + 1;
@@ -852,6 +855,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
     /**
      * Shifts the view by the passed number of months relative to the currently set date
      * @param {Number} value The number of months (positive or negative) by which to shift the view
+     * @return {Date} The new view start date
      */
     moveMonths: function(value, noRefresh) {
         return this.moveTo(Ext.calendar.util.Date.add(this.startDate, {months: value}), noRefresh);
@@ -860,6 +864,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
     /**
      * Shifts the view by the passed number of weeks relative to the currently set date
      * @param {Number} value The number of weeks (positive or negative) by which to shift the view
+     * @return {Date} The new view start date
      */
     moveWeeks: function(value, noRefresh) {
         return this.moveTo(Ext.calendar.util.Date.add(this.startDate, {days: value * 7}), noRefresh);
@@ -868,6 +873,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
     /**
      * Shifts the view by the passed number of days relative to the currently set date
      * @param {Number} value The number of days (positive or negative) by which to shift the view
+     * @return {Date} The new view start date
      */
     moveDays: function(value, noRefresh) {
         return this.moveTo(Ext.calendar.util.Date.add(this.startDate, {days: value}), noRefresh);
@@ -875,6 +881,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
 
     /**
      * Updates the view to show today
+     * @return {Date} Today's date
      */
     moveToday: function(noRefresh) {
         return this.moveTo(new Date(), noRefresh);

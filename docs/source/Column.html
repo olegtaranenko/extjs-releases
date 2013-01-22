@@ -233,6 +233,18 @@ Ext.define('Ext.layout.container.Column', {
         return !blocked;
     },
 
+    finishedLayout: function (ownerContext) {
+        var bc = ownerContext.bodyContext;
+
+        // Owner may not have a body - this seems to only be needed for Panels.
+        if (bc &amp;&amp; (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks)) {
+            // Fix for https://sencha.jira.com/browse/EXTJSIV-4979
+            bc.el.repaint();
+        }
+
+        this.callParent(arguments);
+    },
+
     getRenderTarget : function() {
         return this.innerCt;
     }

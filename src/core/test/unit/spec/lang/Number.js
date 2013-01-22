@@ -93,4 +93,101 @@ describe("Ext.Number", function(){
             expect(f(-3.4265, 2)).toEqual('-3.43');
         });
     });
+
+    describe("snap", function(){
+
+        // Params are (value, snapincrement, minValue, maxValue)
+        var snap = Number.snap;
+
+        it("should enforce minValue if increment is zero", function(){
+            expect(snap(50, 0, 0, 100)).toEqual(50);
+        });
+
+        it("should enforce maxValue if increment is zero", function(){
+            expect(snap(5000, 0, 0, 100)).toEqual(100);
+        });
+
+        it("should enforce minValue if passed", function(){
+            expect(snap(0, 2, 1, 100)).toEqual(1);
+        });
+
+        it("should not enforce a minimum if no minValue passed", function(){
+            expect(snap(21, 2, undefined, 100)).toEqual(22);
+        });
+
+        it("should enforce maxValue if passed", function(){
+            expect(snap(1000, 2, undefined, 100)).toEqual(100);
+        });
+
+        it("should not enforce a maximum if no maxValue passed", function(){
+            expect(snap(21, 2, undefined, undefined)).toEqual(22);
+        });
+
+        it("should snap to a snap point based upon zero", function(){
+            expect(snap(56, 2, 55, 65)).toEqual(56);
+        });
+
+        it("should enforce the minValue", function(){
+            expect(snap(20, 2, 55, 65)).toEqual(55);
+        });
+
+        it("should snap to a snap point based upon zero", function(){
+            expect(snap(100, 2, 55, 66)).toEqual(66);
+        });
+
+        it("should round to the nearest snap point", function(){
+            expect(snap(4, 5, 0, 100)).toEqual(5);
+        });
+
+    });
+
+    describe("snapInRange", function(){
+
+        // Params are (value, snapincrement, minValue, maxValue)
+        var snap = Number.snapInRange;
+
+        it("should enforce minValue if increment is zero", function(){
+            expect(snap(50, 0, 0, 100)).toEqual(50);
+        });
+
+        it("should enforce maxValue if increment is zero", function(){
+            expect(snap(5000, 0, 0, 100)).toEqual(100);
+        });
+
+        it("should enforce minValue if passed", function(){
+            expect(snap(0, 2, 1, 100)).toEqual(1);
+        });
+
+        it("should not enforce a minimum if no minValue passed", function(){
+            expect(snap(21, 2, undefined, 100)).toEqual(22);
+        });
+
+        it("should enforce maxValue if passed", function(){
+            expect(snap(1000, 2, undefined, 100)).toEqual(100);
+        });
+
+        it("should not enforce a maximum if no maxValue passed", function(){
+            expect(snap(21, 2, undefined, undefined)).toEqual(22);
+        });
+
+        // Valid values are 55, 57, 59, 61, 63, 65
+        it("should snap to a snap point based upon the minValue", function(){
+            expect(snap(56, 2, 55, 65)).toEqual(57);
+        });
+
+        it("should enforce the minValue", function(){
+            expect(snap(20, 2, 55, 65)).toEqual(55);
+        });
+
+        // Valid values are still 55, 57, 59, 61, 63, 65
+        it("should snap to a snap point based upon the minValue even if maxValue is not on a snap point", function(){
+            expect(snap(100, 2, 55, 66)).toEqual(67);
+        });
+
+        it("should round to the nearest snap point", function(){
+            expect(snap(4, 5, 0, 100)).toEqual(5);
+        });
+
+    });
+
 });

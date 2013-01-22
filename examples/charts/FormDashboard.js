@@ -159,6 +159,7 @@ Ext.onReady(function(){
         flex: 1.2,
         animate: true,
         store: chs,
+        theme: 'Blue',
         axes: [{
             steps: 5,
             type: 'Radial',
@@ -173,7 +174,8 @@ Ext.onReady(function(){
             showMarkers: true,
             markerConfig: {
                 radius: 4,
-                size: 4
+                size: 4,
+                fill: 'rgb(69,109,159)'
             },
             style: {
                 fill: 'rgb(194,214,240)',

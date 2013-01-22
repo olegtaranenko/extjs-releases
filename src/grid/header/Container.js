@@ -30,6 +30,8 @@ Ext.define('Ext.grid.header.Container', {
     weight: 100,
 
     defaultType: 'gridcolumn',
+    
+    detachOnRemove: false,
 
     /**
      * @cfg {Number} defaultWidth
@@ -38,9 +40,22 @@ Ext.define('Ext.grid.header.Container', {
     defaultWidth: 100,
     
     /**
-     * @cfg {Boolean} [restrictReorder=false]
-     * True to constrain column dragging so that a column cannot be dragged in or out of it's
-     * current group.
+     * @cfg {Boolean} [sealed=false]
+     * Specify as `true` to constrain column dragging so that a column cannot be dragged into or out of this column.
+     *
+     * **Note that this config is only valid for column headers which contain child column headers, eg:**
+     *     {
+     *         sealed: true
+     *         text: 'ExtJS',
+     *         columns: [{
+     *             text: '3.0.4',
+     *             dataIndex: 'ext304'
+     *         }, {
+     *             text: '4.1.0',
+     *             dataIndex: 'ext410'
+     *         }
+     *     }
+     *
      */
 
     //<locale>
@@ -836,6 +851,19 @@ Ext.define('Ext.grid.header.Container', {
     getHeaderAtIndex: function(index) {
         var columns = this.getGridColumns();
         return columns[index];
+    },
+
+    /**
+     * When passed a column index, returns the closet *visible* column to that. If the column at the passed index is visible,
+     * that is returned. If it is hidden, either the next visible, or the previous visible column is returned.
+     * @param {Number} index Position at which to find the closest visible column.
+     */
+    getVisibleHeaderClosestToIndex: function(index) {
+        var result = this.getHeaderAtIndex(index);
+        if (result.hidden) {
+            result = result.next(':not([hidden])') || result.next(':not([hidden])');
+        }
+        return result;
     },
 
     /**

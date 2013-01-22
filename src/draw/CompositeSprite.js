@@ -139,7 +139,7 @@ Ext.define('Ext.draw.CompositeSprite', {
         
         for (; i < len; i++) {
             sprite = items[i];
-            if (sprite.el) {
+            if (sprite.el && ! sprite.bboxExcluded) {
                 bb = sprite.getBBox();
                 minX = Math.min(minX, bb.x);
                 minY = Math.min(minY, bb.y);

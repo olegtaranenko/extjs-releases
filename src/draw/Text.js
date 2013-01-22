@@ -83,14 +83,14 @@ Ext.define('Ext.draw.Text', {
      */
     getStyles: function(selectors) {
         selectors = Ext.Array.from(selectors);
-        var i,
+        var i = 0,
             len = selectors.length,
             rule,
             style,
             prop,
             result = {};
 
-        for (i = 0; i < len; i++) {
+        for (; i < len; i++) {
             // Get the style rule which exactly matches the selector.
             rule = Ext.util.CSS.getRule(selectors[i]);
             if (rule) {
@@ -115,10 +115,13 @@ Ext.define('Ext.draw.Text', {
      * by which the text should be rotated.
      */
     setAngle: function(degrees) {
-        var me = this;
+        var me = this,
+            surface,
+            sprite;
+            
         if (me.rendered) {
-            var surface = me.surface,
-                sprite = surface.items.items[0];
+            surface = me.surface;
+            sprite = surface.items.items[0];
 
             me.degrees = degrees;
             sprite.setAttributes({
@@ -126,7 +129,9 @@ Ext.define('Ext.draw.Text', {
                     degrees: degrees
                 }
             }, true);
-            me.autoSizeSurface();
+            if (me.autoSize || me.viewBox) {
+                me.updateLayout();
+            }
         } else {
             me.degrees = degrees;
         }
@@ -137,10 +142,13 @@ Ext.define('Ext.draw.Text', {
      * @param {String} t The text to display (html **not** accepted).
      */
     setText: function(text) {
-        var me = this;
+        var me = this,
+            surface,
+            sprite;
+            
         if (me.rendered) {
-            var surface = me.surface,
-                sprite = surface.items.items[0];
+            surface = me.surface;
+            sprite = surface.items.items[0];
 
             me.text = text || '';
             surface.remove(sprite);
@@ -152,7 +160,9 @@ Ext.define('Ext.draw.Text', {
                     degrees: me.degrees
                 }
             }, true);
-            me.autoSizeSurface();
+            if (me.autoSize || me.viewBox) {
+                me.updateLayout();
+            }
         } else {
             me.on({
                 render: function() {

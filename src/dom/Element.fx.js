@@ -14,19 +14,23 @@ var Element = Ext.dom.Element,
     ORIGINALDISPLAY = 'originalDisplay',
     VISMODE = 'visibilityMode',
     ISVISIBLE = 'isVisible',
-    getDisplay = function(dom){
-        var d = Element.data(dom, ORIGINALDISPLAY);
-        if(d === undefined){
-            Element.data(dom, ORIGINALDISPLAY, d = '');
+    getDisplay = function(el){
+        var data = (el.$cache || el.getCache()).data,
+            display = data[ORIGINALDISPLAY];
+            
+        if (display === undefined) {
+            data[ORIGINALDISPLAY] = display = '';
         }
-        return d;
+        return display;
     },
-    getVisMode = function(dom){
-        var m = Element.data(dom, VISMODE);
-        if(m === undefined){
-            Element.data(dom, VISMODE, m = 1);
+    getVisMode = function(el){
+        var data = (el.$cache || el.getCache()).data,
+            visMode = data[VISMODE];
+            
+        if (visMode === undefined) {
+            data[VISMODE] = visMode = Ext.dom.Element.VISIBILITY;
         }
-        return m;
+        return visMode;
     };
 
 Element.override({
@@ -46,7 +50,7 @@ Element.override({
     setVisible : function(visible, animate){
         var me = this, isDisplay, isVisibility, isOffsets, isNosize,
             dom = me.dom,
-            visMode = getVisMode(dom);
+            visMode = getVisMode(me);
 
 
         // hideMode string override
@@ -119,14 +123,16 @@ Element.override({
             }
             me.animate(Ext.applyIf({
                 callback: function() {
-                    visible || me.setVisible(false).setOpacity(1);
+                    if (!visible) {
+                        me.setVisible(false).setOpacity(1);
+                    }
                 },
                 to: {
                     opacity: (visible) ? 1 : 0
                 }
             }, animate));
         }
-        Element.data(dom, ISVISIBLE, visible);  //set logical visibility state
+        (me.$cache || me.getCache()).data[ISVISIBLE] = visible;
         return me;
     },
 
@@ -137,8 +143,8 @@ Element.override({
      * upon current logical visibility state
      */
     hasMetrics  : function(){
-        var dom = this.dom;
-        return this.isVisible() || (getVisMode(dom) == Ext.dom.Element.OFFSETS) || (getVisMode(dom) == Ext.dom.Element.VISIBILITY);
+        var visMode = getVisMode(this);
+        return this.isVisible() || (visMode == Ext.dom.Element.OFFSETS) || (visMode == Ext.dom.Element.VISIBILITY);
     },
 
     /**
@@ -159,7 +165,7 @@ Element.override({
      */
     setDisplayed : function(value) {
         if(typeof value == "boolean"){
-           value = value ? getDisplay(this.dom) : NONE;
+           value = value ? getDisplay(this) : NONE;
         }
         this.setStyle(DISPLAY, value);
         return this;
@@ -170,7 +176,7 @@ Element.override({
         var me = this;
         if (me.isStyle(DISPLAY, NONE)) {
             me.setStyle(VISIBILITY, HIDDEN);
-            me.setStyle(DISPLAY, getDisplay(this.dom)); // first try reverting to default
+            me.setStyle(DISPLAY, getDisplay(me)); // first try reverting to default
             if (me.isStyle(DISPLAY, NONE)) { // if that fails, default to block
                 me.setStyle(DISPLAY, "block");
             }

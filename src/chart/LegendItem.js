@@ -17,6 +17,9 @@ Ext.define('Ext.chart.LegendItem', {
     y: 0,
     zIndex: 500,
 
+    // checks to make sure that a unit size follows the bold keyword in the font style value
+    boldRe: /bold\s\d{1,}.*/i,
+
     constructor: function(config) {
         this.callParent(arguments);
         this.createLegend(config);
@@ -50,6 +53,7 @@ Ext.define('Ext.chart.LegendItem', {
             x: 20,
             y: 0,
             zIndex: z || 0,
+            fill: legend.labelColor,
             font: legend.labelFont,
             text: getSeriesProp('title') || getSeriesProp('yField')
         }));
@@ -136,7 +140,7 @@ Ext.define('Ext.chart.LegendItem', {
 
         me.on('mouseout', function() {
             label.setStyle({
-                'font-weight': 'normal'
+                'font-weight': legend.labelFont && me.boldRe.test(legend.labelFont) ? 'bold' : 'normal'
             });
             series._index = index;
             series.unHighlightItem();
@@ -151,12 +155,12 @@ Ext.define('Ext.chart.LegendItem', {
 
         me.on('mousedown', function() {
             if (!toggle) {
-                series.hideAll();
+                series.hideAll(index);
                 label.setAttributes({
                     opacity: 0.5
                 }, true);
             } else {
-                series.showAll();
+                series.showAll(index);
                 label.setAttributes({
                     opacity: 1
                 }, true);

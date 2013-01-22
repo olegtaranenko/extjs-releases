@@ -57,7 +57,7 @@ Ext.onReady(function(){
         layout: 'fit',
         items: [constrainedWin = Ext.create('Ext.Window', {
             title: 'Constrained Window',
-            width: 100,
+            width: 200,
             height: 100,
             x: 20,
             y: 20,
@@ -68,10 +68,10 @@ Ext.onReady(function(){
             }
         }), constrainedWin2 = Ext.create('Ext.Window', {
             title: 'Header-Constrained Win',
-            width: 100,
+            width: 200,
             height: 100,
-            x: 75,
-            y: 75,
+            x: 120,
+            y: 120,
             constrainHeader: true,
             layout: 'fit',
             items: {

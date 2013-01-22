@@ -117,7 +117,10 @@ Ext.define('Ext.Action', {
         this.items = [];
     },
 
-    // private
+    /*
+     * @property {Boolean} isAction
+     * `true` in this class to identify an objact as an instantiated Action, or subclass thereof.
+     */
     isAction : true,
 
     /**

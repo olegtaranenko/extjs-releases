@@ -171,30 +171,41 @@ Ext.define('Ext.tab.Bar', {
         var me = this,
             card = tab.card,
             tabPanel = me.tabPanel,
+            active = tab.active,
             nextTab;
 
         if (card && card.fireEvent('beforeclose', card) === false) {
             return false;
         }
+        
+        if (tabPanel && card) {
+            // Remove the ownerCt so the tab doesn't get destroyed if the remove is successful
+            // We need this so we can have the tab fire it's own close event.
+            delete tab.ownerCt;
+            tabPanel.remove(card);
+            // Remove succeeded
+            if (!tabPanel.getComponent(card)) {
+                /*
+                 * force the close event to fire. By the time this function returns,
+                 * the tab is already destroyed and all listeners have been purged
+                 * so the tab can't fire itself.
+                 */
+                tab.fireClose();
+                me.remove(tab);
+                card.fireEvent('close', card);
+            } else {
+                // Restore the ownerCt from above
+                tab.ownerCt = me;
+                return false;
+            }
+        }
 
-        if (tab.active && me.items.getCount() > 1) {
+        if (me.items.getCount() >= 1) {
             nextTab = me.previousTab || tab.next('tab') || me.items.first();
             me.setActiveTab(nextTab);
             if (tabPanel) {
                 tabPanel.setActiveTab(nextTab.card);
             }
-        }
-        /*
-         * force the close event to fire. By the time this function returns,
-         * the tab is already destroyed and all listeners have been purged
-         * so the tab can't fire itself.
-         */
-        tab.fireClose();
-        me.remove(tab);
-
-        if (tabPanel && card) {
-            card.fireEvent('close', card);
-            tabPanel.remove(card);
         }
 
         if (nextTab) {

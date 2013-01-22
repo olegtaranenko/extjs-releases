@@ -245,7 +245,7 @@ Ext.define('Ext.resizer.Resizer', {
         // have children and therefore must
         // be wrapped
         tag = me.el.dom.tagName;
-        if (tag == 'TEXTAREA' || tag == 'IMG') {
+        if (tag == 'TEXTAREA' || tag == 'IMG' || tag == 'TABLE') {
             /**
              * @property {Ext.Element/Ext.Component} originalTarget
              * Reference to the original resize target if the element of the original resize target was an IMG or a
@@ -357,6 +357,8 @@ Ext.define('Ext.resizer.Resizer', {
             }
             me.resizeTo(me.width, me.height);
         }
+
+        me.forceHandlesHeight();
     },
 
     disable: function() {

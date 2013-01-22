@@ -129,6 +129,10 @@ Ext.define('Ext.ElementLoader', {
      * - The active request
      */
 
+    /**
+     * @property {Boolean} isLoader
+     * `true` in this class to identify an objact as an instantiated ElementLoader, or subclass thereof.
+     */
     isLoader: true,
 
     constructor: function(config) {

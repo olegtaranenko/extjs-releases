@@ -457,7 +457,7 @@ Ext.define('Ext.chart.Chart', {
         });
 
         // Create legend if not already created
-        if (legend !== false) {
+        if (legend !== false && legend.visible) {
             legend.create();
         }
 
@@ -465,7 +465,7 @@ Ext.define('Ext.chart.Chart', {
         me.alignAxes();
 
         // Reposition legend based on new axis alignment
-        if (me.legend !== false) {
+        if (legend !== false && legend.visible) {
             legend.updatePosition();
         }
 

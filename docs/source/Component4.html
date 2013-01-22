@@ -198,17 +198,18 @@ Ext.define('Ext.draw.Component', {
             bbox = items.getBBox(),
             width = bbox.width,
             height = bbox.height;
-        items.setAttributes({
-            translate: {
-                x: -bbox.x,
-                //Opera has a slight offset in the y axis.
-                y: -bbox.y + (+Ext.isOpera)
-            }
-        }, true);
-        me.surface.setSize(width, height);
+        me.setSurfaceSize(width, height);
         me.updateLayout();
     },
 
+    setSurfaceSize: function (width, height) {
+        this.surface.setSize(width, height);
+        if (this.autoSize) {
+            var bbox = this.surface.items.getBBox();
+            this.surface.setViewBox(bbox.x, bbox.y - (+Ext.isOpera), width, height);
+        }
+    },
+    
 <span id='Ext-draw-Component-method-createSurface'>    /**
 </span>     * Create the Surface instance. Resolves the correct Surface implementation to
      * instantiate based on the 'enginePriority' config. Once the Surface instance is
@@ -218,13 +219,13 @@ Ext.define('Ext.draw.Component', {
      */
     createSurface: function() {
         var me = this,
-            cfg = Ext.apply({}, {
-                width: me.width,
+            cfg = Ext.applyIf({
+                renderTo: me.el,
                 height: me.height,
-                renderTo: me.el
-            }, me.initialConfig),
-            surface;
-            
+                width: me.width,
+                items: me.items
+            }, me.initialConfig), cfg, surface;
+
         // ensure we remove any listeners to prevent duplicate events since we refire them below
         delete cfg.listeners;
         surface = Ext.draw.Surface.create(cfg);

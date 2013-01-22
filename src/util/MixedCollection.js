@@ -152,10 +152,13 @@ Ext.define('Ext.util.MixedCollection', {
     /**
      * Calculates the insertion index of the new item based upon the comparison function passed, or the current sort order.
      * @param {Object} newItem The new object to find the insertion position of.
-     * @param {Function} [sorterFn=currentSortFn] <p>The function to sort by. This is the same as the sorting function
+     * @param {Function} [sorterFn] The function to sort by. This is the same as the sorting function
      * passed to {@link #sortBy}. It accepts 2 items from this MixedCollection, and returns -1 0, or 1
-     * depending on the relative sort positions of the 2 compared items.</p>
-     * <p>If omitted the currently defined sort (if any) will be used.</p>
+     * depending on the relative sort positions of the 2 compared items.
+     *
+     * If omitted, a function {@link #generateComparator generated} from the currently defined set of
+     * {@link #sorters} will be used.
+     *
      * @return {Number} The insertion point to add the new item into this MixedCollection at using {@link #insert}
      */
     findInsertionIndex: function(newItem, sorterFn) {

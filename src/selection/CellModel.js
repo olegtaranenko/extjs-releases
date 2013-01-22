@@ -210,9 +210,12 @@ Ext.define('Ext.selection.CellModel', {
     },
 
     refresh: function() {
-        var pos = this.getCurrentPosition();
-        if (pos) {
-            this.onCellSelect(pos);
+        var pos = this.getCurrentPosition(),
+            selRowIdx;
+
+        // Synchronize the current position's row with the row of the last selected record.
+        if (pos && (selRowIdx = this.store.indexOf(this.selected.last())) !== -1) {
+            pos.row = selRowIdx;
         }
     },
 

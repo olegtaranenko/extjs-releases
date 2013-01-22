@@ -51,6 +51,7 @@ Ext.define('Ext.ux.form.ItemSelector', {
         var me = this;
         
         return Ext.create('Ext.ux.form.MultiSelect', {
+            submitValue: false,
             flex: 1,
             dragGroup: me.ddGroup,
             dropGroup: me.ddGroup,
@@ -89,10 +90,10 @@ Ext.define('Ext.ux.form.ItemSelector', {
                 {
                     xtype: 'container',
                     margins: '0 4',
-                    width: 30,
+                    width: 22,
                     layout: {
                         type: 'vbox',
-                        align: 'middle'
+                        pack: 'center'
                     },
                     items: me.createButtons()
                 },

@@ -36,7 +36,7 @@ Ext.define('Ext.tree.Panel', {
     extend: 'Ext.panel.Table',
     alias: 'widget.treepanel',
     alternateClassName: ['Ext.tree.TreePanel', 'Ext.TreePanel'],
-    requires: ['Ext.tree.View', 'Ext.selection.TreeModel', 'Ext.tree.Column'],
+    requires: ['Ext.tree.View', 'Ext.selection.TreeModel', 'Ext.tree.Column', 'Ext.data.TreeStore'],
     viewType: 'treeview',
     selType: 'treemodel',
 
@@ -125,6 +125,11 @@ Ext.define('Ext.tree.Panel', {
     /**
      * @cfg {Boolean} folderSort
      * True to automatically prepend a leaf sorter to the store.
+     */
+     
+    /**
+     * @cfg {Ext.data.TreeStore} store (required)
+     * The {@link Ext.data.TreeStore Store} the tree should use as its data source.
      */
 
     constructor: function(config) {
@@ -223,7 +228,7 @@ Ext.define('Ext.tree.Panel', {
              * @event itemmove
              * @inheritdoc Ext.data.TreeStore#move
              */
-            move: me.createRelayer('itemmove'),
+            move: me.createRelayer('itemmove', [0, 4]),
 
             /**
              * @event iteminsert
@@ -259,25 +264,25 @@ Ext.define('Ext.tree.Panel', {
              * @event itemexpand
              * @inheritdoc Ext.data.TreeStore#expand
              */
-            expand: me.createRelayer('itemexpand'),
+            expand: me.createRelayer('itemexpand', [0, 1]),
 
             /**
              * @event itemcollapse
              * @inheritdoc Ext.data.TreeStore#collapse
              */
-            collapse: me.createRelayer('itemcollapse'),
+            collapse: me.createRelayer('itemcollapse', [0, 1]),
 
             /**
              * @event beforeitemexpand
              * @inheritdoc Ext.data.TreeStore#beforeexpand
              */
-            beforeexpand: me.createRelayer('beforeitemexpand'),
+            beforeexpand: me.createRelayer('beforeitemexpand', [0, 1]),
 
             /**
              * @event beforeitemcollapse
              * @inheritdoc Ext.data.TreeStore#beforecollapse
              */
-            beforecollapse: me.createRelayer('beforeitemcollapse')
+            beforecollapse: me.createRelayer('beforeitemcollapse', [0, 1])
         });
 
         // If the user specifies the headers collection manually then dont inject our own

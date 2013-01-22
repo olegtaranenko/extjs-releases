@@ -42,6 +42,8 @@
  *             maxValue: '6:00pm'
  *         }],
  *     });
+ *
+ * Note that any configured {@link Ext.Component#padding padding} will be ignored on items within a Form layout.
  */
 Ext.define('Ext.layout.container.Form', {
 

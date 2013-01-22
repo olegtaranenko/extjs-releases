@@ -285,7 +285,7 @@ Ext.define('Ext.data.Model', {
 
                 association, i, ln,
                 dependencies = [],
-                idProperty = cls.prototype.idProperty,
+                idProperty = data.idProperty || cls.prototype.idProperty,
                 fieldConvertSortFn = Ext.Function.bind(
                     fieldsMixedCollection.sortBy, 
                     fieldsMixedCollection, 
@@ -624,12 +624,17 @@ Ext.define('Ext.data.Model', {
 
     /**
      * @cfg {String} persistenceProperty
-     * The property on this Persistable object that its data is saved to. Defaults to 'data'
-     * (e.g. all persistable data resides in this.data.)
+     * The name of the property on this Persistable object that its data is saved to. Defaults to 'data'
+     * (i.e: all persistable data resides in `this.data`.)
      */
     persistenceProperty: 'data',
 
     evented: false,
+
+    /**
+     * @property {Boolean} isModel
+     * `true` in this class to identify an objact as an instantiated Model, or subclass thereof.
+     */
     isModel: true,
 
     /**
@@ -646,13 +651,12 @@ Ext.define('Ext.data.Model', {
     idProperty: 'id',
 
     /**
-     * @cfg {String} clientIdProperty
+     * @cfg {String} [clientIdProperty='clientId']
      * The name of a property that is used for submitting this Model's unique client-side identifier
      * to the server when multiple phantom records are saved as part of the same {@link Ext.data.Operation Operation}.
      * In such a case, the server response should include the client id for each record
      * so that the server response data can be used to update the client-side records if necessary.
      * This property cannot have the same name as any of this Model's fields.
-     * Defaults to 'clientId'.
      */
     clientIdProperty: 'clientId',
 
@@ -665,11 +669,20 @@ Ext.define('Ext.data.Model', {
     // Fields config and property
     /**
      * @cfg {Object[]/String[]} fields
-     * The fields for this model.
+     * The fields for this model. This is an Array of **{@link Ext.data.Field Field}** definition objects. A Field
+     * definition may simply be the *name* of the Field, but a Field encapsulates {@link Ext.data.Field#type data type},
+     * {@link Ext.data.Field#convert custom conversion} of raw data, and a {@link Ext.data.Field#mapping mapping}
+     * property to specify by name of index, how to extract a field's value from a raw data object, so it is best practice
+     * to specify a full set of {@link Ext.data.Field Field} config objects.
      */
     /**
      * @property {Ext.util.MixedCollection} fields
-     * The fields defined on this model.
+     * A {@link Ext.util.MixedCollection Collection} of the fields defined for this Model (including fields defined in superclasses)
+     *
+     * This is a collection of {@link Ext.data.Field} instances, each of which encapsulates information that the field was configured with.
+     * By default, you can specify a field as simply a String, representing the *name* of the field, but a Field encapsulates
+     * {@link Ext.data.Field#type data type}, {@link Ext.data.Field#convert custom conversion} of raw data, and a {@link Ext.data.Field#mapping mapping}
+     * property to specify by name of index, how to extract a field's value from a raw data object.
      */
 
     /**

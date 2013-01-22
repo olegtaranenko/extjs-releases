@@ -158,18 +158,18 @@ Ext.define('Ext.layout.component.Button', {
 
     cacheTargetInfo: function(ownerContext) {
         var me = this,
-            owner, frameSize, btnWrapPadding, innerFrameSize;
+            padding, frameSize, btnWrapPadding, innerFrameSize;
 
         if (!('adjWidth' in me)) {
-            owner = me.owner;
+            padding = ownerContext.getPaddingInfo();
             frameSize = ownerContext.getFrameInfo();
             btnWrapPadding = ownerContext.getEl('btnWrap').getPaddingInfo();
             innerFrameSize = ownerContext.getEl('btnInnerEl').getPaddingInfo();
 
             Ext.apply(me, {
                 // Width adjustment must take into account the arrow area. The btnWrap is the <em> which has padding to accommodate the arrow.
-                adjWidth       : btnWrapPadding.width + frameSize.width,
-                adjHeight      : btnWrapPadding.height + frameSize.height,
+                adjWidth       : btnWrapPadding.width + frameSize.width + padding.width,
+                adjHeight      : btnWrapPadding.height + frameSize.height + padding.height,
                 btnFrameWidth  : innerFrameSize.width,
                 btnFrameHeight : innerFrameSize.height,
                 btnFrameTop    : innerFrameSize.top

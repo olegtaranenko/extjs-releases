@@ -96,6 +96,10 @@ Ext.define('Ext.grid.feature.GroupingSummary', {
 
     /* End Definitions */
 
+    init: function() {
+        this.mixins.summary.init.call(this);
+    },
+
 
    /**
     * Modifies the row template to include the summary row.

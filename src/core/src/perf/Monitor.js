@@ -144,6 +144,8 @@ Ext.define('Ext.perf.Monitor', {
             };
         }
 
+        this.currentConfig = config;
+
         Ext.Object.each(config, function (accumName, taps) {
             var accum = Ext.Perf.get(accumName);
 

@@ -391,6 +391,8 @@ Ext.define('Ext.grid.plugin.CellEditing', {
     startEditByPosition: function(position) {
         var sm = this.grid.getSelectionModel();
 
+        // Coerce the column position to the closest visible column
+        position.column = this.view.getHeaderCt().getVisibleHeaderClosestToIndex(position.column).getIndex();
         if (sm.selectByPosition) {
             sm.selectByPosition(position);
         }

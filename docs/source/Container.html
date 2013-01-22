@@ -56,14 +56,14 @@ Ext.define('Ext.layout.container.Container', {
      */
     manageOverflow: 0,
 
-<span id='Ext-layout-container-Container-property-beginCollapse'>    /**
+<span id='Ext-layout-container-Container-method-beginCollapse'>    /**
 </span>     * @private
      * Called by an owning Panel before the Panel begins its collapse process.
      * Most layouts will not need to override the default Ext.emptyFn implementation.
      */
     beginCollapse: Ext.emptyFn,
 
-<span id='Ext-layout-container-Container-property-beginExpand'>    /**
+<span id='Ext-layout-container-Container-method-beginExpand'>    /**
 </span>     * @private
      * Called by an owning Panel before the Panel begins its expand process.
      * Most layouts will not need to override the default Ext.emptyFn implementation.
@@ -394,17 +394,15 @@ Ext.define('Ext.layout.container.Container', {
      */
     configureItem: function(item) {
         var me = this,
-            itemCls = me.itemCls,
-            ownerItemCls = me.owner.itemCls;
+            ownerItemCls = me.owner.itemCls,
+            addClasses = me.itemCls || [];
 
         me.callParent(arguments);
 
-        if (itemCls) {
-            item.addCls(itemCls);
-        }
         if (ownerItemCls) {
-            item.addCls(ownerItemCls);
+            addClasses = Ext.Array.push(addClasses, ownerItemCls);
         }
+        item.addCls(addClasses);
     },
 
     doRenderBody: function (out, renderData) {

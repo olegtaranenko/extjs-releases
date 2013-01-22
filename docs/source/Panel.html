@@ -375,8 +375,7 @@ Ext.define('Ext.panel.Panel', {
      */
 
     initComponent: function() {
-        var me = this,
-            cls;
+        var me = this;
 
         me.addEvents(
 
@@ -477,10 +476,15 @@ Ext.define('Ext.panel.Panel', {
 
         me.callParent();
         me.collapseDirection = me.collapseDirection || me.headerPosition || Ext.Component.DIRECTION_TOP;
+
+        // Used to track hidden content elements during collapsed state
+        me.hiddenOnCollapse = new Ext.dom.CompositeElement();
+
     },
 
     beforeDestroy: function() {
         Ext.destroy(
+            this.placeholder,
             this.ghostPanel,
             this.dd
         );
@@ -516,20 +520,28 @@ Ext.define('Ext.panel.Panel', {
     setTitle: function(newTitle) {
         var me = this,
             oldTitle = me.title,
-            header = me.header;
+            header = me.header,
+            reExpander = me.reExpander,
+            placeholder = me.placeholder;
 
         me.title = newTitle;
+
         if (header) {
             if (header.isHeader) {
-                me.header.setTitle(newTitle);
+                header.setTitle(newTitle);
             } else {
                 header.title = newTitle;
             }
         }
 
-        if (me.reExpander) {
-            me.reExpander.setTitle(newTitle);
+        if (reExpander) {
+            reExpander.setTitle(newTitle);
         }
+
+        if (placeholder) {
+            placeholder.setTitle(newTitle);
+        }
+
         me.fireEvent('titlechange', me, newTitle, oldTitle);
     },
 
@@ -801,13 +813,17 @@ Ext.define('Ext.panel.Panel', {
 
         me.callParent();
 
+        // Add class-specific header tools.
+        // Panel adds collapsible and closable.
+        me.initTools();
+
+        // Dock the header/title
+        me.updateHeader();
+
         // If we are rendering collapsed, we still need to save and modify various configs
         if (me.collapsed) {
             if (me.collapseMode === 'placeholder') {
                 me.hidden = true;
-                
-                // Needs a z-index to float over the other regions when animating in or out.
-                me.protoEl.setStyle('z-index', 5);
 
                 // This will insert the placeholder Component into the ownerCt's child collection
                 // Its getRenderTree call which is calling this will then iterate again and
@@ -816,7 +832,7 @@ Ext.define('Ext.panel.Panel', {
                 wasCollapsed = me.collapsed;
 
                 // Temporarily clear the flag so that the header is rendered with a collapse tool in it.
-                // Placeholder collapse panels never really collapse, they just hide. The tool is always 
+                // Placeholder collapse panels never really collapse, they just hide. The tool is always
                 // a collapse tool.
                 me.collapsed = false;
             } else {
@@ -824,13 +840,6 @@ Ext.define('Ext.panel.Panel', {
                 me.addClsWithUI(me.collapsedCls);
             }
         }
-
-        // Add class-specific header tools.
-        // Panel adds collapsible and closable.
-        me.initTools();
-
-        // Dock the header/title
-        me.updateHeader();
 
         // Restore the flag if we are being rendered initially placeholder collapsed.
         if (wasCollapsed) {
@@ -850,7 +859,7 @@ Ext.define('Ext.panel.Panel', {
 
         // Add a collapse tool unless configured to not show a collapse tool
         // or to not even show a header.
-        if (me.collapsible &amp;&amp; !(me.hideCollapseTool || me.header === false)) {
+        if (me.collapsible &amp;&amp; !(me.hideCollapseTool || me.header === false || me.preventHeader)) {
             me.collapseDirection = me.collapseDirection || me.headerPosition || 'top';
             me.collapseTool = me.expandTool = Ext.widget({
                 xtype: 'tool',
@@ -883,7 +892,7 @@ Ext.define('Ext.panel.Panel', {
         }
     },
 
-<span id='Ext-panel-Panel-property-addTools'>    /**
+<span id='Ext-panel-Panel-method-addTools'>    /**
 </span>     * @private
      * @template
      * Template method to be implemented in subclasses to add their tools after the collapsible tool.
@@ -937,7 +946,6 @@ Ext.define('Ext.panel.Panel', {
                     ui          : me.ui,
                     id          : me.id + '_header',
                     indicateDrag: me.draggable,
-                    border      : me.border,
                     frame       : me.frame &amp;&amp; me.frameHeader,
                     ignoreParentFrame : me.frame || me.overlapHeader,
                     ignoreBorderManagement: me.frame || me.ignoreHeaderBorderManagement,
@@ -1008,6 +1016,18 @@ Ext.define('Ext.panel.Panel', {
             me.placeholder.show();
         } else {
             me.callParent(arguments);
+        }
+    },
+
+    onRemoved: function(destroying) {
+        var me = this;
+
+        me.callParent(arguments);
+
+        // If we are removed but not being destroyed, ensure our placeholder is also removed but not destroyed
+        // If we are being destroyed, our destroy processing will destroy the placeholder.
+        if (me.placeholder &amp;&amp; !destroying) {
+            me.ownerCt.remove(me.placeholder, false);
         }
     },
 
@@ -1123,7 +1143,7 @@ Ext.define('Ext.panel.Panel', {
                 // Also, collect all other docked items which we must hide after collapse. 
                 for (i = 0; i &lt; dockedItemCount; i++) {
                     comp = dockedItems[i];
-                    if (comp.isVisible()) {
+                    if (!comp.hidden) {
                         if (comp.isHeader &amp;&amp; (!comp.dock || comp.dock == 'top' || comp.dock == 'bottom')) {
                             return comp;
                         }
@@ -1138,7 +1158,7 @@ Ext.define('Ext.panel.Panel', {
                 // Also, collect all other docked items which we must hide after collapse. 
                 for (i = 0; i &lt; dockedItemCount; i++) {
                     comp = dockedItems[i];
-                    if (comp.isVisible()) {
+                    if (!comp.hidden) {
                         if (comp.isHeader &amp;&amp; (comp.dock == 'left' || comp.dock == 'right')) {
                             return comp;
                         }
@@ -1153,82 +1173,73 @@ Ext.define('Ext.panel.Panel', {
 
     getReExpander: function (direction) {
         var me = this,
-            collapsedCls = me.collapsedCls,
             collapseDir = direction || me.collapseDirection,
-            reExpander = me.reExpander || me.findReExpander(collapseDir),
-            collapsed, collapsedClasses;
+            reExpander = me.reExpander || me.findReExpander(collapseDir);
 
         me.expandDirection = me.getOppositeDirection(collapseDir);
 
-        // We did not find a Header of the required orientation: create one.
         if (!reExpander) {
-            me.reExpander = reExpander = Ext.widget(me.createReExpander(collapseDir, {
+        // We did not find a Header of the required orientation: create one.
+            me.reExpander = reExpander = me.createReExpander(collapseDir, {
                 dock: collapseDir,
                 cls: Ext.baseCSSPrefix + 'docked ' + me.baseCls + '-' + me.ui + '-collapsed',
                 ownerCt: me,
                 ownerLayout: me.componentLayout
-            }));
+            });
 
             me.dockedItems.insert(0, reExpander);
         }
-
-        // Add collapsed class to header if collapsing, remove if expanding
-
-        collapsedClasses = [ collapsedCls, collapsedCls + '-' + reExpander.dock];
-        if (me.border &amp;&amp; (!me.frame || (me.frame &amp;&amp; Ext.supports.CSS3BorderRadius))) {
-            collapsedClasses.push(collapsedCls + '-border-' + reExpander.dock);
-        }
-
-        if (me.isCollapsingOrExpanding == 1) {
-            collapsed = true;
-        } else if (me.isCollapsingOrExpanding != 2) {
-            collapsed = me.collapsed;
-        }
-
-        if (collapsed) {
-            if (reExpander.hidden) {
-                reExpander.suspendLayouts();
-                reExpander.show();
-                reExpander.resumeLayouts();
-            }
-            reExpander.addClsWithUI(collapsedClasses);
-        } else {
-            reExpander.removeClsWithUI(collapsedClasses);
-        }
-
         return reExpander;
     },
 
     createReExpander: function(direction, defaults) {
         var me = this,
+            isLeft = direction == 'left',
+            isRight = direction == 'right',
+            toolAtTop,
             result = Ext.apply({
-                xtype: 'header',
                 hideMode: 'offsets',
-                temporary: true,
                 title: me.title,
-                orientation: (direction == 'top' || direction == 'bottom') ? 'horizontal' : 'vertical',
+                orientation: (isLeft || isRight) ? 'vertical' : 'horizontal',
                 textCls: me.headerTextCls,
                 iconCls: me.iconCls,
                 baseCls: me.baseCls + '-header',
                 ui: me.ui,
                 frame: me.frame &amp;&amp; me.frameHeader,
                 ignoreParentFrame: me.frame || me.overlapHeader,
-                indicateDrag: me.draggable,
-                style: {
-                    &quot;z-index&quot;: 2 // Put it above any other docks which might still occupy the space this will be allocated as the sole visible dock.
-                }
+                indicateDrag: me.draggable
             }, defaults);
 
+        // Create the re expand tool
+        // For UI consistency reasons, collapse:left reExpanders, and region: 'west' placeHolders
+        // have the re expand tool at the *top* with a bit of space.
         if (!me.hideCollapseTool) {
-            result[(result.orientation == 'horizontal') ? 'tools' : 'items'] = [{
+            toolAtTop = isLeft || (isRight &amp;&amp; me.collapseMode == 'placeholder');
+            result[toolAtTop ? 'items' : 'tools'] = [{
                 xtype: 'tool',
                 type: 'expand-' + me.getOppositeDirection(direction),
+                margins: toolAtTop ? '0 0 8 0' : '',
                 handler: me.toggleCollapse,
                 scope: me
             }];
         }
-
+        result = new Ext.panel.Header(result);
+        result.addClsWithUI(me.getHeaderCollapsedClasses(result))
         return result;
+    },
+
+    // private
+    // Create the class array to add to the Header when collpsed.
+    getHeaderCollapsedClasses: function(header) {
+        var me = this,
+            collapsedCls = me.collapsedCls,
+            collapsedClasses;
+
+        collapsedClasses = [ collapsedCls, collapsedCls + '-' + header.dock];
+        if (me.border &amp;&amp; (!me.frame || (me.frame &amp;&amp; Ext.supports.CSS3BorderRadius))) {
+            collapsedClasses.push(collapsedCls + '-border-' + header.dock);
+        }
+        return collapsedClasses;
     },
 
 <span id='Ext-panel-Panel-method-beginCollapse'>    /**
@@ -1240,7 +1251,8 @@ Ext.define('Ext.panel.Panel', {
      */
     beginCollapse: function() {
         var me = this,
-            lastBox = me.lastBox;
+            lastBox = me.lastBoxcollapsedClasses,
+            reExpander;
 
         // When we collapse a panel, the panel is in control of one dimension (depending on
         // collapse direction) and sets that on the component. We must restore the user's
@@ -1270,6 +1282,26 @@ Ext.define('Ext.panel.Panel', {
         if (me.ownerCt) {
             me.ownerCt.getLayout().beginCollapse(me);
         }
+
+        // Get a reExpander header. This will return the Panel Header if the Header is in the correct orientation
+        // If we are using the Header as the reExpander, change its UI to collapsed state
+        if (me.collapseMode !== 'placeholder') {
+            if (me.header === (reExpander = me.getReExpander())) {
+                me.header.addClsWithUI(me.getHeaderCollapsedClasses(me.header));
+
+                // Ensure that the reExpander has the correct framing applied.
+                if (me.header.rendered) {
+                    me.header.updateFrame();
+                }
+            }
+            // We're going to use a temporary reExpander: show it.
+            else {
+                if (reExpander.el) {
+                    reExpander.el.show();
+                    reExpander.hidden = false;
+                }
+            }
+        }
         if (me.resizer) {
             me.resizer.disable();
         }
@@ -1277,7 +1309,8 @@ Ext.define('Ext.panel.Panel', {
     
     beginExpand: function() {
         var me = this,
-            lastBox = me.lastBox;
+            lastBox = me.lastBox,
+            reExpander;
 
         if (me.collapsedVertical()) {
             me.collapseMemento.restore(['height', 'minHeight']);
@@ -1293,6 +1326,23 @@ Ext.define('Ext.panel.Panel', {
 
         if (me.ownerCt) {
             me.ownerCt.getLayout().beginExpand(me);
+        }
+
+        if (me.collapseMode !== 'placeholder') {
+            // If we have been using our Header as the reExpander then restore the Header to expanded UI
+            if (me.header === (reExpander = me.getReExpander())) {
+                me.header.removeClsWithUI(me.getHeaderCollapsedClasses(me.header));
+
+                // Ensure that the reExpander has the correct framing applied.
+                if (me.header.rendered) {
+                    me.header.updateFrame();
+                }
+            }
+            // We've been using a temporary reExpander: hide it.
+            else {
+                reExpander.hidden = true;
+                reExpander.el.hide();
+            }
         }
     },
 
@@ -1343,9 +1393,6 @@ Ext.define('Ext.panel.Panel', {
         // collapse direction and the animCollapse setting.
         me.isCollapsingOrExpanding = flags;
 
-        // Ensure that the header has the collapse class added, and the correct framing applied.
-        me.getReExpander().updateFrame();
-
         if (ownerLayout &amp;&amp; !animate) {
             ownerLayout.onContentChange(me);
         } else {
@@ -1355,9 +1402,23 @@ Ext.define('Ext.panel.Panel', {
         return me;
     },
 
+<span id='Ext-panel-Panel-method-afterCollapse'>    /**
+</span>     * Invoked after the Panel is Collapsed.
+     *
+     * @param {Boolean} animated
+     *
+     * @template
+     * @protected
+     */
     afterCollapse: function(animated) {
         var me = this,
-            ownerLayout = me.ownerLayout;
+            ownerLayout = me.ownerLayout,
+            reExpander = me.getReExpander(),
+            items = me.getDockedItems(),
+            len = items.length,
+            i = 0,
+            item,
+            toHide = me.hiddenOnCollapse;
 
         me.isCollapsingOrExpanding = false;
         if (me.collapseTool) {
@@ -1367,6 +1428,16 @@ Ext.define('Ext.panel.Panel', {
         if (ownerLayout &amp;&amp; animated) {
             ownerLayout.onContentChange(me);
         }
+
+        // Hide Panel content except reExpander using visibility to prevent focusing of contained elements.
+        // Track what we hide to re-show on expand
+        me.hiddenOnCollapse.add(me.body);
+        for (; i &lt; len; i++) {
+            if ((item = items[i]) !== reExpander &amp;&amp; item.el) {
+                toHide.add(item.el);
+            }
+        }
+        toHide.setStyle('visibility', 'hidden');
 
         me.fireEvent('collapse', me);
     },
@@ -1399,37 +1470,44 @@ Ext.define('Ext.panel.Panel', {
         var me = this,
             ownerCt = me.ownerCt,
             collapseDir = direction || me.collapseDirection,
-            floatCls = Ext.baseCSSPrefix + 'border-region-slide-in';
+            floatCls = Ext.baseCSSPrefix + 'border-region-slide-in',
+            placeholder = me.placeholder;
 
         // Upcoming layout run will ignore this Component
         me.hidden = true;
         me.collapsed = collapseDir;
 
-        if (me.placeholder) {
-            me.placeholder.hidden = false;
-            me.placeholder.el.show();
+        if (placeholder) {
+            
+            // We may be been added to another Container from that in which we rendered the placeholder
+            if (placeholder.el.dom.parentNode !== me.el.dom.parentNode) {
+                me.el.dom.parentNode.insertBefore(placeholder.el.dom, me.el.dom);
+            }
+
+            placeholder.hidden = false;
+            placeholder.el.show();
             ownerCt.updateLayout();
         } else {
-            me.placeholder = me.createPlaceholder(collapseDir);
+            placeholder = me.placeholder = me.createPlaceholder(collapseDir);
             ownerCt.insert(ownerCt.items.indexOf(me), me.placeholder);
         }
 
         if (me.rendered) {
             if (animate) {
                 me.el.addCls(floatCls);
-                me.placeholder.el.hide();
+                placeholder.el.hide();
                 
                 me.el.slideOut(collapseDir.substr(0, 1), {
                     duration: Ext.Number.from(animate, Ext.fx.Anim.prototype.duration),
                     listeners: {
                         afteranimate: function() {
                             me.el.removeCls(floatCls);
-                            me.placeholder.el.show().slideIn(collapseDir.substr(0, 1), {
+                            placeholder.el.show().slideIn(collapseDir.substr(0, 1), {
                                 easing: 'linear',
                                 duration: 100,
                                 listeners: {
-                                    afteranimate: me.placeholder.focus,
-                                    scope: me.placeholder
+                                    afteranimate: placeholder.focus,
+                                    scope: placeholder
                                 }
                             });
                         }
@@ -1450,7 +1528,8 @@ Ext.define('Ext.panel.Panel', {
             pb = placeholder.getBox(true),
             myBox,
             floatCls = Ext.baseCSSPrefix + 'border-region-slide-in',
-            collapsed = me.collapsed;
+            collapsed = me.collapsed,
+            layoutOwner = me.ownerCt || me;
 
         // Already floated
         if (me.el.hasCls(floatCls)) {
@@ -1468,26 +1547,30 @@ Ext.define('Ext.panel.Panel', {
             }
         }
 
-        // Lay out in fully uncollapsed mode to ensure we are at the correct size
-        me.collapsed = false;
+        // Lay out in fully expanded mode to ensure we are at the correct size, and collect our expanded box
         me.placeholder.el.hide();
         me.placeholder.hidden = true;
         me.el.show();
-        me.updateLayout();
+        me.hidden = false;
+        me.collapsed = false;
+        layoutOwner.updateLayout();
         myBox = me.getBox(true);
 
-        // Then go back immediately to collapsed state
-        me.collapsed = collapsed;
+        // Then go back immediately to collapsed state from which to initiate the float into view.
         me.placeholder.el.show();
         me.placeholder.hidden = false;
         me.el.hide();
-        me.updateLayout();
+        me.hidden = true;
+        me.collapsed = collapsed;
+        layoutOwner.updateLayout();
 
         // Monitor for mouseouting of the placeholder. Hide it if they exit for half a second or more
         me.placeholderMouseMon = placeholder.el.monitorMouseLeave(500, onMouseLeaveFloated);
         me.panelMouseMon       = me.el.monitorMouseLeave(500, onMouseLeaveFloated);
         me.el.addCls(floatCls);
-        me.collapseTool.el.hide();
+
+        // Hide collapse tool in header if there is one (we might be headerless)
+        me.collapseTool &amp;&amp; me.collapseTool.el.hide();
 
         switch (me.collapsed) {
             case 'top':
@@ -1519,16 +1602,20 @@ Ext.define('Ext.panel.Panel', {
         compEl.un(me.panelMouseMon);
         me.placeholder.el.un(me.placeholderMouseMon);
 
-        me.collapseTool.el.show();
-
-        // Slide the Component out
-        me.el.removeCls(floatCls);
-
         if (typeof me.collapsed == 'string') {
             collapseDirection = me.collapsed.charAt(0);
         }
 
-        compEl.slideOut(collapseDirection, me.slideOutAnim);
+        compEl.slideOut(collapseDirection, {
+            listeners: {
+                afteranimate: function() {
+                    me.collapseTool &amp;&amp; me.collapseTool.el.show();
+
+                    // Slide the Component out
+                    me.el.removeCls(floatCls);
+                }
+            }
+        });
     },
 
 <span id='Ext-panel-Panel-method-expand'>    /**
@@ -1539,7 +1626,8 @@ Ext.define('Ext.panel.Panel', {
      * @return {Ext.panel.Panel} this
      */
     expand: function(animate) {
-        var me = this;
+        var me = this,
+            toShow = me.hiddenOnCollapse;
 
         if (arguments.length &lt; 2) {
             animate = me.animCollapse;
@@ -1553,10 +1641,9 @@ Ext.define('Ext.panel.Panel', {
             return me.placeholderExpand(animate);
         }
 
-        if (me.reExpander) {
-            me.reExpander.hidden = true;
-            me.reExpander.el.hide();
-        }
+        // Re-show Panel content which was hidden after collapse.
+        toShow.setStyle('visibility', '');
+        toShow.clear();
         me.beginExpand();
         me.collapsed = false;
 
@@ -1577,7 +1664,6 @@ Ext.define('Ext.panel.Panel', {
             me.el.un(me.panelMouseMon);
             me.placeholder.el.un(me.placeholderMouseMon);
 
-            me.el.removeCls(floatCls);
             floatedPos = me.getPosition(true);
             if (me.collapseTool) {
                 me.collapseTool.el.show();
@@ -1595,11 +1681,11 @@ Ext.define('Ext.panel.Panel', {
             if (floatedPos) {
                 finalPos = me.el.getXY();
                 me.el.setLeftTop(floatedPos[0], floatedPos[1]);
-                me.el.removeCls(floatCls);
                 me.el.moveTo(finalPos[0], finalPos[1], {
                     duration: Ext.Number.from(animate, Ext.fx.Anim.prototype.duration),
                     listeners: {
                         afteranimate: function() {
+                            me.el.removeCls(floatCls);
                             me.fireEvent('expand', me);
                         }
                     }
@@ -1608,6 +1694,7 @@ Ext.define('Ext.panel.Panel', {
             // Not floated, slide it in to the correct place
             else {
                 me.hidden = true;
+                me.el.addCls(floatCls);
                 me.el.hide();
                 me.collapsed = collapseDir;
                 me.placeholder.show();
@@ -1621,6 +1708,7 @@ Ext.define('Ext.panel.Panel', {
                         afteranimate: function() {
                             me.collapsed = false;
                             me.placeholder.hide();
+                            me.el.removeCls(floatCls);
                             me.fireEvent('expand', me);
                         }
                     }
@@ -1632,6 +1720,14 @@ Ext.define('Ext.panel.Panel', {
         }
     },
 
+<span id='Ext-panel-Panel-method-afterExpand'>    /**
+</span>     * Invoked after the Panel is Expanded.
+     *
+     * @param {Boolean} animated
+     *
+     * @template
+     * @protected
+     */
     afterExpand: function(animated) {
         var me = this,
             ownerLayout = me.ownerLayout;
@@ -1699,7 +1795,9 @@ Ext.define('Ext.panel.Panel', {
 
     // private
     getKeyMap : function() {
-        return this.keyMap || (this.keyMap = new Ext.util.KeyMap(this.el, this.keys));
+        return this.keyMap || (this.keyMap = new Ext.util.KeyMap(Ext.apply({
+            target: this.el
+        }, this.keys)));
     },
 
     // private
@@ -1798,6 +1896,9 @@ Ext.define('Ext.panel.Panel', {
             return;
         }
         if (show !== false) {
+            // Show el first, so that position adjustment in setPagePosition
+            // will work when relative positioned elements have their XY read.
+            me.el.show();
             if (matchPosition !== false) {
                 me.setPagePosition(me.ghostPanel.el.getXY());
                 if (me.hideMode == 'offsets') {
@@ -1805,7 +1906,6 @@ Ext.define('Ext.panel.Panel', {
                     delete me.el.hideModeStyles;
                 }
             }
-            me.el.show();
             if (me.floatingItems) {
                 me.floatingItems.show();
             }

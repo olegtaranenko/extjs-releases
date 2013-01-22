@@ -23,6 +23,10 @@ Ext.define('Ext.panel.Header', {
     uses: ['Ext.panel.Tool', 'Ext.draw.Component', 'Ext.util.CSS', 'Ext.layout.component.Body', 'Ext.Img'],
     alias: 'widget.header',
 
+<span id='Ext-panel-Header-property-isAction'>    /**
+</span>     * @property {Boolean} isAction
+     * `true` in this class to identify an objact as an instantiated Header, or subclass thereof.
+     */
     isHeader       : true,
     defaultType    : 'tool',
     indicateDrag   : false,
@@ -67,7 +71,8 @@ Ext.define('Ext.panel.Header', {
             ruleStyle,
             rule,
             style,
-            ui;
+            ui,
+            tempEl;
 
         me.indicateDragCls = me.baseCls + '-draggable';
         me.title = me.title || '&amp;#160;';
@@ -97,7 +102,7 @@ Ext.define('Ext.panel.Header', {
                 align: 'center'
             };
             me.textConfig = {
-                width: 15,
+                width: 16,
                 cls: me.baseCls + '-text',
                 type: 'text',
                 text: me.title,
@@ -114,8 +119,13 @@ Ext.define('Ext.panel.Header', {
                 ruleStyle = '.' + Ext.baseCSSPrefix + 'reset ' + ruleStyle;
             }
             rule = Ext.util.CSS.getRule(ruleStyle);
+
+            // We might have been disallowed access to the stylesheet: https://sencha.jira.com/browse/EXTJSIV-5084
             if (rule) {
                 style = rule.style;
+            } else {
+                style = (tempEl = Ext.getBody().createChild({style: 'position:absolute', cls: me.baseCls + '-text-' + ui})).getStyles('fontFamily', 'fontWeight', 'fontSize', 'color');
+                tempEl.remove();
             }
             if (style) {
                 Ext.apply(me.textConfig, {
@@ -126,15 +136,14 @@ Ext.define('Ext.panel.Header', {
                 });
             }
             me.titleCmp = new Ext.draw.Component({
-                width     : 15,
+                width     : 16,
                 ariaRole  : 'heading',
                 focusable : false,
                 viewBox   : false,
                 flex      : 1,
                 id        : me.id + '_hd',
                 autoSize  : true,
-                margins   : '5 0 0 0',
-                items     : [ me.textConfig ],
+                items     : me.textConfig,
                 xhooks: {
                     setSize: function (width) {
                         // don't pass 2nd arg (height) on to setSize or we break 'flex:1'
@@ -153,8 +162,6 @@ Ext.define('Ext.panel.Header', {
                 align: 'middle'
             };
             me.titleCmp = new Ext.Component({
-                height    : 15,
-                xtype     : 'component',
                 ariaRole  : 'heading',
                 focusable : false,
                 noWrap    : true,
@@ -186,8 +193,6 @@ Ext.define('Ext.panel.Header', {
     initIconCmp: function() {
         var me = this,
             cfg = {
-                width: 15,
-                height: 15,
                 focusable: false,
                 src: Ext.BLANK_IMAGE_URL,
                 cls: [me.baseCls + '-icon', me.iconCls],
@@ -493,6 +498,17 @@ Ext.define('Ext.panel.Header', {
             component.bindTo(this.ownerCt);
             this.tools[component.type] = component;
         }
+    },
+
+<span id='Ext-panel-Header-method-initRenderData'>    /**
+</span>     * Add bodyCls to the renderData object
+     * @return {Object} Object with keys and values that are going to be applied to the renderTpl
+     * @private
+     */
+    initRenderData: function() {
+        return Ext.applyIf(this.callParent(), {
+            bodyCls: this.bodyCls
+        });
     }
 });
 </pre>

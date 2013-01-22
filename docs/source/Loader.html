@@ -1055,7 +1055,7 @@
     Ext.disableCacheBuster = function (disable, path) {
         var date = new Date();
         date.setTime(date.getTime() + (disable ? 10*365 : -1) * 24*60*60*1000);
-        data = date.toGMTString();
+        date = date.toGMTString();
         document.cookie = 'ext-cache=1; expires=' + date + '; path='+(path || '/');
     };
 

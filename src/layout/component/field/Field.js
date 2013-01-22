@@ -78,6 +78,9 @@ Ext.define('Ext.layout.component.field.Field', {
     beginLayoutShrinkWrap: function (ownerContext) {
         var owner = ownerContext.target;
 
+        if (owner.inputEl && owner.inputEl.dom) {
+            owner.inputEl.dom.removeAttribute('size');
+        }
         owner.el.setStyle('table-layout', 'auto');
         owner.bodyEl.setStyle('width', '');
     },
@@ -105,13 +108,6 @@ Ext.define('Ext.layout.component.field.Field', {
     measureLabelErrorHeight: function (ownerContext) {
         return ownerContext.labelStrategy.getHeight(ownerContext) +
                ownerContext.errorStrategy.getHeight(ownerContext);
-    },
-
-    publishInnerWidth: function (ownerContext, width) {
-        if (ownerContext.target.isContainer) {
-            var bodyContext = ownerContext.bodyCellContext;
-            bodyContext.setWidth(bodyContext.el.getWidth(), false);
-        }
     },
 
     onFocus: function() {
@@ -188,7 +184,7 @@ Ext.define('Ext.layout.component.field.Field', {
                         hasEmptyLabel = ownerContext.hasHiddenLabel;
 
                     if (height === undefined || hasEmptyLabel) {
-                        height = labelContext.el.getHeight();
+                        height = labelContext.el.getHeight() + labelContext.getMarginInfo().height;
                         if (hasEmptyLabel) {
                             // only force the height if we'll be clearing it later
                             labelContext.setHeight(height);
@@ -260,11 +256,13 @@ Ext.define('Ext.layout.component.field.Field', {
              */
             side: applyIf({
                 prepare: function(ownerContext, owner) {
-                    var errorEl = owner.errorEl;
+                    var errorEl = owner.errorEl,
+                        tempEl;
 
                     // Capture error icon width once
                     if (!iconWidth) {
-                        iconWidth = parseInt(Ext.util.CSS.getRule('.' + iconCls).style.width, 10);
+                        iconWidth = (tempEl = Ext.getBody().createChild({style: 'position:absolute', cls: iconCls})).getWidth();
+                        tempEl.remove();
                     }
 
                     errorEl.addCls(iconCls);

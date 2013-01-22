@@ -201,7 +201,7 @@ Ext.define('Ext.grid.column.Action', {
                 item.enable = Ext.Function.bind(me.enableAction, me, [i], 0);
                 v += '&lt;img alt=&quot;' + (item.altText || me.altText) + '&quot; src=&quot;' + (item.icon || Ext.BLANK_IMAGE_URL) +
                     '&quot; class=&quot;' + Ext.baseCSSPrefix + 'action-col-icon ' + Ext.baseCSSPrefix + 'action-col-' + String(i) + ' ' + (item.disabled ? Ext.baseCSSPrefix + 'item-disabled' : ' ') +
-                    ' ' + (Ext.isFunction(item.getClass) ? item.getClass.apply(item.scope||me.scope||me, arguments) : (me.iconCls || '')) + '&quot;' +
+                    ' ' + (Ext.isFunction(item.getClass) ? item.getClass.apply(item.scope||me.scope||me, arguments) : (item.iconCls || me.iconCls || '')) + '&quot;' +
                     ((item.tooltip) ? ' data-qtip=&quot;' + item.tooltip + '&quot;' : '') + ' /&gt;';
             }
             return v;
@@ -260,7 +260,7 @@ Ext.define('Ext.grid.column.Action', {
      * Also fires any configured click handlers. By default, cancels the mousedown event to prevent selection.
      * Returns the event handler's status to allow canceling of GridView's bubbling process.
      */
-    processEvent : function(type, view, cell, recordIndex, cellIndex, e){
+    processEvent : function(type, view, cell, recordIndex, cellIndex, e, record, row){
         var me = this,
             match = e.getTarget().className.match(me.actionIdRe),
             item, fn;
@@ -271,7 +271,7 @@ Ext.define('Ext.grid.column.Action', {
                 if (type == 'click') {
                     fn = item.handler || me.handler;
                     if (fn &amp;&amp; !item.disabled) {
-                        fn.call(item.scope || me.scope || me, view, recordIndex, cellIndex, item, e);
+                        fn.call(item.scope || me.scope || me, view, recordIndex, cellIndex, item, e, record, row);
                     }
                 } else if (type == 'mousedown' &amp;&amp; item.stopSelection !== false) {
                     return false;

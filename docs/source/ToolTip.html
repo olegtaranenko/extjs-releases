@@ -141,6 +141,8 @@ Ext.define('Ext.tip.ToolTip', {
      * has expired if set.  If `{@link #closable} = true`
      * a close tool button will be rendered into the tooltip header.
      */
+    autoHide: true,
+    
 <span id='Ext-tip-ToolTip-cfg-showDelay'>    /**
 </span>     * @cfg {Number} showDelay
      * Delay in milliseconds before the tooltip displays after the mouse enters the target element.
@@ -661,7 +663,7 @@ Ext.define('Ext.tip.ToolTip', {
     // private
     onDocMouseDown: function(e) {
         var me = this;
-        if (me.autoHide !== true &amp;&amp; !me.closable &amp;&amp; !e.within(me.el.dom)) {
+        if (!me.closable &amp;&amp; !e.within(me.el.dom)) {
             me.disable();
             Ext.defer(me.doEnable, 100, me);
         }

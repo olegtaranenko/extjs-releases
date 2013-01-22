@@ -463,7 +463,6 @@
      *     iPhone.getPrice(); // 500;
      *     iPhone.getOperatingSystem(); // 'iOS'
      *     iPhone.getHasTouchScreen(); // true;
-     *     iPhone.hasTouchScreen(); // true
      */
     ExtClass.registerPreprocessor('config', function(Class, data) {
         var config = data.config,

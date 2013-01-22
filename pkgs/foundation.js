@@ -1,22 +1,9 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext
  * @singleton
  */
 var Ext = Ext || {};
+Ext._startTime = new Date().getTime();
 (function() {
     var global = this,
         objectPrototype = Object.prototype,
@@ -25,10 +12,6 @@ var Ext = Ext || {};
         enumerablesTest = { toString: 1 },
         emptyFn = function(){},
         i;
-
-    if (typeof Ext === 'undefined') {
-        global.Ext = {};
-    }
 
     Ext.global = global;
 
@@ -417,7 +400,7 @@ var Ext = Ext || {};
          */
         isFunction:
         // Safari 3.x and 4.x returns 'function' for typeof <NodeList>, hence we need to fall back to using
-        // Object.prorotype.toString (slower)
+        // Object.prototype.toString (slower)
         (typeof document !== 'undefined' && typeof document.getElementsByTagName('body') === 'function') ? function(value) {
             return toString.call(value) === '[object Function]';
         } : function(value) {
@@ -601,7 +584,7 @@ var Ext = Ext || {};
                 cache = me.functionFactoryCache,
                 idx, fn, ln;
                 
-             if (Ext.enableSandbox) {
+             if (Ext.isSandboxed) {
                 ln = args.length;
                 if (ln > 0) {
                     ln--;
@@ -623,7 +606,7 @@ var Ext = Ext || {};
                 args = Array.prototype.slice.call(arguments),
                 ln;
                 
-            if (Ext.enableSandbox) {
+            if (Ext.isSandboxed) {
                 ln = args.length;
                 if (ln > 0) {
                     ln--;
@@ -1044,243 +1027,265 @@ var version = '4.1.0', Version;
  * @singleton
  */
 
-Ext.String = {
-    trimRegex: /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g,
-    escapeRe: /('|\\)/g,
-    formatRe: /\{(\d+)\}/g,
-    escapeRegexRe: /([-.*+?^${}()|[\]\/\\])/g,
-    basicTrimRe: /^\s+|\s+$/g,
-    whitespaceRe: /\s+/,
-
-    /**
-     * Convert certain characters (&, <, >, and ") to their HTML character equivalents for literal display in web pages.
-     * @param {String} value The string to encode
-     * @return {String} The encoded text
-     * @method
-     */
-    htmlEncode: (function() {
-        var entities = {
+Ext.String = (function() {
+    var trimRegex     = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g,
+        escapeRe      = /('|\\)/g,
+        formatRe      = /\{(\d+)\}/g,
+        escapeRegexRe = /([-.*+?^${}()|[\]\/\\])/g,
+        basicTrimRe   = /^\s+|\s+$/g,
+        whitespaceRe  = /\s+/,
+        varReplace    = /(^[^a-z]*|[^\w])/gi,
+        charToEntity  = {
             '&': '&amp;',
             '>': '&gt;',
             '<': '&lt;',
             '"': '&quot;'
-        }, keys = [], p, regex;
-
-        for (p in entities) {
-            keys.push(p);
-        }
-
-        regex = new RegExp('(' + keys.join('|') + ')', 'g');
-
-        return function(value) {
-            return (!value) ? value : String(value).replace(regex, function(match, capture) {
-                return entities[capture];
-            });
-        };
-    })(),
-
-    /**
-     * Convert certain characters (&, <, >, and ") from their HTML character equivalents.
-     * @param {String} value The string to decode
-     * @return {String} The decoded text
-     * @method
-     */
-    htmlDecode: (function() {
-        var entities = {
+        },
+        entityToChar  = {
             '&amp;': '&',
             '&gt;': '>',
             '&lt;': '<',
             '&quot;': '"'
-        }, keys = [], p, regex;
-
-        for (p in entities) {
-            keys.push(p);
-        }
-
-        regex = new RegExp('(' + keys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
-
-        return function(value) {
-            return (!value) ? value : String(value).replace(regex, function(match, capture) {
-                if (capture in entities) {
-                    return entities[capture];
-                } else {
-                    return String.fromCharCode(parseInt(capture.substr(2), 10));
-                }
-            });
+        },
+        keys = [],
+        key,
+        charToEntityRegex,
+        entityToCharRegex,
+        htmlEncodeReplaceFn = function(match, capture) {
+            return charToEntity[capture];
+        },
+        htmlEncode = function(value) {
+            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
+        },
+        htmlDecodeReplaceFn = function(match, capture) {
+            return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
+        },
+        htmlDecode = function(value) {
+            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
         };
-    })(),
 
-    /**
-     * Appends content to the query string of a URL, handling logic for whether to place
-     * a question mark or ampersand.
-     * @param {String} url The URL to append to.
-     * @param {String} string The content to append to the URL.
-     * @return {String} The resulting URL
-     */
-    urlAppend : function(url, string) {
-        if (!Ext.isEmpty(string)) {
-            return url + (url.indexOf('?') === -1 ? '?' : '&') + string;
+        // Compile RexExps for HTML encode and decode functions
+        for (key in charToEntity) {
+            keys.push(key);
         }
+        charToEntityRegex = new RegExp('(' + keys.join('|') + ')', 'g');
 
-        return url;
-    },
+        keys = [];
+        for (key in entityToChar) {
+            keys.push(key);
+        }
+        entityToCharRegex = new RegExp('(' + keys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
 
-    /**
-     * Trims whitespace from either end of a string, leaving spaces within the string intact.  Example:
-     * @example
-var s = '  foo bar  ';
-alert('-' + s + '-');         //alerts "- foo bar -"
-alert('-' + Ext.String.trim(s) + '-');  //alerts "-foo bar-"
+    return {
 
-     * @param {String} string The string to escape
-     * @return {String} The trimmed string
-     */
-    trim: function(string) {
-        return string.replace(Ext.String.trimRegex, "");
-    },
+        /**
+         * Converts a string of characters into a legal, parseable Javascript `var` name as long as the passed
+         * string contains at least one alphabetic character. Non alphanumeric characters, and *leading* non alphabetic
+         * characters will be removed.
+         * @param {String} s A string to be converted into a `var` name.
+         * @return {String} A legal Javascript `var` name.
+         */
+        createVarName: function(s) {
+            return s.replace(varReplace, '');
+        },
 
-    /**
-     * Capitalize the given string
-     * @param {String} string
-     * @return {String}
-     */
-    capitalize: function(string) {
-        return string.charAt(0).toUpperCase() + string.substr(1);
-    },
+        /**
+         * Convert certain characters (&, <, >, and ") to their HTML character equivalents for literal display in web pages.
+         * @param {String} value The string to encode
+         * @return {String} The encoded text
+         * @method
+         */
+        htmlEncode: htmlEncode,
 
-    /**
-     * Truncate a string and add an ellipsis ('...') to the end if it exceeds the specified length
-     * @param {String} value The string to truncate
-     * @param {Number} length The maximum length to allow before truncating
-     * @param {Boolean} word True to try to find a common word break
-     * @return {String} The converted text
-     */
-    ellipsis: function(value, len, word) {
-        if (value && value.length > len) {
-            if (word) {
-                var vs = value.substr(0, len - 2),
-                index = Math.max(vs.lastIndexOf(' '), vs.lastIndexOf('.'), vs.lastIndexOf('!'), vs.lastIndexOf('?'));
-                if (index !== -1 && index >= (len - 15)) {
-                    return vs.substr(0, index) + "...";
-                }
+        /**
+         * Convert certain characters (&, <, >, and ") from their HTML character equivalents.
+         * @param {String} value The string to decode
+         * @return {String} The decoded text
+         * @method
+         */
+        htmlDecode: htmlDecode,
+
+        /**
+         * Appends content to the query string of a URL, handling logic for whether to place
+         * a question mark or ampersand.
+         * @param {String} url The URL to append to.
+         * @param {String} string The content to append to the URL.
+         * @return {String} The resulting URL
+         */
+        urlAppend : function(url, string) {
+            if (!Ext.isEmpty(string)) {
+                return url + (url.indexOf('?') === -1 ? '?' : '&') + string;
             }
-            return value.substr(0, len - 3) + "...";
+
+            return url;
+        },
+
+        /**
+         * Trims whitespace from either end of a string, leaving spaces within the string intact.  Example:
+         * @example
+    var s = '  foo bar  ';
+    alert('-' + s + '-');         //alerts "- foo bar -"
+    alert('-' + Ext.String.trim(s) + '-');  //alerts "-foo bar-"
+
+         * @param {String} string The string to escape
+         * @return {String} The trimmed string
+         */
+        trim: function(string) {
+            return string.replace(trimRegex, "");
+        },
+
+        /**
+         * Capitalize the given string
+         * @param {String} string
+         * @return {String}
+         */
+        capitalize: function(string) {
+            return string.charAt(0).toUpperCase() + string.substr(1);
+        },
+
+        /**
+         * Uncapitalize the given string
+         * @param {String} string
+         * @return {String}
+         */
+        uncapitalize: function(string) {
+            return string.charAt(0).toLowerCase() + string.substr(1);
+        },
+
+        /**
+         * Truncate a string and add an ellipsis ('...') to the end if it exceeds the specified length
+         * @param {String} value The string to truncate
+         * @param {Number} length The maximum length to allow before truncating
+         * @param {Boolean} word True to try to find a common word break
+         * @return {String} The converted text
+         */
+        ellipsis: function(value, len, word) {
+            if (value && value.length > len) {
+                if (word) {
+                    var vs = value.substr(0, len - 2),
+                    index = Math.max(vs.lastIndexOf(' '), vs.lastIndexOf('.'), vs.lastIndexOf('!'), vs.lastIndexOf('?'));
+                    if (index !== -1 && index >= (len - 15)) {
+                        return vs.substr(0, index) + "...";
+                    }
+                }
+                return value.substr(0, len - 3) + "...";
+            }
+            return value;
+        },
+
+        /**
+         * Escapes the passed string for use in a regular expression
+         * @param {String} string
+         * @return {String}
+         */
+        escapeRegex: function(string) {
+            return string.replace(escapeRegexRe, "\\$1");
+        },
+
+        /**
+         * Escapes the passed string for ' and \
+         * @param {String} string The string to escape
+         * @return {String} The escaped string
+         */
+        escape: function(string) {
+            return string.replace(escapeRe, "\\$1");
+        },
+
+        /**
+         * Utility function that allows you to easily switch a string between two alternating values.  The passed value
+         * is compared to the current string, and if they are equal, the other value that was passed in is returned.  If
+         * they are already different, the first value passed in is returned.  Note that this method returns the new value
+         * but does not change the current string.
+         * <pre><code>
+        // alternate sort directions
+        sort = Ext.String.toggle(sort, 'ASC', 'DESC');
+
+        // instead of conditional logic:
+        sort = (sort == 'ASC' ? 'DESC' : 'ASC');
+           </code></pre>
+         * @param {String} string The current string
+         * @param {String} value The value to compare to the current string
+         * @param {String} other The new value to use if the string already equals the first value passed in
+         * @return {String} The new value
+         */
+        toggle: function(string, value, other) {
+            return string === value ? other : value;
+        },
+
+        /**
+         * Pads the left side of a string with a specified character.  This is especially useful
+         * for normalizing number and date strings.  Example usage:
+         *
+         * <pre><code>
+    var s = Ext.String.leftPad('123', 5, '0');
+    // s now contains the string: '00123'
+           </code></pre>
+         * @param {String} string The original string
+         * @param {Number} size The total length of the output string
+         * @param {String} character (optional) The character with which to pad the original string (defaults to empty string " ")
+         * @return {String} The padded string
+         */
+        leftPad: function(string, size, character) {
+            var result = String(string);
+            character = character || " ";
+            while (result.length < size) {
+                result = character + result;
+            }
+            return result;
+        },
+
+        /**
+         * Allows you to define a tokenized string and pass an arbitrary number of arguments to replace the tokens.  Each
+         * token must be unique, and must increment in the format {0}, {1}, etc.  Example usage:
+         * <pre><code>
+    var cls = 'my-class', text = 'Some text';
+    var s = Ext.String.format('&lt;div class="{0}">{1}&lt;/div>', cls, text);
+    // s now contains the string: '&lt;div class="my-class">Some text&lt;/div>'
+           </code></pre>
+         * @param {String} string The tokenized string to be formatted
+         * @param {String} value1 The value to replace token {0}
+         * @param {String} value2 Etc...
+         * @return {String} The formatted string
+         */
+        format: function(format) {
+            var args = Ext.Array.toArray(arguments, 1);
+            return format.replace(formatRe, function(m, i) {
+                return args[i];
+            });
+        },
+
+        /**
+         * Returns a string with a specified number of repititions a given string pattern.
+         * The pattern be separated by a different string.
+         *
+         *      var s = Ext.String.repeat('---', 4); // = '------------'
+         *      var t = Ext.String.repeat('--', 3, '/'); // = '--/--/--'
+         *
+         * @param {String} pattern The pattern to repeat.
+         * @param {Number} count The number of times to repeat the pattern (may be 0).
+         * @param {String} sep An option string to separate each pattern.
+         */
+        repeat: function(pattern, count, sep) {
+            for (var buf = [], i = count; i--; ) {
+                buf.push(pattern);
+            }
+            return buf.join(sep || '');
+        },
+
+        /**
+         * Splits a string of space separated words into an array, trimming as needed. If the
+         * words are already an array, it is returned.
+         *
+         * @param {String/Array} words
+         */
+        splitWords: function (words) {
+            if (words && typeof words == 'string') {
+                return words.replace(basicTrimRe, '').split(whitespaceRe);
+            }
+            return words || [];
         }
-        return value;
-    },
-
-    /**
-     * Escapes the passed string for use in a regular expression
-     * @param {String} string
-     * @return {String}
-     */
-    escapeRegex: function(string) {
-        return string.replace(Ext.String.escapeRegexRe, "\\$1");
-    },
-
-    /**
-     * Escapes the passed string for ' and \
-     * @param {String} string The string to escape
-     * @return {String} The escaped string
-     */
-    escape: function(string) {
-        return string.replace(Ext.String.escapeRe, "\\$1");
-    },
-
-    /**
-     * Utility function that allows you to easily switch a string between two alternating values.  The passed value
-     * is compared to the current string, and if they are equal, the other value that was passed in is returned.  If
-     * they are already different, the first value passed in is returned.  Note that this method returns the new value
-     * but does not change the current string.
-     * <pre><code>
-    // alternate sort directions
-    sort = Ext.String.toggle(sort, 'ASC', 'DESC');
-
-    // instead of conditional logic:
-    sort = (sort == 'ASC' ? 'DESC' : 'ASC');
-       </code></pre>
-     * @param {String} string The current string
-     * @param {String} value The value to compare to the current string
-     * @param {String} other The new value to use if the string already equals the first value passed in
-     * @return {String} The new value
-     */
-    toggle: function(string, value, other) {
-        return string === value ? other : value;
-    },
-
-    /**
-     * Pads the left side of a string with a specified character.  This is especially useful
-     * for normalizing number and date strings.  Example usage:
-     *
-     * <pre><code>
-var s = Ext.String.leftPad('123', 5, '0');
-// s now contains the string: '00123'
-       </code></pre>
-     * @param {String} string The original string
-     * @param {Number} size The total length of the output string
-     * @param {String} character (optional) The character with which to pad the original string (defaults to empty string " ")
-     * @return {String} The padded string
-     */
-    leftPad: function(string, size, character) {
-        var result = String(string);
-        character = character || " ";
-        while (result.length < size) {
-            result = character + result;
-        }
-        return result;
-    },
-
-    /**
-     * Allows you to define a tokenized string and pass an arbitrary number of arguments to replace the tokens.  Each
-     * token must be unique, and must increment in the format {0}, {1}, etc.  Example usage:
-     * <pre><code>
-var cls = 'my-class', text = 'Some text';
-var s = Ext.String.format('&lt;div class="{0}">{1}&lt;/div>', cls, text);
-// s now contains the string: '&lt;div class="my-class">Some text&lt;/div>'
-       </code></pre>
-     * @param {String} string The tokenized string to be formatted
-     * @param {String} value1 The value to replace token {0}
-     * @param {String} value2 Etc...
-     * @return {String} The formatted string
-     */
-    format: function(format) {
-        var args = Ext.Array.toArray(arguments, 1);
-        return format.replace(Ext.String.formatRe, function(m, i) {
-            return args[i];
-        });
-    },
-
-    /**
-     * Returns a string with a specified number of repititions a given string pattern.
-     * The pattern be separated by a different string.
-     *
-     *      var s = Ext.String.repeat('---', 4); // = '------------'
-     *      var t = Ext.String.repeat('--', 3, '/'); // = '--/--/--'
-     *
-     * @param {String} pattern The pattern to repeat.
-     * @param {Number} count The number of times to repeat the pattern (may be 0).
-     * @param {String} sep An option string to separate each pattern.
-     */
-    repeat: function(pattern, count, sep) {
-        for (var buf = [], i = count; i--; ) {
-            buf.push(pattern);
-        }
-        return buf.join(sep || '');
-    },
-
-    /**
-     * Splits a string of space separated words into an array, trimming as needed. If the
-     * words are already an array, it is returned.
-     *
-     * @param {String/Array} words
-     */
-    splitWords: function (words) {
-        if (words && typeof words == 'string') {
-            return words.replace(Ext.String.basicTrimRe, '').split(Ext.String.whitespaceRe);
-        }
-        return words || [];
-    }
-};
+    };
+})();
 
 /**
  * Old alias to {@link Ext.String#htmlEncode}
@@ -1309,7 +1314,6 @@ Ext.htmlDecode = Ext.String.htmlDecode;
  * @inheritdoc Ext.String#urlAppend
  */
 Ext.urlAppend = Ext.String.urlAppend;
-
 /**
  * @class Ext.Number
  *
@@ -1317,114 +1321,175 @@ Ext.urlAppend = Ext.String.urlAppend;
  * @singleton
  */
 
-(function() {
+Ext.Number = new function() {
 
-var isToFixedBroken = (0.9).toFixed() !== '1';
+    var me = this,
+        isToFixedBroken = (0.9).toFixed() !== '1',
+        math = Math;
 
-Ext.Number = {
-    /**
-     * Checks whether or not the passed number is within a desired range.  If the number is already within the
-     * range it is returned, otherwise the min or max value is returned depending on which side of the range is
-     * exceeded. Note that this method returns the constrained value but does not change the current number.
-     * @param {Number} number The number to check
-     * @param {Number} min The minimum number in the range
-     * @param {Number} max The maximum number in the range
-     * @return {Number} The constrained value if outside the range, otherwise the current value
-     */
-    constrain: function(number, min, max) {
-        number = parseFloat(number);
+    Ext.apply(this, {
+        /**
+         * Checks whether or not the passed number is within a desired range.  If the number is already within the
+         * range it is returned, otherwise the min or max value is returned depending on which side of the range is
+         * exceeded. Note that this method returns the constrained value but does not change the current number.
+         * @param {Number} number The number to check
+         * @param {Number} min The minimum number in the range
+         * @param {Number} max The maximum number in the range
+         * @return {Number} The constrained value if outside the range, otherwise the current value
+         */
+        constrain: function(number, min, max) {
+            number = parseFloat(number);
 
-        if (!isNaN(min)) {
-            number = Math.max(number, min);
-        }
-        if (!isNaN(max)) {
-            number = Math.min(number, max);
-        }
-        return number;
-    },
-
-    /**
-     * Snaps the passed number between stopping points based upon a passed increment value.
-     * @param {Number} value The unsnapped value.
-     * @param {Number} increment The increment by which the value must move.
-     * @param {Number} minValue The minimum value to which the returned value must be constrained. Overrides the increment..
-     * @param {Number} maxValue The maximum value to which the returned value must be constrained. Overrides the increment..
-     * @return {Number} The value of the nearest snap target.
-     */
-    snap : function(value, increment, minValue, maxValue) {
-        var newValue = value,
-            m;
-
-        if (!(increment && value)) {
-            return value;
-        }
-        m = value % increment;
-        if (m !== 0) {
-            newValue -= m;
-            if (m * 2 >= increment) {
-                newValue += increment;
-            } else if (m * 2 < -increment) {
-                newValue -= increment;
+            if (!isNaN(min)) {
+                number = math.max(number, min);
             }
+            if (!isNaN(max)) {
+                number = math.min(number, max);
+            }
+            return number;
+        },
+
+        /**
+         * Snaps the passed number between stopping points based upon a passed increment value.
+         *
+         * The difference between this and {@link #snapInRange} is that {@link #snapInRange} uses the minValue
+         * when calculating snap points:
+         *
+         *     r = Ext.Number.snap(56, 2, 55, 65);        // Returns 56 - snap points are zero based
+         *
+         *     r = Ext.Number.snapInRange(56, 2, 55, 65); // Returns 57 - snap points are based from minValue
+         *
+         * @param {Number} value The unsnapped value.
+         * @param {Number} increment The increment by which the value must move.
+         * @param {Number} minValue The minimum value to which the returned value must be constrained. Overrides the increment.
+         * @param {Number} maxValue The maximum value to which the returned value must be constrained. Overrides the increment.
+         * @return {Number} The value of the nearest snap target.
+         */
+        snap : function(value, increment, minValue, maxValue) {
+            var m;
+
+            // If no value passed, or minValue was passed and value is less than minValue (anything < undefined is false)
+            // Then use the minValue (or zero if the value was undefined)
+            if (value === undefined || value < minValue) {
+                return minValue || 0;
+            }
+
+            if (increment) {
+                m = value % increment;
+                if (m !== 0) {
+                    value -= m;
+                    if (m * 2 >= increment) {
+                        value += increment;
+                    } else if (m * 2 < -increment) {
+                        value -= increment;
+                    }
+                }
+            }
+            return me.constrain(value, minValue,  maxValue);
+        },
+
+        /**
+         * Snaps the passed number between stopping points based upon a passed increment value.
+         *
+         * The difference between this and {@link #snap} is that {@link #snap} does not use the minValue
+         * when calculating snap points:
+         *
+         *     r = Ext.Number.snap(56, 2, 55, 65);        // Returns 56 - snap points are zero based
+         *
+         *     r = Ext.Number.snapInRange(56, 2, 55, 65); // Returns 57 - snap points are based from minValue
+         *
+         * @param {Number} value The unsnapped value.
+         * @param {Number} increment The increment by which the value must move.
+         * @param {Number} [minValue=0] The minimum value to which the returned value must be constrained.
+         * @param {Number} [maxValue=Infinity] The maximum value to which the returned value must be constrained.
+         * @return {Number} The value of the nearest snap target.
+         */
+        snapInRange : function(value, increment, minValue, maxValue) {
+            var tween;
+
+            // default minValue to zero
+            minValue = (minValue || 0);
+
+            // If value is undefined, or less than minValue, use minValue
+            if (value === undefined || value < minValue) {
+                return minValue;
+            }
+
+            // Calculate how many snap points from the minValue the passed value is.
+            if (increment && (tween = ((value - minValue) % increment))) {
+                value -= tween;
+                tween *= 2;
+                if (tween >= increment) {
+                    value += increment;
+                } else if (tween < -increment) {
+                    value -= increment;
+                }
+            }
+
+            // If constraining within a maximum, ensure the maximum is on a snap point
+            if (maxValue !== undefined) {
+                if (value > (maxValue = me.snapInRange(maxValue, increment, minValue))) {
+                    value = maxValue;
+                }
+            }
+
+            return value;
+        },
+
+        /**
+         * Formats a number using fixed-point notation
+         * @param {Number} value The number to format
+         * @param {Number} precision The number of digits to show after the decimal point
+         */
+        toFixed: function(value, precision) {
+            if (isToFixedBroken) {
+                precision = precision || 0;
+                var pow = math.pow(10, precision);
+                return (math.round(value * pow) / pow).toFixed(precision);
+            }
+
+            return value.toFixed(precision);
+        },
+
+        /**
+         * Validate that a value is numeric and convert it to a number if necessary. Returns the specified default value if
+         * it is not.
+
+    Ext.Number.from('1.23', 1); // returns 1.23
+    Ext.Number.from('abc', 1); // returns 1
+
+         * @param {Object} value
+         * @param {Number} defaultValue The value to return if the original value is non-numeric
+         * @return {Number} value, if numeric, defaultValue otherwise
+         */
+        from: function(value, defaultValue) {
+            if (isFinite(value)) {
+                value = parseFloat(value);
+            }
+
+            return !isNaN(value) ? value : defaultValue;
+        },
+
+        /**
+         * Returns a random integer between the specified range (inclusive)
+         * @param {Number} from Lowest value to return.
+         * @param {Number} to Highst value to return.
+         * @return {Number} A random integer within the specified range.
+         */
+        randomInt: function (from, to) {
+           return math.floor(math.random() * (to - from + 1) + from);
         }
-        return Ext.Number.constrain(newValue, minValue,  maxValue);
-    },
+    });
 
     /**
-     * Formats a number using fixed-point notation
-     * @param {Number} value The number to format
-     * @param {Number} precision The number of digits to show after the decimal point
+     * @deprecated 4.0.0 Please use {@link Ext.Number#from} instead.
+     * @member Ext
+     * @method num
+     * @inheritdoc Ext.Number#from
      */
-    toFixed: function(value, precision) {
-        if (isToFixedBroken) {
-            precision = precision || 0;
-            var pow = Math.pow(10, precision);
-            return (Math.round(value * pow) / pow).toFixed(precision);
-        }
-
-        return value.toFixed(precision);
-    },
-
-    /**
-     * Validate that a value is numeric and convert it to a number if necessary. Returns the specified default value if
-     * it is not.
-
-Ext.Number.from('1.23', 1); // returns 1.23
-Ext.Number.from('abc', 1); // returns 1
-
-     * @param {Object} value
-     * @param {Number} defaultValue The value to return if the original value is non-numeric
-     * @return {Number} value, if numeric, defaultValue otherwise
-     */
-    from: function(value, defaultValue) {
-        if (isFinite(value)) {
-            value = parseFloat(value);
-        }
-
-        return !isNaN(value) ? value : defaultValue;
-    },
-
-    /**
-     * Returns a random integer between the specified range (inclusive)
-     * @param {Number} from Lowest value to return.
-     * @param {Number} to Highst value to return.
-     * @return {Number} A random integer within the specified range.
-     */
-    randomInt: function (from, to) {
-       return Math.floor(Math.random() * (to - from + 1) + from);
-    }
-};
-
-})();
-
-/**
- * @deprecated 4.0.0 Please use {@link Ext.Number#from} instead.
- * @member Ext
- * @method num
- * @inheritdoc Ext.Number#from
- */
-Ext.num = function() {
-    return Ext.Number.from.apply(this, arguments);
+    Ext.num = function() {
+        return me.from.apply(this, arguments);
+    };
 };
 /**
  * @class Ext.Array
@@ -2460,7 +2525,37 @@ Ext.num = function() {
          * @return {Array} An array containing the removed items.
          * @method
          */
-        splice: splice
+        splice: splice,
+
+        /**
+         * Pushes new items onto the end of an Array.
+         *
+         * Passed parameters may be single items, or arrays of items. If an Array is found in the argument list, all its
+         * elements are pushed into the end of the target Array.
+         *
+         * @param {Array} target The Array onto which to push new items
+         * @param {Object...} elements The elements to add to the array. Each parameter may
+         * be an Array, in which case all the elements of that Array will be pushed into the end of the
+         * destination Array.
+         * @return {Array} An array containing all the new items push onto the end.
+         *
+         */
+        push: function(array) {
+            var len = arguments.length,
+                i = 1,
+                newItem;
+
+            if (array === undefined) {
+                array = [];
+            } else if (!Ext.isArray(array)) {
+                array = [array];
+            }
+            for (; i < len; i++) {
+                newItem = arguments[i];
+                Array.prototype.push[Ext.isArray(newItem) ? 'apply' : 'call'](array, newItem);
+            }
+            return array;
+        }
     };
 
     /**
@@ -4618,7 +4713,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
                     utilDate.formatCodeToRegex("Y", 1), // year
                     utilDate.formatCodeToRegex("m", 2), // month
                     utilDate.formatCodeToRegex("d", 3), // day
-                    utilDate.formatCodeToRegex("h", 4), // hour
+                    utilDate.formatCodeToRegex("H", 4), // hour
                     utilDate.formatCodeToRegex("i", 5), // minute
                     utilDate.formatCodeToRegex("s", 6), // second
                     {c:"ms = results[7] || '0'; ms = parseInt(ms, 10)/Math.pow(10, ms.length - 3);\n"}, // decimal fraction of a second (minimum = 1 digit, maximum = unlimited)
@@ -6663,7 +6758,6 @@ var noArgs = [],
      *     iPhone.getPrice(); // 500;
      *     iPhone.getOperatingSystem(); // 'iOS'
      *     iPhone.getHasTouchScreen(); // true;
-     *     iPhone.hasTouchScreen(); // true
      */
     ExtClass.registerPreprocessor('config', function(Class, data) {
         var config = data.config,
@@ -9525,7 +9619,7 @@ var noArgs = [],
     Ext.disableCacheBuster = function (disable, path) {
         var date = new Date();
         date.setTime(date.getTime() + (disable ? 10*365 : -1) * 24*60*60*1000);
-        data = date.toGMTString();
+        date = date.toGMTString();
         document.cookie = 'ext-cache=1; expires=' + date + '; path='+(path || '/');
     };
 
@@ -10121,5 +10215,4 @@ Ext.deprecated = function (suggestion) {
     poll();
 })();
 //</debug>
-
 

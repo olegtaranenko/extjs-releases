@@ -78,7 +78,7 @@ Ext.define('Ext.layout.component.field.Trigger', {
             displayed = !me.owner.hideTrigger;
         }
 
-        owner.triggerWrap.setDisplayed(displayed);
+        owner.triggerCell.setDisplayed(displayed);
         inputEl.dom.readOnly = readOnly;
     }
 });

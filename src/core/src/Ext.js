@@ -3,6 +3,7 @@
  * @singleton
  */
 var Ext = Ext || {};
+Ext._startTime = new Date().getTime();
 (function() {
     var global = this,
         objectPrototype = Object.prototype,
@@ -11,10 +12,6 @@ var Ext = Ext || {};
         enumerablesTest = { toString: 1 },
         emptyFn = function(){},
         i;
-
-    if (typeof Ext === 'undefined') {
-        global.Ext = {};
-    }
 
     Ext.global = global;
 
@@ -403,7 +400,7 @@ var Ext = Ext || {};
          */
         isFunction:
         // Safari 3.x and 4.x returns 'function' for typeof <NodeList>, hence we need to fall back to using
-        // Object.prorotype.toString (slower)
+        // Object.prototype.toString (slower)
         (typeof document !== 'undefined' && typeof document.getElementsByTagName('body') === 'function') ? function(value) {
             return toString.call(value) === '[object Function]';
         } : function(value) {
@@ -587,7 +584,7 @@ var Ext = Ext || {};
                 cache = me.functionFactoryCache,
                 idx, fn, ln;
                 
-             if (Ext.enableSandbox) {
+             if (Ext.isSandboxed) {
                 ln = args.length;
                 if (ln > 0) {
                     ln--;
@@ -609,7 +606,7 @@ var Ext = Ext || {};
                 args = Array.prototype.slice.call(arguments),
                 ln;
                 
-            if (Ext.enableSandbox) {
+            if (Ext.isSandboxed) {
                 ln = args.length;
                 if (ln > 0) {
                     ln--;

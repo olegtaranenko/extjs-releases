@@ -1193,6 +1193,29 @@ describe("Ext.Array", function() {
 
             expect(Ext.encode(map)).toEqual('{}');
         });
-    })
+    });
 
+    describe("Ext.Array.push", function() {
+        var push = Ext.Array.push;
+
+        it("should create an array", function(){
+            expect(push(undefined, 1)).toEqual([1]);
+        });
+
+        it("should convert a non-array to an array", function() {
+            expect(push(1, 2)).toEqual([1, 2]);
+        });
+
+        it("should push single elements onto end", function() {
+            expect(push([1, 2], 3, 4, 5)).toEqual([1, 2, 3, 4, 5]);
+        });
+
+        it("should push all items of array arguments onto end", function(){
+            expect(push([1, 2], [3, 4], [5])).toEqual([1, 2, 3, 4, 5]);
+        });
+
+        it("should push arrays and single items into the end", function(){
+            expect(push([1, 2], [3, 4], 5)).toEqual([1, 2, 3, 4, 5]);
+        });
+    });
 });

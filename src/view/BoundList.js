@@ -8,12 +8,17 @@ Ext.define('Ext.view.BoundList', {
     requires: ['Ext.layout.component.BoundList', 'Ext.toolbar.Paging'],
 
     /**
-     * @cfg {Number} pageSize
+     * @cfg {Number} [pageSize=0]
      * If greater than `0`, a {@link Ext.toolbar.Paging} is displayed at the bottom of the list and store
      * queries will execute with page {@link Ext.data.Operation#start start} and
      * {@link Ext.data.Operation#limit limit} parameters.
      */
     pageSize: 0,
+    
+    /**
+     * @cfg {String} [displayField=""]
+     * The field from the store to show in the view.
+     */
 
     /**
      * @property {Ext.toolbar.Paging} pagingToolbar
@@ -186,6 +191,13 @@ Ext.define('Ext.view.BoundList', {
         return this.listEl || this.el;
     },
 
+    /**
+     * A method that returns the inner template for displaying items in the list.
+     * This method is useful to override when using a more complex display value, for example
+     * inserting an icon along with the text.
+     * @param {String} displayField The {@link #displayField} for the BoundList.
+     * @return {String} The inner template
+     */
     getInnerTpl: function(displayField) {
         return '{' + displayField + '}';
     },

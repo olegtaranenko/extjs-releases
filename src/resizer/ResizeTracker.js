@@ -95,7 +95,7 @@ Ext.define('Ext.resizer.ResizeTracker', {
             renderTo = Ext.getBody();
             if (Ext.scopeResetCSS) {
                 renderTo = Ext.getBody().createChild({
-                    cls: Ext.baseCSSPrefix + 'reset'
+                    cls: Ext.resetCls
                 });
             }
             proxy = target.createProxy({

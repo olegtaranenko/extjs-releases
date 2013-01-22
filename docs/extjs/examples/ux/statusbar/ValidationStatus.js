@@ -30,7 +30,7 @@ Ext.define('Ext.ux.statusbar.ValidationStatus', {
      */
     showText : 'The form has errors (click for details...)',
     /**
-     * @cfg {String} showText
+     * @cfg {String} hideText
      * The {@link Ext.ux.statusbar.StatusBar#text text} value to display when
      * the error list is displayed.
      */

@@ -237,15 +237,16 @@ Ext.define('Ext.grid.PagingScroller', {
     },
 
     handleViewScroll: function(e, direction) {
-        var me = this,
-            store = me.store,
-            view = me.view,
-            guaranteedStart = me.previousStart = store.guaranteedStart,
-            guaranteedEnd = me.previousEnd = store.guaranteedEnd,
-            renderedSize = store.getCount(),
-            totalCount = store.getTotalCount(),
-            visibleStart = me.getFirstVisibleRowIndex(),
-            visibleEnd = me.getLastVisibleRowIndex(),
+        var me                = this,
+            store             = me.store,
+            view              = me.view,
+            guaranteedStart   = me.previousStart = store.guaranteedStart,
+            guaranteedEnd     = me.previousEnd = store.guaranteedEnd,
+            renderedSize      = store.getCount(),
+            totalCount        = store.getTotalCount(),
+            highestStartPoint = totalCount - renderedSize,
+            visibleStart      = me.getFirstVisibleRowIndex(),
+            visibleEnd        = me.getLastVisibleRowIndex(),
             requestStart,
             requestEnd;
 
@@ -278,7 +279,7 @@ Ext.define('Ext.grid.PagingScroller', {
             else {
                 if (visibleStart !== undefined) {
                     if (visibleEnd > (guaranteedEnd - me.numFromEdge)) {
-                        requestStart = Math.min(visibleStart - me.numFromEdge - me.trailingBufferZone, totalCount - renderedSize);
+                        requestStart = visibleStart - me.numFromEdge - me.trailingBufferZone;
                     }
                 }
                 
@@ -287,35 +288,30 @@ Ext.define('Ext.grid.PagingScroller', {
                 else {
                     // If we have no visible rows to orientate with, then use the scroll proportion
                     me.scrollProportion = view.el.dom.scrollTop / (view.el.dom.scrollHeight - view.el.dom.clientHeight);
-                    requestStart = Math.min(totalCount - renderedSize, totalCount * me.scrollProportion - (renderedSize / 2) - me.numFromEdge - ((me.leadingBufferZone + me.trailingBufferZone) / 2));
+                    requestStart = totalCount * me.scrollProportion - (renderedSize / 2) - me.numFromEdge - ((me.leadingBufferZone + me.trailingBufferZone) / 2);
                 }
             }
             
 
             // We scrolled close to the edge and the Store needs reloading
             if (requestStart !== undefined) {
-                // Make sure first row is even to ensure correct even/odd row striping
-                requestStart = requestStart & ~1;
-                requestEnd = requestStart + renderedSize - 1;
-
-                // End of request was past end of Store: Ensure last page is visible
-                if (requestEnd > totalCount - 1) {
-                    me.cancelLoad();
-                    if (!store.rangeSatisfied(totalCount - renderedSize + 1, totalCount - 1)) {
-                        store.guaranteeRange(totalCount - renderedSize + 1, totalCount - 1);
-                    }
+                // The calculation walked off the end; Request the highest possible chunk which starts on an even row count (Because of row striping)
+                if (requestStart > highestStartPoint) {
+                    requestStart = highestStartPoint & ~1;
+                    requestEnd = totalCount - 1;
                 }
-                
-                // Store's range needs adjusting. Ideally from prefetch buffer.
+                // Make sure first row is even to ensure correct even/odd row striping
                 else {
+                    requestStart = requestStart & ~1;
+                    requestEnd = requestStart + renderedSize - 1;
+                }
 
-                    // If range is satsfied within the prefetch buffer, then just draw it from the prefetch buffer
-                    if (store.rangeSatisfied(requestStart, requestEnd)) {
-                        me.cancelLoad();
-                        store.guaranteeRange(requestStart, requestEnd);
-                    } else {
-                        me.attemptLoad(requestStart, requestEnd);
-                    }
+                // If range is satsfied within the prefetch buffer, then just draw it from the prefetch buffer
+                if (store.rangeSatisfied(requestStart, requestEnd)) {
+                    me.cancelLoad();
+                    store.guaranteeRange(requestStart, requestEnd);
+                } else {
+                    me.attemptLoad(requestStart, requestEnd);
                 }
             }
         }

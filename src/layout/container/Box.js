@@ -241,7 +241,10 @@ Ext.define('Ext.layout.container.Box', {
     beginLayout: function (ownerContext) {
         var me = this,
             smp = me.owner.stretchMaxPartner,
-            style = me.innerCt.dom.style;
+            style = me.innerCt.dom.style,
+            names = me.getNames(),
+            state = ownerContext.state,
+            plan = state.boxPlan || (state.boxPlan = {});
 
         // this must happen before callParent to allow the overflow handler to do its work
         // that can effect the childItems collection...
@@ -257,6 +260,14 @@ Ext.define('Ext.layout.container.Box', {
         me.callParent(arguments);
 
         ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
+
+        // Capture whether the owning Container is scrolling in the parallel direction
+        plan.scrollParallel = (me.owner.autoScroll || me.owner['overflow' + names.x.toUpperCase()]);
+
+        // If we *are* scrolling parallel, capture the scroll position
+        if (plan.scrollParallel) {
+            state.scrollPos = me.owner.getTargetEl().dom['scroll' + names.leftCap];
+        }
 
         // don't allow sizes burned on to the innerCt to influence measurements:
         style.width = '';
@@ -405,7 +416,6 @@ Ext.define('Ext.layout.container.Box', {
         }
 
         plan.targetSize = targetSize;
-        plan.scrollParallel = (me.owner.autoScroll || me.owner['overflow' + names.y.toUpperCase()]);
 
         if (!state.parallelDone) {
             state.parallelDone = me.calculateParallel(ownerContext, names, plan);
@@ -421,7 +431,7 @@ Ext.define('Ext.layout.container.Box', {
         // the discovered max width. So here we put a calculatedWidth property in the metadata to facilitate this.
         if (me.owner.dock && (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) && !me.owner.width && !me.horizontal) {
             plan.isIEVerticalDock = true;
-            plan.calculatedWidth = plan.maxSize + ownerContext.getPaddingInfo().width + ownerContext.getBorderInfo().width;
+            plan.calculatedWidth = plan.maxSize + ownerContext.getPaddingInfo().width + ownerContext.getFrameInfo().width;
         }
 
         if (!state.parallelDone || !state.perpendicularDone) {
@@ -476,7 +486,14 @@ Ext.define('Ext.layout.container.Box', {
             plan.tooNarrow = false;
         } else {
             plan.availableSpace = plan.targetSize[widthName] - nonFlexWidth;
-            plan.tooNarrow = plan.availableSpace < ownerContext.flexedMinSize;
+            
+            // If we're going to need space for a parallel scrollbar, then we need to redo the perpendicular measurements
+            if ((plan.tooNarrow = plan.availableSpace < ownerContext.flexedMinSize) && plan.scrollParallel && ownerContext.state.perpendicularDone) {
+                ownerContext.state.perpendicularDone = false;
+                for (i = 0; i < childItemsLength; ++i) {
+                    childItems[i].invalidate();
+                }
+            }
         }
 
         contentWidth = nonFlexWidth;
@@ -501,6 +518,11 @@ Ext.define('Ext.layout.container.Box', {
 
         if (pack.center) {
             left += remainingWidth / 2;
+
+            // If content is too wide to pack to center, do not allow the centering calculation to place it off the left edge.
+            if (left < 0) {
+                left = 0;
+            }
         } else if (pack.end) {
             left += remainingWidth;
         }
@@ -679,7 +701,16 @@ Ext.define('Ext.layout.container.Box', {
     },
 
     completeLayout: function(ownerContext) {
-        this.overflowHandler.completeLayout(ownerContext);
+        var me = this,
+            state = ownerContext.state;
+
+        me.overflowHandler.completeLayout(ownerContext);
+
+        // If we are scrolling parallel, restore the saved scroll position
+        if (state.boxPlan.scrollParallel) {
+            me.owner.getTargetEl().dom['scroll' + me.getNames().leftCap] = state.scrollPos;
+        }
+
     },
 
     onInvalidateChild: function (options, childContext) {

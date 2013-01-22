@@ -29,20 +29,10 @@ Ext.define('Ext.calendar.form.field.DateRange', {
     allDayText: 'All day',
     /**
      * @cfg {String/Boolean} singleLine
-     * This value can be set explicitly to <code>true</code> or <code>false</code> to force the field to render on
-     * one line or two lines respectively.  The default value is <code>'auto'</code> which means that the field will
-     * calculate its container's width and compare it to {@link singleLineMinWidth} to determine whether to render 
-     * on one line or two automatically.  Note that this only applies at render time -- once the field is rendered
-     * the layout cannot be changed.
+     * `true` to render the fields all on one line, `false` to break the start date/time and end date/time
+     * into two stacked rows of fields to preserve horizontal space (defaults to `true`).
      */
-    singleLine: 'auto',
-    /**
-     * @cfg {Number} singleLineMinWidth
-     * If {@link singleLine} is set to 'auto' it will use this value to determine whether to render the field on one
-     * line or two. This value is the approximate minimum width required to render the field on a single line, so if
-     * the field's container is narrower than this value it will automatically be rendered on two lines.
-     */
-    singleLineMinWidth: 490,
+    singleLine: true,
     /**
      * @cfg {String} dateFormat
      * The date display format used by the date fields (defaults to 'n/j/Y') 
@@ -57,7 +47,7 @@ Ext.define('Ext.calendar.form.field.DateRange', {
     timeFormat: Ext.Date.use24HourTime ? 'G:i' : 'g:i A',
     
     // private
-    layout: {
+    fieldLayout: {
         type: 'hbox',
         defaultMargins: { top: 0, right: 5, bottom: 0, left: 0 }
     },
@@ -65,11 +55,32 @@ Ext.define('Ext.calendar.form.field.DateRange', {
     // private
     initComponent: function() {
         var me = this;
-        me.items = me.getFieldConfigs();
+        
         me.addCls('ext-dt-range');
         
-        // TODO: Replace this with singleLine config logic:
-        me.height = 22;
+        if (me.singleLine) {
+            me.layout = me.fieldLayout;
+            me.items = me.getFieldConfigs();
+        }
+        else {
+            me.items = [{
+                xtype: 'container',
+                layout: me.fieldLayout,
+                items: [
+                    me.getStartDateConfig(),
+                    me.getStartTimeConfig(),
+                    me.getDateSeparatorConfig()
+                ]
+            },{
+                xtype: 'container',
+                layout: me.fieldLayout,
+                items: [
+                    me.getEndDateConfig(),
+                    me.getEndTimeConfig(),
+                    me.getAllDayConfig()
+                ]
+            }];
+        }
         
         me.callParent(arguments);
         me.initRefs();

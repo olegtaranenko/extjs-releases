@@ -93,7 +93,7 @@ Ext.define('Ext.ZIndexManager', {
     },
 
     // private
-    _setActiveChild: function(comp) {
+    _setActiveChild: function(comp, oldFront) {
         var front = this.front;
         if (comp !== front) {
 
@@ -101,7 +101,7 @@ Ext.define('Ext.ZIndexManager', {
                 front.setActive(false, comp);
             }
             this.front = comp;
-            if (comp) {
+            if (comp && comp != oldFront) {
                 comp.setActive(true);
                 if (comp.modal) {
                     this._showModalMask(comp);
@@ -120,6 +120,7 @@ Ext.define('Ext.ZIndexManager', {
         var me = this,
             stack = me.zIndexStack,
             i = stack.length - 1,
+            oldFront = me.front,
             comp;
 
         // There may be no visible floater to activate
@@ -130,7 +131,7 @@ Ext.define('Ext.ZIndexManager', {
         // If that was modal, then we're done
         for (; i >= 0 && stack[i].hidden; --i);
         if ((comp = stack[i])) {
-            me._setActiveChild(comp);
+            me._setActiveChild(comp, oldFront);
             if (comp.modal) {
                 return;
             }
@@ -141,7 +142,7 @@ Ext.define('Ext.ZIndexManager', {
         for (; i >= 0; --i) {
             comp = stack[i];
             // If we find a visible modal further down the zIndex stack, move the mask to just under it.
-            if (comp.visible && comp.modal) {
+            if (comp.isVisible() && comp.modal) {
                 me._showModalMask(comp);
                 return;
             }

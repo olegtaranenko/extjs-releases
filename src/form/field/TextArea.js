@@ -109,6 +109,8 @@ Ext.define('Ext.form.field.TextArea', {
 
     // private
     componentLayout: 'textareafield',
+    
+    setGrowSizePolicy: Ext.emptyFn,
 
     // private
     getSubTplData: function() {

@@ -99,6 +99,10 @@ Ext.define('Ext.dom.CompositeElementLite', {
         this.el = new Ext.dom.AbstractElement.Fly();
     },
 
+<span id='Ext-dom-CompositeElementLite-property-isComposite'>    /**
+</span>     * @property {Boolean} isComposite
+     * `true` in this class to identify an objact as an instantiated CompositeElement, or subclass thereof.
+     */
     isComposite: true,
 
     // private
@@ -157,11 +161,12 @@ Ext.define('Ext.dom.CompositeElementLite', {
             element,
             i;
 
+        fn = Ext.dom.Element.prototype[fn];
         for (i = 0; i &lt; ln; i++) {
             element = elements[i];
 
             if (element) {
-                Ext.dom.Element.prototype[fn].apply(this.getElement(element), args);
+                fn.apply(this.getElement(element), args);
             }
         }
         return this;
@@ -387,7 +392,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
         Ext.dom.Element.selectorFunction = Ext.DomQuery.select;
     }
 
-<span id='Ext-dom-Element-method-select'>    /**
+<span id='Ext-dom-Element-static-method-select'>    /**
 </span>     * Selects elements based on the passed CSS selector to enable {@link Ext.Element Element} methods
      * to be applied to many related elements in one statement through the returned
      * {@link Ext.dom.CompositeElement CompositeElement} or
@@ -397,6 +402,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
      * @return {Ext.dom.CompositeElementLite/Ext.dom.CompositeElement}
      * @member Ext.dom.Element
      * @method select
+     * @static
      */
    Ext.dom.Element.select = function(selector, root) {
         var elements;

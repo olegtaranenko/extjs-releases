@@ -430,12 +430,16 @@ Ext.define('Ext.view.Table', {
     // because it may have to accommodate (or cease to accommodate) a vertical scrollbar.
     // Only do this on platforms with have a space-consuming scrollbar
     refreshHeight: function() {
-        var cmp = this.up('grid');
+        var cmp = this.up('tablepanel');
 
         // Suspend layouts in case the superclass requests a layout. We might too, so they must be coalescsed.
         Ext.suspendLayouts();
         this.callParent(arguments);
-        if (cmp && (cmp = cmp.child('headercontainer')) && Ext.getScrollbarSize().width && cmp.child('[flex]')) {
+
+        // Do not perform layouts on refresh if the grid is monitoring scroll using a verticalScroller in order
+        // to buffer refreshes of the view from the Store's prefetch buffer. In the case of infinite scrolling,
+        // if there's no scrolling, there will be no refreshes, if there are refreshes, there will definitely be a scrollbar.
+        if (!cmp.verticalScroller && cmp && (cmp = cmp.child('headercontainer')) && Ext.getScrollbarSize().width && cmp.child('[flex]')) {
             cmp.updateLayout();
         }
         Ext.resumeLayouts(true);
@@ -730,7 +734,7 @@ Ext.define('Ext.view.Table', {
             }
         }
 
-        result = me.fireEvent('uievent', type, me, cell, rowIndex, cellIndex, e);
+        result = me.fireEvent('uievent', type, me, cell, rowIndex, cellIndex, e, record, row);
 
         if (result === false || me.callParent(arguments) === false) {
             return false;
@@ -986,21 +990,16 @@ Ext.define('Ext.view.Table', {
         }
     },
     getFirstVisibleColumnIndex: function() {
-        var headerCt   = this.getHeaderCt(),
-            allColumns = headerCt.getGridColumns(),
-            visHeaders = Ext.ComponentQuery.query(':not([hidden])', allColumns),
-            firstHeader = visHeaders[0];
+        var firstVisibleHeader = this.getHeaderCt().getVisibleGridColumns()[0];
 
-        return headerCt.getHeaderIndex(firstHeader);
+        return firstVisibleHeader ? firstVisibleHeader.getIndex() : -1;
     },
 
     getLastVisibleColumnIndex: function() {
-        var headerCt   = this.getHeaderCt(),
-            allColumns = headerCt.getGridColumns(),
-            visHeaders = Ext.ComponentQuery.query(':not([hidden])', allColumns),
+        var visHeaders = this.getHeaderCt().getVisibleGridColumns(),
             lastHeader = visHeaders[visHeaders.length - 1];
 
-        return headerCt.getHeaderIndex(lastHeader);
+        return lastHeader.getIndex();
     },
 
     getHeaderCt: function() {

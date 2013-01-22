@@ -117,6 +117,14 @@ Ext.define('Ext.slider.Multi', {
     increment: 0,
 
     /**
+     * @cfg {Boolean} [zeroBasedSnapping=false]
+     * Set to `true` to calculate snap points based on {@link #increment}s from zero as opposed to
+     * from this Slider's {@link #minValue}.
+     *
+     * By Default, valid snap points are calculated starting {@link #increment}s from the {@link #minValue}
+     */
+
+    /**
      * @private
      * @property {Number[]} clickRange
      * Determines whether or not a click to the slider component is considered to be a user request to change the value. Specified as an array of [top, bottom],
@@ -152,8 +160,9 @@ Ext.define('Ext.slider.Multi', {
     componentLayout: 'sliderfield',
 
     /**
-     * @cfg {Boolean} useTips
-     * True to use an Ext.slider.Tip to display tips for the value.
+     * @cfg {Object/Boolean} useTips
+     * True to use an {@link Ext.slider.Tip} to display tips for the value. This option may also
+     * provide a configuration object for an {@link Ext.slider.Tip}.
      */
     useTips : true,
 
@@ -253,11 +262,21 @@ Ext.define('Ext.slider.Multi', {
             'dragend'
         );
 
+        // Ensure that the maxValue is a snap point, and that the initial value is snapped.
+        if (me.increment) {
+            me.maxValue = Ext.Number.snapInRange(me.maxValue, me.increment, me.minValue);
+            me.value = me.normalizeValue(me.value);
+        }
+
         me.callParent();
 
         // only can use it if it exists.
         if (me.useTips) {
-            tipPlug = me.tipText ? {getText: me.tipText} : {};
+            if (Ext.isObject(me.useTips)) {
+                tipPlug = Ext.apply({}, me.useTips);
+            } else {
+                tipPlug = me.tipText ? {getText: me.tipText} : {};    
+            }
             me.plugins = me.plugins || [];
             Ext.each(me.plugins, function(plug){
                 if (plug.isSliderTip) {
@@ -379,10 +398,10 @@ Ext.define('Ext.slider.Multi', {
             trackLength;
 
         if (me.vertical) {
-            positionProperty = 'top',
+            positionProperty = 'top';
             trackLength = sliderTrack.getHeight();
         } else {
-            positionProperty = 'left',
+            positionProperty = 'left';
             trackLength = sliderTrack.getWidth();
         }
         result = sliderTrack.translatePoints(xy)[positionProperty];
@@ -522,9 +541,11 @@ Ext.define('Ext.slider.Multi', {
      * @return {Number} The raw value rounded to the correct d.p. and constrained within the set max and min values
      */
     normalizeValue : function(v) {
-        var me = this;
+        var me = this,
+            Num = Ext.Number,
+            snapFn = Num[me.zeroBasedSnapping ? 'snap' : 'snapInRange'];
 
-        v = Ext.Number.snap(v, this.increment, this.minValue, this.maxValue);
+        v = snapFn.call(Num, v, me.increment, me.minValue, me.maxValue);
         v = Ext.util.Format.round(v, me.decimalPrecision);
         v = Ext.Number.constrain(v, me.minValue, me.maxValue);
         return v;

@@ -52,13 +52,7 @@ Ext.onReady(function(){
     });
 
     var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
-        clicksToEdit: 1,
-        listeners: {
-            edit: function(){
-                // refresh summaries
-                grid.getView().refresh();
-            }
-        }
+        clicksToEdit: 1
     });
     var showSummary = true;
     var grid = Ext.create('Ext.grid.Panel', {

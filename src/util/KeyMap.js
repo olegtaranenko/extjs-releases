@@ -120,9 +120,9 @@ Ext.define('Ext.util.KeyMap', {
     constructor: function(config) {
         var me = this;
 
-        // Handle legacy arg list.
+        // Handle legacy arg list in which the first argument is the target.
         // TODO: Deprecate in V5
-        if ((typeof config === 'string') || config.dom || config.tagName || config.isComponent) {
+        if ((arguments.length !== 1) || (typeof config === 'string') || config.dom || config.tagName || config === document || config.isComponent) {
             me.legacyConstructor.apply(me, arguments);
             return;
         }
@@ -136,6 +136,8 @@ Ext.define('Ext.util.KeyMap', {
 
         if (me.binding) {
             me.addBinding(me.binding);
+        } else if (config.key) {
+            me.addBinding(config);
         }
         me.enable();
     },

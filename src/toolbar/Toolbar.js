@@ -199,6 +199,10 @@ Ext.define('Ext.toolbar.Toolbar', {
     alias: 'widget.toolbar',
     alternateClassName: 'Ext.Toolbar',
 
+    /**
+     * @property {Boolean} isToolbar
+     * `true` in this class to identify an objact as an instantiated Toolbar, or subclass thereof.
+     */
     isToolbar: true,
     baseCls  : Ext.baseCSSPrefix + 'toolbar',
     ariaRole : 'toolbar',
@@ -273,8 +277,7 @@ Ext.define('Ext.toolbar.Toolbar', {
             type: me.layout
         } : me.layout || {}, {
             type: me.vertical ? 'vbox' : 'hbox',
-            align: me.vertical ? 'stretchmax' : 'middle',
-            clearInnerCtOnLayout: true
+            align: me.vertical ? 'stretchmax' : 'middle'
         });
 
         if (me.vertical) {

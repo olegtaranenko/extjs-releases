@@ -20,6 +20,24 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     
     // @private
     nestedIdRe: /\{\{id\}([\w\-]*)\}/g,
+
+    // Listen for store updates. Eg, from an Editor.
+    init: function() {
+        this.view.mon(this.view.store, {
+            update: this.onStoreUpdate,
+            scope: this
+        });
+    },
+
+    // Refresh the whole view on edit so that the Summary gets updated
+    onStoreUpdate: function() {
+        var v = this.view;
+        if (this.showSummaryRow) {
+            v.saveScrollState();
+            v.refresh();
+            v.restoreScrollState();
+        }
+    },
     
     /**
      * Toggle whether or not to show the summary row.

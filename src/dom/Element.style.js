@@ -168,6 +168,7 @@ Element.override({
             // value down. Using getBoundingClientRect instead of offsetWidth allows us to get the precise
             // subpixel measurements so we can force them to always be rounded up. See
             // https://bugzilla.mozilla.org/show_bug.cgi?id=458617
+            // Rounding up ensures that the width includes the full width of the text contents.
         } else if (Ext.supports.BoundingClientRect) {
             rect = dom.getBoundingClientRect();
             width = rect.right - rect.left;
@@ -180,10 +181,14 @@ Element.override({
 
         // IE9 Direct2D dimension rounding bug
         if (!hidden && Ext.supports.Direct2DBug) {
+            // get the fractional portion of the sub-pixel precision width of the element's text contents
             floating = me.adjustDirect2DDimension('width');
             if (preciseWidth) {
                 width += floating;
             }
+            // IE9 also measures fonts with sub-pixel precision, but unlike Gecko, instead of rounding the offsetWidth down,
+            // it rounds to the nearest integer.  This means that in order to ensure that the width includes the full
+            // width of the text contents we need to increment the width by 1 only if the fractional portion is less than 0.5
             else if (floating > 0 && floating < 0.5) {
                 width++;
             }
@@ -420,25 +425,25 @@ Element.override({
         var me = this,
             dom = me.dom,
             display = me.getStyle('display'),
-            inlineDisplay = dom.style['display'],
-            inlinePosition = dom.style['position'],
+            inlineDisplay = dom.style.display,
+            inlinePosition = dom.style.position,
             originIndex = dimension === 'width' ? 0 : 1,
             floating;
 
         if (display === 'inline') {
-            dom.style['display'] = 'inline-block';
+            dom.style.display = 'inline-block';
         }
 
-        dom.style['position'] = display.match(adjustDirect2DTableRe) ? 'absolute' : 'static';
+        dom.style.position = display.match(adjustDirect2DTableRe) ? 'absolute' : 'static';
 
         // floating will contain digits that appears after the decimal point
         // if height or width are set to auto we fallback to msTransformOrigin calculation
         floating = (parseFloat(me.getStyle(dimension)) || parseFloat(dom.currentStyle.msTransformOrigin.split(' ')[originIndex]) * 2) % 1;
 
-        dom.style['position'] = inlinePosition;
+        dom.style.position = inlinePosition;
 
         if (display === 'inline') {
-            dom.style['display'] = inlineDisplay;
+            dom.style.display = inlineDisplay;
         }
 
         return floating;
@@ -450,15 +455,15 @@ Element.override({
      */
     clip : function() {
         var me = this,
-            dom = me.dom;
+            data = (me.$cache || me.getCache()).data;
 
-        if (!Element.data(dom, ISCLIPPED)) {
-            Element.data(dom, ISCLIPPED, true);
-            Element.data(dom, ORIGINALCLIP, {
+        if (!data[ISCLIPPED]) {
+            data[ISCLIPPED] = true;
+            data[ORIGINALCLIP] = {
                 o: me.getStyle(OVERFLOW),
                 x: me.getStyle(OVERFLOWX),
                 y: me.getStyle(OVERFLOWY)
-            });
+            };
             me.setStyle(OVERFLOW, HIDDEN);
             me.setStyle(OVERFLOWX, HIDDEN);
             me.setStyle(OVERFLOWY, HIDDEN);
@@ -472,12 +477,12 @@ Element.override({
      */
     unclip : function() {
         var me = this,
-            dom = me.dom,
+            data = (me.$cache || me.getCache()).data,
             clip;
 
-        if (Element.data(dom, ISCLIPPED)) {
-            Element.data(dom, ISCLIPPED, false);
-            clip = Element.data(dom, ORIGINALCLIP);
+        if (data[ISCLIPPED]) {
+            data[ISCLIPPED] = true;
+            clip = data[ORIGINALCLIP];
             if (clip.o) {
                 me.setStyle(OVERFLOW, clip.o);
             }
@@ -492,7 +497,8 @@ Element.override({
     },
 
     /**
-     * Returns an object with properties matching the styles requested.
+     * Returns an object with properties matching the styles requested as computed by the browser based upon applicable
+     * CSS rules as well as inline styles.
      *
      * For example:
      *
@@ -502,17 +508,24 @@ Element.override({
      *
      *     {'color': '#FFFFFF', 'font-size': '13px', 'width': '100px'}
      *
+     * If ```true``` is passed as the last parameter, *inline* styles are returned instead of computed styles.
+     *
      * @param {String...} styles A variable number of style names
      * @return {Object} The style object
      */
     getStyles : function() {
         var styles = {},
             len = arguments.length,
-            i = 0, style;
+            i = 0, style,
+            inline = false;
 
+        if (arguments[len - 1] === true) {
+            --len;
+            inline = true;
+        }
         for (; i < len; ++i) {
             style = arguments[i];
-            styles[style] = this.getStyle(style);
+            styles[style] = inline ? this.dom.style[Ext.Element.normalize(style)] : this.getStyle(style);
         }
         return styles;
     },
@@ -733,13 +746,13 @@ Element.override({
 
 })();
 
+// This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
+// the same object.
+Ext.dom.Element.prototype.styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
+
 Ext.onReady(function () {
     var opacityRe = /alpha\(opacity=(.*)\)/i,
         trimRe = /^\s+|\s+$/g;
-
-    // This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
-    // the same object.
-    Ext.dom.Element.prototype.styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
 
     // Ext.supports flags are not populated until onReady...
     if (!Ext.supports.Opacity && Ext.isIE) {
@@ -778,3 +791,22 @@ Ext.onReady(function () {
     // else there is no work around for the lack of opacity support. Should not be a
     // problem given that this has been supported for a long time now...
 });
+
+// override getStyle for border-*-width
+if (Ext.isIEQuirks || Ext.isIE && Ext.ieVersion <= 8){
+    Ext.Array.forEach('Top Right Bottom Left'.split(' '), function(side){
+        var borderWidth = 'border' + side + 'Width',
+            borderStyle = 'border' + side + 'Style';
+
+        Ext.dom.Element.prototype.styleHooks['border-' + side.toLowerCase() + '-width'] = {
+            name: borderWidth,
+            get: function (dom) {
+                var currentStyle = dom.currentStyle;
+                if (currentStyle[borderStyle] == 'none'){
+                    return '0px';
+                }
+                return currentStyle[borderWidth];
+            }
+        };
+    });
+}

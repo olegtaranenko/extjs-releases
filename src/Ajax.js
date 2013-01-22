@@ -42,10 +42,6 @@ Ext.define('Ext.Ajax', {
     singleton: true,
 
     /**
-     * @property {Boolean} disableCaching
-     * True to add a unique cache-buster param to GET requests. Defaults to true.
-     */
-    /**
      * @cfg {Object} extraParams @hide
      */
     /**

@@ -1,8 +1,9 @@
+Ext.require(['Ext.draw.Text', 'Ext.slider.Single']);
 Ext.onReady(function() {
     Ext.create('Ext.draw.Text', {
         renderTo: Ext.get('text-ph'),
-        height: 350,
         padding: 20,
+        height: 350,
         degrees: 45,
         text: 'With Ext JS 4.0 Drawing',
         textStyle: {
@@ -13,8 +14,8 @@ Ext.onReady(function() {
 
     Ext.create('Ext.draw.Text', {
         renderTo: Ext.get('text-ph'),
-        height: 350,
         padding: 20,
+        height: 350,
         degrees: 90,
         text: 'Creating a rotated Text component',
         textStyle: {

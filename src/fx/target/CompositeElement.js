@@ -14,6 +14,10 @@ Ext.define('Ext.fx.target.CompositeElement', {
 
     /* End Definitions */
 
+    /**
+     * @property {Boolean} isComposite
+     * `true` in this class to identify an objact as an instantiated CompositeElement, or subclass thereof.
+     */
     isComposite: true,
     
     constructor: function(target) {

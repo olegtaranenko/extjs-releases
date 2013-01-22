@@ -17,6 +17,13 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js">Ext.require('Ext.util.DelayedTask', function() {
 
+<span id='Ext-util-Event'>    /**
+</span>     * Represents single event type that an Observable object listens to.
+     * All actual listeners are tracked inside here.  When the event fires,
+     * it calls all the registered listener functions.
+     *
+     * @private
+     */
     Ext.util.Event = Ext.extend(Object, (function() {
         function createBuffered(handler, listener, o, scope) {
             listener.task = new Ext.util.DelayedTask();
@@ -44,6 +51,10 @@
         }
 
         return {
+<span id='Ext-util-Event-property-isEvent'>            /**
+</span>             * @property {Boolean} isEvent
+             * `true` in this class to identify an objact as an instantiated Event, or subclass thereof.
+             */
             isEvent: true,
 
             constructor: function(observable, name) {

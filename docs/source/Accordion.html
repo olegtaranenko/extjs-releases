@@ -26,13 +26,13 @@
  *         title: 'Accordion Layout',
  *         width: 300,
  *         height: 300,
- *         layout:'accordion',
  *         defaults: {
  *             // applied to each contained panel
  *             bodyStyle: 'padding:15px'
  *         },
  *         layout: {
  *             // layout-specific configs go here
+ *             type: 'accordion',
  *             titleCollapse: false,
  *             animate: true,
  *             activeOnTop: true
@@ -55,7 +55,7 @@ Ext.define('Ext.layout.container.Accordion', {
     alias: ['layout.accordion'],
     alternateClassName: 'Ext.layout.AccordionLayout',
 
-    itemCls: Ext.baseCSSPrefix + 'box-item ' + Ext.baseCSSPrefix + 'accordion-item',
+    itemCls: [Ext.baseCSSPrefix + 'box-item', Ext.baseCSSPrefix + 'accordion-item'],
 
     align: 'stretch',
 
@@ -131,28 +131,6 @@ Ext.define('Ext.layout.container.Accordion', {
         } else {
             me.animatePolicy = null;
         }
-
-        // Child Panels are not absolutely positioned if we are not filling, so use a different itemCls.
-        if (me.fill === false) {
-            me.itemCls = Ext.baseCSSPrefix + 'accordion-item';
-        }
-    },
-
-    // Cannot lay out a fitting accordion before we have been allocated a height.
-    // So during render phase, layout will not be performed.
-    beforeLayout: function() {
-        var me = this;
-
-        me.callParent(arguments);
-        if (me.fill) {
-            if (!(me.owner.el.dom.style.height || me.getLayoutTargetSize().height)) {
-                return false;
-            }
-        } else {
-            me.owner.componentLayout.monitorChildren = false;
-            me.autoSize = true;
-            me.owner.setAutoScroll(true);
-        }
     },
 
     beforeRenderItems: function (items) {
@@ -164,12 +142,6 @@ Ext.define('Ext.layout.container.Accordion', {
         for (; i &lt; ln; i++) {
             comp = items[i];
             if (!comp.rendered) {
-                // Add class to the Panel's header before render
-                comp.on({
-                    beforerender: me.onChildPanelRender,
-                    single: true
-                });
-
                 // Set up initial properties for Panels in an accordion.
                 if (me.collapseFirst) {
                     comp.collapseFirst = me.collapseFirst;
@@ -188,8 +160,9 @@ Ext.define('Ext.layout.container.Accordion', {
                 comp.title = comp.title || '&amp;#160;';
                 comp.addBodyCls(Ext.baseCSSPrefix + 'accordion-body');
 
-                // Set initial sizes
-                if (me.fill) {
+                // If only one child Panel is allowed to be expanded
+                // then collapse all except the first one found with collapsed:false
+                if (!me.multi) {
                     // If there is an expanded item, all others must be rendered collapsed.
                     if (me.expandedItem !== undefined) {
                         comp.collapsed = true;
@@ -200,26 +173,30 @@ Ext.define('Ext.layout.container.Accordion', {
                     } else {
                         comp.collapsed = true;
                     }
-                    // If we are fitting, then intercept expand/collapse requests.
+
+                    // If only one child Panel may be expanded, then intercept expand/show requests.
                     me.owner.mon(comp, {
                         show: me.onComponentShow,
                         beforeexpand: me.onComponentExpand,
+                        scope: me
+                    });
+                }
+
+                // If we must fill available space, a collapse must be listened for and a sibling must
+                // be expanded.
+                if (me.fill) {
+                    me.owner.mon(comp, {
                         beforecollapse: me.onComponentCollapse,
                         scope: me
                     });
-                } else {
-                    comp.animCollapse = me.initialAnimate;
-                    comp.autoScroll = false;
                 }
-                comp.border = comp.collapsed;
             }
         }
 
         // If no collapsed:false Panels found, make the first one expanded.
         if (ln &amp;&amp; me.expandedItem === undefined) {
             me.expandedItem = 0;
-            comp = items[0];
-            comp.collapsed = comp.border = false;
+            items[0].collapsed = false;
         }
     },
 
@@ -238,9 +215,11 @@ Ext.define('Ext.layout.container.Accordion', {
     configureItem: function(item) {
         this.callParent(arguments);
 
-        // we handle animations for the expand/collapse of items:
-        item.animCollapse = false;
+        // We handle animations for the expand/collapse of items.
+        // Items do not have individual borders
+        item.animCollapse = item.border = false;
 
+        // If filling available space, all Panels flex.
         if (this.fill) {
             item.flex = 1;
         }
@@ -255,52 +234,27 @@ Ext.define('Ext.layout.container.Accordion', {
         this.updatePanelClasses(ownerContext);
     },
 
-    calculate: function(ownerContext) {
-        var me = this,
-            itemContext;
-
-        if (me.fill) {
-            me.callParent(arguments);
-        } else {
-            var targetSize = me.getContainerSize(ownerContext),
-                items = ownerContext.childItems,
-                len = items.length,
-                i;
-
-            for (i = 0; i &lt; len; i++) {
-                itemContext = items[i];
-                if (itemContext.target.collapsed) {
-                    itemContext.setWidth(targetSize.width);
-                } else {
-                    itemContext.setSize(null, null);
-                }
-            }
-        }
-
-        return me;
-    },
-
     updatePanelClasses: function(ownerContext) {
         var children = ownerContext.visibleItems,
             ln = children.length,
             siblingCollapsed = true,
-            layoutContext = ownerContext.context,
-            i, child, headerContext;
+            i, child, header;
 
         for (i = 0; i &lt; ln; i++) {
             child = children[i];
-            headerContext = layoutContext.getCmp(child.header);
+            header = child.header;
+            header.addCls(Ext.baseCSSPrefix + 'accordion-hd');
 
             if (siblingCollapsed) {
-                headerContext.removeCls(Ext.baseCSSPrefix + 'accordion-hd-sibling-expanded');
+                header.removeCls(Ext.baseCSSPrefix + 'accordion-hd-sibling-expanded');
             } else {
-                headerContext.addCls(Ext.baseCSSPrefix + 'accordion-hd-sibling-expanded');
+                header.addCls(Ext.baseCSSPrefix + 'accordion-hd-sibling-expanded');
             }
 
             if (i + 1 == ln &amp;&amp; child.collapsed) {
-                headerContext.addCls(Ext.baseCSSPrefix + 'accordion-hd-last-collapsed');
+                header.addCls(Ext.baseCSSPrefix + 'accordion-hd-last-collapsed');
             } else {
-                headerContext.removeCls(Ext.baseCSSPrefix + 'accordion-hd-last-collapsed');
+                header.removeCls(Ext.baseCSSPrefix + 'accordion-hd-last-collapsed');
             }
 
             siblingCollapsed = child.collapsed;
@@ -369,7 +323,6 @@ Ext.define('Ext.layout.container.Accordion', {
         // Showing a Component means that you want to see it, so expand it.
         this.onComponentExpand(comp);
     }
-});
-</pre>
+});</pre>
 </body>
 </html>

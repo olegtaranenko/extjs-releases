@@ -223,6 +223,10 @@ Ext.define('Ext.window.Window', {
 
     ignoreHeaderBorderManagement: true,
 
+    /**
+     * @property {Boolean} isWindow
+     * `true` in this class to identify an objact as an instantiated Window, or subclass thereof.
+     */
     isWindow: true,
 
     // private

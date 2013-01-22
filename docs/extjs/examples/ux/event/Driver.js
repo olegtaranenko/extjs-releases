@@ -29,12 +29,16 @@ Ext.define('Ext.ux.event.Driver', {
         );
     },
 
+    getTime: function () {
+        return new Date().getTime();
+    },
+
     /**
      * Returns the number of milliseconds since start was called.
      */
     getTimestamp: function () {
-        var d = new Date();
-        return d.getTime() - this.startTime;
+        var d = this.getTime();
+        return d - this.startTime;
     },
 
     onStart: function () {},
@@ -49,7 +53,7 @@ Ext.define('Ext.ux.event.Driver', {
 
         if (!me.active) {
             me.active = new Date();
-            me.startTime = me.active.getTime();
+            me.startTime = me.getTime();
             me.onStart();
             me.fireEvent('start', me);
         }

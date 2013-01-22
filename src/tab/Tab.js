@@ -16,6 +16,10 @@ Ext.define('Ext.tab.Tab', {
 
     componentLayout: 'tab',
 
+    /**
+     * @property {Boolean} isTab
+     * `true` in this class to identify an objact as an instantiated Tab, or subclass thereof.
+     */
     isTab: true,
 
     baseCls: Ext.baseCSSPrefix + 'tab',
@@ -322,7 +326,7 @@ Ext.define('Ext.tab.Tab', {
                 }
             } else {
                 // if there's no tabbar, fire the close event
-                me.fireEvent('close', me);
+                me.fireClose();
             }
         }
     },

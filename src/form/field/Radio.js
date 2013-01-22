@@ -177,6 +177,10 @@ Ext.define('Ext.form.field.Radio', {
     alternateClassName: 'Ext.form.Radio',
     requires: ['Ext.form.RadioManager'],
 
+    /**
+     * @property {Boolean} isRadio
+     * `true` in this class to identify an objact as an instantiated Radio, or subclass thereof.
+     */
     isRadio: true,
 
     /**

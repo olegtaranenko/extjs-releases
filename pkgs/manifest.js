@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 this.ExtBootstrapData = {
     "nameToAliasesMap":{
         "Ext.AbstractComponent":[],
@@ -252,6 +238,7 @@ this.ExtBootstrapData = {
         ],
         "Ext.Editor":["widget.editor"
         ],
+        "Ext.FocusManager":[],
         "Ext.Img":["widget.image",
             "widget.imagecomponent"
         ],
@@ -656,6 +643,7 @@ this.ExtBootstrapData = {
         "Ext.data.XmlWriter":"Ext.data.writer.Xml",
         "Ext.Direct.Transaction":"Ext.direct.Transaction",
         "Ext.AbstractSelectionModel":"Ext.selection.Model",
+        "Ext.FocusMgr":"Ext.FocusManager",
         "Ext.WindowGroup":"Ext.ZIndexManager",
         "Ext.Button":"Ext.button.Button",
         "Ext.CycleButton":"Ext.button.Cycle",
@@ -814,5 +802,4 @@ this.ExtBootstrapData = {
         this.ExtBootstrapData = null;
     }
 })();
-
 

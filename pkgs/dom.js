@@ -1,17 +1,3 @@
-/*
-
-This file is part of Ext JS 4
-
-Copyright (c) 2011 Sencha Inc
-
-Contact:  http://www.sencha.com/contact
-
-Commercial Usage
-Licensees holding valid commercial licenses may use this file in accordance with the Commercial Software License Agreement provided with the Software or, alternatively, in accordance with the terms contained in a written agreement between you and Sencha.
-
-If you are unsure which license is appropriate for your use, please contact the sales department at http://www.sencha.com/contact.
-
-*/
 /**
  * @class Ext.util.DelayedTask
  * 
@@ -85,6 +71,13 @@ Ext.util.DelayedTask = function(fn, scope, args) {
 };
 Ext.require('Ext.util.DelayedTask', function() {
 
+    /**
+     * Represents single event type that an Observable object listens to.
+     * All actual listeners are tracked inside here.  When the event fires,
+     * it calls all the registered listener functions.
+     *
+     * @private
+     */
     Ext.util.Event = Ext.extend(Object, (function() {
         function createBuffered(handler, listener, o, scope) {
             listener.task = new Ext.util.DelayedTask();
@@ -112,6 +105,10 @@ Ext.require('Ext.util.DelayedTask', function() {
         }
 
         return {
+            /**
+             * @property {Boolean} isEvent
+             * `true` in this class to identify an objact as an instantiated Event, or subclass thereof.
+             */
             isEvent: true,
 
             constructor: function(observable, name) {
@@ -309,7 +306,19 @@ Ext.EventManager = {
      * Holds references to any onReady functions
      * @private
      */
-    readyEvent: new Ext.util.Event(),
+    readyEvent:
+        (function () {
+            var event = new Ext.util.Event();
+            event.fire = function () {
+                  if (!/(^|[ ;])ext-pause=1/.test(document.cookie)) {
+                      Ext._beforeReadyTime = new Date().getTime();
+                      event.self.prototype.fire.apply(event, arguments);
+                      Ext._afterReadytime = new Date().getTime();
+                  }
+                //
+            }
+            return event;
+        })(),
 
     /**
      * Check the ready state for old IE versions
@@ -376,6 +385,7 @@ Ext.EventManager = {
 
         // only unbind these events once
         if (!Ext.isReady) {
+            Ext._readyTime = new Date().getTime();
             Ext.isReady = true;
 
             if (document.addEventListener) {
@@ -706,7 +716,7 @@ Ext.EventManager = {
         if (!el) {
             return;
         }
-        cache = el.$cache;
+        cache = (el.$cache || el.getCache());
         events = cache.events;
 
         for (eventName in events) {
@@ -1274,8 +1284,12 @@ Ext.EventManager.un = Ext.EventManager.removeListener;
                 Ext.isBorderBox = true;
             }
 
-            htmlCls.push(baseCSSPrefix + (Ext.isBorderBox ? 'border-box' : 'strict'));
-            if (!Ext.isStrict) {
+            if(Ext.isBorderBox) {
+                htmlCls.push(baseCSSPrefix + 'border-box');
+            }
+            if (Ext.isStrict) {
+                htmlCls.push(baseCSSPrefix + 'strict');
+            } else {
                 htmlCls.push(baseCSSPrefix + 'quirks');
             }
             Ext.fly(html, '_internal').addCls(htmlCls);
@@ -2606,18 +2620,21 @@ Ext.define('Ext.dom.AbstractElement', {
                     extEl = cache.el;
                     extEl.dom = dom;
                 } else {
-                    extEl = new El(dom);
+                    // Force new element if there's a cache but no el attached
+                    extEl = new El(dom, !!cache);
                 }
                 return extEl;
             } else if (el.tagName) { // dom element
                 if (!(id = el.id)) {
                     id = Ext.id(el);
                 }
-                if (Ext.cache[id] && Ext.cache[id].el) {
+                cache = Ext.cache[id];
+                if (cache && cache.el) {
                     extEl = Ext.cache[id].el;
                     extEl.dom = el;
                 } else {
-                    extEl = new El(el);
+                    // Force new element if there's a cache but no el attached
+                    extEl = new El(el, !!cache);
                 }
                 return extEl;
             } else if (el instanceof me) {
@@ -2667,23 +2684,6 @@ Ext.define('Ext.dom.AbstractElement', {
             return el;
         },
 
-        // private method for getting and setting element data
-        data: function(el, key, value) {
-            el = this.get(el);
-            if (!el) {
-                return null;
-            }
-            var c = Ext.cache[el.id].data;
-            if (!c) {
-                c = Ext.cache[el.id].data = {};
-            }
-            if (arguments.length == 2) {
-                return c[key];
-            } else {
-                return (c[key] = value);
-            }
-        },
-
         addMethods: function() {
             this.override.apply(this, arguments);
         },
@@ -2698,6 +2698,8 @@ myElement.dom.className = Ext.core.Element.mergeClsList(this.initialClasses, 'x-
          * @param {Mixed} clsList1 A string of class names, or an array of class names.
          * @param {Mixed} clsList2 A string of class names, or an array of class names.
          * @return {Array} An array of strings representing remaining unique, merged class names. If class names were added to the first list, the <code>changed</code> property will be <code>true</code>.
+         * @static
+         * @inheritable
          */
         mergeClsList: function() {
             var clsList, clsHash = {},
@@ -2739,6 +2741,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @param {Mixed} existingClsList A string of class names, or an array of class names.
          * @param {Mixed} removeClsList A string of class names, or an array of class names to remove from <code>existingClsList</code>.
          * @return {Array} An array of strings representing remaining class names. If class names were removed, the <code>changed</code> property will be <code>true</code>.
+         * @static
+         * @inheritable
          */
         removeCls: function(existingClsList, removeClsList) {
             var clsHash = {},
@@ -2776,6 +2780,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use visibility to hide element
          * @static
+         * @inheritable
          */
         VISIBILITY: 1,
 
@@ -2783,6 +2788,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use display to hide element
          * @static
+         * @inheritable
          */
         DISPLAY: 2,
 
@@ -2790,6 +2796,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @property
          * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use offsets to hide element
          * @static
+         * @inheritable
          */
         OFFSETS: 3
     },
@@ -3015,26 +3022,45 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     },
 
     getVisibilityMode: function() {
-        var data = (this.$cache || this).data,
-            mode = data.visibilityMode;
+        // Only flyweights won't have a $cache object, by calling getCache the cache
+        // will be created for future accesses. As such, we're eliminating the method
+        // call since it's mostly redundant
+        var data = (this.$cache || this.getCache()).data,
+            visMode = data.visibilityMode;
 
-        if (mode === undefined) {
-            data.visibilityMode = (mode = this.self.DISPLAY);
+        if (visMode === undefined) {
+            data.visibilityMode = visMode = this.self.DISPLAY;
         }
-
-        return mode;
+        
+        return visMode;
     },
 
     /**
      * Use this to change the visisbiliy mode between {@link #VISIBILITY}, {@link #DISPLAY} or {@link #OFFSETS}.
      */
     setVisibilityMode: function(mode) {
-        (this.$cache || this).data.visibilityMode = mode;
+        (this.$cache || this.getCache()).data.visibilityMode = mode;
         return this;
+    },
+    
+    getCache: function() {
+        var me = this,
+            id = me.dom.id || Ext.id(me.dom);
+
+        // Note that we do not assign an ID to the calling object here.
+        // An Ext.dom.Element will have one assigned at construction, and an Ext.dom.AbstractElement.Fly must not have one.
+        // We assign an ID to the DOM element if it does not have one.
+        me.$cache = Ext.cache[id] || (Ext.cache[id] = {
+            data: {},
+            events: {}
+        });     
+            
+        return me.$cache;
     }
+    
 }, function() {
     var AbstractElement = this,
-        validIdRe = /^[a-z0-9_\-]+$/i;
+        validIdRe = /^[a-z_][a-z0-9_\-]*$/i;
 
     Ext.getDetachedBody = function () {
         var detachedEl = AbstractElement.detachedBodyEl;
@@ -3069,51 +3095,86 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     };
 
     this.addStatics({
+        /**
+         * @class Ext.dom.AbstractElement.Fly
+         * A non-persistent wrapper for a DOM element which may be used to execute methods of {@link Ext.Dom.Element}
+         * upon a DOM element without creating an instance of {@link Ext.dom.Element}.
+         *
+         * A **singleton** instance of this class is returned when you use {@link Ext#fly}
+         *
+         * Because it is a singleton, this Flyweight does not have an ID, and must be used and discarded in a single line.
+         * You should not keep and use the reference to this singleton over multiple lines because methods that you call
+         * may themselves make use of {@link Ext#fly} and may change the DOM element to which the instance refers.
+         */
         Fly: new Ext.Class({
             extend: AbstractElement,
+
+            /**
+             * @property {Boolean} isFly
+             * This is `true` to identify Element flyweights
+             */
+            isFly: true,
 
             constructor: function(dom) {
                 this.dom = dom;
             },
-            
+
+            /**
+             * @private
+             * Attach this fliyweight instance to the passed DOM element.
+             *
+             * Note that a flightweight does **not** have an ID, and does not acquire the ID of the DOM element.
+             */
             attach: function (dom) {
-                var me = this;
-                me.dom = dom;
-                me.id = dom.id;
-                return me;
+
+                // Attach to the passed DOM element. The same code as in Ext.Fly
+                this.dom = dom;
+                // Use cached data if there is existing cached data for the referenced DOM element,
+                // otherwise it will be created when needed by getCache.
+                this.$cache = dom.id ? Ext.cache[dom.id] : null;
+                return this;
             }
         }),
 
         _flyweights: {},
 
         /**
-         * Gets the globally shared flyweight Element, with the passed node as the active element. Do not store a reference
-         * to this element - the dom node can be overwritten by other code. {@link Ext#fly} is alias for
-         * {@link Ext.dom.AbstractElement#fly}.
+         * Gets the singleton {@link Ext.dom.AbstractElement.Fly flyweight} element, with the passed node as the active element.
+         * 
+         * Because it is a singleton, this Flyweight does not have an ID, and must be used and discarded in a single line.
+         * You may not keep and use the reference to this singleton over multiple lines because methods that you call
+         * may themselves make use of {@link Ext#fly} and may change the DOM element to which the instance refers.
+         *  
+         * {@link Ext#fly} is alias for {@link Ext.dom.AbstractElement#fly}.
          *
          * Use this to make one-time references to DOM elements which are not going to be accessed again either by
          * application code, or by Ext's classes. If accessing an element which will be processed regularly, then {@link
          * Ext#get Ext.get} will be more appropriate to take advantage of the caching provided by the Ext.dom.Element
          * class.
          *
-         * @param {String/HTMLElement} el The dom node or id
+         * @param {String/HTMLElement} dom The dom node or id
          * @param {String} [named] Allows for creation of named reusable flyweights to prevent conflicts (e.g.
          * internally Ext uses "_global")
-         * @return {Ext.dom.Element} The shared Element object (or null if no matching element was found)
+         * @return {Ext.dom.AbstractElement.Fly} The singleton flyweight object (or null if no matching element was found)
          * @static
          */
-        fly: function(el, named) {
+        fly: function(dom, named) {
             var fly = null,
                 _flyweights = AbstractElement._flyweights;
 
             named = named || '_global';
 
-            el = Ext.getDom(el);
+            dom = Ext.getDom(dom);
 
-            if (el) {
+            if (dom) {
                 fly = _flyweights[named] || (_flyweights[named] = new AbstractElement.Fly());
-                fly.dom = el;
-                fly.data = {};
+
+                // Attach to the passed DOM element.
+                // This code performs the same function as Fly.attach, but inline it for efficiency
+                fly.dom = dom;
+                // Use cached data if there is existing cached data for the referenced DOM element,
+                // otherwise it will be created when needed by getCache.
+                fly.$cache = dom.id ? Ext.cache[dom.id] : null;
             }
             return fly;
         }
@@ -3163,7 +3224,6 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
 });
 
 })();
-
 /**
  * @class Ext.dom.AbstractElement
  */
@@ -3817,14 +3877,16 @@ Ext.dom.AbstractElement.override({
 
     // private
     getAnchor: function(){
-        var dom = this.dom;
-            if (!dom) {
-                return;
-            }
-            var anchor = this.self.data.call(this.self, dom, '_anchor');
+        var data = (this.$cache || this.getCache()).data,
+            anchor;
+            
+        if (!this.dom) {
+            return;
+        }
+        anchor = data._anchor;
 
         if(!anchor){
-            anchor = this.self.data.call(this.self, dom, '_anchor', {});
+            anchor = data._anchor = {};
         }
         return anchor;
     },
@@ -4980,7 +5042,8 @@ Element.override({
         mask: function(msg, msgCls, transparent) {
             var me = this,
                 dom = me.dom,
-                el = Ext.Element.data(dom, 'mask'),
+                data = (me.$cache || me.getCache()).data,
+                el = data.mask,
                 mask,
                 size,
                 cls = '',
@@ -5009,7 +5072,7 @@ Element.override({
 
             size = me.getSize();
 
-            Ext.Element.data(dom, 'mask', mask);
+            data.mask = mask;
 
             if (dom === document.body) {
                 size.height = window.innerHeight;
@@ -5036,17 +5099,17 @@ Element.override({
          */
         unmask: function() {
             var me = this,
-                dom = me.dom,
-                mask = Ext.Element.data(dom, 'mask'),
+                data = (me.$cache || me.getCache()).data,
+                mask = data.mask,
                 prefix = Ext.baseCSSPrefix;
 
             if (mask) {
                 mask.remove();
-                Ext.Element.data(dom, 'mask', undefined);
+                delete data.mask;
             }
             me.removeCls([prefix + 'masked', prefix + 'masked-relative']);
 
-            if (dom === document.body) {
+            if (me.dom === document.body) {
                 Ext.EventManager.unOrientationChange(me.orientationHandler, me);
                 delete me.orientationHandler;
             }
@@ -7002,13 +7065,15 @@ var HIDDEN = 'hidden',
      * @return {Ext.dom.Element} this
      */
     enableDisplayMode : function(display) {
-        this.setVisibilityMode(Element.DISPLAY);
+        var me = this;
+        
+        me.setVisibilityMode(Element.DISPLAY);
 
         if (!Ext.isEmpty(display)) {
-            Element.data(this.dom, 'originalDisplay', display);
+            (me.$cache || me.getCache()).data.originalDisplay = display;
         }
 
-        return this;
+        return me;
     },
 
     /**
@@ -7022,41 +7087,46 @@ var HIDDEN = 'hidden',
         var me            = this,
             dom           = me.dom,
             setExpression = dom.style.setExpression,
-            dh            = Ext.DomHelper,
-            mask          = me.maskEl,
-            mm;
+            data          = (me.$cache || me.getCache()).data,
+            maskEl        = data.maskEl,
+            maskMsg       = data.maskMsg;
 
         if (!(bodyRe.test(dom.tagName) && me.getStyle('position') == 'static')) {
             me.addCls(XMASKEDRELATIVE);
         }
-
-        msgCls = msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG;
-        if (mask) {
-            mm = me.maskMsgEl;
-            mm.dom.className = msgCls;
-            mm.dom.firstChild.innerHTML = msg;
-        } else {
-            dh.append(dom, [{
-                cls : Ext.baseCSSPrefix + "mask"
-            }, {
-                cls : msgCls,
-                cn  : {
-                    tag: 'div',
-                    html: msg || ''
-                }
-            }]);
-            mm = me.maskMsgEl = Ext.get(dom.lastChild);
-            mask = me.maskEl = Ext.get(mm.dom.previousSibling);
+        
+        // We always needs to recreate the mask since the DOM element may have been re-created
+        if (maskEl) {
+            maskEl.remove();
+        }
+        
+        if (maskMsg) {
+            maskMsg.remove();
         }
 
+        Ext.DomHelper.append(dom, [{
+            cls : Ext.baseCSSPrefix + "mask"
+        }, {
+            cls : msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG,
+            cn  : {
+                tag: 'div',
+                html: msg || ''
+            }
+        }]);
+            
+        maskMsg = Ext.get(dom.lastChild);
+        maskEl = Ext.get(maskMsg.dom.previousSibling);
+        data.maskMsg = maskMsg;
+        data.maskEl = maskEl;
+
         me.addCls(XMASKED);
-        mask.setDisplayed(true);
+        maskEl.setDisplayed(true);
 
         if (typeof msg == 'string') {
-            mm.setDisplayed(true);
-            mm.center(me);
+            maskMsg.setDisplayed(true);
+            maskMsg.center(me);
         } else {
-            mm.setDisplayed(false);
+            maskMsg.setDisplayed(false);
         }
         // NOTE: CSS expressions are resource intensive and to be used only as a last resort
         // These expressions are removed as soon as they are no longer necessary - in the unmask method.
@@ -7064,19 +7134,19 @@ var HIDDEN = 'hidden',
         // Fix for https://sencha.jira.com/browse/EXTJSIV-19.
         // IE6 strict mode and IE6-9 quirks mode takes off left+right padding when calculating width!
         if (!Ext.supports.IncludePaddingInWidthCalculation && setExpression) {
-            mask.dom.style.setExpression('width', 'this.parentNode.clientWidth + "px"');
+            maskEl.dom.style.setExpression('width', 'this.parentNode.clientWidth + "px"');
         }
 
         // Some versions and modes of IE subtract top+bottom padding when calculating height.
         // Different versions from those which make the same error for width!
         if (!Ext.supports.IncludePaddingInHeightCalculation && setExpression) {
-            mask.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + "px"');
+            maskEl.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + "px"');
         }
         // ie will not expand full height automatically
         else if (Ext.isIE && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
-            mask.setSize(undefined, elHeight || me.getHeight());
+            maskEl.setSize(undefined, elHeight || me.getHeight());
         }
-        return mask;
+        return maskEl;
     },
 
     /**
@@ -7084,16 +7154,29 @@ var HIDDEN = 'hidden',
      */
     unmask : function() {
         var me      = this,
-            mask    = me.maskEl;
+            data    = (me.$cache || me.getCache()).data,
+            maskEl  = data.maskEl,
+            maskMsg = data.maskMsg,
+            style;
 
-        if (mask) {
+        if (maskEl) {
+            style = maskEl.dom.style;
             // Remove resource-intensive CSS expressions as soon as they are not required.
-            if (mask.dom.style.clearExpression) {
-                mask.dom.style.clearExpression('width');
-                mask.dom.style.clearExpression('height');
+            if (style.clearExpression) {
+                style.clearExpression('width');
+                style.clearExpression('height');
             }
-            mask.setDisplayed(false);
-            me.maskMsgEl.setDisplayed(false);
+            
+            if (maskEl) {
+                maskEl.remove();
+                delete data.maskEl;
+            }
+            
+            if (maskMsg) {
+                maskMsg.remove();
+                delete data.maskMsg;
+            }
+            
             me.removeCls([XMASKED, XMASKEDRELATIVE]);
         }
     },
@@ -7103,17 +7186,19 @@ var HIDDEN = 'hidden',
      * @return {Boolean}
      */
     isMasked : function() {
-        var me = this,
-            mask = Element.data(me.dom, 'mask'),
-            maskMsg = Element.data(me.dom, 'maskMsg');
+        var me      = this,
+            data    = (me.$cache || me.getCache()).data,
+            maskEl  = data.maskEl,
+            maskMsg = data.maskMsg,
+            hasMask = false; 
 
-        if (mask && mask.isVisible()) {
+        if (maskEl && maskEl.isVisible()) {
             if (maskMsg) {
                 maskMsg.center(me);
             }
-            return true;
+            hasMask = true;
         }
-        return false;
+        return hasMask;
     },
 
     /**
@@ -7149,12 +7234,14 @@ var HIDDEN = 'hidden',
         var config;
         if(typeof key != 'object' || Ext.isArray(key)){
             config = {
+                target: this,
                 key: key,
                 fn: fn,
                 scope: scope
             };
         }else{
             config = {
+                target: this,
                 key : key.key,
                 shift : key.shift,
                 ctrl : key.ctrl,
@@ -7163,7 +7250,7 @@ var HIDDEN = 'hidden',
                 scope: scope
             };
         }
-        return new Ext.util.KeyMap(this, config);
+        return new Ext.util.KeyMap(config);
     },
 
     /**
@@ -7171,8 +7258,10 @@ var HIDDEN = 'hidden',
      * @param {Object} config The KeyMap config. See {@link Ext.util.KeyMap} for more details
      * @return {Ext.util.KeyMap} The KeyMap created
      */
-    addKeyMap : function(config){
-        return new Ext.util.KeyMap(this, config);
+    addKeyMap : function(config) {
+        return new Ext.util.KeyMap(Ext.apply({
+            target: this
+        }, config));
     },
 
     //  Mouse events
@@ -7634,6 +7723,9 @@ var HIDDEN = 'hidden',
                     continue;
                 }
                 el = o.el;
+                if (!el) {
+                    continue;
+                }
                 d = el.dom;
                 // -------------------------------------------------------
                 // Determining what is garbage:
@@ -7757,13 +7849,14 @@ var HIDDEN = 'hidden',
          * can pass true.
          */
         clean : function(forceReclean) {
-            var me  = this,
-                dom = me.dom,
-                n   = dom.firstChild,
-                nx,
-                ni  = -1;
+            var me   = this,
+                dom  = me.dom,
+                data = (me.$cache || me.getCache()).data,
+                n    = dom.firstChild,
+                ni   = -1,
+                nx;
 
-            if (Element.data(dom, 'isCleaned') && forceReclean !== true) {
+            if (data.isCleaned && forceReclean !== true) {
                 return me;
             }
 
@@ -7788,7 +7881,7 @@ var HIDDEN = 'hidden',
                 n = nx;
             }
 
-            Element.data(dom, 'isCleaned', true);
+            data.isCleaned = true;
             return me;
         },
 
@@ -7807,14 +7900,14 @@ var HIDDEN = 'hidden',
          * @return {Ext.ElementLoader} The loader
          */
         getLoader : function() {
-            var dom = this.dom,
-                loader = Element.data(dom, 'loader');
+            var me = this,
+                data = (me.$cache || me.getCache()).data,
+                loader = data.loader;
 
             if (!loader) {
-                loader = new Ext.ElementLoader({
-                    target: this
+                data.loader = loader = new Ext.ElementLoader({
+                    target: me
                 });
-                Element.data(dom, 'loader', loader);
             }
             return loader;
         },
@@ -7980,7 +8073,7 @@ var HIDDEN = 'hidden',
                             ret = cached.el;
                             ret.dom = el;
                         } else {
-                            ret = El.addToCache(new Element(el));
+                            ret = new Element(el);
                         }
                     }
                     return ret;
@@ -8451,12 +8544,10 @@ Ext.dom.Element.override({
     animate: function(config) {
         var me = this,
             listeners,
-            anim;
-            
-        if (!me.id) {
-            me = Ext.get(me.dom);
-        }
-        if (!Ext.fx.Manager.hasFxBlock(me.id)) {
+            anim,
+            animId = me.dom.id || Ext.id(me.dom);
+
+        if (!Ext.fx.Manager.hasFxBlock(animId)) {
             // Bit of gymnastics here to ensure our internal listeners get bound first
             if (config.listeners) {
                 listeners = config.listeners;
@@ -8498,7 +8589,8 @@ Ext.dom.Element.override({
         });
 
         animConfig = {
-            target: me,
+            // Pass the DOM reference. That's tested first so will be converted to an Ext.fx.Target fastest.
+            target: me.dom,
             remove: config.remove,
             alternate: config.alternate || false,
             duration: duration,
@@ -8570,7 +8662,7 @@ Ext.dom.Element.override({
         beforeAnim = function() {
             var animScope = this,
                 listeners = obj.listeners,
-                box, position, restoreSize, anim, wrap;
+                box, originalStyles, anim, wrap;
 
             if (!slideOut) {
                 me.fixDisplay();
@@ -8584,7 +8676,7 @@ Ext.dom.Element.override({
                 box.width = me.dom.scrollWidth;
             }
 
-            position = me.getPositioning();
+            originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
             me.setSize(box.width, box.height);
 
             wrap = me.wrap({
@@ -8593,7 +8685,7 @@ Ext.dom.Element.override({
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
             });
-            wrap.setPositioning(position);
+            wrap.setPositioning(me.getPositioning());
             if (wrap.isStyle('position', 'static')) {
                 wrap.position('relative');
             }
@@ -8743,23 +8835,18 @@ Ext.dom.Element.override({
 
             // In the absence of a callback, this listener MUST be added first
             wrapAnim.on('afteranimate', function() {
+                me.setStyle(originalStyles);
                 if (slideOut) {
-                    me.setPositioning(position);
                     if (obj.useDisplay) {
                         me.setDisplayed(false);
                     } else {
                         me.hide();
                     }
                 }
-                else {
-                    me.clearPositioning();
-                    me.setPositioning(position);
-                }
                 if (wrap.dom) {
                     wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
                     wrap.remove();
                 }
-                me.setSize(box.width, box.height);
                 // kill the no-op element animation created below
                 animScope.end();
             });
@@ -9418,19 +9505,23 @@ var Element = Ext.dom.Element,
     ORIGINALDISPLAY = 'originalDisplay',
     VISMODE = 'visibilityMode',
     ISVISIBLE = 'isVisible',
-    getDisplay = function(dom){
-        var d = Element.data(dom, ORIGINALDISPLAY);
-        if(d === undefined){
-            Element.data(dom, ORIGINALDISPLAY, d = '');
+    getDisplay = function(el){
+        var data = (el.$cache || el.getCache()).data,
+            display = data[ORIGINALDISPLAY];
+            
+        if (display === undefined) {
+            data[ORIGINALDISPLAY] = display = '';
         }
-        return d;
+        return display;
     },
-    getVisMode = function(dom){
-        var m = Element.data(dom, VISMODE);
-        if(m === undefined){
-            Element.data(dom, VISMODE, m = 1);
+    getVisMode = function(el){
+        var data = (el.$cache || el.getCache()).data,
+            visMode = data[VISMODE];
+            
+        if (visMode === undefined) {
+            data[VISMODE] = visMode = Ext.dom.Element.VISIBILITY;
         }
-        return m;
+        return visMode;
     };
 
 Element.override({
@@ -9450,7 +9541,7 @@ Element.override({
     setVisible : function(visible, animate){
         var me = this, isDisplay, isVisibility, isOffsets, isNosize,
             dom = me.dom,
-            visMode = getVisMode(dom);
+            visMode = getVisMode(me);
 
 
         // hideMode string override
@@ -9523,14 +9614,16 @@ Element.override({
             }
             me.animate(Ext.applyIf({
                 callback: function() {
-                    visible || me.setVisible(false).setOpacity(1);
+                    if (!visible) {
+                        me.setVisible(false).setOpacity(1);
+                    }
                 },
                 to: {
                     opacity: (visible) ? 1 : 0
                 }
             }, animate));
         }
-        Element.data(dom, ISVISIBLE, visible);  //set logical visibility state
+        (me.$cache || me.getCache()).data[ISVISIBLE] = visible;
         return me;
     },
 
@@ -9541,8 +9634,8 @@ Element.override({
      * upon current logical visibility state
      */
     hasMetrics  : function(){
-        var dom = this.dom;
-        return this.isVisible() || (getVisMode(dom) == Ext.dom.Element.OFFSETS) || (getVisMode(dom) == Ext.dom.Element.VISIBILITY);
+        var visMode = getVisMode(this);
+        return this.isVisible() || (visMode == Ext.dom.Element.OFFSETS) || (visMode == Ext.dom.Element.VISIBILITY);
     },
 
     /**
@@ -9563,7 +9656,7 @@ Element.override({
      */
     setDisplayed : function(value) {
         if(typeof value == "boolean"){
-           value = value ? getDisplay(this.dom) : NONE;
+           value = value ? getDisplay(this) : NONE;
         }
         this.setStyle(DISPLAY, value);
         return this;
@@ -9574,7 +9667,7 @@ Element.override({
         var me = this;
         if (me.isStyle(DISPLAY, NONE)) {
             me.setStyle(VISIBILITY, HIDDEN);
-            me.setStyle(DISPLAY, getDisplay(this.dom)); // first try reverting to default
+            me.setStyle(DISPLAY, getDisplay(me)); // first try reverting to default
             if (me.isStyle(DISPLAY, NONE)) { // if that fails, default to block
                 me.setStyle(DISPLAY, "block");
             }
@@ -10491,6 +10584,7 @@ Element.override({
             // value down. Using getBoundingClientRect instead of offsetWidth allows us to get the precise
             // subpixel measurements so we can force them to always be rounded up. See
             // https://bugzilla.mozilla.org/show_bug.cgi?id=458617
+            // Rounding up ensures that the width includes the full width of the text contents.
         } else if (Ext.supports.BoundingClientRect) {
             rect = dom.getBoundingClientRect();
             width = rect.right - rect.left;
@@ -10503,10 +10597,14 @@ Element.override({
 
         // IE9 Direct2D dimension rounding bug
         if (!hidden && Ext.supports.Direct2DBug) {
+            // get the fractional portion of the sub-pixel precision width of the element's text contents
             floating = me.adjustDirect2DDimension('width');
             if (preciseWidth) {
                 width += floating;
             }
+            // IE9 also measures fonts with sub-pixel precision, but unlike Gecko, instead of rounding the offsetWidth down,
+            // it rounds to the nearest integer.  This means that in order to ensure that the width includes the full
+            // width of the text contents we need to increment the width by 1 only if the fractional portion is less than 0.5
             else if (floating > 0 && floating < 0.5) {
                 width++;
             }
@@ -10743,25 +10841,25 @@ Element.override({
         var me = this,
             dom = me.dom,
             display = me.getStyle('display'),
-            inlineDisplay = dom.style['display'],
-            inlinePosition = dom.style['position'],
+            inlineDisplay = dom.style.display,
+            inlinePosition = dom.style.position,
             originIndex = dimension === 'width' ? 0 : 1,
             floating;
 
         if (display === 'inline') {
-            dom.style['display'] = 'inline-block';
+            dom.style.display = 'inline-block';
         }
 
-        dom.style['position'] = display.match(adjustDirect2DTableRe) ? 'absolute' : 'static';
+        dom.style.position = display.match(adjustDirect2DTableRe) ? 'absolute' : 'static';
 
         // floating will contain digits that appears after the decimal point
         // if height or width are set to auto we fallback to msTransformOrigin calculation
         floating = (parseFloat(me.getStyle(dimension)) || parseFloat(dom.currentStyle.msTransformOrigin.split(' ')[originIndex]) * 2) % 1;
 
-        dom.style['position'] = inlinePosition;
+        dom.style.position = inlinePosition;
 
         if (display === 'inline') {
-            dom.style['display'] = inlineDisplay;
+            dom.style.display = inlineDisplay;
         }
 
         return floating;
@@ -10773,15 +10871,15 @@ Element.override({
      */
     clip : function() {
         var me = this,
-            dom = me.dom;
+            data = (me.$cache || me.getCache()).data;
 
-        if (!Element.data(dom, ISCLIPPED)) {
-            Element.data(dom, ISCLIPPED, true);
-            Element.data(dom, ORIGINALCLIP, {
+        if (!data[ISCLIPPED]) {
+            data[ISCLIPPED] = true;
+            data[ORIGINALCLIP] = {
                 o: me.getStyle(OVERFLOW),
                 x: me.getStyle(OVERFLOWX),
                 y: me.getStyle(OVERFLOWY)
-            });
+            };
             me.setStyle(OVERFLOW, HIDDEN);
             me.setStyle(OVERFLOWX, HIDDEN);
             me.setStyle(OVERFLOWY, HIDDEN);
@@ -10795,12 +10893,12 @@ Element.override({
      */
     unclip : function() {
         var me = this,
-            dom = me.dom,
+            data = (me.$cache || me.getCache()).data,
             clip;
 
-        if (Element.data(dom, ISCLIPPED)) {
-            Element.data(dom, ISCLIPPED, false);
-            clip = Element.data(dom, ORIGINALCLIP);
+        if (data[ISCLIPPED]) {
+            data[ISCLIPPED] = true;
+            clip = data[ORIGINALCLIP];
             if (clip.o) {
                 me.setStyle(OVERFLOW, clip.o);
             }
@@ -10815,7 +10913,8 @@ Element.override({
     },
 
     /**
-     * Returns an object with properties matching the styles requested.
+     * Returns an object with properties matching the styles requested as computed by the browser based upon applicable
+     * CSS rules as well as inline styles.
      *
      * For example:
      *
@@ -10825,17 +10924,24 @@ Element.override({
      *
      *     {'color': '#FFFFFF', 'font-size': '13px', 'width': '100px'}
      *
+     * If ```true``` is passed as the last parameter, *inline* styles are returned instead of computed styles.
+     *
      * @param {String...} styles A variable number of style names
      * @return {Object} The style object
      */
     getStyles : function() {
         var styles = {},
             len = arguments.length,
-            i = 0, style;
+            i = 0, style,
+            inline = false;
 
+        if (arguments[len - 1] === true) {
+            --len;
+            inline = true;
+        }
         for (; i < len; ++i) {
             style = arguments[i];
-            styles[style] = this.getStyle(style);
+            styles[style] = inline ? this.dom.style[Ext.Element.normalize(style)] : this.getStyle(style);
         }
         return styles;
     },
@@ -11056,13 +11162,13 @@ Element.override({
 
 })();
 
+// This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
+// the same object.
+Ext.dom.Element.prototype.styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
+
 Ext.onReady(function () {
     var opacityRe = /alpha\(opacity=(.*)\)/i,
         trimRe = /^\s+|\s+$/g;
-
-    // This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
-    // the same object.
-    Ext.dom.Element.prototype.styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
 
     // Ext.supports flags are not populated until onReady...
     if (!Ext.supports.Opacity && Ext.isIE) {
@@ -11101,6 +11207,25 @@ Ext.onReady(function () {
     // else there is no work around for the lack of opacity support. Should not be a
     // problem given that this has been supported for a long time now...
 });
+
+// override getStyle for border-*-width
+if (Ext.isIEQuirks || Ext.isIE && Ext.ieVersion <= 8){
+    Ext.Array.forEach('Top Right Bottom Left'.split(' '), function(side){
+        var borderWidth = 'border' + side + 'Width',
+            borderStyle = 'border' + side + 'Style';
+
+        Ext.dom.Element.prototype.styleHooks['border-' + side.toLowerCase() + '-width'] = {
+            name: borderWidth,
+            get: function (dom) {
+                var currentStyle = dom.currentStyle;
+                if (currentStyle[borderStyle] == 'none'){
+                    return '0px';
+                }
+                return currentStyle[borderWidth];
+            }
+        };
+    });
+}
 
 /**
  * @class Ext.dom.Element
@@ -11195,6 +11320,10 @@ Ext.define('Ext.dom.CompositeElementLite', {
         this.el = new Ext.dom.AbstractElement.Fly();
     },
 
+    /**
+     * @property {Boolean} isComposite
+     * `true` in this class to identify an objact as an instantiated CompositeElement, or subclass thereof.
+     */
     isComposite: true,
 
     // private
@@ -11253,11 +11382,12 @@ Ext.define('Ext.dom.CompositeElementLite', {
             element,
             i;
 
+        fn = Ext.dom.Element.prototype[fn];
         for (i = 0; i < ln; i++) {
             element = elements[i];
 
             if (element) {
-                Ext.dom.Element.prototype[fn].apply(this.getElement(element), args);
+                fn.apply(this.getElement(element), args);
             }
         }
         return this;
@@ -11493,6 +11623,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
      * @return {Ext.dom.CompositeElementLite/Ext.dom.CompositeElement}
      * @member Ext.dom.Element
      * @method select
+     * @static
      */
    Ext.dom.Element.select = function(selector, root) {
         var elements;
@@ -11569,6 +11700,7 @@ Ext.define('Ext.dom.CompositeElement', {
      * @return {Ext.CompositeElementLite/Ext.CompositeElement}
      * @member Ext.dom.Element
      * @method select
+     * @static
      */
 
     Ext.dom.Element.select = function(selector, unique, root) {
@@ -11596,5 +11728,4 @@ Ext.define('Ext.dom.CompositeElement', {
  * @inheritdoc Ext.Element#select
  */
 Ext.select = Ext.Element.select;
-
 

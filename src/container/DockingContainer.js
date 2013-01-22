@@ -193,7 +193,19 @@ Ext.define('Ext.container.DockingContainer', {
     },
 
     // Placeholder empty functions
+    /**
+     * Invoked after a docked item is added to the Panel.
+     * @param {Ext.Component} component
+     * @template
+     * @protected
+     */
     onDockedAdd : Ext.emptyFn,
+    /**
+     * Invoked after a docked item is removed from the Panel.
+     * @param {Ext.Component} component
+     * @template
+     * @protected
+     */
     onDockedRemove : Ext.emptyFn,
 
     /**

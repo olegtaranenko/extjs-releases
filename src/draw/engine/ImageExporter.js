@@ -66,16 +66,15 @@ Ext.define('Ext.draw.engine.ImageExporter', {
             process = function(surface){
 
                 var svgString = Ext.draw.engine.SvgExporter.self.generate({}, surface);
-                if(width){
-                    widthEl.set({
-                        value: width
-                    });
-                }
-                if(height){
-                    heightEl.set({
-                        value: height
-                    });
-                }
+
+                widthEl.set({
+                    value: width || surface.width
+                });
+                
+                heightEl.set({
+                    value: height || surface.height
+                });
+ 
                 if(type){
                     typeEl.set({
                         value: type

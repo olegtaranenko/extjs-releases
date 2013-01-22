@@ -283,6 +283,8 @@ Ext.define('Ext.layout.Context', {
         'Ext.fx.Manager'
     ],
 
+    currentOwnerCtContext: null,
+
     remainingLayouts: 0,
 
     /**
@@ -545,7 +547,12 @@ Ext.define('Ext.layout.Context', {
         var id = el.id,
             items = this.items,
             item = items[id] ||
-                  (items[id] = new Ext.layout.ContextItem({ context: this, target: target, el: el, ownerCtContext: this.ownerCtContext }));
+                  (items[id] = new Ext.layout.ContextItem({
+                                    context: this,
+                                    target: target,
+                                    el: el,
+                                    ownerCtContext: this.currentOwnerCtContext
+                                }));
 
         return item;
     },
@@ -577,9 +584,12 @@ Ext.define('Ext.layout.Context', {
             isArray = !components.isComponent,
             itemCache = me.items,
             running = me.state > 0,
-            componentChildrenDone, containerChildrenDone, ownerCt,
+            previousOwnerCtContext = me.currentOwnerCtContext,
+            componentChildrenDone, containerChildrenDone, containerLayoutDone, ownerCt,
             firstTime, i, k, comp, item, items, length, componentLayout, layout, props;
-        me.ownerCtContext = ownerCtContext;
+
+        me.currentOwnerCtContext = ownerCtContext;
+
         for (i = 0, length = isArray ? components.length : 1; i < length; ++i) {
             comp = isArray ? components[i] : components;
 
@@ -606,7 +616,7 @@ Ext.define('Ext.layout.Context', {
 
                     item.init(ownerCtContext);
                 }
-                componentChildrenDone = containerChildrenDone = true;
+                componentChildrenDone = containerChildrenDone = containerLayoutDone = true;
 
                 // A ComponentLayout MUST implement getLayoutItems to allow its children to
                 // be collected. Ext.container.Container does this, but non-Container Components
@@ -628,6 +638,8 @@ Ext.define('Ext.layout.Context', {
                     layout = comp.layout;
                     layout.ownerContext = item;
                     layout.renderChildren();
+
+                    containerLayoutDone = false;
 
                     items = layout.getVisibleItems();
                     if (items.length) {
@@ -659,6 +671,9 @@ Ext.define('Ext.layout.Context', {
                 if (containerChildrenDone) {
                     props.containerChildrenDone = true;
                 }
+                if (containerLayoutDone) {
+                    props.containerLayoutDone = true;
+                }
 
                 me.resetLayout(componentLayout, item, firstTime);
                 if (layout) {
@@ -679,18 +694,20 @@ Ext.define('Ext.layout.Context', {
                 }
             }
         }
+
+        me.currentOwnerCtContext = previousOwnerCtContext;
     },
 
     layoutDone: function (layout) {
+        var ownerContext = layout.ownerContext,
+            ownerCtContext;
+
         layout.running = false;
 
         // Once a component layout completes, we can mark it as "done" but we can also
         // decrement the remainingChildLayouts property on the ownerCtContext. When that
         // goes to 0, we can mark the ownerCtContext as "childrenDone".
         if (layout.isComponentLayout) {
-            var ownerContext = layout.ownerContext,
-                ownerCtContext;
-
             if (ownerContext.measuresBox) {
                 ownerContext.onBoxMeasured(); // be sure to release our boxParent
             }
@@ -712,6 +729,8 @@ Ext.define('Ext.layout.Context', {
                     ownerCtContext.setProp('childrenDone', true);
                 }
             }
+        } else {
+            ownerContext.setProp('containerLayoutDone', true);
         }
 
         --this.remainingLayouts;

@@ -1,5 +1,5 @@
 Ext.require('Ext.chart.*');
-Ext.require(['Ext.Window', 'Ext.fx.target.Sprite', 'Ext.layout.container.Fit']);
+Ext.require(['Ext.Window', 'Ext.fx.target.Sprite', 'Ext.layout.container.Fit', 'Ext.window.MessageBox']);
 
 Ext.onReady(function () {
     var textArea;
@@ -100,19 +100,12 @@ Ext.onReady(function () {
         tbar: [{
             text: 'Save Chart',
             handler: function() {
-                if (!textArea) {
-                    Ext.getBody().createChild({
-                        tag: 'h3',
-                        html: 'Chart SVG'
-                    });
-                    textArea = Ext.getBody().createChild({
-                        tag: 'textarea',
-                        rows: 20,
-                        cols: 60
-                    });
-                }
-                textArea.dom.value = chart.save({
-                    type: 'svg'
+                Ext.MessageBox.confirm('Confirm Download', 'Would you like to download the chart as an image?', function(choice){
+                    if(choice == 'yes'){
+                        chart.save({
+                            type: 'image/png'
+                        });
+                    }
                 });
             }
         }, {

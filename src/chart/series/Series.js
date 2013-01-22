@@ -150,6 +150,10 @@ Ext.define('Ext.chart.series.Series', {
             itemmouseout: me.onItemMouseOut,
             mouseleave: me.onMouseLeave
         });
+        
+        if (me.style) {
+            Ext.apply(me.seriesStyle, me.style);
+        }
     },
     
     /**

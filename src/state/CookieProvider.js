@@ -17,10 +17,6 @@
  *
  *     Ext.state.Manager.setProvider(cp);
  *
- * @constructor
- * Creates a new CookieProvider.
- * @param {Object} config (optional) Config object.
- * @return {Object}
  */
 Ext.define('Ext.state.CookieProvider', {
     extend: 'Ext.state.Provider',

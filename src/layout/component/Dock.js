@@ -59,14 +59,20 @@ Ext.define('Ext.layout.component.Dock', {
             oldBorders = me.borders,
             opposites = me.dockOpposites,
             currentGeneration = owner.dockedItems.generation,
-            i, ln, item, dock, side;
+            i, ln, item, dock, side,
+            collapsed = me.collapsed;
 
         if (me.initializedBorders == currentGeneration || (owner.border && !owner.manageBodyBorders)) {
             return;
         }
 
         me.initializedBorders = currentGeneration;
+
+        // Borders have to be calculated using expanded docked item collection.
+        me.collapsed = false;
         docked = me.getLayoutItems();
+        me.collapsed = collapsed;
+
         borders = { top: [], right: [], bottom: [], left: [] };
 
         for (i = 0, ln = docked.length; i < ln; i++) {
@@ -204,6 +210,7 @@ Ext.define('Ext.layout.component.Dock', {
             docked = ownerContext.dockedItems,
             len = docked.length,
             owner = me.owner,
+            frameBody = owner.frameBody,
             i, item, dock;
 
         me.callParent(arguments);
@@ -218,14 +225,19 @@ Ext.define('Ext.layout.component.Dock', {
             ownerContext.widthModel = me.sizeModels.shrinkWrap
         }
 
-        //owner.getTargetEl().setSize(null, null);
         if (ownerContext.widthModel.shrinkWrap) {
             owner.body.setWidth(null);
             owner.el.setWidth(null);
+            if (frameBody) {
+                frameBody.setWidth(null);
+            }
         }
         if (ownerContext.heightModel.shrinkWrap) {
             owner.body.setHeight(null);
-            owner.el.setHeight(null);
+            //owner.el.setHeight(null); Disable this for now
+            if (frameBody) {
+                frameBody.setHeight(null);
+            }
         }
 
         // Each time we begin (2nd+ would be due to invalidate) we need to publish the
@@ -297,6 +309,7 @@ Ext.define('Ext.layout.component.Dock', {
         if (horz && me.finishAxis(ownerContext, horz)) {
             state.horzDone = horzDone = horz;
         }
+
         if (vert && me.finishAxis(ownerContext, vert)) {
             state.vertDone = vertDone = vert;
         }
@@ -813,32 +826,37 @@ Ext.define('Ext.layout.component.Dock', {
      */
     getLayoutItems : function() {
         var me = this,
-            it,
-            ln,
+            items,
+            itemCount,
+            item,
             i,
             result;
 
         if (me.owner.collapsed) {
             result = me.owner.getCollapsedDockedItems();
         } else {
-            it = me.getDockedItems('visual');
-            ln = it.length;
+            items = me.getDockedItems('visual');
+            itemCount = items.length;
             result = [];
-            for (i = 0; i < ln; i++) {
-                if (it[i].isVisible(true)) {
-                    result.push(it[i]);
+            for (i = 0; i < itemCount; i++) {
+                item = items[i];
+                if (!item.hidden) {
+                    result.push(item);
                 }
             }
         }
         return result;
     },
 
+    // Content size includes padding but not borders, so subtract them off
     measureContentWidth: function (ownerContext) {
-        return ownerContext.bodyContext.el.getWidth();
+        var bodyContext = ownerContext.bodyContext;
+        return bodyContext.el.getWidth() - bodyContext.getBorderInfo().width;
     },
 
     measureContentHeight: function (ownerContext) {
-        return ownerContext.bodyContext.el.getHeight();
+        var bodyContext = ownerContext.bodyContext;
+        return bodyContext.el.getHeight() - bodyContext.getBorderInfo().height;
     },
     
     redoLayout: function(ownerContext) {

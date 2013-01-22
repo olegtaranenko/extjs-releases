@@ -63,6 +63,10 @@ bodyCls: ['foo', 'bar']
      * </code></pre>
      */
 
+    /**
+     * @property {Boolean} isPanel
+     * `true` in this class to identify an objact as an instantiated Panel, or subclass thereof.
+     */
     isPanel: true,
 
     componentLayout: 'dock',

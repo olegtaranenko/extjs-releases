@@ -92,6 +92,10 @@ Ext.define('Ext.data.proxy.Proxy', {
      * a Writer instance, a config object or just a valid Writer type name (e.g. 'json', 'xml').
      */
 
+    /**
+     * @property {Boolean} isProxy
+     * `true` in this class to identify an objact as an instantiated Proxy, or subclass thereof.
+     */
     isProxy: true,
 
     /**

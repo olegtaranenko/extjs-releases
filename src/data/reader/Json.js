@@ -345,5 +345,42 @@ Ext.define('Ext.data.reader.Json', {
                 return obj[expr];
             };
         };
+    }(),
+
+    /**
+     * @private
+     * Returns an accessor expression for the passed Field. Gives support for properties such as the following:
+     * 'someProperty'
+     * 'some.property'
+     * 'some["property"]'
+     * This is used by buildExtractors to create optimized on extractor function which converts raw data into model instances.
+     */
+    createFieldAccessExpression: function() {
+        var re = /[\[\.]/;
+
+        return function(field, fieldVarName, dataName) {
+            var me     = this,
+                map    = (field.mapping == null) ? field.name : field.mapping,
+                result,
+                operatorSearch;
+
+            if (typeof map === 'function') {
+                result = fieldVarName + '.mapping(' + dataName + ', this)';
+            } else if (this.useSimpleAccessors === true || ((operatorSearch = String(map).search(re)) < 0)) {
+                if (isNaN(map)) {
+                    map = '"' + map + '"';
+                }
+                result = dataName + "[" + map + "]";
+            } else {
+                result = dataName + (operatorSearch > 0 ? '.' : '') + map;
+            }
+            if (field.defaultValue !== undefined) {
+                result = '(' + result + ' === undefined) ? ' + fieldVarName + '.defaultValue : ' + result;
+            }
+            if (field.convert) {
+                result = fieldVarName + '.convert(' + result + ', record)';
+            }
+            return result;
+        };
     }()
 });

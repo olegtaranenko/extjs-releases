@@ -595,7 +595,8 @@
         mask: function(msg, msgCls, transparent) {
             var me = this,
                 dom = me.dom,
-                el = Ext.Element.data(dom, 'mask'),
+                data = (me.$cache || me.getCache()).data,
+                el = data.mask,
                 mask,
                 size,
                 cls = '',
@@ -624,7 +625,7 @@
 
             size = me.getSize();
 
-            Ext.Element.data(dom, 'mask', mask);
+            data.mask = mask;
 
             if (dom === document.body) {
                 size.height = window.innerHeight;
@@ -651,17 +652,17 @@
          */
         unmask: function() {
             var me = this,
-                dom = me.dom,
-                mask = Ext.Element.data(dom, 'mask'),
+                data = (me.$cache || me.getCache()).data,
+                mask = data.mask,
                 prefix = Ext.baseCSSPrefix;
 
             if (mask) {
                 mask.remove();
-                Ext.Element.data(dom, 'mask', undefined);
+                delete data.mask;
             }
             me.removeCls([prefix + 'masked', prefix + 'masked-relative']);
 
-            if (dom === document.body) {
+            if (me.dom === document.body) {
                 Ext.EventManager.unOrientationChange(me.orientationHandler, me);
                 delete me.orientationHandler;
             }

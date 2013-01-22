@@ -422,6 +422,11 @@ describe("Ext.dom.Element", function() {
                 element.setVisibilityMode(Ext.dom.Element.VISIBILITY);
                 expect(element.getVisibilityMode()).toBe(Ext.dom.Element.VISIBILITY);
             });
+            
+            it("should retain visibilityMode on flyweights", function(){
+                Ext.fly(element.dom).setVisibilityMode(Ext.dom.Element.DISPLAY);
+                expect(Ext.fly(element.dom).getVisibilityMode()).toBe(Ext.dom.Element.DISPLAY);    
+            });
         });
 
     }

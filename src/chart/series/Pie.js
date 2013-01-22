@@ -81,7 +81,9 @@ Ext.define('Ext.chart.series.Pie', {
 
     alias: 'series.pie',
 
-    rad: Math.PI / 180,
+    accuracy: 100000,
+
+    rad: Math.PI * 2 / 100000,
 
     /**
      * @cfg {Number} highlightDuration
@@ -319,7 +321,6 @@ Ext.define('Ext.chart.series.Pie', {
             field = me.angleField || me.field || me.xField,
             lenField = [].concat(me.lengthField),
             totalLenField = 0,
-            colors = me.colorSet,
             chart = me.chart,
             surface = chart.surface,
             chartBBox = chart.chartBBox,
@@ -327,29 +328,18 @@ Ext.define('Ext.chart.series.Pie', {
             shadowGroups = me.shadowGroups,
             shadowAttributes = me.shadowAttributes,
             lnsh = shadowGroups.length,
-            rad = me.rad,
             layers = lenField.length,
             rhoAcum = 0,
             donut = +me.donut,
             layerTotals = [],
-            values = {},
-            fieldLength,
             items = [],
-            passed = false,
             totalField = 0,
             maxLenField = 0,
-            cut = 9,
-            defcut = true,
             angle = 0,
             seriesStyle = me.seriesStyle,
-            seriesLabelStyle = me.seriesLabelStyle,
             colorArrayStyle = me.colorArrayStyle,
             colorArrayLength = colorArrayStyle && colorArrayStyle.length || 0,
-            gutterX = chart.maxGutter[0],
-            gutterY = chart.maxGutter[1],
-            abs = Math.abs,
             rendererAttributes,
-            shadowGroup,
             shadowAttr,
             shadows,
             shadow,
@@ -365,13 +355,9 @@ Ext.define('Ext.chart.series.Pie', {
             item,
             lenValue,
             ln,
-            record,
             i,
             j,
-            startAngle,
             endAngle,
-            middleAngle,
-            sliceLength,
             path,
             p,
             spriteOptions, bbox;
@@ -432,13 +418,13 @@ Ext.define('Ext.chart.series.Pie', {
             // First slice
             if (first == 1) {
                 first = 2;
-                me.firstAngle = angle = 360 * value / totalField / 2;
+                me.firstAngle = angle = me.accuracy * value / totalField / 2;
                 for (j = 0; j < i; j++) {
                     slices[j].startAngle = slices[j].endAngle = me.firstAngle;
                 }
             }
-            
-            endAngle = angle - 360 * value / totalField;
+
+            endAngle = angle - me.accuracy * value / totalField;
             slice = {
                 series: me,
                 value: value,
@@ -473,7 +459,7 @@ Ext.define('Ext.chart.series.Pie', {
                             startRho: rhoAcum + (deltaRho * donut / 100),
                             endRho: rhoAcum + deltaRho
                         },
-                        hidden: !slice.value && (slice.startAngle % 360) == (slice.endAngle % 360)
+                        hidden: !slice.value && (slice.startAngle % me.accuracy) == (slice.endAngle % me.accuracy)
                     };
                     //create shadows
                     for (shindex = 0, shadows = []; shindex < lnsh; shindex++) {
@@ -517,7 +503,7 @@ Ext.define('Ext.chart.series.Pie', {
                         startRho: rhoAcum + (deltaRho * donut / 100),
                         endRho: rhoAcum + deltaRho
                     },
-                    hidden: (!slice.value && (slice.startAngle % 360) == (slice.endAngle % 360))
+                    hidden: (!slice.value && (slice.startAngle % me.accuracy) == (slice.endAngle % me.accuracy))
                 }, Ext.apply(seriesStyle, colorArrayStyle && { fill: colorArrayStyle[(layers > 1? j : i) % colorArrayLength] } || {}));
                 item = Ext.apply({},
                 rendererAttributes.segment, {
@@ -664,7 +650,7 @@ Ext.define('Ext.chart.series.Pie', {
             dg = (dg > 90 && dg < 270) ? dg + 180: dg;
 
             prevDg = label.attr.rotation.degrees;
-            if (prevDg != null && Math.abs(prevDg - dg) > 180) {
+            if (prevDg != null && Math.abs(prevDg - dg) > 180 * 0.5) {
                 if (dg > prevDg) {
                     dg -= 360;
                 } else {
@@ -703,8 +689,6 @@ Ext.define('Ext.chart.series.Pie', {
     onPlaceCallout: function(callout, storeItem, item, i, display, animate, index) {
         var me = this,
             chart = me.chart,
-            resizing = chart.resizing,
-            config = me.callouts,
             centerX = me.centerX,
             centerY = me.centerY,
             middle = item.middle,
@@ -802,44 +786,42 @@ Ext.define('Ext.chart.series.Pie', {
 
         // normalize to the same range of angles created by drawSeries
         if (angle > me.firstAngle) {
-            angle -= 360;
+            angle -= me.accuracy;
         }
         return (angle <= startAngle && angle > endAngle
                 && rho >= item.startRho && rho <= item.endRho);
     },
 
     // @private hides all elements in the series.
-    hideAll: function() {
+    hideAll: function(index) {
         var i, l, shadow, shadows, sh, lsh, sprite;
-        if (!isNaN(this._index)) {
-            this.__excludes = this.__excludes || [];
-            this.__excludes[this._index] = true;
-            sprite = this.slices[this._index].sprite;
-            for (sh = 0, lsh = sprite.length; sh < lsh; sh++) {
-                sprite[sh].setAttributes({
-                    hidden: true
-                }, true);
-            }
-            if (this.slices[this._index].shadowAttrs) {
-                for (i = 0, shadows = this.slices[this._index].shadowAttrs, l = shadows.length; i < l; i++) {
-                    shadow = shadows[i];
-                    for (sh = 0, lsh = shadow.length; sh < lsh; sh++) {
-                        shadow[sh].setAttributes({
-                            hidden: true
-                        }, true);
-                    }
+        index = (isNaN(this._index) ? index : this._index) || 0;
+        this.__excludes = this.__excludes || [];
+        this.__excludes[index] = true;
+        sprite = this.slices[index].sprite;
+        for (sh = 0, lsh = sprite.length; sh < lsh; sh++) {
+            sprite[sh].setAttributes({
+                hidden: true
+            }, true);
+        }
+        if (this.slices[index].shadowAttrs) {
+            for (i = 0, shadows = this.slices[index].shadowAttrs, l = shadows.length; i < l; i++) {
+                shadow = shadows[i];
+                for (sh = 0, lsh = shadow.length; sh < lsh; sh++) {
+                    shadow[sh].setAttributes({
+                        hidden: true
+                    }, true);
                 }
             }
-            this.drawSeries();
         }
+        this.drawSeries();
     },
 
     // @private shows all elements in the series.
-    showAll: function() {
-        if (!isNaN(this._index)) {
-            this.__excludes[this._index] = false;
-            this.drawSeries();
-        }
+    showAll: function(index) {
+        index = (isNaN(this._index) ? index : this._index) || 0;
+        this.__excludes[index] = false;
+        this.drawSeries();
     },
 
     /**

@@ -40,10 +40,10 @@
  * 
  * Note that we didn't actually list the Views directly in the Application itself. This is because Views are managed by
  * Controllers, so it makes sense to keep those dependencies there. The Application will load each of the specified 
- * Controllers using the pathing conventions laid out in the <a href="../guide/application_architecture">application 
- * architecture guide</a> - in this case expecting the controllers to reside in app/controller/Posts.js and
- * app/controller/Comments.js. In turn, each Controller simply needs to list the Views it uses and they will be
- * automatically loaded. Here's how our Posts controller like be defined:
+ * Controllers using the pathing conventions laid out in the [application architecture guide][mvc] - in this case
+ * expecting the controllers to reside in app/controller/Posts.js and app/controller/Comments.js. In turn, each
+ * Controller simply needs to list the Views it uses and they will be automatically loaded. Here's how our Posts
+ * controller like be defined:
  * 
  *     Ext.define('MyApp.controller.Posts', {
  *         extend: 'Ext.app.Controller',
@@ -56,9 +56,10 @@
  * automatically load all of our app files for us. This means we don't have to manually add script tags into our html
  * files whenever we add a new class, but more importantly it enables us to create a minimized build of our entire 
  * application using the Ext JS 4 SDK Tools.
- * 
- * For more information about writing Ext JS 4 applications, please see the
- * [application architecture guide](#/guide/application_architecture).
+ *
+ * For more information about writing Ext JS 4 applications, please see the [application architecture guide][mvc].
+ *
+ * [mvc]: #/guide/application_architecture
  * 
  * @docauthor Ed Spencer
  */
@@ -78,6 +79,11 @@ Ext.define('Ext.app.Application', {
      * @cfg {String} name
      * The name of your application. This will also be the namespace for your views, controllers
      * models and stores. Don't use spaces or special characters in the name.
+     */
+    
+    /**
+     * @cfg {String[]} controllers
+     * Names of controllers that the app uses.
      */
 
     /**

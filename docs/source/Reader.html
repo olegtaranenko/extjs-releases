@@ -241,7 +241,10 @@ Ext.define('Ext.data.reader.Reader', {
      * @readonly
      */
     
-    // private
+    /*
+     * @property {Boolean} isReader
+     * `true` in this class to identify an objact as an instantiated Reader, or subclass thereof.
+     */
     isReader: true,
     
 <span id='Ext-data-reader-Reader-method-constructor'>    /**
@@ -383,10 +386,7 @@ Ext.define('Ext.data.reader.Reader', {
             records = [],
             Model   = me.model,
             length  = root.length,
-            clientIdProp = Model.prototype.clientIdProperty,
-            fields = me.getFields(),
-            fieldLength = fields.length,
-            convertedValue, convertedValues, field, name, node, id, record, i, j, value;
+            convertedValues, node, record, i;
             
         if (!root.length &amp;&amp; Ext.isObject(root)) {
             root = [root];
@@ -395,35 +395,17 @@ Ext.define('Ext.data.reader.Reader', {
 
         for (i = 0; i &lt; length; i++) {
             node = root[i];
-            id = me.getId(node);
             // Create a record with an empty data object.
             // Populate that data object by extracting and converting field values from raw data
-            record = new Model(undefined, id, node, convertedValues = {});
+            record = new Model(undefined, me.getId(node), node, convertedValues = {});
 
             // If the server did not include an id in the response data, the Model constructor will mark the record as phantom.
             // We  need to set phantom to false here because records created from a server response using a reader by definition are not phantom records.
             record.phantom = false;
 
-            for (j = 0; j &lt; fieldLength; j++) {
-                field = fields[j];
-                value = me.extractorFunctions[j](node);
-                name = fields[j].name;
-                convertedValue = value;
-                if (convertedValue === undefined) {
-                    convertedValue = field.defaultValue;
-                }
-                if (field.convert) {
-                    convertedValue = field.convert(convertedValue, record);
-                }
-                convertedValues[name] = convertedValue;
-            }
+            // Use generated function to extract all fields at once
+            me.convertRecordData(convertedValues, node, record);
 
-            if (node[clientIdProp]) {
-                // set the client id as the internalId of the record.
-                // clientId handles the case where a client side record did not previously exist on the server,
-                // so the server is passing back a client id that can be used to pair the server side record up with the client record
-                record.internalId = node[clientIdProp];
-            }
             records.push(record);
                 
             if (me.implicitIncludes) {
@@ -592,10 +574,10 @@ Ext.define('Ext.data.reader.Reader', {
             map;
             
         if (force === true) {
-            delete me.extractorFunctions;
+            delete me.convertRecordData;
         }
         
-        if (me.extractorFunctions) {
+        if (me.convertRecordData) {
             return;
         }   
 
@@ -629,30 +611,78 @@ Ext.define('Ext.data.reader.Reader', {
                 return null;
             };
         }
-        me.buildFieldExtractors();
+        me.convertRecordData = me.buildRecordDataExtractor();
     },
 
-<span id='Ext-data-reader-Reader-method-buildFieldExtractors'>    /**
+<span id='Ext-data-reader-Reader-method-buildRecordDataExtractor'>    /**
 </span>     * @private
+     * Return a function which will read a raw row object in the format this Reader accepts, and populates
+     * a record's data object with converted data values.
+     *
+     * The returned function must be passed the following parameters:
+     *
+     * - dest A record's empty data object into which the new field value properties are injected.
+     * - source A raw row data object of whatever type this Reader consumes
+     * - record The record which is being populated.
+     *
      */
-    buildFieldExtractors: function() {
-        //now build the extractors for all the fields
+    buildRecordDataExtractor: function() {
         var me = this,
-            fields = me.getFields(),
-            ln = fields.length,
-            i  = 0,
-            extractorFunctions = [],
-            field, map;
+            modelProto = me.model.prototype,
+            clientIdProp = modelProto.clientIdProperty,
+            fields = modelProto.fields.items,
+            numFields = fields.length,
+            fieldVarName = [],
+            varName,
+            i = 0,
+            field,
+            code = [
+                'var me = this,\n',
+                '    fields = me.model.prototype.fields,\n',
+                '    value,\n',
+                '    internalId'
+            ];
 
-        for (; i &lt; ln; i++) {
+        for (; i &lt; numFields; i++) {
             field = fields[i];
-            map   = (field.mapping !== undefined &amp;&amp; field.mapping !== null) ? field.mapping : field.name;
-
-            extractorFunctions.push(me.createAccessor(map));
+            fieldVarName[i] = Ext.String.createVarName(field.name);
+            code.push(',\n    ', fieldVarName[i], ' = fields.get(&quot;', field.name, '&quot;)');
         }
-        me.fieldCount = ln;
+        code.push(';\n\n    return function(dest, source, record) {\n');
 
-        me.extractorFunctions = extractorFunctions;
+        for (i = 0; i &lt; numFields; i++) {
+            field = fields[i];
+            varName = fieldVarName[i];
+            // createFieldAccessExpression must be implemented in subclasses to extract data from the source object in the correct way.
+            code.push('        dest', ((field.name === varName) ? ('.' + varName) : ('[&quot;' + field.name + '&quot;]')), ' = ', me.createFieldAccessExpression(field, varName, 'source'), ';\n');
+        }
+
+        // set the client id as the internalId of the record.
+        // clientId handles the case where a client side record did not previously exist on the server,
+        // so the server is passing back a client id that can be used to pair the server side record up with the client record
+        if (clientIdProp) {
+            code.push('        if (internalId = ' + me.createFieldAccessExpression({mapping: clientIdProp}, null, 'source') + ') {\n');
+            code.push('            record.internalId = internalId;\n        }\n');
+        }
+
+        code.push('    };');
+
+        // Here we are creating a new Function and invoking it immediately in the scope of this Reader
+        // It declares several vars capturing the configured context of this Reader, and returns a function
+        // which, when passed a record data object, a raw data row in the format this Reader is configured to read,
+        // and the record which is being created, will populate the record's data object from the raw row data.
+        return Ext.functionFactory(code.join('')).call(me);
+    },
+
+    destroyReader: function() {
+        var me = this;
+        delete me.proxy;
+        delete me.model;
+        delete me.convertRecordData;
+        delete me.getId;
+        delete me.getTotal;
+        delete me.getSuccess;
+        delete me.getMessage;
     }
 }, function() {
     Ext.apply(this.prototype, {

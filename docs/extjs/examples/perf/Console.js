@@ -83,6 +83,17 @@ Ext.define('PerfCon.Console', {
                                         selectOnFocus: true
                                     }
                                 ]
+                            },
+                            {
+                                title: 'Accumulators',
+                                layout: 'fit',
+                                border: false,
+                                xtype: 'panel',
+                                items:[
+                                    Ext.create('Ext.form.field.TextArea',{
+                                        itemId: 'accumulatorCfg'
+                                    })
+                                ]
                             }
                         ]
                     },
@@ -178,7 +189,7 @@ Ext.define('PerfCon.Console', {
         }, config);
     },
 
-    makeTrendChart: function (rec) {
+    makeTrendChart: function () {
         var me = this,
             panel = me.down('#trendPanel'),
             builds = {},
@@ -189,10 +200,7 @@ Ext.define('PerfCon.Console', {
             modelName,
             chart;
 
-        if (!rec) {
-            panel.removeAll();
-            return;
-        }
+        panel.removeAll();
 
         chart = {
             xtype: 'chart',
@@ -231,10 +239,6 @@ Ext.define('PerfCon.Console', {
         me.store.each(function (r) {
             var rd = r.data;
 
-            if (rd.environment != rec.data.environment || rd.test != rec.data.test) {
-                return;
-            }
-
             var build = builds[rd.build];
             if (!build) {
                 builds[rd.build] = build = { build: rd.build };
@@ -248,8 +252,6 @@ Ext.define('PerfCon.Console', {
 
             fields.push(measures[rd.measure] = { name: rd.measure, type: 'float' });
             measureNames.push(rd.measure);
-
-            chart.axes[0].fields.push(rd.measure);
             chart.series.push({
                 type: 'line',
                 highlight: {
@@ -268,10 +270,20 @@ Ext.define('PerfCon.Console', {
             });
         });
 
+        chart.axes[0].fields = measureNames;
+
+
         measureNames.sort();
         var name = 'Trend_' + measureNames.join('$');
         name = name.replace(/\./g, '_');
         modelName = 'PerfCon.' + name;
+
+        var mfields = [{
+            name: 'build',
+            type: 'int'
+        }];
+
+        fields.push({name: 'build', type: 'int'});
 
         if (!PerfCon[name]) {
             Ext.define(modelName, {
@@ -315,8 +327,6 @@ Ext.define('PerfCon.Console', {
             store.add(records);
             store.sort();
         }
-
-        me.makeTrendChart(rec);
     },
 
     onUpdateFromRawData: function () {
@@ -363,9 +373,8 @@ Ext.define('PerfCon.Console', {
                                 measure: name
                             });
 
-                    records.push(measure);
                 }
-
+                records.push(measure);
                 measure.addSample(stats.pure.sum, stats.count);
             });
         });
@@ -373,5 +382,20 @@ Ext.define('PerfCon.Console', {
         me.store.removeAll();
         me.store.add(records);
         me.store.sort();
+        me.makeTrendChart();
+    },
+
+    setAccumulators: function(cfg) {
+        var me = this,
+            accData = Ext.JSON.encodeValue(cfg, '\n  ');
+        me.down('#accumulatorCfg').setValue(accData);
+    },
+
+    getAccumulators: function() {
+        var me = this,
+            accData = me.down('#accumulatorCfg').getValue();
+        if(!accData || accData == '')
+            return null;
+        return Ext.decode(accData, true);
     }
 });

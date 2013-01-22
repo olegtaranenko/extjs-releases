@@ -118,12 +118,9 @@ Ext.define('Ext.data.proxy.Direct', {
             writer = me.getWriter(),
             request = me.buildRequest(operation, callback, scope),
             fn = me.api[request.action]  || me.directFn,
-            args = [],
             params = request.params,
-            paramOrder = me.paramOrder,
             method,
-            i = 0,
-            len;
+            args;
 
         //<debug>
         if (!fn) {
@@ -138,20 +135,7 @@ Ext.define('Ext.data.proxy.Direct', {
         if (operation.action == 'read') {
             // We need to pass params
             method = fn.directCfg.method;
-
-            if (method.ordered) {
-                if (method.len > 0) {
-                    if (paramOrder) {
-                        for (len = paramOrder.length; i < len; ++i) {
-                            args.push(params[paramOrder[i]]);
-                        }
-                    } else if (me.paramsAsHash) {
-                        args.push(params);
-                    }
-                }
-            } else {
-                args.push(params);
-            }
+            args = method.getArgs(params, me.paramOrder, me.paramsAsHash);
         } else {
             args.push(request.jsonData);
         }

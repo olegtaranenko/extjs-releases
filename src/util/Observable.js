@@ -132,7 +132,11 @@ Ext.define('Ext.util.Observable', {
      *         }
      *     });
      */
-    // @private
+
+    /**
+     * @property {Boolean} isObservable
+     * `true` in this class to identify an objact as an instantiated Observable, or subclass thereof.
+     */
     isObservable: true,
 
     constructor: function(config) {
@@ -629,12 +633,13 @@ Ext.define('Ext.util.Observable', {
      * @private
      * Creates an event handling function which refires the event from this object as the passed event name.
      * @param newName
+     * @param {Array} beginEnd (optional) The caller can specify on which indices to slice
      * @returns {Function}
      */
-    createRelayer: function(newName){
+    createRelayer: function(newName, beginEnd){
         var me = this;
         return function(){
-            return me.fireEvent.apply(me, [newName].concat(Array.prototype.slice.call(arguments, 0, -1)));
+            return me.fireEvent.apply(me, [newName].concat(Array.prototype.slice.apply(arguments, beginEnd || [0, -1])));
         };
     },
 

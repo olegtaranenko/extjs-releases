@@ -54,19 +54,19 @@ Ext.define('Ext.flash.Component', {
     alias: 'widget.flash',
 
     /**
-     * @cfg {String} flashVersion
+     * @cfg {String} [flashVersion="9.0.115"]
      * Indicates the version the flash content was published for.
      */
     flashVersion : '9.0.115',
 
     /**
-     * @cfg {String} backgroundColor
+     * @cfg {String} [backgroundColor="#ffffff"]
      * The background color of the SWF movie.
      */
     backgroundColor: '#ffffff',
 
     /**
-     * @cfg {String} wmode
+     * @cfg {String} [wmode="opaque"]
      * The wmode of the flash object. This can be used to control layering.
      * Set to 'transparent' to ignore the {@link #backgroundColor} and make the background of the Flash
      * movie transparent.
@@ -95,7 +95,7 @@ Ext.define('Ext.flash.Component', {
      */
 
     /**
-     * @cfg {String/Number} [swfWidth=undefined]
+     * @cfg {String/Number} [swfWidth="100%"]
      * The width of the embedded SWF movie inside the component.
      *
      * Defaults to "100%" so that the movie matches the width of the component.
@@ -103,7 +103,7 @@ Ext.define('Ext.flash.Component', {
     swfWidth: '100%',
 
     /**
-     * @cfg {String/Number} [swfHeight=undefined]
+     * @cfg {String/Number} [swfHeight="100%"]
      * The height of the embedded SWF movie inside the component.
      *
      * Defaults to "100%" so that the movie matches the height of the component.
@@ -111,7 +111,7 @@ Ext.define('Ext.flash.Component', {
     swfHeight: '100%',
 
     /**
-     * @cfg {Boolean} expressInstall
+     * @cfg {Boolean} [expressInstall=false]
      * True to prompt the user to install flash if not installed. Note that this uses
      * Ext.FlashComponent.EXPRESS_INSTALL_URL, which should be set to the local resource.
      */
@@ -153,35 +153,41 @@ Ext.define('Ext.flash.Component', {
             'failure'
         );
     },
+    
+    beforeRender: function(){
+        this.callParent();
+        
+        Ext.applyIf(this.renderData, {
+            swfId: this.getSwfId()
+        });
+    },
 
-    onRender: function() {
+    afterRender: function() {
         var me = this,
-            params, vars, undef,
-            swfId = me.getSwfId();
+            flashParams = Ext.apply({}, me.flashParams), 
+            flashVars = Ext.apply({}, me.flashVars);
 
-        me.renderData.swfId = swfId;
+        me.callParent();
 
-        me.callParent(arguments);
-
-        params = Ext.apply({
+        Ext.apply({
             allowScriptAccess: 'always',
             bgcolor: me.backgroundColor,
             wmode: me.wmode
-        }, me.flashParams);
+        }, flashParams);
 
-        vars = Ext.apply({
+        Ext.apply({
             allowedDomain: document.location.hostname
-        }, me.flashVars);
+        }, flashVars);
 
         new swfobject.embedSWF(
             me.url,
-            swfId,
+            me.getSwfId(),
             me.swfWidth,
             me.swfHeight,
             me.flashVersion,
-            me.expressInstall ? me.statics.EXPRESS_INSTALL_URL : undef,
-            vars,
-            params,
+            me.expressInstall ? me.statics.EXPRESS_INSTALL_URL : undefined,
+            flashVars,
+            flashParams,
             me.flashAttributes,
             Ext.bind(me.swfCallback, me)
         );

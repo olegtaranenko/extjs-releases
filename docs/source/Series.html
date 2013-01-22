@@ -167,6 +167,10 @@ Ext.define('Ext.chart.series.Series', {
             itemmouseout: me.onItemMouseOut,
             mouseleave: me.onMouseLeave
         });
+        
+        if (me.style) {
+            Ext.apply(me.seriesStyle, me.style);
+        }
     },
     
 <span id='Ext-chart-series-Series-method-eachRecord'>    /**

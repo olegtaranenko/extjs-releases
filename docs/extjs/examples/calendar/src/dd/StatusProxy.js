@@ -9,6 +9,8 @@
 Ext.define('Ext.calendar.dd.StatusProxy', {
     
     extend: 'Ext.dd.StatusProxy',
+
+    animRepair: true,
     
     /**
      * @cfg {String} moveEventCls

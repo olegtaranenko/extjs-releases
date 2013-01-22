@@ -21,9 +21,6 @@ Ext.define('Ext.grid.ColumnLayout', {
     firstHeaderCls: Ext.baseCSSPrefix + 'column-header-first',
     lastHeaderCls: Ext.baseCSSPrefix + 'column-header-last',
 
-    // Height-stretched innerCt must be able to revert back to unstretched height
-    clearInnerCtOnLayout: true,
-
     // Collect the height of the table of data upon layout begin
     beginLayout: function (ownerContext) {
         var me = this,

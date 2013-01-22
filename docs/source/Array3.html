@@ -60,30 +60,32 @@ Ext.define('Ext.data.reader.Array', {
     totalProperty: undefined,
     successProperty: undefined,
 
-<span id='Ext-data-reader-Array-method-buildExtractors'>    /**
+<span id='Ext-data-reader-Array-method-createFieldAccessExpression'>    /**
 </span>     * @private
-     * Most of the work is done for us by JsonReader, but we need to overwrite the field accessors to just
-     * reference the correct position in the array.
+     * Returns an accessor expression for the passed Field from an Array using either the Field's mapping, or
+     * its ordinal position in the fields collsction as the index.
+     * This is used by buildExtractors to create optimized on extractor function which converts raw data into model instances.
      */
-    buildExtractors: function() {
-        this.callParent(arguments);
+    createFieldAccessExpression: function(field, fieldVarName, dataName) {
+        var me     = this,
+            index  = (field.mapping == null) ? me.model.prototype.fields.indexOf(field) : field.mapping,
+            result;
 
-        var fields = this.model.prototype.fields.items,
-            i = 0,
-            length = fields.length,
-            extractorFunctions = [],
-            map;
-        
-        for (; i &lt; length; i++) {
-            map = fields[i].mapping;
-            extractorFunctions.push(function(index) {
-                return function(data) {
-                    return data[index];
-                };
-            }(map !== null ? map : i));
+        if (typeof index === 'function') {
+            result = fieldVarName + '.mapping(' + dataName + ', this)';
+        } else {
+            if (isNaN(index)) {
+                index = '&quot;' + index + '&quot;';
+            }
+            result = dataName + &quot;[&quot; + index + &quot;]&quot;;
         }
-
-        this.extractorFunctions = extractorFunctions;
+            if (field.defaultValue !== undefined) {
+                result = '(' + result + ' === undefined) ? ' + fieldVarName + '.defaultValue : ' + result;
+            }
+        if (field.convert) {
+            result = fieldVarName + '.convert(' + result + ', record)';
+        }
+        return result;
     }
 });</pre>
 </body>

@@ -24,6 +24,7 @@ Ext.define('Ext.tree.View', {
 
     loadingCls: Ext.baseCSSPrefix + 'grid-tree-loading',
     expandedCls: Ext.baseCSSPrefix + 'grid-tree-node-expanded',
+    leafCls: Ext.baseCSSPrefix + 'grid-tree-node-leaf',
 
     expanderSelector: '.' + Ext.baseCSSPrefix + 'tree-expander',
     checkboxSelector: '.' + Ext.baseCSSPrefix + 'tree-checkbox',
@@ -532,6 +533,9 @@ Ext.define('Ext.tree.View', {
             if (record.isExpanded()) {
                 row.rowCls = (row.rowCls || '') + ' ' + this.expandedCls;
             }
+            if (record.isLeaf()) {
+                row.rowCls = (row.rowCls || '') + ' ' + this.leafCls;
+            }
             if (record.isLoading()) {
                 row.rowCls = (row.rowCls || '') + ' ' + this.loadingCls;
             }
@@ -566,8 +570,8 @@ Ext.define('Ext.tree.View', {
 </span>     * Toggles a record between expanded and collapsed.
      * @param {Ext.data.Model} recordInstance
      */
-    toggle: function(record) {
-        this[record.isExpanded() ? 'collapse' : 'expand'](record);
+    toggle: function(record, deep) {
+        this[record.isExpanded() ? 'collapse' : 'expand'](record, deep);
     },
     
     onItemDblClick: function(record, item, index) {
@@ -587,7 +591,7 @@ Ext.define('Ext.tree.View', {
     
     onItemClick: function(record, item, index, e) {
         if (e.getTarget(this.expanderSelector, item)) {
-            this.toggle(record);
+            this.toggle(record, e.ctrlKey);
             return false;
         }
         return this.callParent(arguments);

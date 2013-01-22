@@ -142,6 +142,7 @@ menuItemCfgs : {
                     }),
                     labelSeparator: '',
                     labelWidth: 29,
+                    labelStyle: 'position: relative;',
                     listeners: {
                         scope: me,
                         change: me.onInputChange,

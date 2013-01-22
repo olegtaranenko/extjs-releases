@@ -41,9 +41,11 @@ Ext.onReady(function(){
                 }, height = form.child('textfield').getHeight();
 
                 var labelEditor = Ext.create('Ext.Editor', Ext.apply({
-                    width: 140,
+                    autoSize: {
+                        width: 'field'
+                    },
                     height: height,
-                    offsets: [0, 2],
+                    offsets: [0, (Ext.isIEQuirks ? 0 : 2)],
                     alignment: 'l-l',
                     listeners: {
                         beforecomplete: function(ed, value){
@@ -54,6 +56,7 @@ Ext.onReady(function(){
                         }
                     },
                     field: {
+                        width: 100,
                         name: 'labelfield',
                         allowBlank: false,
                         xtype: 'textfield',
@@ -72,7 +75,7 @@ Ext.onReady(function(){
 
                 var titleEditor = Ext.create('Ext.Editor', Ext.apply({
                     alignment: 'bl-l',
-                    offsets: [0, 10],
+                    offsets: [0, 15],
                     field: {
                         width: 130,
                         xtype: 'combo',

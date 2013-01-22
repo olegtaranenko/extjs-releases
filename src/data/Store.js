@@ -254,14 +254,14 @@ Ext.define('Ext.data.Store', {
     numFromEdge: 25,
 
     /**
-     * @cfg {Number} trailingBufferZone. When {@link #buffered}, the number of extra records to keep cached on
+     * @cfg {Number} trailingBufferZone When {@link #buffered}, the number of extra records to keep cached on
      * the trailing side of scrolling <b>outside the {@link #numFromEdge}</b> buffer as scrolling proceeds.
      * A larger number means fewer replenishments from the server.
      */
     trailingBufferZone: 25,
     
     /**
-     * @cfg {Number} trailingBufferZone. When {@link #buffered}, the number of extra rows to keep cached on the
+     * @cfg {Number} leadingBufferZone When {@link #buffered}, the number of extra rows to keep cached on the
      * leading side of scrolling <b>outside the {@link #numFromEdge}</b> buffer as scrolling proceeds.
      * A larger number means fewer replenishments from the server.
      */
@@ -307,41 +307,47 @@ Ext.define('Ext.data.Store', {
 
     /**
      * @cfg {Boolean} buffered
-     * <p>Allows the Store to prefetch and cache in a <b>prefetch buffer</b>, pages of Records, and to then satisfy loading requirements from this prefetch buffer.</p>.
-     * <p>To use buffered Stores, initiate the process by priming the prefetch buffer with the first page, and when the data arrives, load the
+     * Allows the Store to prefetch and cache in a <b>prefetch buffer</b>, pages of Records, and to then satisfy loading requirements from this prefetch buffer.
+     *
+     * To use buffered Stores, initiate the process by priming the prefetch buffer with the first page, and when the data arrives, load the
      * Store's main collection (the collection that is mapped to rendered rows) using small subset of that data. You only need a small subset to be rendered
-     * into the view at any time. Example:</p>
-     <code><pre>
-     // Prime the prefetch buffer with 100 Records
-     myStore.prefetch({
-         start: 0,
-         limit: 99,
-         callback: function() {
-             // On data arrival, load the Store with 50 rows from the prefetch buffer, to create a 50 row table
-             myStore.guaranteeRange(0, 49)
-         }
-     });
-     </pre></code>
-     * <p>In this example we prime the Store's prefetch buffer with the first 100 Records and then render only a small subset to the view.
-     * Once the Grid is loaded, it will calculate an optimum pageSize based upon the number of visible rows.</p>
-     * <p>It is only necessary to load a small number of rows into the Store because a buffered Store is paired with a {@link Ext.grid.PagingScroller PagingScroller}
+     * into the view at any time. Example:
+     *
+     *    // Prime the prefetch buffer with 100 Records
+     *    myStore.prefetch({
+     *        start: 0,
+     *        limit: 99,
+     *        callback: function() {
+     *            // On data arrival, load the Store with 50 rows from the prefetch buffer, to create a 50 row table
+     *            myStore.guaranteeRange(0, 49)
+     *        }
+     *    });
+     *
+     * In this example we prime the Store's prefetch buffer with the first 100 Records and then render only a small subset to the view.
+     * Once the Grid is loaded, it will calculate an optimum pageSize based upon the number of visible rows.
+     *
+     * It is only necessary to load a small number of rows into the Store because a buffered Store is paired with a {@link Ext.grid.PagingScroller PagingScroller}
      * which will monitor the scrolling in the grid, and refresh the view's rows from the prefetch buffer as needed. It will also pull new data into the prefetch buffer
      * when scrolling of the view draws upon data near either end of the prefetched data.
-     * <p>The margins which trigger view refreshing from the prefetched data are {@link Ext.grid.PagingScroller#numFromEdge},
-     * {@link Ext.grid.PagingScroller#leadingBufferZone} and {@link Ext.grid.PagingScroller#trailingBufferZone}.</p>
-     * <p>The margins which trigger loading more data into the prefetch buffer are {@link #numFromEdge},
-     * {@link #leadingBufferZone} and {@link #trailingBufferZone}.</p>
-     * <p>By defult, only 5 pages of data are cached in the prefetch buffer, with pages "scrolling" out of the buffer as the view moves
+     *
+     * The margins which trigger view refreshing from the prefetched data are {@link Ext.grid.PagingScroller#numFromEdge},
+     * {@link Ext.grid.PagingScroller#leadingBufferZone} and {@link Ext.grid.PagingScroller#trailingBufferZone}.
+     *
+     * The margins which trigger loading more data into the prefetch buffer are {@link #numFromEdge},
+     * {@link #leadingBufferZone} and {@link #trailingBufferZone}.
+     *
+     * By defult, only 5 pages of data are cached in the prefetch buffer, with pages "scrolling" out of the buffer as the view moves
      * down through the dataset. This can be increased by changing the {@link #purgePageSize} value. Setting this value to zero 
      * means that no pages are <i>ever</i> scrolled out of the prefetch buffer, and that eventually the whole dataset may become present
-     * in the prefetch buffer. This is sometimes desirable as long as datasets do not reach astronomical proportions.</p>
-     * <p>Selection state may be maintained across page boundaries by configuring the SelectionModel not to discard Records from its collection
-     * when those Records cycle out of the Store's primary collection. This is done by configuring the SelectionModel like this:</p>
-     <code><pre>
-     selModel: {
-         pruneRemoved: false
-     }
-     </pre></code>
+     * in the prefetch buffer. This is sometimes desirable as long as datasets do not reach astronomical proportions.
+     *
+     * Selection state may be maintained across page boundaries by configuring the SelectionModel not to discard Records from its collection
+     * when those Records cycle out of the Store's primary collection. This is done by configuring the SelectionModel like this:
+     *
+     *    selModel: {
+     *        pruneRemoved: false
+     *    }
+     *
      */
     buffered: false,
 
@@ -358,8 +364,6 @@ Ext.define('Ext.data.Store', {
      */
     clearRemovedOnLoad: true,
 
-    isStore: true,
-    
     statics: {
         recordIdFn: function(record) {
             return record.internalId;
@@ -1577,7 +1581,7 @@ Ext.define('Ext.data.Store', {
         // the addition of the second one could cause it to be purged. So purging is turned
         // off for multiple page requests.
         if (!me.hasPendingRequests() && me.suspendPurge) {
-            me.suspendParge = false;
+            me.suspendPurge = false;
             return;
         }
 

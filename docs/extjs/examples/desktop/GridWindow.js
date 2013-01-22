@@ -86,7 +86,7 @@ Ext.define('MyDesktop.GridWindow', {
                     iconCls:'add'
                 }, '-', {
                     text:'Options',
-                    tooltip:'Blah blah blah blaht',
+                    tooltip:'Modify options',
                     iconCls:'option'
                 },'-',{
                     text:'Remove Something',

@@ -142,12 +142,14 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
             layout = me.layout,
             names = layout.getNames(),
             leftName = names.left,
-            rightName = names.right;
+            rightName = names.right,
+            type = me.getOwnerType(layout.owner);
 
         me.beforeCtCls = me.beforeCtCls || prefix + 'box-scroller-' + leftName;
         me.afterCtCls  = me.afterCtCls  || prefix + 'box-scroller-' + rightName;
-        me.beforeScrollerCls = me.beforeScrollerCls || prefix + layout.owner.getXType() + '-scroll-' + leftName;
-        me.afterScrollerCls  = me.afterScrollerCls  || prefix + layout.owner.getXType() + '-scroll-' + rightName;
+        
+        me.beforeScrollerCls = me.beforeScrollerCls || prefix + type + '-scroll-' + leftName;
+        me.afterScrollerCls  = me.afterScrollerCls  || prefix + type + '-scroll-' + rightName;
     },
 
     handleOverflow: function(ownerContext) {

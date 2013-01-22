@@ -78,37 +78,14 @@ Ext.define('Ext.form.action.DirectLoad', {
     type: 'directload',
 
     run: function() {
-        this.form.api.load.apply(window, this.getArgs());
-    },
-
-    /**
-     * @private
-     * Builds the arguments to be sent to the Direct call.
-     * @return Array
-     */
-    getArgs: function() {
         var me = this,
-            args = [],
             form = me.form,
-            paramOrder = form.paramOrder,
-            params = me.getParams(),
-            i, len;
-
-        // If a paramOrder was specified, add the params into the argument list in that order.
-        if (paramOrder) {
-            for (i = 0, len = paramOrder.length; i < len; i++) {
-                args.push(params[paramOrder[i]]);
-            }
-        }
-        // If paramsAsHash was specified, add all the params as a single object argument.
-        else if (form.paramsAsHash) {
-            args.push(params);
-        }
-
-        // Add the callback and scope to the end of the arguments list
+            fn = form.api.load,
+            method = fn.directCfg.method,
+            args = method.getArgs(me.getParams(), form.paramOrder, form.paramsAsHash);
+            
         args.push(me.onComplete, me);
-
-        return args;
+        fn.apply(window, args);
     },
 
     // Direct actions have already been processed and therefore

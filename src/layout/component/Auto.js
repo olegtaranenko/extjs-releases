@@ -11,7 +11,7 @@
  * In either of these size models, the dimension of the outer element is of a known size.
  * The size is found in the `ownerContext` (the {@link Ext.layout.ContextItem} for the owner
  * component) as either "width" or "height". This value, if available, is passed to the
- * {@link #publishInnerWidth} or (@link #publishInnerHeight} method, respectively.
+ * {@link #publishInnerWidth} or {@link #publishInnerHeight} method, respectively.
  * 
  * ## shrinkWrap
  *
@@ -112,10 +112,6 @@ Ext.define('Ext.layout.component.Auto', {
             me.done = false;
         }
     },
-
-    // OwnerContext padding is always added into contentWidth/Height by all container layouts
-    // so we must subtract it when adding the frameInfo to calculate the owner width/height
-    // because frameInfo includes padding+framing+border
 
     calculateOwnerHeightFromContentHeight: function (ownerContext, contentHeight) {
         return contentHeight + ownerContext.getFrameInfo().height;

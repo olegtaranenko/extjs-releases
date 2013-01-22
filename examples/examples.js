@@ -18,6 +18,13 @@ Ext.samples = {
                     "status": "updated"
                 },
                 {
+                    "text": "Ext JS Calendar",
+                    "url": "calendar/index.html",
+                    "icon": "calendar.gif",
+                    "desc": "Example Calendar application. Demonstrates the new Day, Week and Month views and how to combine them.",
+                    "status": "new"
+                },
+                {
                     "text": "Web Desktop",
                     "url": "desktop/desktop.html",
                     "icon": "desktop.gif",
@@ -817,14 +824,14 @@ Ext.samples = {
                     "url": "form/vbox-form.html",
                     "icon": "form-vbox.gif",
                     "desc": "Example usage of the vBox layout with forms. An added bonus is the FieldReplicator plugin.",
-            	    "status": "new"
+                    "status": "new"
                 },
                 {
                     "text": "Forms with hBox layout",
                     "url": "form/hbox-form.html",
                     "icon": "form-hbox.gif",
                     "desc": "Example usage of the hBox layout with a form. Includes automatically adjusting validation messages.",
-            	    "status": "new"
+                    "status": "new"
                 },
                 {
                      "text": "Field Containers",

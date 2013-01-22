@@ -15,8 +15,6 @@ Ext.define('Ext.layout.component.Component', {
 
     isComponentLayout: true,
 
-    monitorChildren: true,
-
     nullBox: {},
 
     usesContentHeight: true,

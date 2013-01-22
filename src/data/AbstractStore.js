@@ -111,6 +111,10 @@ Ext.define('Ext.data.AbstractStore', {
      */
     isDestroyed: false,
 
+    /**
+     * @property {Boolean} isStore
+     * `true` in this class to identify an objact as an instantiated Store, or subclass thereof.
+     */
     isStore: true,
 
     /**
@@ -806,6 +810,9 @@ Ext.define('Ext.data.AbstractStore', {
             me.data = null;
             me.tree = null;
             // Ext.destroy(this.proxy);
+            if (me.reader) {
+                me.reader.destroyReader();
+            }
             me.reader = me.writer = null;
             me.clearListeners();
             me.isDestroyed = true;

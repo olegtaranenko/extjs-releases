@@ -347,8 +347,36 @@ describe("Ext.String", function() {
             expect(capitalize('a')).toEqual('A');
         });
         
-        it("should not capitalize even when spaces are included", function(){
+        it("should capitalize even when spaces are included", function(){
             expect(capitalize('this is a sentence')).toEqual('This is a sentence');
+        });
+    });
+
+    describe("uncapitalize", function(){
+        var uncapitalize = Ext.String.uncapitalize;
+        
+        it("should handle an empty string", function(){
+            expect(uncapitalize('')).toEqual('');
+        });
+        
+        it("should uncapitalize the first letter of the string", function(){
+            expect(uncapitalize('Foo')).toEqual('foo');
+        });
+        
+        it("should ignore case in the rest of the string", function() {
+            expect(uncapitalize('FooBar')).toEqual('fooBar'); 
+        });
+        
+        it("should leave the first letter uncapitalized if it is already uncapitalized", function(){
+            expect(uncapitalize('fooBar')).toEqual('fooBar');
+        });
+        
+        it("should uncapitalize a single letter", function(){
+            expect(uncapitalize('F')).toEqual('f');
+        });
+
+        it("should uncapitalize even when spaces are included", function(){
+            expect(uncapitalize('This is a sentence')).toEqual('this is a sentence');
         });
     });
 

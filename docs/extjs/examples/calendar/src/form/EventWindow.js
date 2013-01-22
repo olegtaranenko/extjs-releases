@@ -29,7 +29,7 @@ Ext.define('Ext.calendar.form.EventWindow', {
             bodyBorder: false,
             border: false,
             items: [{
-                id: 'title',
+                itemId: 'title',
                 name: Ext.calendar.data.EventMappings.Title.name,
                 fieldLabel: 'Title',
                 xtype: 'textfield',
@@ -37,7 +37,7 @@ Ext.define('Ext.calendar.form.EventWindow', {
             },
             {
                 xtype: 'daterangefield',
-                id: 'date-range',
+                itemId: 'date-range',
                 name: 'dates',
                 anchor: '100%',
                 fieldLabel: 'When'
@@ -50,7 +50,7 @@ Ext.define('Ext.calendar.form.EventWindow', {
     
             formPanelCfg.items.push({
                 xtype: 'calendarpicker',
-                id: 'calendar',
+                itemId: 'calendar',
                 name: Ext.calendar.data.EventMappings.CalendarId.name,
                 anchor: '100%',
                 store: this.calendarStore
@@ -82,7 +82,7 @@ Ext.define('Ext.calendar.form.EventWindow', {
                 scope: this
             },
             {
-                id: 'delete-btn',
+                itemId: 'delete-btn',
                 text: 'Delete',
                 disabled: false,
                 handler: this.onDelete,
@@ -158,6 +158,11 @@ Ext.define('Ext.calendar.form.EventWindow', {
         this.el.addCls('ext-cal-event-win');
 
         Ext.get('tblink').on('click', this.onEditDetailsClick, this);
+        
+        this.titleField = this.down('#title');
+        this.dateRangeField = this.down('#date-range');
+        this.calendarField = this.down('#calendar');
+        this.deleteButton = this.down('#delete-btn');
     },
     
     // private
@@ -181,10 +186,11 @@ Ext.define('Ext.calendar.form.EventWindow', {
         var anim = (Ext.isIE8 && Ext.isStrict) ? null: animateTarget,
             M = Ext.calendar.data.EventMappings;
 
-        this.callParent([this, anim, function(){
-            this.titleField.focus(false, 100);
-        }]);
-        Ext.getCmp('delete-btn')[o.data && o.data[M.EventId.name] ? 'show': 'hide']();
+        this.callParent([this, anim, Ext.bind(function(){
+            this.titleField.titleField.focus(false, 100);
+        }, this)]);
+        
+        this.deleteButton[o.data && o.data[M.EventId.name] ? 'show': 'hide']();
 
         var rec,
         f = this.formPanel.form;
@@ -210,9 +216,9 @@ Ext.define('Ext.calendar.form.EventWindow', {
         }
 
         if (this.calendarStore) {
-            Ext.getCmp('calendar').setValue(rec.data[M.CalendarId.name]);
+            this.calendarField.setValue(rec.data[M.CalendarId.name]);
         }
-        Ext.getCmp('date-range').setValue(rec.data);
+        this.dateRangeField.setValue(rec.data);
         this.activeRecord = rec;
 
         return this;
@@ -260,7 +266,7 @@ Ext.define('Ext.calendar.form.EventWindow', {
             }
         });
         
-        var dates = Ext.getCmp('date-range').getValue();
+        var dates = this.dateRangeField.getValue();
         obj[M.StartDate.name] = dates[0];
         obj[M.EndDate.name] = dates[1];
         obj[M.IsAllDay.name] = dates[2];

@@ -213,6 +213,12 @@ Ext.define('Ext.panel.Table', {
         
         // Look up the configured Store. If none configured, use the fieldless, empty Store defined in Ext.data.Store.
         me.store = Ext.data.StoreManager.lookup(me.store || 'ext-empty-store');
+        
+        //<debug>
+        if (!headerCtCfg) {
+            Ext.Error.raise("A column configuration must be specified");
+        }
+        //</debug>
 
         // The columns/colModel config may be either a fully instantiated HeaderContainer, or an array of Column definitions, or a config object of a HeaderContainer
         // Either way, we extract a columns property referencing an array of Column definitions.
@@ -245,6 +251,8 @@ Ext.define('Ext.panel.Table', {
                  me.injectLockable();
              }
         }
+        
+        me.scrollTask = new Ext.util.DelayedTask(me.syncHorizontalScroll, me);
 
         me.addEvents(
             /**
@@ -320,7 +328,7 @@ Ext.define('Ext.panel.Table', {
             if (!Ext.isArray(me.features)) {
                 me.features = [me.features];
             }
-            me.dockedItems = me.dockedItems || [];
+            me.dockedItems = [].concat(me.dockedItems || []);
             me.dockedItems.unshift(me.headerCt);
             me.viewConfig = me.viewConfig || {};
 
@@ -659,7 +667,32 @@ Ext.define('Ext.panel.Table', {
             });
             sm.view = me.view;
             me.headerCt.view = me.view;
-            me.relayEvents(me.view, ['cellclick', 'celldblclick']);
+            me.relayEvents(me.view, [
+                /**
+                 * @event cellclick
+                 * Fired when table cell is clicked.
+                 * @param {Ext.view.Table} this
+                 * @param {HTMLElement} td The TD element that was clicked.
+                 * @param {Number} cellIndex
+                 * @param {Ext.data.Model} record
+                 * @param {HTMLElement} tr The TR element that was clicked.
+                 * @param {Number} rowIndex
+                 * @param {Ext.EventObject} e
+                 */
+                'cellclick',
+                /**
+                 * @event celldblclick
+                 * Fired when table cell is double clicked.
+                 * @param {Ext.view.Table} this
+                 * @param {HTMLElement} td The TD element that was clicked.
+                 * @param {Number} cellIndex
+                 * @param {Ext.data.Model} record
+                 * @param {HTMLElement} tr The TR element that was clicked.
+                 * @param {Number} rowIndex
+                 * @param {Ext.EventObject} e
+                 */
+                'celldblclick'
+            ]);
         }
         return me.view;
     },
@@ -743,13 +776,23 @@ Ext.define('Ext.panel.Table', {
     // refresh the view when a header moves
     onHeaderMove: function(headerCt, header, colsToMove, fromIdx, toIdx) {
         this.view.moveColumn(fromIdx, toIdx, colsToMove);
+        this.delayScroll();
     },
 
     // Section onHeaderHide is invoked after view.
     onHeaderHide: function(headerCt, header) {
+        this.delayScroll();
     },
 
     onHeaderShow: function(headerCt, header) {
+        this.delayScroll();
+    },
+    
+    delayScroll: function(){
+        var target = this.getScrollTarget().el;
+        if (target) {
+            this.scrollTask.delay(10, null, null, [target.dom.scrollLeft]);
+        }
     },
 
 /**
@@ -766,11 +809,18 @@ Ext.define('Ext.panel.Table', {
      * the header container's layhout.
      */
     onViewRefresh: function() {
-
+        var me = this,
+            headerCt = me.headerCt,
+            left = me.scrollLeftPos;
+            
         // First "real", (that is with data) refresh of View should relay the header container if there is any flexing, or grouping.
-        if (this.store.getCount() && !this.firstDataArrived && this.headerCt.down('gridcolumn[flex]') || this.headerCt.down('gridcolumn[isGroupHeader]')) {
-            this.firstDataArrived = true;
-            this.headerCt.updateLayout();
+        if (me.store.getCount() && !me.firstDataArrived && headerCt.down('gridcolumn[flex]') || headerCt.down('gridcolumn[isGroupHeader]')) {
+            me.firstDataArrived = true;
+            me.headerCt.updateLayout();
+        }
+        
+        if (left) {
+            me.syncHorizontalScroll(left);
         }
     },
 
@@ -857,14 +907,26 @@ Ext.define('Ext.panel.Table', {
         }
         return this.selModel;
     },
+    
+    getScrollTarget: function(){
+        var owner = this.getScrollerOwner(),
+            items = owner.query('tableview');
+            
+        return items[1] || items[0];
+    },
 
     onHorizontalScroll: function(event, target) {
-        var owner = this.getScrollerOwner(),
-            items = owner.query('tableview'),
-            center = items[1] || items[0];
-
-        center.el.dom.scrollLeft = target.scrollLeft;
-        this.headerCt.el.dom.scrollLeft = target.scrollLeft;
+        this.syncHorizontalScroll(target.scrollLeft);
+    },
+    
+    syncHorizontalScroll: function(left) {
+        var me = this,
+            scrollTarget = me.getScrollTarget();
+        
+        
+        scrollTarget.el.dom.scrollLeft = left;
+        me.headerCt.el.dom.scrollLeft = left;
+        me.scrollLeftPos = left;
     },
 
     // template method meant to be overriden
@@ -899,6 +961,8 @@ Ext.define('Ext.panel.Table', {
             me.reconfigureLockable(store, columns);
         } else {
             if (columns) {
+                // new columns, delete scroll pos
+                delete me.scrollLeftPos;
                 headerCt.suspendLayouts();
                 headerCt.removeAll();
                 headerCt.add(columns);
