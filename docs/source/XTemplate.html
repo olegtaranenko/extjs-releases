@@ -112,6 +112,19 @@
  *         '&lt;/tpl&gt;&lt;/p&gt;'
  *     );
  *     tpl.overwrite(panel.body, data);
+ *     
+ * The **foreach** operator is used to loop over an object's properties.  The following
+ * example demonstrates looping over the main data object's properties:
+ * 
+ *     var tpl = new Ext.XTemplate(
+ *         '&lt;dl&gt;',
+ *             '&lt;tpl foreach=&quot;.&quot;&gt;',
+ *                 '&lt;dt&gt;{$}&lt;/dt&gt;', // the special **`{$}`** variable contains the property name
+ *                 '&lt;dd&gt;{.}&lt;/dd&gt;', // within the loop, the **`{.}`** variable is set to the property value
+ *             '&lt;/tpl&gt;',
+ *         '&lt;/dl&gt;'
+ *     );
+ *     tpl.overwrite(panel.body, data);
  *
  * # Conditional processing with basic comparison operators
  *
@@ -210,8 +223,10 @@
  * - **values**: The values in the current scope. If you are using scope changing sub-templates,
  *   you can change what values is.
  * - **parent**: The scope (values) of the ancestor template.
- * - **xindex**: If you are in a looping template, the index of the loop you are in (1-based).
- * - **xcount**: If you are in a looping template, the total length of the array you are looping.
+ * - **xindex**: If you are in a &quot;for&quot; or &quot;foreach&quot; looping template, the index of the loop you are in (1-based).
+ * - **xcount**: If you are in a &quot;for&quot; looping template, the total length of the array you are looping.
+ * - **xkey**: If you are in a &quot;foreach&quot; looping template, the key of the current property
+ * being examined.
  *
  * This example demonstrates basic row striping using an inline code block and the xindex variable:
  *
@@ -289,6 +304,7 @@ Ext.define('Ext.XTemplate', {
 </span>     * @cfg {Boolean} compiled
      * Only applies to {@link Ext.Template}, XTemplates are compiled automatically on the
      * first call to {@link #apply} or {@link #applyOut}.
+     * @hide
      */
 
 <span id='Ext-XTemplate-cfg-definitions'>    /**
@@ -301,8 +317,8 @@ Ext.define('Ext.XTemplate', {
         return this.applyOut(values, [], parent).join('');
     },
 
-    applyOut: function(values, out, parent) {
-        var me = this,
+<span id='Ext-XTemplate-method-applyOut'>    applyOut: function(values, out, parent) {
+</span>        var me = this,
             compiler;
 
         if (!me.fn) {
@@ -334,7 +350,7 @@ Ext.define('Ext.XTemplate', {
     },
 
     statics: {
-<span id='Ext-XTemplate-method-getTpl'>        /**
+<span id='Ext-XTemplate-static-method-getTpl'>        /**
 </span>         * Gets an `XTemplate` from an object (an instance of an {@link Ext#define}'d class).
          * Many times, templates are configured high in the class hierarchy and are to be
          * shared by all classes that derive from that base. To further complicate matters,
@@ -357,6 +373,7 @@ Ext.define('Ext.XTemplate', {
          * @param {String} name The name of the property by which to get the `XTemplate`.
          * @return {Ext.XTemplate} The `XTemplate` instance or null if not found.
          * @protected
+         * @static
          */
         getTpl: function (instance, name) {
             var tpl = instance[name], // go for it! 99% of the time we will get it!

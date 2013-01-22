@@ -93,9 +93,7 @@ Ext.define('Ext.chart.Label', {
             minMargin: 50,
             font: "11px Helvetica, sans-serif",
             orientation: "horizontal",
-            renderer: function(v) {
-                return v;
-            }
+            renderer: Ext.identityFn
         });
 
         if (me.label.display !== 'none') {
@@ -161,14 +159,13 @@ Ext.define('Ext.chart.Label', {
                         //set contrast
                         if (config.contrast && item.sprite) {
                             sprite = item.sprite;
-                            //set the color string to the color to be set.
-                            if (sprite._endStyle) {
+                            //set the color string to the color to be set, only read the
+                            // _endStyle/_to if we're animating, otherwise they're not relevant
+                            if (animate && sprite._endStyle) {
                                 colorString = sprite._endStyle.fill;
-                            }
-                            else if (sprite._to) {
+                            } else if (animate && sprite._to) {
                                 colorString = sprite._to.fill;
-                            }
-                            else {
+                            } else {
                                 colorString = sprite.attr.fill;
                             }
                             colorString = colorString || sprite.attr.fill;

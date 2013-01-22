@@ -42,8 +42,8 @@ Ext.define('Ext.grid.feature.Feature', {
     extend: 'Ext.util.Observable',
     alias: 'feature.feature',
 
-    /*
-     * @property {Boolean} isFeature
+<span id='Ext-grid-feature-Feature-property-isFeature'>    /*
+</span>     * @property {Boolean} isFeature
      * `true` in this class to identify an object as an instantiated Feature, or subclass thereof.
      */
     isFeature: true,
@@ -91,19 +91,19 @@ Ext.define('Ext.grid.feature.Feature', {
      */
     collectData: false,
     
-    constructor: function(config) {
-        this.initialConfig = config;
+<span id='Ext-grid-feature-Feature-method-constructor'>    constructor: function(config) {
+</span>        this.initialConfig = config;
         this.callParent(arguments);
     },
 
-    clone: function() {
-        return new this.self(this.initialConfig);
+<span id='Ext-grid-feature-Feature-method-clone'>    clone: function() {
+</span>        return new this.self(this.initialConfig);
     },
 
-    init: Ext.emptyFn,
-
-    getFeatureTpl: function() {
-        return '';
+<span id='Ext-grid-feature-Feature-method-init'>    init: Ext.emptyFn,
+</span>
+<span id='Ext-grid-feature-Feature-method-getFeatureTpl'>    getFeatureTpl: function() {
+</span>        return '';
     },
 
 <span id='Ext-grid-feature-Feature-method-getFireEventArgs'>    /**
@@ -129,8 +129,8 @@ Ext.define('Ext.grid.feature.Feature', {
 
     },
 
-    getFragmentTpl: Ext.emptyFn,
-
+<span id='Ext-grid-feature-Feature-method-getFragmentTpl'>    getFragmentTpl: Ext.emptyFn,
+</span>
 <span id='Ext-grid-feature-Feature-method-mutateMetaRowTpl'>    /**
 </span>     * Allows a feature to mutate the metaRowTpl.
      * The array received as a single argument can be manipulated to add things
@@ -151,8 +151,8 @@ Ext.define('Ext.grid.feature.Feature', {
         return {};
     },
 
-    getTableFragments: function() {
-        return {};
+<span id='Ext-grid-feature-Feature-method-getTableFragments'>    getTableFragments: function() {
+</span>        return {};
     },
 
 <span id='Ext-grid-feature-Feature-method-getAdditionalData'>    /**

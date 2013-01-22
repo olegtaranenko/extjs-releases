@@ -17,6 +17,8 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
     autoFlex: true,
 
     type: 'checkboxgroup',
+    
+    createsInnerCt: true,
 
     childEls: [
         'innerCt'

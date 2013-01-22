@@ -1,7 +1,4 @@
 /**
- * @class Ext.ux.TreePicker
- * @extends Ext.form.field.Picker
- * 
  * A Picker field that contains a tree panel on its popup, enabling selection of tree nodes.
  */
 Ext.define('Ext.ux.TreePicker', {
@@ -55,7 +52,7 @@ Ext.define('Ext.ux.TreePicker', {
         var me = this;
         me.callParent(arguments);
 
-        this.addEvents(
+        me.addEvents(
             /**
              * @event select
              * Fires when a tree node is selected
@@ -70,7 +67,6 @@ Ext.define('Ext.ux.TreePicker', {
 
     /**
      * Creates and returns the tree panel to be used as this field's picker.
-     * @private
      */
     createPicker: function() {
         var me = this,
@@ -101,10 +97,13 @@ Ext.define('Ext.ux.TreePicker', {
         if (Ext.isIE9 && Ext.isStrict) {
             // In IE9 strict mode, the tree view grows by the height of the horizontal scroll bar when the items are highlighted or unhighlighted.
             // Also when items are collapsed or expanded the height of the view is off. Forcing a repaint fixes the problem.
-            view.on('highlightitem', me.repaintPickerView, me);
-            view.on('unhighlightitem', me.repaintPickerView, me);
-            view.on('afteritemexpand', me.repaintPickerView, me);
-            view.on('afteritemcollapse', me.repaintPickerView, me);
+            view.on({
+                scope: me,
+                highlightitem: me.repaintPickerView,
+                unhighlightitem: me.repaintPickerView,
+                afteritemexpand: me.repaintPickerView,
+                afteritemcollapse: me.repaintPickerView
+            });
         }
         return picker;
     },
@@ -133,7 +132,6 @@ Ext.define('Ext.ux.TreePicker', {
 
     /**
      * Aligns the picker to the input element
-     * @private
      */
     alignPicker: function() {
         var me = this,
@@ -185,7 +183,7 @@ Ext.define('Ext.ux.TreePicker', {
      */
     selectItem: function(record) {
         var me = this;
-        me.setValue(record.get('id'));
+        me.setValue(record.getId());
         me.picker.hide();
         me.inputEl.focus();
         me.fireEvent('select', me, record)
@@ -232,13 +230,22 @@ Ext.define('Ext.ux.TreePicker', {
             
         // try to find a record in the store that matches the value
         record = value ? me.store.getNodeById(value) : me.store.getRootNode();
+        if (value === undefined) {
+            record = me.store.getRootNode();
+            me.value = record.getId();
+        } else {
+            record = me.store.getNodeById(value);
+        }
 
         // set the raw value to the record's display field if a record was found
-        me.setRawValue(record ? record.get(this.displayField) : '');
+        me.setRawValue(record ? record.get(me.displayField) : '');
 
         return me;
     },
-
+    
+    getSubmitValue: function(){
+        return this.value;    
+    },
 
     /**
      * Returns the current data value of the field (the idProperty of the record)

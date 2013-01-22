@@ -26,8 +26,8 @@ Ext.define('Ext.grid.property.Store', {
 
     alternateClassName: 'Ext.grid.PropertyStore',
 
-    sortOnLoad: false,
-
+<span id='Ext-grid-property-Store-property-sortOnLoad'>    sortOnLoad: false,
+</span>
     uses: ['Ext.data.reader.Reader', 'Ext.data.proxy.Proxy', 'Ext.data.ResultSet', 'Ext.grid.property.Property'],
 
 <span id='Ext-grid-property-Store-method-constructor'>    /**
@@ -47,8 +47,8 @@ Ext.define('Ext.grid.property.Store', {
         }]);
     },
 
-    // Return a singleton, customized Proxy object which configures itself with a custom Reader
-    getProxy: function() {
+<span id='Ext-grid-property-Store-method-getProxy'>    // Return a singleton, customized Proxy object which configures itself with a custom Reader
+</span>    getProxy: function() {
         if (!this.proxy) {
             Ext.grid.property.Store.prototype.proxy = new Ext.data.proxy.Memory({
                 model: Ext.grid.property.Property,
@@ -58,8 +58,8 @@ Ext.define('Ext.grid.property.Store', {
         return this.proxy;
     },
 
-    // Return a singleton, customized Reader object which reads Ext.grid.property.Property records from an object.
-    getReader: function() {
+<span id='Ext-grid-property-Store-method-getReader'>    // Return a singleton, customized Reader object which reads Ext.grid.property.Property records from an object.
+</span>    getReader: function() {
         if (!this.reader) {
             Ext.grid.property.Store.prototype.reader = new Ext.data.reader.Reader({
                 model: Ext.grid.property.Property,
@@ -93,16 +93,17 @@ Ext.define('Ext.grid.property.Store', {
                     return new Ext.data.ResultSet(result);
                 },
 
-                // private
+                // @private
                 isEditableValue: function(val){
-                    return Ext.isPrimitive(val) || Ext.isDate(val);
+                    return Ext.isPrimitive(val) || Ext.isDate(val) || val === null;
                 }
             });
         }
         return this.reader;
     },
 
-    // protected - should only be called by the grid.  Use grid.setSource instead.
+<span id='Ext-grid-property-Store-method-setSource'>    // @protected
+</span>    // Should only be called by the grid.  Use grid.setSource instead.
     setSource : function(dataObject) {
         var me = this;
 
@@ -116,13 +117,13 @@ Ext.define('Ext.grid.property.Store', {
         me.fireEvent('refresh', me);
     },
 
-    // private
-    getProperty : function(row) {
+<span id='Ext-grid-property-Store-method-getProperty'>    // @private
+</span>    getProperty : function(row) {
        return Ext.isNumber(row) ? this.getAt(row) : this.getById(row);
     },
 
-    // private
-    setValue : function(prop, value, create){
+<span id='Ext-grid-property-Store-method-setValue'>    // @private
+</span>    setValue : function(prop, value, create){
         var me = this,
             rec = me.getRec(prop);
             
@@ -137,8 +138,8 @@ Ext.define('Ext.grid.property.Store', {
         }
     },
 
-    // private
-    remove : function(prop) {
+<span id='Ext-grid-property-Store-method-remove'>    // @private
+</span>    remove : function(prop) {
         var rec = this.getRec(prop);
         if (rec) {
             this.callParent([rec]);
@@ -146,12 +147,13 @@ Ext.define('Ext.grid.property.Store', {
         }
     },
 
-    // private
-    getRec : function(prop) {
+<span id='Ext-grid-property-Store-method-getRec'>    // @private
+</span>    getRec : function(prop) {
         return this.getById(prop);
     },
 
-    // protected - should only be called by the grid.  Use grid.getSource instead.
+<span id='Ext-grid-property-Store-method-getSource'>    // @protected
+</span>    // Should only be called by the grid.  Use grid.getSource instead.
     getSource : function() {
         return this.source;
     }

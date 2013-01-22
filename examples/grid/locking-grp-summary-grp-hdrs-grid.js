@@ -116,7 +116,7 @@ Ext.onReady(function(){
             header: 'Schedule',
             columns: [{
                 header: 'Due Date',
-                width: 130,
+                width: 125,
                 sortable: true,
                 dataIndex: 'due',
                 summaryType: 'max',
@@ -127,7 +127,7 @@ Ext.onReady(function(){
                 }
             }, {
                 header: 'Estimate',
-                width: 130,
+                width: 125,
                 sortable: true,
                 dataIndex: 'estimate',
                 summaryType: 'sum',
@@ -142,7 +142,7 @@ Ext.onReady(function(){
                 }
             }, {
                 header: 'Rate',
-                width: 130,
+                width: 125,
                 sortable: true,
                 renderer: Ext.util.Format.usMoney,
                 summaryRenderer: Ext.util.Format.usMoney,
@@ -153,7 +153,8 @@ Ext.onReady(function(){
                 }
             }, {
                 header: 'Cost',
-                width: 130,
+                width: 114,
+                flex: true,
                 sortable: false,
                 groupable: false,
                 renderer: function(value, metaData, record, rowIdx, colIdx, store, view) {

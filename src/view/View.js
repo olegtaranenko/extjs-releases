@@ -402,7 +402,7 @@ Ext.define('Ext.view.View', {
         return this.getTargetEl();
     },
 
-    // private
+    // @private
     afterRender: function(){
         var me = this;
         me.callParent();
@@ -562,21 +562,21 @@ Ext.define('Ext.view.View', {
         return type;
     },
 
-    // private
+    // @private
     onItemMouseEnter: function(record, item, index, e) {
         if (this.trackOver) {
             this.highlightItem(item);
         }
     },
 
-    // private
+    // @private
     onItemMouseLeave : function(record, item, index, e) {
         if (this.trackOver) {
             this.clearHighlight();
         }
     },
 
-    // @private, template methods
+    // private, template methods
     onItemMouseDown: Ext.emptyFn,
     onItemMouseUp: Ext.emptyFn,
     onItemFocus: Ext.emptyFn,
@@ -594,7 +594,7 @@ Ext.define('Ext.view.View', {
     onBeforeItemContextMenu: Ext.emptyFn,
     onBeforeItemKeyDown: Ext.emptyFn,
 
-    // @private, template methods
+    // private, template methods
     onContainerMouseDown: Ext.emptyFn,
     onContainerMouseUp: Ext.emptyFn,
     onContainerMouseOver: Ext.emptyFn,
@@ -612,7 +612,7 @@ Ext.define('Ext.view.View', {
     onBeforeContainerContextMenu: Ext.emptyFn,
     onBeforeContainerKeyDown: Ext.emptyFn,
 
-    //private
+    // @private
     setHighlightedItem: function(item){
         var me = this,
             highlighted = me.highlightedItem;
@@ -626,7 +626,6 @@ Ext.define('Ext.view.View', {
             me.highlightedItem = item;
 
             if (item) {
-                //console.log(item.viewIndex);
                 Ext.fly(item).addCls(me.overItemCls);
                 me.fireEvent('highlightitem', me, item);
             }
@@ -673,5 +672,47 @@ Ext.define('Ext.view.View', {
     refresh: function() {
         this.clearHighlight();
         this.callParent(arguments);
+    },
+    
+    /**
+     * Focuses a node in the view.
+     * @param {Ext.data.Model} rec The record associated to the node that is to be focused.
+     */
+    focusNode: function(rec){
+        var me          = this,
+            node        = me.getNode(rec),
+            el          = me.el,
+            adjustmentY = 0,
+            adjustmentX = 0,
+            elRegion    = el.getRegion(),
+            nodeRegion;
+
+        // Viewable region must not include scrollbars, so use
+        // DOM client dimensions
+        elRegion.bottom = elRegion.top + el.dom.clientHeight;
+        elRegion.right = elRegion.left + el.dom.clientWidth;
+        if (node) {
+            nodeRegion = Ext.fly(node).getRegion();
+            // node is above
+            if (nodeRegion.top < elRegion.top) {
+                adjustmentY = nodeRegion.top - elRegion.top;
+            // node is below
+            } else if (nodeRegion.bottom > elRegion.bottom) {
+                adjustmentY = nodeRegion.bottom - elRegion.bottom;
+            }
+
+            // node is left
+            if (nodeRegion.left < elRegion.left) {
+                adjustmentX = nodeRegion.left - elRegion.left;
+            // node is right
+            } else if (nodeRegion.right > elRegion.right) {
+                adjustmentX = nodeRegion.right - elRegion.right;
+            }
+
+            if (adjustmentX || adjustmentY) {
+                me.scrollBy(adjustmentX, adjustmentY, false);
+            }
+            el.focus();
+        }
     }
 });

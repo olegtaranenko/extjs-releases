@@ -75,7 +75,6 @@ Ext.onReady(function () {
     });
     
     var chart = Ext.create('Ext.chart.Chart', {
-            xtype: 'chart',
             animate: true,
             shadow: true,
             store: store1,

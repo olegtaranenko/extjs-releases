@@ -1,7 +1,5 @@
 /**
  * @author Nicolas Ferrero
- * @class Ext.ux.GroupTabPanel
- * @extends Ext.Container
  * A TabPanel with grouping support.
  */
 Ext.define('Ext.ux.GroupTabPanel', {

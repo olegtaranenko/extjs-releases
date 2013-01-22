@@ -15,7 +15,10 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext-Object'>/**
+  <pre class="prettyprint lang-js">//@tag foundation,core
+//@require Function.js
+
+<span id='Ext-Object'>/**
 </span> * @author Jacky Nguyen &lt;jacky@sencha.com&gt;
  * @docauthor Jacky Nguyen &lt;jacky@sencha.com&gt;
  * @class Ext.Object
@@ -186,8 +189,8 @@ var TemplateClass = function(){},
      *
      * Non-recursive:
      *
-     *     Ext.Object.fromQueryString(&quot;foo=1&amp;bar=2&quot;); // returns {foo: 1, bar: 2}
-     *     Ext.Object.fromQueryString(&quot;foo=&amp;bar=2&quot;); // returns {foo: null, bar: 2}
+     *     Ext.Object.fromQueryString(&quot;foo=1&amp;bar=2&quot;); // returns {foo: '1', bar: '2'}
+     *     Ext.Object.fromQueryString(&quot;foo=&amp;bar=2&quot;); // returns {foo: null, bar: '2'}
      *     Ext.Object.fromQueryString(&quot;some%20price=%24300&quot;); // returns {'some price': '$300'}
      *     Ext.Object.fromQueryString(&quot;colors=red&amp;colors=green&amp;colors=blue&quot;); // returns {colors: ['red', 'green', 'blue']}
      *

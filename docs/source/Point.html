@@ -32,10 +32,11 @@ Ext.define('Ext.util.Point', {
 <span id='Ext-util-Point-static-method-fromEvent'>        /**
 </span>         * Returns a new instance of Ext.util.Point base on the pageX / pageY values of the given event
          * @static
-         * @param {Event} e The event
+         * @param {Ext.EventObject/Event} e The event
          * @return {Ext.util.Point}
          */
         fromEvent: function(e) {
+            e = e.browserEvent || e;
             e = (e.changedTouches &amp;&amp; e.changedTouches.length &gt; 0) ? e.changedTouches[0] : e;
             return new this(e.pageX, e.pageY);
         }

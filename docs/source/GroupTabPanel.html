@@ -17,8 +17,6 @@
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-ux-GroupTabPanel'>/**
 </span> * @author Nicolas Ferrero
- * @class Ext.ux.GroupTabPanel
- * @extends Ext.Container
  * A TabPanel with grouping support.
  */
 Ext.define('Ext.ux.GroupTabPanel', {
@@ -32,10 +30,10 @@ Ext.define('Ext.ux.GroupTabPanel', {
         'Ext.layout.*'
     ],
 
-    baseCls : Ext.baseCSSPrefix + 'grouptabpanel',
-
-    initComponent: function(config) {
-        var me = this;
+<span id='Ext-ux-GroupTabPanel-property-baseCls'>    baseCls : Ext.baseCSSPrefix + 'grouptabpanel',
+</span>
+<span id='Ext-ux-GroupTabPanel-method-initComponent'>    initComponent: function(config) {
+</span>        var me = this;
 
         Ext.apply(me, config);
 
@@ -168,8 +166,8 @@ Ext.define('Ext.ux.GroupTabPanel', {
         me.mon(me.down('treepanel').getSelectionModel(), 'select', me.onNodeSelect, me);
     },
 
-    getRowClass: function(node, rowIndex, rowParams, store) {
-        var cls = '';
+<span id='Ext-ux-GroupTabPanel-method-getRowClass'>    getRowClass: function(node, rowIndex, rowParams, store) {
+</span>        var cls = '';
         if (node.data.activeGroup) {
            cls += ' x-active-group';
         }
@@ -360,8 +358,8 @@ Ext.define('Ext.ux.GroupTabPanel', {
 Ext.define('Ext.ux.GroupTreeChunker', {
     singleton: true,
     requires: ['Ext.XTemplate'],
-    metaTableTpl: [
-        '{%if (this.openTableWrap)out.push(this.openTableWrap())%}',
+<span id='Ext-ux-GroupTreeChunker-property-metaTableTpl'>    metaTableTpl: [
+</span>        '{%if (this.openTableWrap)out.push(this.openTableWrap())%}',
         '&lt;table class=&quot;' + Ext.baseCSSPrefix + 'grid-table-resizer&quot; border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; {[this.embedFullWidth(values)]}&gt;&lt;tr&gt;&lt;td&gt;',
             '{[this.openRows()]}',
                 '{row}',
@@ -370,14 +368,14 @@ Ext.define('Ext.ux.GroupTreeChunker', {
         '{%if (this.closeTableWrap)out.push(this.closeTableWrap())%}'
     ],
 
-    constructor: function() {
-        Ext.XTemplate.prototype.recurse = function(values, reference) {
+<span id='Ext-ux-GroupTreeChunker-method-constructor'>    constructor: function() {
+</span>        Ext.XTemplate.prototype.recurse = function(values, reference) {
             return this.apply(reference ? values[reference] : values);
         };
     },
 
-    embedFullWidth: function(values) {
-        var result = 'style=&quot;width:{fullWidth}px;';
+<span id='Ext-ux-GroupTreeChunker-method-embedFullWidth'>    embedFullWidth: function(values) {
+</span>        var result = 'style=&quot;width:{fullWidth}px;';
 
         // If there are no records, we need to give the table a height so that it
         // is displayed and causes q scrollbar if the width exceeds the View's width.
@@ -387,16 +385,16 @@ Ext.define('Ext.ux.GroupTreeChunker', {
         return result + '&quot;';
     },
 
-    openRows: function() {
-        return '&lt;tpl for=&quot;rows&quot;&gt;';
+<span id='Ext-ux-GroupTreeChunker-method-openRows'>    openRows: function() {
+</span>        return '&lt;tpl for=&quot;rows&quot;&gt;';
     },
 
-    closeRows: function() {
-        return '&lt;/tpl&gt;';
+<span id='Ext-ux-GroupTreeChunker-method-closeRows'>    closeRows: function() {
+</span>        return '&lt;/tpl&gt;';
     },
 
-    metaRowTpl: [
-        '&lt;div class=&quot;' + Ext.baseCSSPrefix + 'grouptab-row {[this.embedRowCls()]}&quot; {[this.embedRowAttr()]}&gt;',
+<span id='Ext-ux-GroupTreeChunker-property-metaRowTpl'>    metaRowTpl: [
+</span>        '&lt;div class=&quot;' + Ext.baseCSSPrefix + 'grouptab-row {[this.embedRowCls()]}&quot; {[this.embedRowAttr()]}&gt;',
             '&lt;tpl for=&quot;columns&quot;&gt;',
                 '&lt;div class=&quot;{cls} ' + Ext.baseCSSPrefix + 'grouptab-cell ' + Ext.baseCSSPrefix + 'grid-cell-{columnId} {{id}-modified} {{id}-tdCls} {[this.firstOrLastCls(xindex, xcount)]}&quot; {{id}-tdAttr}&gt;',
                     '&lt;div {unselectableAttr} class=&quot;' + Ext.baseCSSPrefix + 'grid-cell-inner {unselectableCls}&quot; style=&quot;text-align: {align}; {{id}-style};&quot;&gt;{{id}}&lt;/div&gt;',
@@ -407,24 +405,24 @@ Ext.define('Ext.ux.GroupTreeChunker', {
         '&lt;/div&gt;'
     ],
 
-    firstOrLastCls: function(xindex, xcount) {
-        if (xindex === 1) {
+<span id='Ext-ux-GroupTreeChunker-method-firstOrLastCls'>    firstOrLastCls: function(xindex, xcount) {
+</span>        if (xindex === 1) {
             return Ext.view.Table.prototype.firstCls;
         } else if (xindex === xcount) {
             return Ext.view.Table.prototype.lastCls;
         }
     },
     
-    embedRowCls: function() {
-        return '{rowCls}';
+<span id='Ext-ux-GroupTreeChunker-method-embedRowCls'>    embedRowCls: function() {
+</span>        return '{rowCls}';
     },
     
-    embedRowAttr: function() {
-        return '{rowAttr}';
+<span id='Ext-ux-GroupTreeChunker-method-embedRowAttr'>    embedRowAttr: function() {
+</span>        return '{rowAttr}';
     },
 
-    getTableTpl: function(cfg, textOnly) {
-        var tpl,
+<span id='Ext-ux-GroupTreeChunker-method-getTableTpl'>    getTableTpl: function(cfg, textOnly) {
+</span>        var tpl,
             tableTplMemberFns = {
                 openRows: this.openRows,
                 closeRows: this.closeRows,

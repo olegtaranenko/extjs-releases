@@ -29,16 +29,16 @@ Ext.define('Ext.chart.LegendItem', {
 
     /* End Definitions */
 
-    // Position of the item, relative to the upper-left corner of the legend box
-    x: 0,
-    y: 0,
-    zIndex: 500,
+<span id='Ext-chart-LegendItem-property-x'>    // Position of the item, relative to the upper-left corner of the legend box
+</span>    x: 0,
+<span id='Ext-chart-LegendItem-property-y'>    y: 0,
+</span><span id='Ext-chart-LegendItem-property-zIndex'>    zIndex: 500,
+</span>
+<span id='Ext-chart-LegendItem-property-boldRe'>    // checks to make sure that a unit size follows the bold keyword in the font style value
+</span>    boldRe: /bold\s\d{1,}.*/i,
 
-    // checks to make sure that a unit size follows the bold keyword in the font style value
-    boldRe: /bold\s\d{1,}.*/i,
-
-    constructor: function(config) {
-        this.callParent(arguments);
+<span id='Ext-chart-LegendItem-method-constructor'>    constructor: function(config) {
+</span>        this.callParent(arguments);
         this.createLegend(config);
     },
 

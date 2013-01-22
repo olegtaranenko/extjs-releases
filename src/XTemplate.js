@@ -95,6 +95,19 @@
  *         '</tpl></p>'
  *     );
  *     tpl.overwrite(panel.body, data);
+ *     
+ * The **foreach** operator is used to loop over an object's properties.  The following
+ * example demonstrates looping over the main data object's properties:
+ * 
+ *     var tpl = new Ext.XTemplate(
+ *         '<dl>',
+ *             '<tpl foreach=".">',
+ *                 '<dt>{$}</dt>', // the special **`{$}`** variable contains the property name
+ *                 '<dd>{.}</dd>', // within the loop, the **`{.}`** variable is set to the property value
+ *             '</tpl>',
+ *         '</dl>'
+ *     );
+ *     tpl.overwrite(panel.body, data);
  *
  * # Conditional processing with basic comparison operators
  *
@@ -193,8 +206,10 @@
  * - **values**: The values in the current scope. If you are using scope changing sub-templates,
  *   you can change what values is.
  * - **parent**: The scope (values) of the ancestor template.
- * - **xindex**: If you are in a looping template, the index of the loop you are in (1-based).
- * - **xcount**: If you are in a looping template, the total length of the array you are looping.
+ * - **xindex**: If you are in a "for" or "foreach" looping template, the index of the loop you are in (1-based).
+ * - **xcount**: If you are in a "for" looping template, the total length of the array you are looping.
+ * - **xkey**: If you are in a "foreach" looping template, the key of the current property
+ * being examined.
  *
  * This example demonstrates basic row striping using an inline code block and the xindex variable:
  *
@@ -272,6 +287,7 @@ Ext.define('Ext.XTemplate', {
      * @cfg {Boolean} compiled
      * Only applies to {@link Ext.Template}, XTemplates are compiled automatically on the
      * first call to {@link #apply} or {@link #applyOut}.
+     * @hide
      */
 
     /**
@@ -340,6 +356,7 @@ Ext.define('Ext.XTemplate', {
          * @param {String} name The name of the property by which to get the `XTemplate`.
          * @return {Ext.XTemplate} The `XTemplate` instance or null if not found.
          * @protected
+         * @static
          */
         getTpl: function (instance, name) {
             var tpl = instance[name], // go for it! 99% of the time we will get it!

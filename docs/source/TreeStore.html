@@ -87,6 +87,12 @@ Ext.define('Ext.data.TreeStore', {
      * The default root id.
      */
     defaultRootId: 'root',
+    
+<span id='Ext-data-TreeStore-cfg-defaultRootText'>    /**
+</span>     * @cfg {String} [defaultRootText=&quot;Root&quot;]
+     * The default root text (if not specified)/
+     */
+    defaultRootText: 'Root',
 
 <span id='Ext-data-TreeStore-cfg-defaultRootProperty'>    /**
 </span>     * @cfg {String} [defaultRootProperty=&quot;children&quot;]
@@ -94,17 +100,19 @@ Ext.define('Ext.data.TreeStore', {
      */
     defaultRootProperty: 'children',
     
-    // Keep a copy of the default so we know if it's been changed in a subclass/config
-    rootProperty: 'children',
-
+<span id='Ext-data-TreeStore-property-rootProperty'>    // Keep a copy of the default so we know if it's been changed in a subclass/config
+</span>    rootProperty: 'children',
+    
+<span id='Ext-data-TreeStore-property-fillCount'>    fillCount: 0,
+</span>
 <span id='Ext-data-TreeStore-cfg-folderSort'>    /**
 </span>     * @cfg {Boolean} [folderSort=false]
      * Set to true to automatically prepend a leaf sorter.
      */
     folderSort: false,
 
-    constructor: function(config) {
-        var me = this,
+<span id='Ext-data-TreeStore-method-constructor'>    constructor: function(config) {
+</span>        var me = this,
             root,
             fields,
             defaultRoot;
@@ -253,8 +261,8 @@ Ext.define('Ext.data.TreeStore', {
         //&lt;/deprecated&gt;
     },
 
-    // inherit docs
-    setProxy: function(proxy) {
+<span id='Ext-data-TreeStore-method-setProxy'>    // inherit docs
+</span>    setProxy: function(proxy) {
         var reader,
             needsRoot;
 
@@ -270,6 +278,12 @@ Ext.define('Ext.data.TreeStore', {
             needsRoot = !(reader &amp;&amp; !Ext.isEmpty(reader.root));
         }
         proxy = this.callParent(arguments);
+
+        // The proxy sets a parameter to carry the entity ID based upon the Operation's id
+        // That partameter name defaults to &quot;id&quot;.
+        // TreeStore however uses a nodeParam configuration to specify the entity id
+        proxy.idParam = this.nodeParam;
+
         if (needsRoot) {
             reader = proxy.getReader();
             reader.root = this.defaultRootProperty;
@@ -278,8 +292,8 @@ Ext.define('Ext.data.TreeStore', {
         }
     },
 
-    // inherit docs
-    onBeforeSort: function() {
+<span id='Ext-data-TreeStore-method-onBeforeSort'>    // inherit docs
+</span>    onBeforeSort: function() {
         if (this.folderSort) {
             this.sort({
                 property: 'leaf',
@@ -314,13 +328,13 @@ Ext.define('Ext.data.TreeStore', {
         }
     },
 
-    //inherit docs
-    getNewRecords: function() {
+<span id='Ext-data-TreeStore-method-getNewRecords'>    //inherit docs
+</span>    getNewRecords: function() {
         return Ext.Array.filter(this.tree.flatten(), this.filterNew);
     },
 
-    //inherit docs
-    getUpdatedRecords: function() {
+<span id='Ext-data-TreeStore-method-getUpdatedRecords'>    //inherit docs
+</span>    getUpdatedRecords: function() {
         return Ext.Array.filter(this.tree.flatten(), this.filterUpdated);
     },
 
@@ -335,10 +349,11 @@ Ext.define('Ext.data.TreeStore', {
         callback.call(scope || node, node.childNodes);
     },
 
-    onNodeRemove: function(parent, node, isMove) {
-        var me = this,
+<span id='Ext-data-TreeStore-method-onNodeRemove'>    onNodeRemove: function(parent, node, isMove) {
+</span>        var me = this,
             removed = me.removed;
 
+        node.unjoin(me);
         if (!node.isReplace &amp;&amp; Ext.Array.indexOf(removed, node) == -1) {
             removed.push(node);
         }
@@ -348,14 +363,15 @@ Ext.define('Ext.data.TreeStore', {
         }
     },
 
-    onNodeAdded: function(parent, node) {
-        var me = this,
+<span id='Ext-data-TreeStore-method-onNodeAdded'>    onNodeAdded: function(parent, node) {
+</span>        var me = this,
             proxy = me.getProxy(),
             reader = proxy.getReader(),
             data = node.raw || node[node.persistenceProperty],
             dataRoot;
 
         Ext.Array.remove(me.removed, node);
+        node.join(me);
 
         if (!node.isLeaf()) {
             dataRoot = reader.getRoot(data);
@@ -370,8 +386,8 @@ Ext.define('Ext.data.TreeStore', {
         }
     },
 
-    onNodeSort: function() {
-        if(this.autoSync &amp;&amp; !this.autoSyncSuspended) {
+<span id='Ext-data-TreeStore-method-onNodeSort'>    onNodeSort: function() {
+</span>        if(this.autoSync &amp;&amp; !this.autoSyncSuspended) {
             this.sync();
         }
     },
@@ -388,10 +404,11 @@ Ext.define('Ext.data.TreeStore', {
 
         root = root || {};
         if (!root.isModel) {
+            root = Ext.apply({}, root);
             // create a default rootNode and create internal data struct.
             Ext.applyIf(root, {
                 id: me.defaultRootId,
-                text: 'Root',
+                text: me.defaultRootText,
                 allowDrag: false
             });
             if (root[idProperty] === undefined) {
@@ -437,8 +454,8 @@ Ext.define('Ext.data.TreeStore', {
         return this.tree.getNodeById(id);
     },
     
-    // inherit docs
-    getById: function(id) {
+<span id='Ext-data-TreeStore-method-getById'>    // inherit docs
+</span>    getById: function(id) {
         return this.getNodeById(id);    
     },
 
@@ -463,8 +480,9 @@ Ext.define('Ext.data.TreeStore', {
                 expanded: true
             }, true);
         }
-
-        // Assign the ID of the Operation so that a REST proxy can create the correct URL
+        
+        // Assign the ID of the Operation so that a ServerProxy can set its idParam parameter,
+        // or a REST proxy can create the correct URL
         options.id = node.getId();
 
         if (me.clearOnLoad) {
@@ -483,7 +501,6 @@ Ext.define('Ext.data.TreeStore', {
         Ext.applyIf(options, {
             node: node
         });
-        options.params[me.nodeParam] = node ? node.getId() : 'root';
 
         if (node) {
             node.set('loading', true);
@@ -560,7 +577,7 @@ Ext.define('Ext.data.TreeStore', {
             i, sortCollection,
             needsIndexSort = false,
             performLocalSort = ln &amp;&amp; me.sortOnLoad &amp;&amp; !me.remoteSort &amp;&amp; sorters &amp;&amp; sorters.items &amp;&amp; sorters.items.length,
-            node1, node2;
+            node1, node2, rootFill;
 
         // See if there are any differing index values in the new nodes. If not, then we do not have to sortByIndex
         for (i = 1; i &lt; ln; i++) {
@@ -590,11 +607,37 @@ Ext.define('Ext.data.TreeStore', {
         }
 
         node.set('loaded', true);
+        
+        // Fill node gets called recursively (indirectly) as we're populating the
+        // nodes via a load or when appending a new child. As such, when we hit
+        // the top most node, we fire an event to let the view know we'll be doing
+        // a bulk operation so it can take appropriate action
+        rootFill = me.fillCount === 0;
+        if (rootFill) {
+            // internal event
+            me.fireEvent('beforefill', me, node, newNodes);
+        }
+        ++me.fillCount;
+        
         for (i = 0; i &lt; ln; i++) {
             node.appendChild(newNodes[i], undefined, true);
         }
-
+        
+        if (rootFill) {
+            // internal event
+            me.fireEvent('fillcomplete', me, node, newNodes);
+        }
+        --me.fillCount;
+        
         return newNodes;
+    },
+    
+<span id='Ext-data-TreeStore-method-beginBulkRemove'>    beginBulkRemove: function(){
+</span>        this.fireEvent('beforebulkremove', this);
+    },
+    
+<span id='Ext-data-TreeStore-method-endBulkRemove'>    endBulkRemove: function(){
+</span>        this.fireEvent('bulkremovecomplete', this);    
     },
 
 <span id='Ext-data-TreeStore-method-sortByIndex'>    /**
@@ -608,8 +651,8 @@ Ext.define('Ext.data.TreeStore', {
         return node1[node1.persistenceProperty].index - node2[node2.persistenceProperty].index;
     },
 
-    // inherit docs
-    onProxyLoad: function(operation) {
+<span id='Ext-data-TreeStore-method-onProxyLoad'>    // inherit docs
+</span>    onProxyLoad: function(operation) {
         var me = this,
             successful = operation.wasSuccessful(),
             records = operation.getRecords(),
@@ -640,8 +683,8 @@ Ext.define('Ext.data.TreeStore', {
         Ext.callback(operation.callback, operation.scope || me, [records, operation, successful]);
     },
     
-    onCreateRecords: function(records) {
-        this.callParent(arguments);
+<span id='Ext-data-TreeStore-method-onCreateRecords'>    onCreateRecords: function(records) {
+</span>        this.callParent(arguments);
         
         var i = 0,
             len = records.length,
@@ -655,8 +698,8 @@ Ext.define('Ext.data.TreeStore', {
         
     },
     
-    cleanRecords: function(node, records){
-        var nodeHash = {},
+<span id='Ext-data-TreeStore-method-cleanRecords'>    cleanRecords: function(node, records){
+</span>        var nodeHash = {},
             childNodes = node.childNodes,
             i = 0,
             len  = childNodes.length,
@@ -678,8 +721,8 @@ Ext.define('Ext.data.TreeStore', {
         return out;
     },
 
-    // inherit docs
-    removeAll: function() {
+<span id='Ext-data-TreeStore-method-removeAll'>    // inherit docs
+</span>    removeAll: function() {
         var root = this.getRootNode();
         if (root) {
             root.destroy(true);
@@ -687,8 +730,8 @@ Ext.define('Ext.data.TreeStore', {
         this.fireEvent('clear', this);
     },
 
-    // inherit docs
-    doSort: function(sorterFn) {
+<span id='Ext-data-TreeStore-method-doSort'>    // inherit docs
+</span>    doSort: function(sorterFn) {
         var me = this;
         if (me.remoteSort) {
             //the load function will pick up the new sorters and request the sorted data from the proxy
@@ -698,7 +741,7 @@ Ext.define('Ext.data.TreeStore', {
             me.fireEvent('datachanged', me);
             me.fireEvent('refresh', me);
         }
-        me.fireEvent('sort', me);
+        me.fireEvent('sort', me, me.sorters.getRange());
     }
 }, function() {
     var proto = this.prototype;

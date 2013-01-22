@@ -47,8 +47,8 @@ Ext.define('Ext.selection.RowModel', {
      */
     ignoreRightMouseSelection: false,
 
-    constructor: function() {
-        this.addEvents(
+<span id='Ext-selection-RowModel-method-constructor'>    constructor: function() {
+</span>        this.addEvents(
 <span id='Ext-selection-RowModel-event-beforedeselect'>            /**
 </span>             * @event beforedeselect
              * Fired before a record is deselected. If any listener returns false, the
@@ -91,8 +91,8 @@ Ext.define('Ext.selection.RowModel', {
         this.callParent(arguments);
     },
 
-    bindComponent: function(view) {
-        var me = this;
+<span id='Ext-selection-RowModel-method-bindComponent'>    bindComponent: function(view) {
+</span>        var me = this;
 
         me.views = me.views || [];
         me.views.push(view);
@@ -108,8 +108,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    initKeyNav: function(view) {
-        var me = this;
+<span id='Ext-selection-RowModel-method-initKeyNav'>    initKeyNav: function(view) {
+</span>        var me = this;
 
         if (!view.rendered) {
             view.on('render', Ext.Function.bind(me.initKeyNav, me, [view], 0), me, {single: true});
@@ -145,9 +145,23 @@ Ext.define('Ext.selection.RowModel', {
             scope: me
         });
     },
+    
+<span id='Ext-selection-RowModel-method-onUpdate'>    onUpdate: function(record) {
+</span>        var me = this,
+            view = me.view,
+            index;
+        
+        if (view &amp;&amp; me.isSelected(record)) {
+            index = me.store.indexOf(record);
+            view.onRowSelect(index);
+            if (record === me.lastFocused) {
+                view.onRowFocus(index, true);
+            }
+        }
+    },
 
-    // Returns the number of rows currently visible on the screen or
-    // false if there were no rows. This assumes that all rows are
+<span id='Ext-selection-RowModel-method-getRowsVisible'>    // Returns the number of rows currently visible on the screen or
+</span>    // false if there were no rows. This assumes that all rows are
     // of the same height and the first view is accurate.
     getRowsVisible: function() {
         var rowsVisible = false,
@@ -164,8 +178,8 @@ Ext.define('Ext.selection.RowModel', {
         return rowsVisible;
     },
 
-    // go to last visible record in grid.
-    onKeyEnd: function(e) {
+<span id='Ext-selection-RowModel-method-onKeyEnd'>    // go to last visible record in grid.
+</span>    onKeyEnd: function(e) {
         var me = this,
             last = me.store.getAt(me.store.getCount() - 1);
 
@@ -181,8 +195,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    // go to first visible record in grid.
-    onKeyHome: function(e) {
+<span id='Ext-selection-RowModel-method-onKeyHome'>    // go to first visible record in grid.
+</span>    onKeyHome: function(e) {
         var me = this,
             first = me.store.getAt(0);
 
@@ -198,8 +212,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    // Go one page up from the lastFocused record in the grid.
-    onKeyPageUp: function(e) {
+<span id='Ext-selection-RowModel-method-onKeyPageUp'>    // Go one page up from the lastFocused record in the grid.
+</span>    onKeyPageUp: function(e) {
         var me = this,
             rowsVisible = me.getRowsVisible(),
             selIdx,
@@ -226,8 +240,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    // Go one page down from the lastFocused record in the grid.
-    onKeyPageDown: function(e) {
+<span id='Ext-selection-RowModel-method-onKeyPageDown'>    // Go one page down from the lastFocused record in the grid.
+</span>    onKeyPageDown: function(e) {
         var me = this,
             rowsVisible = me.getRowsVisible(),
             selIdx,
@@ -255,8 +269,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    // Select/Deselect based on pressing Spacebar.
-    // Assumes a SIMPLE selectionmode style
+<span id='Ext-selection-RowModel-method-onKeySpace'>    // Select/Deselect based on pressing Spacebar.
+</span>    // Assumes a SIMPLE selectionmode style
     onKeySpace: function(e) {
         var me = this,
             record = me.lastFocused;
@@ -270,10 +284,10 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
     
-    onKeyEnter: Ext.emptyFn,
-
-    // Navigate one record up. This could be a selection or
-    // could be simply focusing a record for discontiguous
+<span id='Ext-selection-RowModel-method-onKeyEnter'>    onKeyEnter: Ext.emptyFn,
+</span>
+<span id='Ext-selection-RowModel-method-onKeyUp'>    // Navigate one record up. This could be a selection or
+</span>    // could be simply focusing a record for discontiguous
     // selection. Provides bounds checking.
     onKeyUp: function(e) {
         var me = this,
@@ -310,8 +324,8 @@ Ext.define('Ext.selection.RowModel', {
         //}
     },
 
-    // Navigate one record down. This could be a selection or
-    // could be simply focusing a record for discontiguous
+<span id='Ext-selection-RowModel-method-onKeyDown'>    // Navigate one record down. This could be a selection or
+</span>    // could be simply focusing a record for discontiguous
     // selection. Provides bounds checking.
     onKeyDown: function(e) {
         var me = this,
@@ -348,8 +362,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    scrollByDeltaX: function(delta) {
-        var view    = this.views[0],
+<span id='Ext-selection-RowModel-method-scrollByDeltaX'>    scrollByDeltaX: function(delta) {
+</span>        var view    = this.views[0],
             section = view.up(),
             hScroll = section.horizontalScroller;
 
@@ -358,16 +372,16 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    onKeyLeft: function(e) {
-        this.scrollByDeltaX(-this.deltaScroll);
+<span id='Ext-selection-RowModel-method-onKeyLeft'>    onKeyLeft: function(e) {
+</span>        this.scrollByDeltaX(-this.deltaScroll);
     },
 
-    onKeyRight: function(e) {
-        this.scrollByDeltaX(this.deltaScroll);
+<span id='Ext-selection-RowModel-method-onKeyRight'>    onKeyRight: function(e) {
+</span>        this.scrollByDeltaX(this.deltaScroll);
     },
 
-    // Select the record with the event included so that
-    // we can take into account ctrlKey, shiftKey, etc
+<span id='Ext-selection-RowModel-method-onRowMouseDown'>    // Select the record with the event included so that
+</span>    // we can take into account ctrlKey, shiftKey, etc
     onRowMouseDown: function(view, record, item, index, e) {
         if (!this.allowRightMouseSelection(e)) {
             return;
@@ -393,8 +407,8 @@ Ext.define('Ext.selection.RowModel', {
         return !disallow;
     },
 
-    // Allow the GridView to update the UI by
-    // adding/removing a CSS class from the row.
+<span id='Ext-selection-RowModel-method-onSelectChange'>    // Allow the GridView to update the UI by
+</span>    // adding/removing a CSS class from the row.
     onSelectChange: function(record, isSelected, suppressEvent, commitFn) {
         var me      = this,
             views   = me.views,
@@ -421,8 +435,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    // Provide indication of what row was last focused via
-    // the gridview.
+<span id='Ext-selection-RowModel-method-onLastFocusChanged'>    // Provide indication of what row was last focused via
+</span>    // the gridview.
     onLastFocusChanged: function(oldFocused, newFocused, supressFocus) {
         var views   = this.views,
             viewsLn = views.length,
@@ -450,8 +464,8 @@ Ext.define('Ext.selection.RowModel', {
         this.callParent();
     },
 
-    onEditorTab: function(editingPlugin, e) {
-        var me = this,
+<span id='Ext-selection-RowModel-method-onEditorTab'>    onEditorTab: function(editingPlugin, e) {
+</span>        var me = this,
             view = me.views[0],
             record = editingPlugin.getActiveRecord(),
             header = editingPlugin.getActiveColumn(),
@@ -460,7 +474,7 @@ Ext.define('Ext.selection.RowModel', {
 
         do {
             position  = view.walkCells(position, direction, e, me.preventWrap);
-        } while(position &amp;&amp; !view.headerCt.getHeaderAtIndex(position.column).getEditor());
+        } while(position &amp;&amp; !view.headerCt.getHeaderAtIndex(position.column).getEditor(record));
 
         if (position) {
             editingPlugin.startEditByPosition(position);
@@ -481,8 +495,8 @@ Ext.define('Ext.selection.RowModel', {
         }
     },
 
-    selectByPosition: function(position) {
-        var record = this.store.getAt(position.row);
+<span id='Ext-selection-RowModel-method-selectByPosition'>    selectByPosition: function(position) {
+</span>        var record = this.store.getAt(position.row);
         this.select(record);
     },
 

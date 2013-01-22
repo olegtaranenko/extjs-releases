@@ -48,8 +48,8 @@ Ext.define('Ext.Img', {
     extend: 'Ext.Component',
     alias: ['widget.image', 'widget.imagecomponent'],
 
-    autoEl: 'img',
-
+<span id='Ext-Img-property-autoEl'>    autoEl: 'img',
+</span>
 <span id='Ext-Img-cfg-src'>    /**
 </span>     * @cfg {String} src
      * The image src.
@@ -62,14 +62,20 @@ Ext.define('Ext.Img', {
      */
     alt: '',
 
+<span id='Ext-Img-cfg-title'>    /**
+</span>     * @cfg {String} title
+     * Specifies addtional information about the image.
+     */
+    title: '',
+
 <span id='Ext-Img-cfg-imgCls'>    /**
 </span>     * @cfg {String} imgCls
      * Optional CSS classes to add to the img element.
      */
     imgCls: '',
 
-    getElConfig: function() {
-        var me = this,
+<span id='Ext-Img-method-getElConfig'>    getElConfig: function() {
+</span>        var me = this,
             config = me.callParent(),
             img;
 
@@ -89,15 +95,19 @@ Ext.define('Ext.Img', {
         }
 
         img.src = me.src || Ext.BLANK_IMAGE_URL;
+
         if (me.alt) {
             img.alt = me.alt;
+        }
+        if (me.title) {
+            img.title = me.title;
         }
 
         return config;
     },
 
-    onRender: function () {
-        var me = this,
+<span id='Ext-Img-method-onRender'>    onRender: function () {
+</span>        var me = this,
             el;
 
         me.callParent(arguments);
@@ -106,8 +116,8 @@ Ext.define('Ext.Img', {
         me.imgEl = (me.autoEl == 'img') ? el : el.getById(me.id + '-img');
     },
 
-    onDestroy: function () {
-        Ext.destroy(this.imgEl);
+<span id='Ext-Img-method-onDestroy'>    onDestroy: function () {
+</span>        Ext.destroy(this.imgEl);
         this.imgEl = null;
         this.callParent();
     },

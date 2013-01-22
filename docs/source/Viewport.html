@@ -126,12 +126,12 @@ Ext.define('Ext.container.Viewport', {
      */
     isViewport: true,
 
-    ariaRole: 'application',
-    
-    preserveElOnDestroy: true,
-
-    initComponent : function() {
-        var me = this,
+<span id='Ext-container-Viewport-property-ariaRole'>    ariaRole: 'application',
+</span>    
+<span id='Ext-container-Viewport-property-preserveElOnDestroy'>    preserveElOnDestroy: true,
+</span>
+<span id='Ext-container-Viewport-method-initComponent'>    initComponent : function() {
+</span>        var me = this,
             html = document.body.parentNode,
             el;
 
@@ -156,8 +156,8 @@ Ext.define('Ext.container.Viewport', {
         me.renderTo = me.el;
     },
     
-    onRender: function() {
-        var me = this;
+<span id='Ext-container-Viewport-method-onRender'>    onRender: function() {
+</span>        var me = this;
 
         me.callParent(arguments);
 
@@ -167,8 +167,8 @@ Ext.define('Ext.container.Viewport', {
         me.height = Ext.Element.getViewportHeight();
     },
 
-    afterFirstLayout: function() {
-        var me = this;
+<span id='Ext-container-Viewport-method-afterFirstLayout'>    afterFirstLayout: function() {
+</span>        var me = this;
 
         me.callParent(arguments);
         setTimeout(function() {
@@ -176,8 +176,8 @@ Ext.define('Ext.container.Viewport', {
         }, 1);
     },
 
-    fireResize : function(width, height){
-        // In IE we can get resize events that have our current size, so we ignore them
+<span id='Ext-container-Viewport-method-fireResize'>    fireResize : function(width, height){
+</span>        // In IE we can get resize events that have our current size, so we ignore them
         // to avoid the useless layout...
         if (width != this.width || height != this.height) {
             this.setSize(width, height);

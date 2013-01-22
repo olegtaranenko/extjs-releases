@@ -84,6 +84,8 @@ Ext.onReady(function() {
         store: store,
         columnLines: true,
         columns: [{
+            xtype: 'rownumberer'
+        }, {
             text     : 'Company<br>Name', // Two line header! Test header height synchronization!
             locked   : true,
             width    : 200,
@@ -91,6 +93,7 @@ Ext.onReady(function() {
             dataIndex: 'company'
         },{
             text     : 'Price',
+            lockable: false,
             width    : 125,
             sortable : true,
             renderer : 'usMoney',

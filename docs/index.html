@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Sencha Docs - Ext JS 4.1</title>
+  <title>Ext JS 4.1.2 - Sencha Docs</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   <meta name="fragment" content="!">
@@ -9,48 +9,23 @@
   <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
   <link rel="stylesheet" href="resources/css/app.css" type="text/css" />
   <link rel="stylesheet" href="resources/prettify/prettify.css" type="text/css" />
-
-  <!-- Async script to not block while loading TypeKit fonts -->
-  <!-- TypeKit font-set is only registered for sencha.com and localhost -->
   <script type="text/javascript">
-  (function() {
-    if (/sencha.com$|localhost$/.test(window.location.hostname)) {
-      var TypekitConfig = {
-        kitId: 'uxj6dew'
-      };
-      var tk = document.createElement('script');
-      tk.src = '//use.typekit.com/' + TypekitConfig.kitId + '.js';
-      tk.type = 'text/javascript';
-      tk.async = 'true';
-      tk.onload = tk.onreadystatechange = function() {
-        var rs = this.readyState;
-        if (rs && rs != 'complete' && rs != 'loaded') return;
-        try { Typekit.load(TypekitConfig); } catch (e) {}
-      };
-      var s = document.getElementsByTagName('script')[0];
-      s.parentNode.insertBefore(tk, s);
-    }
-  })();
+  document.write("<link href='"+document.location.protocol+"//fonts.googleapis.com/css?family=Exo' rel='stylesheet' type='text/css' />");
   </script>
 
-  <script type="text/javascript" src="../ext.js"></script>
+  <script type="text/javascript" src="extjs/ext-all.js"></script>
   <script type="text/javascript" src="data.js"></script>
   <script type="text/javascript" src="app.js"></script>
   <script type="text/javascript" src="resources/prettify/prettify.js"></script>
 
-  <link rel='canonical' href='http://docs.sencha.com/ext-js/4-1/' /><meta name='description' content='Ext JS 4.1 API Documentation from Sencha. Class documentation, Guides and Videos on how to create Javascript applications with Ext JS 4' />
+  <link rel='canonical' href='http://docs.sencha.com/ext-js/4-1/' /><meta name='description' content='Ext JS 4.1.2 API Documentation from Sencha. Class documentation, Guides and Videos on how to create Javascript applications with Ext JS 4' />
 
 </head>
 <body id="ext-body">
 
   <div id="loading"><span class="title"></span><span class="logo"></span></div>
 
-  <form id="history-form" class="x-hide-display">
-      <input type="hidden" id="x-history-field" />
-      <iframe id="x-history-frame"></iframe>
-  </form>
-
-  <div id="header-content"><strong>Sencha Docs </strong>Ext JS 4.1</div>
+  <div id="header-content"><strong>Ext JS 4.1.2 </strong>Sencha Docs</div>
   <div id='welcome-content' style='display:none'><div id="extjs-welcome">
 <div class="content">
     <header>
@@ -97,6 +72,8 @@
 <div class="news">
     <div class="l">
         <h1>SDK Updates</h1>
+        <div class="item"><span class="date">Sep 8 2012</span> Ext 4.1.2 Released (support subscribers only)</div>
+        <div class="item"><span class="date">Jul 5 2012</span> Ext 4.1.1 Released</div>
         <div class="item"><span class="date">Apr 24 2012</span> Ext 4.1.0 Released</div>
         <div class="item"><span class="date">Oct 19 2011</span> Ext 4.0.7 Released</div>
         <div class="item"><span class="date">Aug 30 2011</span> Ext 4.0.6 Released (support subscribers only)</div>
@@ -150,10 +127,10 @@
 <div class='right-column'>
 <h3>DOM & Browser</h3>
 <div class='links'>
-<a href="#!/api/Ext.dom.AbstractElement.Fly" rel="Ext.dom.AbstractElement.Fly" class="docClass">Ext.dom.AbstractElement.Fly</a>
 <a href="#!/api/Ext.dom.CompositeElement" rel="Ext.dom.CompositeElement" class="docClass">Ext.dom.CompositeElement</a>
 <a href="#!/api/Ext.dom.CompositeElementLite" rel="Ext.dom.CompositeElementLite" class="docClass">Ext.dom.CompositeElementLite</a>
 <a href="#!/api/Ext.dom.Element" rel="Ext.dom.Element" class="docClass">Ext.dom.Element</a>
+<a href="#!/api/Ext.dom.Element.Fly" rel="Ext.dom.Element.Fly" class="docClass">Ext.dom.Element.Fly</a>
 <a href="#!/api/Ext.dom.Query" rel="Ext.dom.Query" class="docClass">Ext.dom.Query</a>
 <a href="#!/api/Ext.DomHelper" rel="Ext.DomHelper" class="docClass">Ext.DomHelper</a>
 <a href="#!/api/Ext.fx.Anim" rel="Ext.fx.Anim" class="docClass">Ext.fx.Anim</a>
@@ -202,7 +179,6 @@
 <h3>Layouts</h3>
 <div class='links'>
 <a href="#!/api/Ext.layout.ClassList" rel="Ext.layout.ClassList" class="docClass">Ext.layout.ClassList</a>
-<a href="#!/api/Ext.layout.Context" rel="Ext.layout.Context" class="docClass">Ext.layout.Context</a>
 <a href="#!/api/Ext.layout.Layout" rel="Ext.layout.Layout" class="docClass">Ext.layout.Layout</a>
 <a href="#!/api/Ext.layout.SizeModel" rel="Ext.layout.SizeModel" class="docClass">Ext.layout.SizeModel</a>
 <a href="#!/api/Ext.layout.component.Auto" rel="Ext.layout.component.Auto" class="docClass">Ext.layout.component.Auto</a>
@@ -313,6 +289,7 @@
 <a href="#!/api/Ext.form.field.Display" rel="Ext.form.field.Display" class="docClass">Ext.form.field.Display</a>
 <a href="#!/api/Ext.form.field.Field" rel="Ext.form.field.Field" class="docClass">Ext.form.field.Field</a>
 <a href="#!/api/Ext.form.field.File" rel="Ext.form.field.File" class="docClass">Ext.form.field.File</a>
+<a href="#!/api/Ext.form.field.FileButton" rel="Ext.form.field.FileButton" class="docClass">Ext.form.field.FileButton</a>
 <a href="#!/api/Ext.form.field.Hidden" rel="Ext.form.field.Hidden" class="docClass">Ext.form.field.Hidden</a>
 <a href="#!/api/Ext.form.field.HtmlEditor" rel="Ext.form.field.HtmlEditor" class="docClass">Ext.form.field.HtmlEditor</a>
 <a href="#!/api/Ext.form.field.Number" rel="Ext.form.field.Number" class="docClass">Ext.form.field.Number</a>
@@ -469,8 +446,6 @@
 <a href="#!/api/Ext.data.SequentialIdGenerator" rel="Ext.data.SequentialIdGenerator" class="docClass">Ext.data.SequentialIdGenerator</a>
 <a href="#!/api/Ext.data.UuidGenerator" rel="Ext.data.UuidGenerator" class="docClass">Ext.data.UuidGenerator</a>
 </div>
-</div>
-<div class='middle-column'>
 <h3>Data Readers & Writers</h3>
 <div class='links'>
 <a href="#!/api/Ext.data.reader.Array" rel="Ext.data.reader.Array" class="docClass">Ext.data.reader.Array</a>
@@ -480,9 +455,16 @@
 <a href="#!/api/Ext.data.writer.Json" rel="Ext.data.writer.Json" class="docClass">Ext.data.writer.Json</a>
 <a href="#!/api/Ext.data.writer.Writer" rel="Ext.data.writer.Writer" class="docClass">Ext.data.writer.Writer</a>
 <a href="#!/api/Ext.data.writer.Xml" rel="Ext.data.writer.Xml" class="docClass">Ext.data.writer.Xml</a>
+<a href="#!/api/Ext.data.amf.Reader" rel="Ext.data.amf.Reader" class="docClass">Ext.data.amf.Reader</a>
+<a href="#!/api/Ext.data.amf.Packet" rel="Ext.data.amf.Packet" class="docClass">Ext.data.amf.Packet</a>
+<a href="#!/api/Ext.data.soap.Reader" rel="Ext.data.soap.Reader" class="docClass">Ext.data.soap.Reader</a>
 </div>
+</div>
+<div class='middle-column'>
 <h3>Data Proxies</h3>
 <div class='links'>
+<a href="#!/api/Ext.data.amf.Proxy" rel="Ext.data.amf.Proxy" class="docClass">Ext.data.amf.Proxy</a>
+<a href="#!/api/Ext.data.soap.Proxy" rel="Ext.data.soap.Proxy" class="docClass">Ext.data.soap.Proxy</a>
 <a href="#!/api/Ext.data.proxy.Ajax" rel="Ext.data.proxy.Ajax" class="docClass">Ext.data.proxy.Ajax</a>
 <a href="#!/api/Ext.data.proxy.Direct" rel="Ext.data.proxy.Direct" class="docClass">Ext.data.proxy.Direct</a>
 <a href="#!/api/Ext.data.proxy.JsonP" rel="Ext.data.proxy.JsonP" class="docClass">Ext.data.proxy.JsonP</a>
@@ -574,14 +556,21 @@
 <div class='right-column'>
 <h3>Events</h3>
 <div class='links'>
-<a href="#!/api/Ext.TaskManager" rel="Ext.TaskManager" class="docClass">Ext.TaskManager</a>
 <a href="#!/api/Ext.EventManager" rel="Ext.EventManager" class="docClass">Ext.EventManager</a>
 <a href="#!/api/Ext.EventObject" rel="Ext.EventObject" class="docClass">Ext.EventObject</a>
 <a href="#!/api/Ext.util.ClickRepeater" rel="Ext.util.ClickRepeater" class="docClass">Ext.util.ClickRepeater</a>
 <a href="#!/api/Ext.util.DelayedTask" rel="Ext.util.DelayedTask" class="docClass">Ext.util.DelayedTask</a>
 <a href="#!/api/Ext.util.Observable" rel="Ext.util.Observable" class="docClass">Ext.util.Observable</a>
+<a href="#!/api/Ext.util.TaskManager" rel="Ext.util.TaskManager" class="docClass">Ext.util.TaskManager</a>
 <a href="#!/api/Ext.util.TaskRunner" rel="Ext.util.TaskRunner" class="docClass">Ext.util.TaskRunner</a>
 <a href="#!/api/Ext.util.TaskRunner.Task" rel="Ext.util.TaskRunner.Task" class="docClass">Ext.util.TaskRunner.Task</a>
+</div>
+<h3>Enumerations</h3>
+<div class='links'>
+<a href="#!/api/Ext.enums.Feature" rel="Ext.enums.Feature" class="docClass">Ext.enums.Feature</a>
+<a href="#!/api/Ext.enums.Layout" rel="Ext.enums.Layout" class="docClass">Ext.enums.Layout</a>
+<a href="#!/api/Ext.enums.Plugin" rel="Ext.enums.Plugin" class="docClass">Ext.enums.Plugin</a>
+<a href="#!/api/Ext.enums.Widget" rel="Ext.enums.Widget" class="docClass">Ext.enums.Widget</a>
 </div>
 </div>
 <div style='clear:both'></div>
@@ -595,6 +584,7 @@
 <a href="#!/api/Ext.ux.grid.TransformGrid" rel="Ext.ux.grid.TransformGrid" class="docClass">Ext.ux.grid.TransformGrid</a>
 <a href="#!/api/Ext.ux.grid.filter.BooleanFilter" rel="Ext.ux.grid.filter.BooleanFilter" class="docClass">Ext.ux.grid.filter.BooleanFilter</a>
 <a href="#!/api/Ext.ux.grid.filter.DateFilter" rel="Ext.ux.grid.filter.DateFilter" class="docClass">Ext.ux.grid.filter.DateFilter</a>
+<a href="#!/api/Ext.ux.grid.filter.DateTimeFilter" rel="Ext.ux.grid.filter.DateTimeFilter" class="docClass">Ext.ux.grid.filter.DateTimeFilter</a>
 <a href="#!/api/Ext.ux.grid.filter.Filter" rel="Ext.ux.grid.filter.Filter" class="docClass">Ext.ux.grid.filter.Filter</a>
 <a href="#!/api/Ext.ux.grid.filter.ListFilter" rel="Ext.ux.grid.filter.ListFilter" class="docClass">Ext.ux.grid.filter.ListFilter</a>
 <a href="#!/api/Ext.ux.grid.filter.NumericFilter" rel="Ext.ux.grid.filter.NumericFilter" class="docClass">Ext.ux.grid.filter.NumericFilter</a>
@@ -697,6 +687,21 @@
 <li><a href='#!/guide/forms'>The Form Package</a></li>
 <li><a href='#!/guide/theming'>Theming</a></li>
 </ul>
+<h3>Sencha Cmd</h3>
+<ul>
+<li><a href='#!/guide/command'>Introduction to Sencha Cmd</a></li>
+<li><a href='#!/guide/command_app'>Using Sencha Cmd with Ext JS</a></li>
+<li><a href='#!/guide/command_code'>Compiler-Friendly Code Guidelines</a></li>
+<li><a href='#!/guide/command_workspace'>Workspaces in Sencha Cmd</a></li>
+<li><a href='#!/guide/command_app_single'>Single-Page Ext JS Apps</a></li>
+<li><a href='#!/guide/command_app_multi'>Multi-Page Ext JS Apps</a></li>
+<li><a href='#!/guide/command_theme'>Building Themes for Ext JS</a></li>
+<li><a href='#!/guide/command_advanced'>Advanced Sencha Cmd</a></li>
+<li><a href='#!/guide/command_compiler'>Sencha Compiler Reference</a></li>
+<li><a href='#!/guide/command_ant'>Ant Integration</a></li>
+<li><a href='#!/guide/command_compiler_meta'>Generating Metadata</a></li>
+<li><a href='#!/guide/command_reference'>Sencha Cmd Reference</a></li>
+</ul>
 <h3>Tutorials</h3>
 <ul>
 <li><a href='#!/guide/mvc_pt1'>App Architecture Part 1</a></li>
@@ -707,9 +712,14 @@
 <li><a href='#!/guide/editable_grid'>Editable Grid + Node.js 1</a></li>
 <li><a href='#!/guide/editable_grid_pt2'>Editable Grid + Node.js 2</a></li>
 </ul>
+<h3>Enterprise</h3>
+<ul>
+<li><a href='#!/guide/amf'>Loading data from an AMF data source</a></li>
+<li><a href='#!/guide/soap'>Using SOAP Services in Ext JS</a></li>
+</ul>
         </div>
 
-  <div id='footer-content' style='display: none'>Ext JS 4.1.0 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> 3.9.0.pre. <a href='http://www.sencha.com/legal/terms-of-use/'>Terms of Use</a></div>
+  <div id='footer-content' style='display: none'>Ext JS 4.1.2 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> 4.0.1. <a href='http://www.sencha.com/legal/terms-of-use/'>Terms of Use</a></div>
 
   
 

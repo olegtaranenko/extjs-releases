@@ -1,40 +1,21 @@
 /*
-Ext JS 4.1 - JavaScript Library
-Copyright (c) 2006-2012, Sencha Inc.
-All rights reserved.
-licensing@sencha.com
+This file is part of Ext JS 4.1
 
-http://www.sencha.com/license
+Copyright (c) 2011-2012 Sencha Inc
 
-Open Source License
-------------------------------------------------------------------------------------------
-This version of Ext JS is licensed under the terms of the Open Source GPL 3.0 license. 
+Contact:  http://www.sencha.com/contact
 
-http://www.gnu.org/licenses/gpl.html
+Commercial Usage
+Licensees holding valid commercial licenses may use this file in accordance with the Commercial
+Software License Agreement provided with the Software or, alternatively, in accordance with the
+terms contained in a written agreement between you and Sencha.
 
-There are several FLOSS exceptions available for use with this release for
-open source applications that are distributed under a license other than GPL.
+If you are unsure which license is appropriate for your use, please contact the sales department
+at http://www.sencha.com/contact.
 
-* Open Source License Exception for Applications
-
-  http://www.sencha.com/products/floss-exception.php
-
-* Open Source License Exception for Development
-
-  http://www.sencha.com/products/ux-exception.php
-
-
-Alternate Licensing
-------------------------------------------------------------------------------------------
-Commercial and OEM Licenses are available for an alternate download of Ext JS.
-This is the appropriate option if you are creating proprietary applications and you are 
-not prepared to distribute and share the source code of your application under the 
-GPL v3 license. Please visit http://www.sencha.com/license for more details.
-
---
-
-This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT OF THIRD-PARTY INTELLECTUAL PROPERTY RIGHTS.  See the GNU General Public License for more details.
+Build date: 2012-10-25 15:13:53 (240477695016a85fb9ed1098fd5f8e116327fcc3)
 */
+
 //@tag foundation,core
 
 
@@ -107,6 +88,11 @@ Ext._startTime = new Date().getTime();
 
         
         emptyFn: emptyFn,
+        
+        
+        identityFn: function(o) {
+            return o;
+        },
 
         
         emptyString: new String(),
@@ -543,6 +529,10 @@ Ext.globalEval = Ext.global.execScript
         
         
         (function(){
+            
+            
+            
+            var Ext = this.Ext;
             eval($$code);
         }());
     };
@@ -556,7 +546,8 @@ Ext.globalEval = Ext.global.execScript
 (function() {
 
 
-var version = '4.1.1.1', Version;
+
+var version = '4.1.3.548', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         
@@ -790,6 +781,42 @@ Ext.String = (function() {
         };
 
     return {
+        
+        
+        insert: function(s, value, index) {
+            if (!s) {
+                return value;
+            }
+            
+            if (!value) {
+                return s;
+            }
+            
+            var len = s.length;
+            
+            if (!index && index !== 0) {
+                index = len;
+            }
+            
+            if (index < 0) {
+                index *= -1;
+                if (index >= len) {
+                    
+                    index = 0;
+                } else {
+                    index = len - index;
+                }
+            }
+            
+            if (index === 0) {
+                s = value + s;
+            } else if (index >= s.length) {
+                s += value;
+            } else {
+                s = s.substr(0, index) + value + s.substr(index);
+            }
+            return s;
+        },
 
         
         createVarName: function(s) {
@@ -1900,14 +1927,15 @@ Ext.Function = {
         var method = origFn;
         if (!Ext.isFunction(newFn)) {
             return origFn;
-        }
-        else {
+        } else {
+            returnValue = Ext.isDefined(returnValue) ? returnValue : null;
             return function() {
                 var me = this,
                     args = arguments;
+                    
                 newFn.target = me;
                 newFn.method = origFn;
-                return (newFn.apply(scope || me || Ext.global, args) !== false) ? origFn.apply(me || Ext.global, args) : returnValue || null;
+                return (newFn.apply(scope || me || Ext.global, args) !== false) ? origFn.apply(me || Ext.global, args) : returnValue;
             };
         }
     },
@@ -2399,19 +2427,141 @@ Ext.urlDecode = function() {
 
 
 
-(function() {
+Ext.Date = new function() {
+  var utilDate = this,
+      stripEscapeRe = /(\\.)/g,
+      hourInfoRe = /([gGhHisucUOPZ]|MS)/,
+      dateInfoRe = /([djzmnYycU]|MS)/,
+      slashRe = /\\/gi,
+      numberTokenRe = /\{(\d+)\}/g,
+      MSFormatRe = new RegExp('\\/Date\\(([-+])?(\\d+)(?:[+-]\\d{4})?\\)\\/'),
+      code = [
+        
+        "var me = this, dt, y, m, d, h, i, s, ms, o, O, z, zz, u, v, W, year, jan4, week1monday,",
+            "def = me.defaults,",
+            "from = Ext.Number.from,",
+            "results = String(input).match(me.parseRegexes[{0}]);", 
 
+        "if(results){",
+            "{1}",
 
+            "if(u != null){", 
+                "v = new Date(u * 1000);", 
+            "}else{",
+                
+                
+                
+                "dt = me.clearTime(new Date);",
 
+                "y = from(y, from(def.y, dt.getFullYear()));",
+                "m = from(m, from(def.m - 1, dt.getMonth()));",
+                "d = from(d, from(def.d, dt.getDate()));",
 
-function xf(format) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    return format.replace(/\{(\d+)\}/g, function(m, i) {
-        return args[i];
-    });
-}
+                "h  = from(h, from(def.h, dt.getHours()));",
+                "i  = from(i, from(def.i, dt.getMinutes()));",
+                "s  = from(s, from(def.s, dt.getSeconds()));",
+                "ms = from(ms, from(def.ms, dt.getMilliseconds()));",
 
-Ext.Date = {
+                "if(z >= 0 && y >= 0){",
+                    
+                    
+
+                    
+                    
+                    "v = me.add(new Date(y < 100 ? 100 : y, 0, 1, h, i, s, ms), me.YEAR, y < 100 ? y - 100 : 0);",
+
+                    
+                    "v = !strict? v : (strict === true && (z <= 364 || (me.isLeapYear(v) && z <= 365))? me.add(v, me.DAY, z) : null);",
+                "}else if(strict === true && !me.isValid(y, m + 1, d, h, i, s, ms)){", 
+                    "v = null;", 
+                "}else{",
+                    "if (W) {", 
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        "year = y || (new Date()).getFullYear(),",
+                        "jan4 = new Date(year, 0, 4, 0, 0, 0),",
+                        "week1monday = new Date(jan4.getTime() - ((jan4.getDay() - 1) * 86400000));",
+                        "v = Ext.Date.clearTime(new Date(week1monday.getTime() + ((W - 1) * 604800000)));",
+                    "} else {",
+                        
+                        
+                        "v = me.add(new Date(y < 100 ? 100 : y, m, d, h, i, s, ms), me.YEAR, y < 100 ? y - 100 : 0);",
+                    "}",
+                "}",
+            "}",
+        "}",
+
+        "if(v){",
+            
+            "if(zz != null){",
+                
+                "v = me.add(v, me.SECOND, -v.getTimezoneOffset() * 60 - zz);",
+            "}else if(o){",
+                
+                "v = me.add(v, me.MINUTE, -v.getTimezoneOffset() + (sn == '+'? -1 : 1) * (hr * 60 + mn));",
+            "}",
+        "}",
+
+        "return v;"
+      ].join('\n');
+
+  
+  
+  
+  function xf(format) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return format.replace(numberTokenRe, function(m, i) {
+          return args[i];
+      });
+  }
+
+  Ext.apply(utilDate, {
     
     now: Date.now || function() {
         return +new Date();
@@ -2461,9 +2611,22 @@ Ext.Date = {
         "MS": function(input, strict) {
             
             
-            var re = new RegExp('\\/Date\\(([-+])?(\\d+)(?:[+-]\\d{4})?\\)\\/'),
-                r = (input || '').match(re);
-            return r? new Date(((r[1] || '') + r[2]) * 1) : null;
+            var r = (input || '').match(MSFormatRe);
+            return r ? new Date(((r[1] || '') + r[2]) * 1) : null;
+        },
+        "time": function(input, strict) {
+            var num = parseInt(input, 10);
+            if (num || num === 0) {
+                return new Date(num);
+            }
+            return null;
+        },
+        "timestamp": function(input, strict) {
+            var num = parseInt(input, 10);
+            if (num || num === 0) {
+                return new Date(num * 1000);
+            }
+            return null;
         }
     },
     parseRegexes: [],
@@ -2473,6 +2636,12 @@ Ext.Date = {
         "MS": function() {
             
             return '\\/Date(' + this.getTime() + ')\\/';
+        },
+        "time": function(){
+            return this.getTime().toString();
+        },
+        "timestamp": function(){
+            return utilDate.format(this, 'U');
         }
     },
 
@@ -2589,34 +2758,22 @@ Ext.Date = {
     
 
     
-    formatContainsHourInfo : (function(){
-        var stripEscapeRe = /(\\.)/g,
-            hourInfoRe = /([gGhHisucUOPZ]|MS)/;
-        return function(format){
-            return hourInfoRe.test(format.replace(stripEscapeRe, ''));
-        };
-    }()),
+    formatContainsHourInfo : function(format){
+        return hourInfoRe.test(format.replace(stripEscapeRe, ''));
+    },
 
     
-    formatContainsDateInfo : (function(){
-        var stripEscapeRe = /(\\.)/g,
-            dateInfoRe = /([djzmnYycU]|MS)/;
-
-        return function(format){
-            return dateInfoRe.test(format.replace(stripEscapeRe, ''));
-        };
-    }()),
+    formatContainsDateInfo : function(format){
+        return dateInfoRe.test(format.replace(stripEscapeRe, ''));
+    },
     
     
-    unescapeFormat: (function() { 
-        var slashRe = /\\/gi;
-        return function(format) {
-            
-            
-            
-            return format.replace(slashRe, '');
-        }
-    }()),
+    unescapeFormat: function(format) {
+        
+        
+        
+        return format.replace(slashRe, '');
+    },
 
     
     formatCodes : {
@@ -2691,7 +2848,7 @@ Ext.Date = {
         if (p[format] == null) {
             utilDate.createParser(format);
         }
-        return p[format](input, Ext.isDefined(strict) ? strict : utilDate.useStrict);
+        return p[format].call(utilDate, input, Ext.isDefined(strict) ? strict : utilDate.useStrict);
     },
 
     
@@ -2735,107 +2892,44 @@ Ext.Date = {
     },
 
     
-    createParser : (function() {
-        var code = [
-            "var dt, y, m, d, h, i, s, ms, o, z, zz, u, v,",
-                "def = Ext.Date.defaults,",
-                "results = String(input).match(Ext.Date.parseRegexes[{0}]);", 
+    createParser : function(format) {
+        var regexNum = utilDate.parseRegexes.length,
+            currentGroup = 1,
+            calc = [],
+            regex = [],
+            special = false,
+            ch = "",
+            i = 0,
+            len = format.length,
+            atEnd = [],
+            obj;
 
-            "if(results){",
-                "{1}",
-
-                "if(u != null){", 
-                    "v = new Date(u * 1000);", 
-                "}else{",
-                    
-                    
-                    
-                    "dt = Ext.Date.clearTime(new Date);",
-
-                    
-                    "y = Ext.Number.from(y, Ext.Number.from(def.y, dt.getFullYear()));",
-                    "m = Ext.Number.from(m, Ext.Number.from(def.m - 1, dt.getMonth()));",
-                    "d = Ext.Number.from(d, Ext.Number.from(def.d, dt.getDate()));",
-
-                    
-                    "h  = Ext.Number.from(h, Ext.Number.from(def.h, dt.getHours()));",
-                    "i  = Ext.Number.from(i, Ext.Number.from(def.i, dt.getMinutes()));",
-                    "s  = Ext.Number.from(s, Ext.Number.from(def.s, dt.getSeconds()));",
-                    "ms = Ext.Number.from(ms, Ext.Number.from(def.ms, dt.getMilliseconds()));",
-
-                    "if(z >= 0 && y >= 0){",
-                        
-                        
-
-                        
-                        
-                        "v = Ext.Date.add(new Date(y < 100 ? 100 : y, 0, 1, h, i, s, ms), Ext.Date.YEAR, y < 100 ? y - 100 : 0);",
-
-                        
-                        "v = !strict? v : (strict === true && (z <= 364 || (Ext.Date.isLeapYear(v) && z <= 365))? Ext.Date.add(v, Ext.Date.DAY, z) : null);",
-                    "}else if(strict === true && !Ext.Date.isValid(y, m + 1, d, h, i, s, ms)){", 
-                        "v = null;", 
-                    "}else{",
-                        
-                        
-                        "v = Ext.Date.add(new Date(y < 100 ? 100 : y, m, d, h, i, s, ms), Ext.Date.YEAR, y < 100 ? y - 100 : 0);",
-                    "}",
-                "}",
-            "}",
-
-            "if(v){",
-                
-                "if(zz != null){",
-                    
-                    "v = Ext.Date.add(v, Ext.Date.SECOND, -v.getTimezoneOffset() * 60 - zz);",
-                "}else if(o){",
-                    
-                    "v = Ext.Date.add(v, Ext.Date.MINUTE, -v.getTimezoneOffset() + (sn == '+'? -1 : 1) * (hr * 60 + mn));",
-                "}",
-            "}",
-
-            "return v;"
-        ].join('\n');
-
-        return function(format) {
-            var regexNum = utilDate.parseRegexes.length,
-                currentGroup = 1,
-                calc = [],
-                regex = [],
-                special = false,
-                ch = "",
-                i = 0,
-                len = format.length,
-                atEnd = [],
-                obj;
-
-            for (; i < len; ++i) {
-                ch = format.charAt(i);
-                if (!special && ch == "\\") {
-                    special = true;
-                } else if (special) {
-                    special = false;
-                    regex.push(Ext.String.escape(ch));
-                } else {
-                    obj = utilDate.formatCodeToRegex(ch, currentGroup);
-                    currentGroup += obj.g;
-                    regex.push(obj.s);
-                    if (obj.g && obj.c) {
-                        if (obj.calcAtEnd) {
-                            atEnd.push(obj.c);
-                        } else {
-                            calc.push(obj.c);
-                        }
+        for (; i < len; ++i) {
+            ch = format.charAt(i);
+            if (!special && ch == "\\") {
+                special = true;
+            } else if (special) {
+                special = false;
+                regex.push(Ext.String.escape(ch));
+            } else {
+                obj = utilDate.formatCodeToRegex(ch, currentGroup);
+                currentGroup += obj.g;
+                regex.push(obj.s);
+                if (obj.g && obj.c) {
+                    if (obj.calcAtEnd) {
+                        atEnd.push(obj.c);
+                    } else {
+                        calc.push(obj.c);
                     }
                 }
             }
-            
-            calc = calc.concat(atEnd);
+        }
 
-            utilDate.parseRegexes[regexNum] = new RegExp("^" + regex.join('') + "$", 'i');
-            utilDate.parseFunctions[format] = Ext.functionFactory("input", "strict", xf(code, regexNum, calc.join('')));
-        };
-    }()),
+        calc = calc.concat(atEnd);
+
+        utilDate.parseRegexes[regexNum] = new RegExp("^" + regex.join('') + "$", 'i');
+        utilDate.parseFunctions[format] = Ext.functionFactory("input", "strict", xf(code, regexNum, calc.join('')));
+    },
 
     
     parseCodes : {
@@ -2888,14 +2982,14 @@ Ext.Date = {
             s:"(\\d{1,3})" 
         },
         W: {
-            g:0,
-            c:null,
-            s:"(?:\\d{2})" 
+            g:1,
+            c:"W = parseInt(results[{0}], 10);\n",
+            s:"(\\d{2})" 
         },
         F: function() {
             return {
                 g:1,
-                c:"m = parseInt(Ext.Date.getMonthNumber(results[{0}]), 10);\n", 
+                c:"m = parseInt(me.getMonthNumber(results[{0}]), 10);\n", 
                 s:"(" + utilDate.monthNames.join("|") + ")"
             };
         },
@@ -2925,8 +3019,11 @@ Ext.Date = {
             c:null,
             s:"(?:1|0)"
         },
-        o: function() {
-            return utilDate.formatCodeToRegex("Y");
+        o: { 
+            g: 1,
+            c: "y = parseInt(results[{0}], 10);\n",
+            s: "(\\d{4})" 
+
         },
         Y: {
             g:1,
@@ -2936,7 +3033,7 @@ Ext.Date = {
         y: {
             g:1,
             c:"var ty = parseInt(results[{0}], 10);\n"
-                + "y = ty > Ext.Date.y2kYear ? 1900 + ty : 2000 + ty;\n", 
+                + "y = ty > me.y2kYear ? 1900 + ty : 2000 + ty;\n", 
             s:"(\\d{1,2})"
         },
         
@@ -3274,44 +3371,73 @@ Ext.Date = {
     add : function(date, interval, value) {
         var d = Ext.Date.clone(date),
             Date = Ext.Date,
-            day;
+            day, decimalValue, base = 0;
         if (!interval || value === 0) {
             return d;
         }
 
-        switch(interval.toLowerCase()) {
-            case Ext.Date.MILLI:
-                d.setMilliseconds(d.getMilliseconds() + value);
-                break;
-            case Ext.Date.SECOND:
-                d.setSeconds(d.getSeconds() + value);
-                break;
-            case Ext.Date.MINUTE:
-                d.setMinutes(d.getMinutes() + value);
-                break;
-            case Ext.Date.HOUR:
-                d.setHours(d.getHours() + value);
-                break;
-            case Ext.Date.DAY:
-                d.setDate(d.getDate() + value);
-                break;
-            case Ext.Date.MONTH:
-                day = date.getDate();
-                if (day > 28) {
-                    day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.MONTH, value)).getDate());
-                }
-                d.setDate(day);
-                d.setMonth(date.getMonth() + value);
-                break;
-            case Ext.Date.YEAR:
-                day = date.getDate();
-                if (day > 28) {
-                    day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.YEAR, value)).getDate());
-                }
-                d.setDate(day);
-                d.setFullYear(date.getFullYear() + value);
-                break;
+        decimalValue = value - parseInt(value, 10);
+        value = parseInt(value, 10);
+
+        if (value) {
+            switch(interval.toLowerCase()) {
+                case Ext.Date.MILLI:
+                    d.setMilliseconds(d.getMilliseconds() + value);
+                    break;
+                case Ext.Date.SECOND:
+                    d.setSeconds(d.getSeconds() + value);
+                    break;
+                case Ext.Date.MINUTE:
+                    d.setMinutes(d.getMinutes() + value);
+                    break;
+                case Ext.Date.HOUR:
+                    d.setHours(d.getHours() + value);
+                    break;
+                case Ext.Date.DAY:
+                    d.setDate(d.getDate() + value);
+                    break;
+                case Ext.Date.MONTH:
+                    day = date.getDate();
+                    if (day > 28) {
+                        day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.MONTH, value)).getDate());
+                    }
+                    d.setDate(day);
+                    d.setMonth(date.getMonth() + value);
+                    break;
+                case Ext.Date.YEAR:
+                    day = date.getDate();
+                    if (day > 28) {
+                        day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.YEAR, value)).getDate());
+                    }
+                    d.setDate(day);
+                    d.setFullYear(date.getFullYear() + value);
+                    break;
+            }
         }
+
+        if (decimalValue) {
+            switch (interval.toLowerCase()) {
+                case Ext.Date.MILLI:    base = 1;               break;
+                case Ext.Date.SECOND:   base = 1000;            break;
+                case Ext.Date.MINUTE:   base = 1000*60;         break;
+                case Ext.Date.HOUR:     base = 1000*60*60;      break;
+                case Ext.Date.DAY:      base = 1000*60*60*24;   break;
+
+                case Ext.Date.MONTH:
+                    day = utilDate.getDaysInMonth(d);
+                    base = 1000*60*60*24*day;
+                    break;
+
+                case Ext.Date.YEAR:
+                    day = (utilDate.isLeapYear(d) ? 366 : 365);
+                    base = 1000*60*60*24*day;
+                    break;
+            }
+            if (base) {
+                d.setTime(d.getTime() + base * decimalValue); 
+            }
+        }
+
         return d;
     },
 
@@ -3324,7 +3450,7 @@ Ext.Date = {
     
     compat: function() {
         var nativeDate = window.Date,
-            p, u,
+            p,
             statics = ['useStrict', 'formatCodeToRegex', 'parseFunctions', 'parseRegexes', 'formatFunctions', 'y2kYear', 'MILLI', 'SECOND', 'MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR', 'defaults', 'dayNames', 'monthNames', 'monthNumbers', 'getShortMonthName', 'getShortDayName', 'getMonthNumber', 'formatCodes', 'isValid', 'parseDate', 'getFormatCode', 'createFormat', 'createParser', 'parseCodes'],
             proto = ['dateFormat', 'format', 'getTimezone', 'getGMTOffset', 'getDayOfYear', 'getWeekOfYear', 'isLeapYear', 'getFirstDayOfMonth', 'getLastDayOfMonth', 'getDaysInMonth', 'getSuffix', 'clone', 'isDST', 'clearTime', 'add', 'between'],
             sLen    = statics.length,
@@ -3347,11 +3473,8 @@ Ext.Date = {
             };
         }
     }
+  });
 };
-
-var utilDate = Ext.Date;
-
-}());
 
 //@tag foundation,core
 
@@ -3551,7 +3674,7 @@ var noArgs = [],
                 if (members.hasOwnProperty(name)) {
                     member = members[name];
 
-                    if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn) {
+                    if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                         member.$owner = this;
                         member.$name = name;
                     }
@@ -3565,7 +3688,7 @@ var noArgs = [],
 
         
         addMember: function(name, member) {
-            if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn) {
+            if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                 member.$owner = this;
                 member.$name = name;
             }
@@ -3632,6 +3755,8 @@ var noArgs = [],
                 for (name in members) { 
                     if (name == 'statics') {
                         statics = members[name];
+                    } else if (name == 'inheritableStatics'){
+                        me.addInheritableStatics(members[name]);
                     } else if (name == 'config') {
                         me.addConfig(members[name], true);
                     } else {
@@ -3649,7 +3774,7 @@ var noArgs = [],
                     if (members.hasOwnProperty(name)) {
                         member = members[name];
 
-                        if (typeof member == 'function' && !member.$className && member !== Ext.emptyFn) {
+                        if (typeof member == 'function' && !member.$className && member !== Ext.emptyFn && member !== Ext.identityFn) {
                             if (typeof member.$owner != 'undefined') {
                                 member = cloneFunction(member);
                             }
@@ -3681,8 +3806,8 @@ var noArgs = [],
 
             
             return (method = this.callParent.caller) && (method.$previous ||
-                ((method = method.$owner ? method : method.caller) &&
-                    method.$owner.superclass.self[method.$name])).apply(this, args || noArgs);
+                  ((method = method.$owner ? method : method.caller) &&
+                        method.$owner.superclass.self[method.$name])).apply(this, args || noArgs);
         },
 
         
@@ -3691,8 +3816,8 @@ var noArgs = [],
 
             
             return (method = this.callSuper.caller) &&
-                ((method = method.$owner ? method : method.caller) &&
-                    method.$owner.superclass.self[method.$name]).apply(this, args || noArgs);
+                    ((method = method.$owner ? method : method.caller) &&
+                      method.$owner.superclass.self[method.$name]).apply(this, args || noArgs);
         },
 
         
@@ -3728,6 +3853,7 @@ var noArgs = [],
             }
 
             prototype.mixins[name] = mixin;
+            return this;
         },
 
         
@@ -3821,8 +3947,8 @@ var noArgs = [],
             
             var method,
                 superMethod = (method = this.callSuper.caller) &&
-                    ((method = method.$owner ? method : method.caller) &&
-                        method.$owner.superclass[method.$name]);
+                        ((method = method.$owner ? method : method.caller) &&
+                          method.$owner.superclass[method.$name]);
 
 
             return superMethod.apply(this, args || noArgs);
@@ -4418,7 +4544,6 @@ var noArgs = [],
 
         return cls;
     };
-
 }());
 
 //@tag foundation,core
@@ -4872,7 +4997,7 @@ var noArgs = [],
                 Manager.processCreate(className, this, data);
             });
         },
-        
+
         processCreate: function(className, cls, clsData){
             var me = this,
                 postprocessor = clsData.postprocessors.shift(),
@@ -4945,7 +5070,7 @@ var noArgs = [],
 
             
             me.onCreated(classReady, me, overriddenClassName);
- 
+
             return me;
         },
 
@@ -5183,7 +5308,12 @@ var noArgs = [],
 
     
     Manager.registerPostprocessor('singleton', function(name, cls, data, fn) {
-        fn.call(this, name, new cls(), data);
+        if (data.singleton) {
+            fn.call(this, name, new cls(), data);
+        }
+        else {
+            return true;
+        }
         return false;
     });
 
@@ -5227,7 +5357,7 @@ var noArgs = [],
             } else {
                 config = config || {};
             }
-            
+
             if (config.isComponent) {
                 return config;
             }
@@ -5239,7 +5369,7 @@ var noArgs = [],
             if (!className) {
                 load = true;
             }
-            
+
             T = Manager.get(className);
             if (load || !T) {
                 return Manager.instantiateByAlias(alias, config);
@@ -5258,6 +5388,7 @@ var noArgs = [],
 
             return Manager.create.apply(Manager, arguments);
         },
+
 
         
         getClassName: alias(Manager, 'getName'),
@@ -5372,6 +5503,18 @@ var noArgs = [],
 
 }(Ext.Class, Ext.Function.alias, Array.prototype.slice, Ext.Array.from, Ext.global));
 
+
+
+if (Ext._alternatesMetadata) {
+   Ext.ClassManager.addNameAlternateMappings(Ext._alternatesMetadata);
+   Ext._alternatesMetadata = null;
+}
+
+if (Ext._aliasMetadata) {
+    Ext.ClassManager.addNameAliasMappings(Ext._aliasMetadata);
+    Ext._aliasMetadata = null;
+}
+
 //@tag foundation,core
 
 //@require ClassManager.js
@@ -5394,7 +5537,8 @@ Ext.Loader = new function() {
         isInHistory = {},
         history = [],
         slashDotSlashRe = /\/\.\//g,
-        dotRe = /\./g;
+        dotRe = /\./g,
+        setPathCount = 0;
 
     Ext.apply(Loader, {
 
@@ -5457,7 +5601,7 @@ Ext.Loader = new function() {
         
         setPath: flexSetter(function(name, path) {
             Loader.config.paths[name] = path;
-
+            setPathCount++;
             return Loader;
         }),
 
@@ -5465,9 +5609,14 @@ Ext.Loader = new function() {
         addClassPathMappings: function(paths) {
             var name;
 
-            for(name in paths){
-                Loader.config.paths[name] = paths[name];
+            if(setPathCount == 0){
+                Loader.config.paths = paths;
+            } else {
+                for(name in paths){
+                    Loader.config.paths[name] = paths[name];
+                }
             }
+            setPathCount++;
             return Loader;
         },
 
@@ -5731,7 +5880,11 @@ Ext.Loader = new function() {
                 if (collect) {
                     for (prop in script) {
                         try {
-                            script[prop] = null;
+                            if (prop != 'src') {
+                                
+                                
+                                script[prop] = null;
+                            }
                             delete script[prop];      
                         } catch (cleanEx) {
                             
@@ -6443,10 +6596,16 @@ Ext.JSON = (new(function() {
     encodeObject = function(o, newline) {
 
         var a = ["{", ""], 
-            i;
+            i, val;
         for (i in o) {
+            val = o[i];
             if (!useHasOwn || o.hasOwnProperty(i)) {
-                a.push(Ext.JSON.encodeValue(i), ":", Ext.JSON.encodeValue(o[i]), ',');
+                
+                if (typeof val === 'function' || val === undefined) {
+                    continue;
+                }
+                a.push(Ext.JSON.encodeValue(i), ":", Ext.JSON.encodeValue(val), ',');
+                
             }
         }
         
@@ -6625,11 +6784,6 @@ Ext.apply(Ext, {
     }()),
 
     
-    getCmp: function(id) {
-        return Ext.ComponentManager.get(id);
-    },
-
-    
     getOrientation: function() {
         return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
     },
@@ -6748,7 +6902,8 @@ window.undefined = window.undefined;
     nullLog = function () {};
     nullLog.info = nullLog.warn = nullLog.error = Ext.emptyFn;
 
-    Ext.setVersion('extjs', '4.1.1.1');
+    
+    Ext.setVersion('extjs', '4.1.3.548');
     Ext.apply(Ext, {
         
         SSL_SECURE_URL : isSecure && isIE ? 'javascript:\'\'' : 'about:blank',
@@ -6879,10 +7034,28 @@ window.undefined = window.undefined;
         isIE7 : isIE7,
 
         
+        isIE7m : isIE6 || isIE7,
+
+        
+        isIE7p : isIE && !isIE6,
+
+        
         isIE8 : isIE8,
 
         
+        isIE8m : isIE6 || isIE7 || isIE8,
+
+        
+        isIE8p : isIE && !(isIE6 || isIE7),
+
+        
         isIE9 : isIE9,
+
+        
+        isIE9m : isIE6 || isIE7 || isIE8 || isIE9,
+
+        
+        isIE9p : isIE && !(isIE6 || isIE7 || isIE8),
 
         
         isGecko : isGecko,
@@ -7132,10 +7305,42 @@ window.undefined = window.undefined;
 
 
 Ext.application = function(config) {
-    Ext.require('Ext.app.Application');
+    var App, paths, ns;
 
+    if (typeof config === "string") {
+        Ext.require(config, function(){
+            App = Ext.ClassManager.get(config);
+        });
+    } else {
+        
+        
+        
+        Ext.Loader.setPath(config.name, config.appFolder || 'app');
+        paths = config.paths;
+
+        if (paths) {
+            for (ns in paths) {
+                if (paths.hasOwnProperty(ns)) {
+                    Ext.Loader.setPath(ns, paths[ns]);
+                }
+            }
+        }
+
+        
+        
+        Ext.define(config.name + ".$application", Ext.apply({
+                extend: 'Ext.app.Application' 
+            }, config),
+            
+            function () {
+                App = this;
+            });
+    }
+    
     Ext.onReady(function() {
-        new Ext.app.Application(config);
+        
+        
+        Ext.app.Application.instance = new App();
     });
 };
 
@@ -7473,13 +7678,11 @@ Ext.application = function(config) {
 
 //@require Format.js
 
-//@define Ext.util.TaskManager
-
-//@define Ext.TaskManager
-
 
 
 Ext.define('Ext.util.TaskRunner', {
+    
+
     
     interval: 10,
 
@@ -7592,7 +7795,7 @@ Ext.define('Ext.util.TaskRunner', {
                                 rt = task.onError.call(task.scope || task, task, taskError);
                             }
                         } catch (ignore) { }
-                    }
+                        }
                     task.taskRunTime = now;
                     if (rt === false || task.taskRunCount === task.repeat) {
                         me.stop(task);
@@ -7648,7 +7851,12 @@ Ext.define('Ext.util.TaskRunner', {
             
             me.startTimer(nextExpires - now, new Date().getTime());
         }
-    },
+        
+        
+        if (me.fireIdleEvent !== false) {
+            Ext.EventManager.idleEvent.fire();
+        }
+   },
 
     
     startTimer: function (timeout, now) {
@@ -7723,6 +7931,28 @@ function () {
 
     
     proto.destroy = proto.stop;
+});
+
+
+
+
+
+
+
+
+
+
+//@tag extras,core
+
+
+Ext.define('Ext.util.TaskManager', {
+    extend: 'Ext.util.TaskRunner',
+
+    alternateClassName: [
+        'Ext.TaskManager'
+    ],
+
+    singleton: true
 });
 
 //@tag extras,core
@@ -8332,6 +8562,9 @@ Ext.supports = {
 
     
     PointerEvents: 'pointerEvents' in document.documentElement.style,
+    
+    
+    LocalStorage: 'localStorage' in window && window['localStorage'] !== null,
 
     
     CSS3BoxShadow: 'boxShadow' in document.documentElement.style || 'WebkitBoxShadow' in document.documentElement.style || 'MozBoxShadow' in document.documentElement.style,
@@ -8590,6 +8823,29 @@ Ext.supports = {
                 return Ext.isFunction(div.getBoundingClientRect);
             }
         },
+        
+        {
+            identity: 'RotatedBoundingClientRect',
+            fn: function() {
+                var body = document.body,
+                    supports = false,
+                    el = document.createElement('div'),
+                    style = el.style;
+
+                if (el.getBoundingClientRect) {
+                    style.WebkitTransform = style.MozTransform =
+                        style.OTransform = style.transform = 'rotate(90deg)';
+                    style.width = '100px';
+                    style.height = '30px';
+                    body.appendChild(el)
+
+                    supports = el.getBoundingClientRect().height !== 100;
+                    body.removeChild(el);
+                }
+               
+                return supports;
+            }
+        },
         {
             identity: 'IncludePaddingInWidthCalculation',
             fn: function(doc, div){
@@ -8674,6 +8930,7 @@ Ext.util.DelayedTask = function(fn, scope, args) {
             clearInterval(id);
             id = null;
             fn.apply(scope, args || []);
+            Ext.EventManager.idleEvent.fire();
         };
 
     
@@ -8696,213 +8953,206 @@ Ext.util.DelayedTask = function(fn, scope, args) {
 
 //@tag dom,core
 
-//@define Ext.util.Event
 
-//@require Ext.util.DelayedTask
-
-
-Ext.require('Ext.util.DelayedTask', function() {
+Ext.define('Ext.util.Event', {
+    requires: 'Ext.util.DelayedTask',
 
     
-    Ext.util.Event = Ext.extend(Object, (function() {
-        var noOptions = {};
+    isEvent: true,
 
-        function createTargeted(handler, listener, o, scope){
-            return function(){
-                if (o.target === arguments[0]){
-                    handler.apply(scope, arguments);
-                }
-            };
+    noOptions: {},
+    
+    constructor: function(observable, name) {
+        this.name = name;
+        this.observable = observable;
+        this.listeners = [];
+    },
+
+    addListener: function(fn, scope, options) {
+        var me = this,
+            listener;
+            scope = scope || me.observable;
+
+
+        if (!me.isListening(fn, scope)) {
+            listener = me.createListener(fn, scope, options);
+            if (me.firing) {
+                
+                me.listeners = me.listeners.slice(0);
+            }
+            me.listeners.push(listener);
         }
+    },
 
-        function createBuffered(handler, listener, o, scope) {
-            listener.task = new Ext.util.DelayedTask();
-            return function() {
-                listener.task.delay(o.buffer, handler, scope, Ext.Array.toArray(arguments));
-            };
-        }
+    createListener: function(fn, scope, o) {
+        o = o || {};
+        scope = scope || this.observable;
 
-        function createDelayed(handler, listener, o, scope) {
-            return function() {
-                var task = new Ext.util.DelayedTask();
-                if (!listener.tasks) {
-                    listener.tasks = [];
-                }
-                listener.tasks.push(task);
-                task.delay(o.delay || 10, handler, scope, Ext.Array.toArray(arguments));
-            };
-        }
-
-        function createSingle(handler, listener, o, scope) {
-            return function() {
-                var event = listener.ev;
-
-                if (event.removeListener(listener.fn, scope) && event.observable) {
-                    
-                    
-                    event.observable.hasListeners[event.name]--;
-                }
-
-                return handler.apply(scope, arguments);
-            };
-        }
-
-        return {
-            
-            isEvent: true,
-
-            constructor: function(observable, name) {
-                this.name = name;
-                this.observable = observable;
-                this.listeners = [];
+        var me = this,
+            listener = {
+                fn: fn,
+                scope: scope,
+                o: o,
+                ev: me
             },
+            handler = fn;
 
-            addListener: function(fn, scope, options) {
-                var me = this,
-                    listener;
-                    scope = scope || me.observable;
+        
+        
+        if (o.single) {
+            handler = me.createSingle(handler, listener, o, scope);
+        }
+        if (o.target) {
+            handler = me.createTargeted(handler, listener, o, scope);
+        }
+        if (o.delay) {
+            handler = me.createDelayed(handler, listener, o, scope);
+        }
+        if (o.buffer) {
+            handler = me.createBuffered(handler, listener, o, scope);
+        }
 
+        listener.fireFn = handler;
+        return listener;
+    },
 
-                if (!me.isListening(fn, scope)) {
-                    listener = me.createListener(fn, scope, options);
-                    if (me.firing) {
-                        
-                        me.listeners = me.listeners.slice(0);
-                    }
-                    me.listeners.push(listener);
-                }
-            },
+    findListener: function(fn, scope) {
+        var listeners = this.listeners,
+        i = listeners.length,
+        listener,
+        s;
 
-            createListener: function(fn, scope, options) {
-                options = options || noOptions;
-                scope = scope || this.observable;
-
-                var listener = {
-                        fn: fn,
-                        scope: scope,
-                        o: options,
-                        ev: this
-                    },
-                    handler = fn;
+        while (i--) {
+            listener = listeners[i];
+            if (listener) {
+                s = listener.scope;
 
                 
                 
-                if (options.single) {
-                    handler = createSingle(handler, listener, options, scope);
+                
+                if (listener.fn == fn && (s == (scope || this.observable))) {
+                    return i;
                 }
-                if (options.target) {
-                    handler = createTargeted(handler, listener, options, scope);
-                }
-                if (options.delay) {
-                    handler = createDelayed(handler, listener, options, scope);
-                }
-                if (options.buffer) {
-                    handler = createBuffered(handler, listener, options, scope);
-                }
+            }
+        }
 
-                listener.fireFn = handler;
-                return listener;
-            },
+        return - 1;
+    },
 
-            findListener: function(fn, scope) {
-                var listeners = this.listeners,
-                i = listeners.length,
-                listener,
-                s;
+    isListening: function(fn, scope) {
+        return this.findListener(fn, scope) !== -1;
+    },
 
-                while (i--) {
-                    listener = listeners[i];
-                    if (listener) {
-                        s = listener.scope;
+    removeListener: function(fn, scope) {
+        var me = this,
+            index,
+            listener,
+            k;
+        index = me.findListener(fn, scope);
+        if (index != -1) {
+            listener = me.listeners[index];
 
-                        
-                        
-                        
-                        if (listener.fn == fn && (s == (scope || this.observable))) {
-                            return i;
-                        }
-                    }
-                }
-
-                return - 1;
-            },
-
-            isListening: function(fn, scope) {
-                return this.findListener(fn, scope) !== -1;
-            },
-
-            removeListener: function(fn, scope) {
-                var me = this,
-                    index,
-                    listener,
-                    k;
-                index = me.findListener(fn, scope);
-                if (index != -1) {
-                    listener = me.listeners[index];
-
-                    if (me.firing) {
-                        me.listeners = me.listeners.slice(0);
-                    }
-
-                    
-                    if (listener.task) {
-                        listener.task.cancel();
-                        delete listener.task;
-                    }
-
-                    
-                    k = listener.tasks && listener.tasks.length;
-                    if (k) {
-                        while (k--) {
-                            listener.tasks[k].cancel();
-                        }
-                        delete listener.tasks;
-                    }
-
-                    
-                    Ext.Array.erase(me.listeners, index, 1);
-                    return true;
-                }
-
-                return false;
-            },
+            if (me.firing) {
+                me.listeners = me.listeners.slice(0);
+            }
 
             
-            clearListeners: function() {
-                var listeners = this.listeners,
-                    i = listeners.length;
+            if (listener.task) {
+                listener.task.cancel();
+                delete listener.task;
+            }
 
-                while (i--) {
-                    this.removeListener(listeners[i].fn, listeners[i].scope);
+            
+            k = listener.tasks && listener.tasks.length;
+            if (k) {
+                while (k--) {
+                    listener.tasks[k].cancel();
                 }
-            },
+                delete listener.tasks;
+            }
 
-            fire: function() {
-                var me = this,
-                    listeners = me.listeners,
-                    count = listeners.length,
-                    i,
-                    args,
-                    listener;
+            
+            Ext.Array.erase(me.listeners, index, 1);
+            return true;
+        }
 
-                if (count > 0) {
-                    me.firing = true;
-                    for (i = 0; i < count; i++) {
-                        listener = listeners[i];
-                        args = arguments.length ? Array.prototype.slice.call(arguments, 0) : [];
-                        if (listener.o) {
-                            args.push(listener.o);
-                        }
-                        if (listener && listener.fireFn.apply(listener.scope || me.observable, args) === false) {
-                            return (me.firing = false);
-                        }
-                    }
+        return false;
+    },
+
+    
+    clearListeners: function() {
+        var listeners = this.listeners,
+            i = listeners.length;
+
+        while (i--) {
+            this.removeListener(listeners[i].fn, listeners[i].scope);
+        }
+    },
+
+    fire: function() {
+        var me = this,
+            listeners = me.listeners,
+            count = listeners.length,
+            i,
+            args,
+            listener;
+
+        if (count > 0) {
+            me.firing = true;
+            for (i = 0; i < count; i++) {
+                listener = listeners[i];
+                args = arguments.length ? Array.prototype.slice.call(arguments, 0) : [];
+                if (listener.o) {
+                    args.push(listener.o);
                 }
-                me.firing = false;
-                return true;
+                if (listener && listener.fireFn.apply(listener.scope || me.observable, args) === false) {
+                    return (me.firing = false);
+                }
+            }
+        }
+        me.firing = false;
+        return true;
+    },
+
+    createTargeted: function (handler, listener, o, scope) {
+        return function(){
+            if (o.target === arguments[0]){
+                handler.apply(scope, arguments);
             }
         };
-    }()));
+    },
+
+    createBuffered: function (handler, listener, o, scope) {
+        listener.task = new Ext.util.DelayedTask();
+        return function() {
+            listener.task.delay(o.buffer, handler, scope, Ext.Array.toArray(arguments));
+        };
+    },
+
+    createDelayed: function (handler, listener, o, scope) {
+        return function() {
+            var task = new Ext.util.DelayedTask();
+            if (!listener.tasks) {
+                listener.tasks = [];
+            }
+            listener.tasks.push(task);
+            task.delay(o.delay || 10, handler, scope, Ext.Array.toArray(arguments));
+        };
+    },
+
+    createSingle: function (handler, listener, o, scope) {
+        return function() {
+            var event = listener.ev;
+
+            if (event.removeListener(listener.fn, scope) && event.observable) {
+                
+                
+                event.observable.hasListeners[event.name]--;
+            }
+
+            return handler.apply(scope, arguments);
+        };
+    }
 });
 
 //@tag dom,core
@@ -8917,11 +9167,11 @@ Ext.EventManager = new function() {
     var EventManager = this,
         doc = document,
         win = window,
+        readyEvent,
         initExtCss = function() {
             
             var bd = doc.body || doc.getElementsByTagName('body')[0],
-                baseCSSPrefix = Ext.baseCSSPrefix,
-                cls = [baseCSSPrefix + 'body'],
+                cls = [Ext.baseCSSPrefix + 'body'],
                 htmlCls = [],
                 supportsLG = Ext.supports.CSS3LinearGradient,
                 supportsBR = Ext.supports.CSS3BorderRadius,
@@ -8936,7 +9186,7 @@ Ext.EventManager = new function() {
             html = bd.parentNode;
 
             function add (c) {
-                cls.push(baseCSSPrefix + c);
+                cls.push(Ext.baseCSSPrefix + c);
             }
 
             
@@ -8976,11 +9226,14 @@ Ext.EventManager = new function() {
                     }
                 }
 
-                if (Ext.isIE6 || Ext.isIE7) {
+                if (Ext.isIE7m) {
                     add('ie7m');
                 }
-                if (Ext.isIE6 || Ext.isIE7 || Ext.isIE8) {
+                if (Ext.isIE8m) {
                     add('ie8m');
+                }
+                if (Ext.isIE9m) {
+                    add('ie9m');
                 }
                 if (Ext.isIE7 || Ext.isIE8) {
                     add('ie78');
@@ -9045,15 +9298,15 @@ Ext.EventManager = new function() {
 
                 
                 resetElementSpec = Ext.resetElementSpec = {
-                    cls: baseCSSPrefix + 'reset'
+                    cls: Ext.baseCSSPrefix + 'reset'
                 };
                 
                 if (!supportsLG) {
-                    resetCls.push(baseCSSPrefix + 'nlg');
+                    resetCls.push(Ext.baseCSSPrefix + 'nlg');
                 }
                 
                 if (!supportsBR) {
-                    resetCls.push(baseCSSPrefix + 'nbr');
+                    resetCls.push(Ext.baseCSSPrefix + 'nbr');
                 }
                 
                 if (resetCls.length) {                    
@@ -9083,12 +9336,12 @@ Ext.EventManager = new function() {
                 }
 
                 if(Ext.isBorderBox) {
-                    htmlCls.push(baseCSSPrefix + 'border-box');
+                    htmlCls.push(Ext.baseCSSPrefix + 'border-box');
                 }
                 if (Ext.isStrict) {
-                    htmlCls.push(baseCSSPrefix + 'strict');
+                    htmlCls.push(Ext.baseCSSPrefix + 'strict');
                 } else {
-                    htmlCls.push(baseCSSPrefix + 'quirks');
+                    htmlCls.push(Ext.baseCSSPrefix + 'quirks');
                 }
                 Ext.fly(html, '_internal').addCls(htmlCls);
             }
@@ -9113,13 +9366,13 @@ Ext.EventManager = new function() {
         
         readyEvent:
             (function () {
-                var event = new Ext.util.Event();
-                event.fire = function () {
+                readyEvent = new Ext.util.Event();
+                readyEvent.fire = function () {
                     Ext._beforeReadyTime = Ext._beforeReadyTime || new Date().getTime();
-                    event.self.prototype.fire.apply(event, arguments);
+                    readyEvent.self.prototype.fire.apply(readyEvent, arguments);
                     Ext._afterReadytime = new Date().getTime();
                 };
-                return event;
+                return readyEvent;
             }()),
 
         
@@ -9142,8 +9395,8 @@ Ext.EventManager = new function() {
                     type: doc.readyState || 'body'
                 });
             } else {
-                document.addEventListener('DOMContentLoaded', EventManager.onReadyEvent, false);
-                window.addEventListener('load', EventManager.onReadyEvent, false);
+                doc.addEventListener('DOMContentLoaded', EventManager.onReadyEvent, false);
+                win.addEventListener('load', EventManager.onReadyEvent, false);
                 EventManager.hasBoundOnReady = true;
             }
         },
@@ -9154,8 +9407,8 @@ Ext.EventManager = new function() {
             }
 
             if (EventManager.hasBoundOnReady) {
-                document.removeEventListener('DOMContentLoaded', EventManager.onReadyEvent, false);
-                window.removeEventListener('load', EventManager.onReadyEvent, false);
+                doc.removeEventListener('DOMContentLoaded', EventManager.onReadyEvent, false);
+                win.removeEventListener('load', EventManager.onReadyEvent, false);
             }
 
             if (!Ext.isReady) {
@@ -9171,7 +9424,7 @@ Ext.EventManager = new function() {
 
                 Ext.supports.init();
                 EventManager.onWindowUnload();
-                EventManager.readyEvent.onReadyChain = EventManager.onReadyChain;    
+                readyEvent.onReadyChain = EventManager.onReadyChain;    
 
                 if (Ext.isNumber(EventManager.deferReadyEvent)) {
                     Ext.Function.defer(EventManager.fireReadyEvent, EventManager.deferReadyEvent);
@@ -9183,8 +9436,7 @@ Ext.EventManager = new function() {
         },
 
         
-        fireReadyEvent: function(){
-            var readyEvent = EventManager.readyEvent;
+        fireReadyEvent: function() {
 
             
             
@@ -9199,6 +9451,7 @@ Ext.EventManager = new function() {
             }
             EventManager.isFiring = false;
             EventManager.hasFiredReady = true;
+            Ext.EventManager.idleEvent.fire();
         },
 
         
@@ -9206,7 +9459,7 @@ Ext.EventManager = new function() {
             options = options || {};
             
             options.single = true;
-            EventManager.readyEvent.addListener(fn, scope, options);
+            readyEvent.addListener(fn, scope, options);
 
             
             
@@ -9298,7 +9551,8 @@ Ext.EventManager = new function() {
 
         
         contains: function(event) {
-            var parent = event.browserEvent.currentTarget,
+            event = event.browserEvent || event;
+            var parent = event.currentTarget,
                 child = EventManager.getRelatedTarget(event);
 
             if (parent && parent.firstChild) {
@@ -9324,7 +9578,7 @@ Ext.EventManager = new function() {
             }
 
             var dom = element.dom || Ext.getDom(element),
-                bind, wrap;
+                bind, wrap, cache, id, cacheItem;
 
 
             
@@ -9332,23 +9586,95 @@ Ext.EventManager = new function() {
 
             bind = EventManager.normalizeEvent(eventName, fn);
             wrap = EventManager.createListenerWrap(dom, eventName, bind.fn, scope, options);
-
+            
+            
+            cache = EventManager.getEventListenerCache(element.dom ? element : dom, eventName);
+            eventName = bind.eventName;
+            
             if (dom.attachEvent) {
-                dom.attachEvent('on' + bind.eventName, wrap);
+                id = EventManager.normalizeId(dom);
+                
+                
+                if (id) {
+                    cacheItem = Ext.cache[id][eventName];
+                    if (cacheItem && cacheItem.firing) {
+                        
+                        
+                        
+                        
+                        
+                        
+                        cache = EventManager.cloneEventListenerCache(dom, eventName);
+                    }
+                }
+            }
+
+            cache.push({
+                fn: fn,
+                wrap: wrap,
+                scope: scope
+            });
+
+            
+            if (dom.attachEvent) {
+                
+                
+                if (cache.length === 1) {
+                    id = EventManager.normalizeId(dom, true);
+                    fn = Ext.Function.bind(EventManager.handleSingleEvent, EventManager, [id, eventName], true);
+                    Ext.cache[id][eventName] = {
+                        firing: false,
+                        fn: fn
+                    };
+                    dom.attachEvent('on' + eventName, fn);
+                }
             } else {
-                dom.addEventListener(bind.eventName, wrap, options.capture || false);
+                dom.addEventListener(eventName, wrap, options.capture || false);
             }
 
             if (dom == doc && eventName == 'mousedown') {
                 EventManager.stoppedMouseDownEvent.addListener(wrap);
             }
-
+        },
+        
+        
+        
+        normalizeId: function(dom) {
+            var id;
+            if (dom === document) {
+                id = Ext.documentId;
+            } else if (dom === window) {
+                id = Ext.windowId;
+            } else {
+                id = dom.id;
+            }
+            if (!id && force) {
+                id = EventManager.getId(dom);
+            }
+            return id;
+        },
+        
+        handleSingleEvent: function(e, id, eventName) {
             
-            EventManager.getEventListenerCache(element.dom ? element : dom, eventName).push({
-                fn: fn,
-                wrap: wrap,
-                scope: scope
-            });
+            
+            
+            var listenerCache = EventManager.getEventListenerCache(id, eventName),
+                attachItem = Ext.cache[id][eventName],
+                len, i;
+                
+            
+            
+            
+            if (attachItem.firing) {
+                return;
+            }
+                
+            attachItem.firing = true;
+            for (i = 0, len = listenerCache.length; i < len; ++i) {
+                listenerCache[i].wrap(e);
+            }
+            attachItem.firing = false;
+            
         },
 
         
@@ -9363,8 +9689,8 @@ Ext.EventManager = new function() {
                 el = element.dom ? element : Ext.get(dom),
                 cache = EventManager.getEventListenerCache(el, eventName),
                 bindName = EventManager.normalizeEvent(eventName).eventName,
-                i = cache.length, j,
-                listener, wrap, tasks;
+                i = cache.length, j, cacheItem, needsClone,
+                listener, wrap, tasks, id;
 
 
             while (i--) {
@@ -9389,7 +9715,20 @@ Ext.EventManager = new function() {
                     }
 
                     if (dom.detachEvent) {
-                        dom.detachEvent('on' + bindName, wrap);
+                        
+                        
+                        id = EventManager.normalizeId(dom, true);
+                        cacheItem = Ext.cache[id][bindName];
+                        if (cacheItem && cacheItem.firing) {
+                            
+                            cache = EventManager.cloneEventListenerCache(dom, bindName);
+                        }
+                        
+                        if (cache.length === 1) {
+                            fn = cacheItem.fn;
+                            delete Ext.cache[id][bindName];
+                            dom.detachEvent('on' + bindName, fn);
+                        }
                     } else {
                         dom.removeEventListener(bindName, wrap, false);
                     }
@@ -9406,38 +9745,37 @@ Ext.EventManager = new function() {
 
         
         removeAll : function(element) {
-            var el = element.dom ? element : Ext.get(element),
+            var id = (typeof element === 'string') ? element : element.id,
                 cache, events, eventName;
 
-            if (!el) {
-                return;
-            }
-            cache = (el.$cache || el.getCache());
-            events = cache.events;
-
-            for (eventName in events) {
-                if (events.hasOwnProperty(eventName)) {
-                    EventManager.removeListener(el, eventName);
+            
+            if (id && (cache = Ext.cache[id])) {
+                events = cache.events;
+    
+                for (eventName in events) {
+                    if (events.hasOwnProperty(eventName)) {
+                        EventManager.removeListener(element, eventName);
+                    }
                 }
-            }
-            cache.events = {};
+                cache.events = {};
+             }
         },
 
         
         purgeElement : function(element, eventName) {
             var dom = Ext.getDom(element),
-                i = 0, len;
+                i = 0, len, childNodes;
 
             if (eventName) {
                 EventManager.removeListener(element, eventName);
-            }
-            else {
+            } else {
                 EventManager.removeAll(element);
             }
 
             if (dom && dom.childNodes) {
-                for (len = element.childNodes.length; i < len; i++) {
-                    EventManager.purgeElement(element.childNodes[i], eventName);
+                childNodes = dom.childNodes;
+                for (len = childNodes.length; i < len; i++) {
+                    EventManager.purgeElement(childNodes[i], eventName);
                 }
             }
         },
@@ -9452,6 +9790,11 @@ Ext.EventManager = new function() {
                     f = ['if(!' + Ext.name + ') {return;}'];
 
                     if(options.buffer || options.delay || options.freezeEvent) {
+                        if (options.freezeEvent) {
+                            
+                            
+                            f.push('e = X.EventObject.setEvent(e);');
+                        }
                         f.push('e = new X.EventObjectImpl(e, ' + (options.freezeEvent ? 'true' : 'false' ) + ');');
                     } else {
                         f.push('e = X.EventObject.setEvent(e);');
@@ -9504,7 +9847,7 @@ Ext.EventManager = new function() {
 
                     
                     
-                    if (ename !== 'mousemove') {
+                    if (ename !== 'mousemove' && ename !== 'unload') {
                         f.push('if (evtMgr.idleEvent.listeners.length) {');
                         f.push('evtMgr.idleEvent.fire();');
                         f.push('}');
@@ -9526,10 +9869,11 @@ Ext.EventManager = new function() {
             };
             return wrap;
         },
-
         
-        getEventListenerCache : function(element, eventName) {
-            var elementCache, eventCache;
+        
+        getEventCache: function(element) {
+            var elementCache, eventCache, id;
+            
             if (!element) {
                 return [];
             }
@@ -9538,11 +9882,35 @@ Ext.EventManager = new function() {
                 elementCache = element.$cache;
             } else {
                 
-                elementCache = Ext.cache[EventManager.getId(element)];
+                if (typeof element === 'string') {
+                    id = element;
+                } else {
+                    id = EventManager.getId(element);
+                }
+                elementCache = Ext.cache[id];
             }
             eventCache = elementCache.events || (elementCache.events = {});
+            return eventCache;
+        },
 
+        
+        getEventListenerCache : function(element, eventName) {
+            var eventCache = EventManager.getEventCache(element);
             return eventCache[eventName] || (eventCache[eventName] = []);
+        },
+        
+        
+        cloneEventListenerCache: function(element, eventName){
+            var eventCache = EventManager.getEventCache(element),
+                out;
+                
+            if (eventCache[eventName]) {
+                out = eventCache[eventName].slice(0);
+            } else {
+                out = [];
+            }
+            eventCache[eventName] = out;
+            return out;
         },
 
         
@@ -10560,9 +10928,7 @@ Ext.define('Ext.EventObjectImpl', {
             dispatchers = {}; 
 
             API = {
-                fixTarget: function (t) {
-                    return t;
-                }
+                fixTarget: Ext.identityFn
             };
         }
 
@@ -10588,959 +10954,178 @@ Ext.EventObject = new Ext.EventObjectImpl();
 
 //@tag dom,core
 
-//@require ../EventObject.js
 
-
-
-Ext.define('Ext.dom.AbstractQuery', {
-    
-    select: function(q, root) {
-        var results = [],
-            nodes,
-            i,
-            j,
-            qlen,
-            nlen;
-
-        root = root || document;
-
-        if (typeof root == 'string') {
-            root = document.getElementById(root);
-        }
-
-        q = q.split(",");
-
-        for (i = 0,qlen = q.length; i < qlen; i++) {
-            if (typeof q[i] == 'string') {
-                
-                
-                if (typeof q[i][0] == '@') {
-                    nodes = root.getAttributeNode(q[i].substring(1));
-                    results.push(nodes);
-                } else {
-                    nodes = root.querySelectorAll(q[i]);
-
-                    for (j = 0,nlen = nodes.length; j < nlen; j++) {
-                        results.push(nodes[j]);
-                    }
-                }
-            }
-        }
-
-        return results;
-    },
-
-    
-    selectNode: function(q, root) {
-        return this.select(q, root)[0];
-    },
-
-    
-    is: function(el, q) {
-        if (typeof el == "string") {
-            el = document.getElementById(el);
-        }
-        return this.select(q).indexOf(el) !== -1;
-    }
-
-});
-
-//@tag dom,core
-
-//@require AbstractQuery.js
-
-
-
-Ext.define('Ext.dom.AbstractHelper', {
-    emptyTags : /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i,
-    confRe : /(?:tag|children|cn|html|tpl|tplData)$/i,
-    endRe : /end/i,
-
-    
-    attributeTransform: { cls : 'class', htmlFor : 'for' },
-
-    closeTags: {},
-
-    decamelizeName : (function () {
-        var camelCaseRe = /([a-z])([A-Z])/g,
-            cache = {};
-
-        function decamel (match, p1, p2) {
-            return p1 + '-' + p2.toLowerCase();
-        }
-
-        return function (s) {
-            return cache[s] || (cache[s] = s.replace(camelCaseRe, decamel));
-        };
-    }()),
-
-    generateMarkup: function(spec, buffer) {
-        var me = this,
-            attr, val, tag, i, closeTags;
-
-        if (typeof spec == "string") {
-            buffer.push(spec);
-        } else if (Ext.isArray(spec)) {
-            for (i = 0; i < spec.length; i++) {
-                if (spec[i]) {
-                    me.generateMarkup(spec[i], buffer);
-                }
-            }
-        } else {
-            tag = spec.tag || 'div';
-            buffer.push('<', tag);
-
-            for (attr in spec) {
-                if (spec.hasOwnProperty(attr)) {
-                    val = spec[attr];
-                    if (!me.confRe.test(attr)) {
-                        if (typeof val == "object") {
-                            buffer.push(' ', attr, '="');
-                            me.generateStyles(val, buffer).push('"');
-                        } else {
-                            buffer.push(' ', me.attributeTransform[attr] || attr, '="', val, '"');
-                        }
-                    }
-                }
-            }
-
-            
-            if (me.emptyTags.test(tag)) {
-                buffer.push('/>');
-            } else {
-                buffer.push('>');
-
-                
-                if ((val = spec.tpl)) {
-                    val.applyOut(spec.tplData, buffer);
-                }
-                if ((val = spec.html)) {
-                    buffer.push(val);
-                }
-                if ((val = spec.cn || spec.children)) {
-                    me.generateMarkup(val, buffer);
-                }
-
-                
-                closeTags = me.closeTags;
-                buffer.push(closeTags[tag] || (closeTags[tag] = '</' + tag + '>'));
-            }
-        }
-
-        return buffer;
-    },
-
-    
-    generateStyles: function (styles, buffer) {
-        var a = buffer || [],
-            name;
-
-        for (name in styles) {
-            if (styles.hasOwnProperty(name)) {
-                a.push(this.decamelizeName(name), ':', styles[name], ';');
-            }
-        }
-
-        return buffer || a.join('');
-    },
-
-    
-    markup: function(spec) {
-        if (typeof spec == "string") {
-            return spec;
-        }
-
-        var buf = this.generateMarkup(spec, []);
-        return buf.join('');
-    },
-
-    
-    applyStyles: function(el, styles) {
-        if (styles) {
-            var i = 0,
-                len,
-                style;
-
-            el = Ext.fly(el);
-            if (typeof styles == 'function') {
-                styles = styles.call();
-            }
-            if (typeof styles == 'string'){
-                styles = Ext.util.Format.trim(styles).split(/\s*(?::|;)\s*/);
-                for(len = styles.length; i < len;){
-                    el.setStyle(styles[i++], styles[i++]);
-                }
-            } else if (Ext.isObject(styles)) {
-                el.setStyle(styles);
-            }
-        }
-    },
-
-    
-    insertHtml: function(where, el, html) {
-        var hash = {},
-            hashVal,
-            setStart,
-            range,
-            frag,
-            rangeEl,
-            rs;
-
-        where = where.toLowerCase();
-
-        
-        hash['beforebegin'] = ['BeforeBegin', 'previousSibling'];
-        hash['afterend'] = ['AfterEnd', 'nextSibling'];
-
-        range = el.ownerDocument.createRange();
-        setStart = 'setStart' + (this.endRe.test(where) ? 'After' : 'Before');
-        if (hash[where]) {
-            range[setStart](el);
-            frag = range.createContextualFragment(html);
-            el.parentNode.insertBefore(frag, where == 'beforebegin' ? el : el.nextSibling);
-            return el[(where == 'beforebegin' ? 'previous' : 'next') + 'Sibling'];
-        }
-        else {
-            rangeEl = (where == 'afterbegin' ? 'first' : 'last') + 'Child';
-            if (el.firstChild) {
-                range[setStart](el[rangeEl]);
-                frag = range.createContextualFragment(html);
-                if (where == 'afterbegin') {
-                    el.insertBefore(frag, el.firstChild);
-                }
-                else {
-                    el.appendChild(frag);
-                }
-            }
-            else {
-                el.innerHTML = html;
-            }
-            return el[rangeEl];
-        }
-
-        throw 'Illegal insertion point -> "' + where + '"';
-    },
-
-    
-    insertBefore: function(el, o, returnElement) {
-        return this.doInsert(el, o, returnElement, 'beforebegin');
-    },
-
-    
-    insertAfter: function(el, o, returnElement) {
-        return this.doInsert(el, o, returnElement, 'afterend', 'nextSibling');
-    },
-
-    
-    insertFirst: function(el, o, returnElement) {
-        return this.doInsert(el, o, returnElement, 'afterbegin', 'firstChild');
-    },
-
-    
-    append: function(el, o, returnElement) {
-        return this.doInsert(el, o, returnElement, 'beforeend', '', true);
-    },
-
-    
-    overwrite: function(el, o, returnElement) {
-        el = Ext.getDom(el);
-        el.innerHTML = this.markup(o);
-        return returnElement ? Ext.get(el.firstChild) : el.firstChild;
-    },
-
-    doInsert: function(el, o, returnElement, pos, sibling, append) {
-        var newNode = this.insertHtml(pos, Ext.getDom(el), this.markup(o));
-        return returnElement ? Ext.get(newNode, true) : newNode;
-    }
-
-});
-
-//@tag dom,core
-
-//@require AbstractHelper.js
-
-//@require Ext.Supports
-
-//@require Ext.EventManager
-
-//@define Ext.dom.AbstractElement
-
-
-
-(function() {
-
-var document = window.document,
-    trimRe = /^\s+|\s+$/g,
-    whitespaceRe = /\s/;
-
-if (!Ext.cache){
-    Ext.cache = {};
-}
-
-Ext.define('Ext.dom.AbstractElement', {
+Ext.define('Ext.dom.AbstractElement_static', {
+    override: 'Ext.dom.AbstractElement',
 
     inheritableStatics: {
-
+        unitRe: /\d+(px|em|%|en|ex|pt|in|cm|mm|pc)$/i,
+        camelRe: /(-[a-z])/gi,
+        cssRe: /([a-z0-9\-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*);?/gi,
+        opacityRe: /alpha\(opacity=(.*)\)/i,
+        propertyCache: {},
+        defaultUnit : "px",
+        borders: {l: 'border-left-width', r: 'border-right-width', t: 'border-top-width', b: 'border-bottom-width'},
+        paddings: {l: 'padding-left', r: 'padding-right', t: 'padding-top', b: 'padding-bottom'},
+        margins: {l: 'margin-left', r: 'margin-right', t: 'margin-top', b: 'margin-bottom'},
         
-        get: function(el) {
-            var me = this,
-                El = Ext.dom.Element,
-                cacheItem,
-                extEl,
-                dom,
-                id;
-
-            if (!el) {
-                return null;
+        addUnits: function(size, units) {
+            
+            if (typeof size == 'number') {
+                return size + (units || this.defaultUnit || 'px');
             }
 
-            if (typeof el == "string") { 
-                if (el == Ext.windowId) {
-                    return El.get(window);
-                } else if (el == Ext.documentId) {
-                    return El.get(document);
-                }
-                
-                cacheItem = Ext.cache[el];
-                
-                
-                
-                
-                if (cacheItem && cacheItem.skipGarbageCollection) {
-                    extEl = cacheItem.el;
-                    return extEl;
-                }
-                
-                if (!(dom = document.getElementById(el))) {
-                    return null;
-                }
+            
+            if (size === "" || size == "auto" || size === undefined || size === null) {
+                return size || '';
+            }
 
-                if (cacheItem && cacheItem.el) {
-                    extEl = Ext.updateCacheEntry(cacheItem, dom).el;
+            
+            if (!this.unitRe.test(size)) {
+                return size || '';
+            }
+
+            return size;
+        },
+
+        
+        isAncestor: function(p, c) {
+            var ret = false;
+
+            p = Ext.getDom(p);
+            c = Ext.getDom(c);
+            if (p && c) {
+                if (p.contains) {
+                    return p.contains(c);
+                } else if (p.compareDocumentPosition) {
+                    return !!(p.compareDocumentPosition(c) & 16);
                 } else {
-                    
-                    extEl = new El(dom, !!cacheItem);
-                }
-                return extEl;
-            } else if (el.tagName) { 
-                if (!(id = el.id)) {
-                    id = Ext.id(el);
-                }
-                cacheItem = Ext.cache[id];
-                if (cacheItem && cacheItem.el) {
-                    extEl = Ext.updateCacheEntry(cacheItem, el).el;
-                } else {
-                    
-                    extEl = new El(el, !!cacheItem);
-                }
-                return extEl;
-            } else if (el instanceof me) {
-                if (el != me.docEl && el != me.winEl) {
-                    id = el.id;
-                    
-                    
-                    cacheItem = Ext.cache[id];
-                    if (cacheItem) {
-                        Ext.updateCacheEntry(cacheItem, document.getElementById(id) || el.dom);
-                    }
-                }
-                return el;
-            } else if (el.isComposite) {
-                return el;
-            } else if (Ext.isArray(el)) {
-                return me.select(el);
-            } else if (el === document) {
-                
-                if (!me.docEl) {
-                    me.docEl = Ext.Object.chain(El.prototype);
-                    me.docEl.dom = document;
-                    me.docEl.id = Ext.id(document);
-                    me.addToCache(me.docEl);
-                }
-                return me.docEl;
-            } else if (el === window) {
-                if (!me.winEl) {
-                    me.winEl = Ext.Object.chain(El.prototype);
-                    me.winEl.dom = window;
-                    me.winEl.id = Ext.id(window);
-                    me.addToCache(me.winEl);
-                }
-                return me.winEl;
-            }
-            return null;
-        },
-
-        addToCache: function(el, id) {
-            if (el) {
-                Ext.addCacheEntry(id, el);
-            }
-            return el;
-        },
-
-        addMethods: function() {
-            this.override.apply(this, arguments);
-        },
-
-        
-        mergeClsList: function() {
-            var clsList, clsHash = {},
-                i, length, j, listLength, clsName, result = [],
-                changed = false;
-
-            for (i = 0, length = arguments.length; i < length; i++) {
-                clsList = arguments[i];
-                if (Ext.isString(clsList)) {
-                    clsList = clsList.replace(trimRe, '').split(whitespaceRe);
-                }
-                if (clsList) {
-                    for (j = 0, listLength = clsList.length; j < listLength; j++) {
-                        clsName = clsList[j];
-                        if (!clsHash[clsName]) {
-                            if (i) {
-                                changed = true;
-                            }
-                            clsHash[clsName] = true;
-                        }
+                    while ((c = c.parentNode)) {
+                        ret = c == p || ret;
                     }
                 }
             }
-
-            for (clsName in clsHash) {
-                result.push(clsName);
-            }
-            result.changed = changed;
-            return result;
+            return ret;
         },
 
         
-        removeCls: function(existingClsList, removeClsList) {
-            var clsHash = {},
-                i, length, clsName, result = [],
-                changed = false;
-
-            if (existingClsList) {
-                if (Ext.isString(existingClsList)) {
-                    existingClsList = existingClsList.replace(trimRe, '').split(whitespaceRe);
-                }
-                for (i = 0, length = existingClsList.length; i < length; i++) {
-                    clsHash[existingClsList[i]] = true;
-                }
+        parseBox: function(box) {
+            if (typeof box != 'string') {
+                box = box.toString();
             }
-            if (removeClsList) {
-                if (Ext.isString(removeClsList)) {
-                    removeClsList = removeClsList.split(whitespaceRe);
-                }
-                for (i = 0, length = removeClsList.length; i < length; i++) {
-                    clsName = removeClsList[i];
-                    if (clsHash[clsName]) {
-                        changed = true;
-                        delete clsHash[clsName];
-                    }
-                }
+            var parts  = box.split(' '),
+                ln = parts.length;
+
+            if (ln == 1) {
+                parts[1] = parts[2] = parts[3] = parts[0];
             }
-            for (clsName in clsHash) {
-                result.push(clsName);
+            else if (ln == 2) {
+                parts[2] = parts[0];
+                parts[3] = parts[1];
             }
-            result.changed = changed;
-            return result;
-        },
-
-        
-        VISIBILITY: 1,
-
-        
-        DISPLAY: 2,
-
-        
-        OFFSETS: 3,
-
-        
-        ASCLASS: 4
-    },
-
-    constructor: function(element, forceNew) {
-        var me = this,
-            dom = typeof element == 'string'
-                ? document.getElementById(element)
-                : element,
-            id;
-
-        if (!dom) {
-            return null;
-        }
-
-        id = dom.id;
-        if (!forceNew && id && Ext.cache[id]) {
-            
-            return Ext.cache[id].el;
-        }
-
-        
-        me.dom = dom;
-
-        
-        me.id = id || Ext.id(dom);
-
-        me.self.addToCache(me);
-    },
-
-    
-    set: function(o, useSet) {
-         var el = this.dom,
-             attr,
-             value;
-
-         for (attr in o) {
-             if (o.hasOwnProperty(attr)) {
-                 value = o[attr];
-                 if (attr == 'style') {
-                     this.applyStyles(value);
-                 }
-                 else if (attr == 'cls') {
-                     el.className = value;
-                 }
-                 else if (useSet !== false) {
-                     if (value === undefined) {
-                         el.removeAttribute(attr);
-                     } else {
-                        el.setAttribute(attr, value);
-                     }
-                 }
-                 else {
-                     el[attr] = value;
-                 }
-             }
-         }
-         return this;
-     },
-
-    
-    defaultUnit: "px",
-
-    
-    is: function(simpleSelector) {
-        return Ext.DomQuery.is(this.dom, simpleSelector);
-    },
-
-    
-    getValue: function(asNumber) {
-        var val = this.dom.value;
-        return asNumber ? parseInt(val, 10) : val;
-    },
-
-    
-    remove: function() {
-        var me = this,
-        dom = me.dom;
-
-        if (dom) {
-            Ext.removeNode(dom);
-            delete me.dom;
-        }
-    },
-
-    
-    contains: function(el) {
-        if (!el) {
-            return false;
-        }
-
-        var me = this,
-            dom = el.dom || el;
-
-        
-        return (dom === me.dom) || Ext.dom.AbstractElement.isAncestor(me.dom, dom);
-    },
-
-    
-    getAttribute: function(name, ns) {
-        var dom = this.dom;
-        return dom.getAttributeNS(ns, name) || dom.getAttribute(ns + ":" + name) || dom.getAttribute(name) || dom[name];
-    },
-
-    
-    update: function(html) {
-        if (this.dom) {
-            this.dom.innerHTML = html;
-        }
-        return this;
-    },
-
-
-    
-    setHTML: function(html) {
-        if(this.dom) {
-            this.dom.innerHTML = html;
-        }
-        return this;
-    },
-
-    
-    getHTML: function() {
-        return this.dom ? this.dom.innerHTML : '';
-    },
-
-    
-    hide: function() {
-        this.setVisible(false);
-        return this;
-    },
-
-    
-    show: function() {
-        this.setVisible(true);
-        return this;
-    },
-
-    
-    setVisible: function(visible, animate) {
-        var me = this,
-            statics = me.self,
-            mode = me.getVisibilityMode(),
-            prefix = Ext.baseCSSPrefix;
-
-        switch (mode) {
-            case statics.VISIBILITY:
-                me.removeCls([prefix + 'hidden-display', prefix + 'hidden-offsets']);
-                me[visible ? 'removeCls' : 'addCls'](prefix + 'hidden-visibility');
-            break;
-
-            case statics.DISPLAY:
-                me.removeCls([prefix + 'hidden-visibility', prefix + 'hidden-offsets']);
-                me[visible ? 'removeCls' : 'addCls'](prefix + 'hidden-display');
-            break;
-
-            case statics.OFFSETS:
-                me.removeCls([prefix + 'hidden-visibility', prefix + 'hidden-display']);
-                me[visible ? 'removeCls' : 'addCls'](prefix + 'hidden-offsets');
-            break;
-        }
-
-        return me;
-    },
-
-    getVisibilityMode: function() {
-        
-        
-        
-        var data = (this.$cache || this.getCache()).data,
-            visMode = data.visibilityMode;
-
-        if (visMode === undefined) {
-            data.visibilityMode = visMode = this.self.DISPLAY;
-        }
-        
-        return visMode;
-    },
-
-    
-    setVisibilityMode: function(mode) {
-        (this.$cache || this.getCache()).data.visibilityMode = mode;
-        return this;
-    },
-    
-    getCache: function() {
-        var me = this,
-            id = me.dom.id || Ext.id(me.dom);
-
-        
-        
-        
-        me.$cache = Ext.cache[id] || Ext.addCacheEntry(id, null, me.dom);
-            
-        return me.$cache;
-    }
-    
-}, function() {
-    var AbstractElement = this;
-
-    
-    Ext.getDetachedBody = function () {
-        var detachedEl = AbstractElement.detachedBodyEl;
-
-        if (!detachedEl) {
-            detachedEl = document.createElement('div');
-            AbstractElement.detachedBodyEl = detachedEl = new AbstractElement.Fly(detachedEl);
-            detachedEl.isDetachedBody = true;
-        }
-
-        return detachedEl;
-    };
-
-    
-    Ext.getElementById = function (id) {
-        var el = document.getElementById(id),
-            detachedBodyEl;
-
-        if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl)) {
-            el = detachedBodyEl.dom.querySelector('#' + Ext.escapeId(id));
-        }
-
-        return el;
-    };
-
-    
-    Ext.get = function(el) {
-        return Ext.dom.Element.get(el);
-    };
-
-    this.addStatics({
-        
-        Fly: new Ext.Class({
-            extend: AbstractElement,
-
-            
-            isFly: true,
-
-            constructor: function(dom) {
-                this.dom = dom;
-            },
-
-            
-            attach: function (dom) {
-
-                
-                this.dom = dom;
-                
-                
-                this.$cache = dom.id ? Ext.cache[dom.id] : null;
-                return this;
+            else if (ln == 3) {
+                parts[3] = parts[1];
             }
-        }),
 
-        _flyweights: {},
-
-        
-        fly: function(dom, named) {
-            var fly = null,
-                _flyweights = AbstractElement._flyweights;
-
-            named = named || '_global';
-
-            dom = Ext.getDom(dom);
-
-            if (dom) {
-                fly = _flyweights[named] || (_flyweights[named] = new AbstractElement.Fly());
-
-                
-                
-                fly.dom = dom;
-                
-                
-                fly.$cache = dom.id ? Ext.cache[dom.id] : null;
-            }
-            return fly;
-        }
-    });
-
-    
-    Ext.fly = function() {
-        return AbstractElement.fly.apply(AbstractElement, arguments);
-    };
-
-    (function (proto) {
-        
-        proto.destroy = proto.remove;
-
-        
-        if (document.querySelector) {
-            proto.getById = function (id, asDom) {
-                
-                
-                var dom = document.getElementById(id) ||
-                    this.dom.querySelector('#'+Ext.escapeId(id));
-                return asDom ? dom : (dom ? Ext.get(dom) : null);
+            return {
+                top   :parseFloat(parts[0]) || 0,
+                right :parseFloat(parts[1]) || 0,
+                bottom:parseFloat(parts[2]) || 0,
+                left  :parseFloat(parts[3]) || 0
             };
-        } else {
-            proto.getById = function (id, asDom) {
-                var dom = document.getElementById(id);
-                return asDom ? dom : (dom ? Ext.get(dom) : null);
+        },
+
+        
+        unitizeBox: function(box, units) {
+            var a = this.addUnits,
+                b = this.parseBox(box);
+
+            return a(b.top, units) + ' ' +
+                a(b.right, units) + ' ' +
+                a(b.bottom, units) + ' ' +
+                a(b.left, units);
+
+        },
+
+        
+        camelReplaceFn: function(m, a) {
+            return a.charAt(1).toUpperCase();
+        },
+
+        
+        normalize: function(prop) {
+            
+            if (prop == 'float') {
+                prop = Ext.supports.Float ? 'cssFloat' : 'styleFloat';
+            }
+            return this.propertyCache[prop] || (this.propertyCache[prop] = prop.replace(this.camelRe, this.camelReplaceFn));
+        },
+
+        
+        getDocumentHeight: function() {
+            return Math.max(!Ext.isStrict ? document.body.scrollHeight : document.documentElement.scrollHeight, this.getViewportHeight());
+        },
+
+        
+        getDocumentWidth: function() {
+            return Math.max(!Ext.isStrict ? document.body.scrollWidth : document.documentElement.scrollWidth, this.getViewportWidth());
+        },
+
+        
+        getViewportHeight: function(){
+            return window.innerHeight;
+        },
+
+        
+        getViewportWidth: function() {
+            return window.innerWidth;
+        },
+
+        
+        getViewSize: function() {
+            return {
+                width: window.innerWidth,
+                height: window.innerHeight
             };
-        }
-    }(this.prototype));
-});
-
-}());
-
-//@tag dom,core
-
-//@require AbstractElement.js
-
-//@define Ext.dom.AbstractElement-static
-
-//@define Ext.dom.AbstractElement
-
-
-
-Ext.dom.AbstractElement.addInheritableStatics({
-    unitRe: /\d+(px|em|%|en|ex|pt|in|cm|mm|pc)$/i,
-    camelRe: /(-[a-z])/gi,
-    cssRe: /([a-z0-9\-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*);?/gi,
-    opacityRe: /alpha\(opacity=(.*)\)/i,
-    propertyCache: {},
-    defaultUnit : "px",
-    borders: {l: 'border-left-width', r: 'border-right-width', t: 'border-top-width', b: 'border-bottom-width'},
-    paddings: {l: 'padding-left', r: 'padding-right', t: 'padding-top', b: 'padding-bottom'},
-    margins: {l: 'margin-left', r: 'margin-right', t: 'margin-top', b: 'margin-bottom'},
-    
-    addUnits: function(size, units) {
-        
-        if (typeof size == 'number') {
-            return size + (units || this.defaultUnit || 'px');
-        }
+        },
 
         
-        if (size === "" || size == "auto" || size === undefined || size === null) {
-            return size || '';
-        }
+        getOrientation: function() {
+            if (Ext.supports.OrientationChange) {
+                return (window.orientation == 0) ? 'portrait' : 'landscape';
+            }
+
+            return (window.innerHeight > window.innerWidth) ? 'portrait' : 'landscape';
+        },
 
         
-        if (!this.unitRe.test(size)) {
-            return size || '';
-        }
+        fromPoint: function(x, y) {
+            return Ext.get(document.elementFromPoint(x, y));
+        },
 
-        return size;
-    },
+        
+        parseStyles: function(styles){
+            var out = {},
+                cssRe = this.cssRe,
+                matches;
 
-    
-    isAncestor: function(p, c) {
-        var ret = false;
-
-        p = Ext.getDom(p);
-        c = Ext.getDom(c);
-        if (p && c) {
-            if (p.contains) {
-                return p.contains(c);
-            } else if (p.compareDocumentPosition) {
-                return !!(p.compareDocumentPosition(c) & 16);
-            } else {
-                while ((c = c.parentNode)) {
-                    ret = c == p || ret;
+            if (styles) {
+                
+                
+                
+                
+                cssRe.lastIndex = 0;
+                while ((matches = cssRe.exec(styles))) {
+                    out[matches[1]] = matches[2];
                 }
             }
+            return out;
         }
-        return ret;
-    },
-
-    
-    parseBox: function(box) {
-        if (typeof box != 'string') {
-            box = box.toString();
-        }
-        var parts  = box.split(' '),
-            ln = parts.length;
-
-        if (ln == 1) {
-            parts[1] = parts[2] = parts[3] = parts[0];
-        }
-        else if (ln == 2) {
-            parts[2] = parts[0];
-            parts[3] = parts[1];
-        }
-        else if (ln == 3) {
-            parts[3] = parts[1];
-        }
-
-        return {
-            top   :parseFloat(parts[0]) || 0,
-            right :parseFloat(parts[1]) || 0,
-            bottom:parseFloat(parts[2]) || 0,
-            left  :parseFloat(parts[3]) || 0
-        };
-    },
-
-    
-    unitizeBox: function(box, units) {
-        var a = this.addUnits,
-            b = this.parseBox(box);
-
-        return a(b.top, units) + ' ' +
-               a(b.right, units) + ' ' +
-               a(b.bottom, units) + ' ' +
-               a(b.left, units);
-
-    },
-
-    
-    camelReplaceFn: function(m, a) {
-        return a.charAt(1).toUpperCase();
-    },
-
-    
-    normalize: function(prop) {
-        
-        if (prop == 'float') {
-            prop = Ext.supports.Float ? 'cssFloat' : 'styleFloat';
-        }
-        return this.propertyCache[prop] || (this.propertyCache[prop] = prop.replace(this.camelRe, this.camelReplaceFn));
-    },
-
-    
-    getDocumentHeight: function() {
-        return Math.max(!Ext.isStrict ? document.body.scrollHeight : document.documentElement.scrollHeight, this.getViewportHeight());
-    },
-
-    
-    getDocumentWidth: function() {
-        return Math.max(!Ext.isStrict ? document.body.scrollWidth : document.documentElement.scrollWidth, this.getViewportWidth());
-    },
-
-    
-    getViewportHeight: function(){
-        return window.innerHeight;
-    },
-
-    
-    getViewportWidth: function() {
-        return window.innerWidth;
-    },
-
-    
-    getViewSize: function() {
-        return {
-            width: window.innerWidth,
-            height: window.innerHeight
-        };
-    },
-
-    
-    getOrientation: function() {
-        if (Ext.supports.OrientationChange) {
-            return (window.orientation == 0) ? 'portrait' : 'landscape';
-        }
-
-        return (window.innerHeight > window.innerWidth) ? 'portrait' : 'landscape';
-    },
-
-    
-    fromPoint: function(x, y) {
-        return Ext.get(document.elementFromPoint(x, y));
-    },
-
-    
-    parseStyles: function(styles){
-        var out = {},
-            cssRe = this.cssRe,
-            matches;
-
-        if (styles) {
-            
-            
-            
-            
-            cssRe.lastIndex = 0;
-            while ((matches = cssRe.exec(styles))) {
-                out[matches[1]] = matches[2];
-            }
-        }
-        return out;
     }
-});
-
-
-(function(){
+},
+function () {
     var doc = document,
-        AbstractElement = Ext.dom.AbstractElement,
+        AbstractElement = this,
         activeElement = null,
         isCSS1 = doc.compatMode == "CSS1Compat",
         flyInstance,
@@ -11575,7 +11160,21 @@ Ext.dom.AbstractElement.addInheritableStatics({
     AbstractElement.addInheritableStatics({
         
         getActiveElement: function () {
-            return doc.activeElement || activeElement;
+            var active;
+            
+            
+            
+            try {
+                active = doc.activeElement;
+            } catch(e) {}
+            
+            
+            
+            active = active || activeElement;
+            if (!active) {
+                active = activeElement = document.body;
+            }
+            return active;
         },
 
         
@@ -11740,17 +11339,13 @@ Ext.dom.AbstractElement.addInheritableStatics({
             return data.substr(0, data.length - 1);
         }
     });
-}());
+});
 
 //@tag dom,core
 
-//@require Ext.dom.AbstractElement-static
 
-//@define Ext.dom.AbstractElement-alignment
-
-
-
-Ext.dom.AbstractElement.override({
+Ext.define('Ext.dom.AbstractElement_alignment', {
+    override: 'Ext.dom.AbstractElement',
 
     
     getAnchorXY: function(anchor, local, size) {
@@ -11902,15 +11497,10 @@ Ext.dom.AbstractElement.override({
 
 //@tag dom,core
 
-//@require Ext.dom.AbstractElement-alignment
 
-//@define Ext.dom.AbstractElement-insertion
+Ext.define('Ext.dom.AbstractElement_insertion', {
+    override: 'Ext.dom.AbstractElement',
 
-//@define Ext.dom.AbstractElement
-
-
-
-Ext.dom.AbstractElement.addMethods({
     
     appendChild: function(el) {
         return Ext.get(el).appendTo(this);
@@ -12046,19 +11636,9 @@ Ext.dom.AbstractElement.addMethods({
 
 //@tag dom,core
 
-//@require Ext.dom.AbstractElement-insertion
 
-//@define Ext.dom.AbstractElement-position
-
-//@define Ext.dom.AbstractElement
-
-
-
-(function(){
-
-var Element = Ext.dom.AbstractElement;
-
-Element.override({
+Ext.define('Ext.dom.AbstractElement_position', {
+    override: 'Ext.dom.AbstractElement',
 
     
     getX: function(el) {
@@ -12096,25 +11676,25 @@ Element.override({
 
     
     setLeft: function(left) {
-        this.setStyle('left', Element.addUnits(left));
+        this.setStyle('left', this.self.addUnits(left));
         return this;
     },
 
     
     setTop: function(top) {
-        this.setStyle('top', Element.addUnits(top));
+        this.setStyle('top', this.self.addUnits(top));
         return this;
     },
 
     
     setRight: function(right) {
-        this.setStyle('right', Element.addUnits(right));
+        this.setStyle('right', this.self.addUnits(right));
         return this;
     },
 
     
     setBottom: function(bottom) {
-        this.setStyle('bottom', Element.addUnits(bottom));
+        this.setStyle('bottom', this.self.addUnits(bottom));
         return this;
     },
 
@@ -12287,24 +11867,16 @@ Element.override({
     }
 });
 
-}());
-
 //@tag dom,core
 
-//@require Ext.dom.AbstractElement-position
 
-//@define Ext.dom.AbstractElement-style
+Ext.define('Ext.dom.AbstractElement_style', {
 
-//@define Ext.dom.AbstractElement
+    override: 'Ext.dom.AbstractElement'
 
-
-
-(function(){
+}, function() {
     
-    var Element = Ext.dom.AbstractElement,
-        view = document.defaultView,
-        array = Ext.Array,
-        trimRe = /^\s+|\s+$/g,
+    var Element = this,
         wordsRe = /\w/g,
         spacesRe = /\s+/,
         transparentRe = /^(?:transparent|(?:rgba[(](?:\s*\d+\s*[,]){3}\s*0\s*[)]))$/i,
@@ -12323,7 +11895,7 @@ Element.override({
         margins = {l: MARGIN + LEFT_SUFFIX, r: MARGIN + RIGHT_SUFFIX, t: MARGIN + TOP_SUFFIX, b: MARGIN + BOTTOM_SUFFIX};
 
 
-    Element.override({
+    Ext.override(Element, {
 
         
         styleHooks: {},
@@ -12361,6 +11933,7 @@ Element.override({
             function (className) {
                 var me = this,
                     dom = me.dom,
+                    trimRe = me.trimRe,
                     classList,
                     newCls,
                     i,
@@ -12425,7 +11998,7 @@ Element.override({
 
             if (typeof(className) == 'string') {
                 
-                className = className.replace(trimRe, '').split(spacesRe);
+                className = className.replace(me.trimRe, '').split(spacesRe);
             }
 
             if (dom && dom.className && className && !!(len = className.length)) {
@@ -12465,7 +12038,7 @@ Element.override({
                     dom = me.dom;
 
                 if (dom) {
-                    className = className.replace(trimRe, '');
+                    className = className.replace(me.trimRe, '');
                     if (className) {
                         dom.classList.toggle(className);
                     }
@@ -12850,25 +12423,28 @@ Element.override({
                 Ext.EventManager.unOrientationChange(me.orientationHandler, me);
                 delete me.orientationHandler;
             }
+        },
+
+        statics: {
+            
+            populateStyleMap: function (map, order) {
+                var baseStyles = ['margin-', 'padding-', 'border-width-'],
+                    beforeAfter = ['before', 'after'],
+                    index, style, name, i;
+
+                for (index = baseStyles.length; index--; ) {
+                    for (i = 2; i--; ) {
+                        style = baseStyles[index] + beforeAfter[i]; 
+                        
+                        map[Element.normalize(style)] = map[style] = {
+                            name: Element.normalize(baseStyles[index] + order[i])
+                        };
+                    }
+                }
+            }            
         }
     });
 
-    
-    Element.populateStyleMap = function (map, order) {
-        var baseStyles = ['margin-', 'padding-', 'border-width-'],
-            beforeAfter = ['before', 'after'],
-            index, style, name, i;
-
-        for (index = baseStyles.length; index--; ) {
-            for (i = 2; i--; ) {
-                style = baseStyles[index] + beforeAfter[i]; 
-                
-                map[Element.normalize(style)] = map[style] = {
-                    name: Element.normalize(baseStyles[index] + order[i])
-                };
-            }
-        }
-    };
 
     Ext.onReady(function () {
         var supports = Ext.supports,
@@ -12932,7 +12508,7 @@ Element.override({
                 
                 
                 get: (supports.DisplayChangeInputSelectionBug || supports.DisplayChangeTextAreaSelectionBug) ?
-                        fixRightMarginAndInputFocus : fixRightMargin
+                    fixRightMarginAndInputFocus : fixRightMargin
             };
         }
 
@@ -12949,19 +12525,15 @@ Element.override({
             }
         }
     });
-}());
+
+});
 
 //@tag dom,core
 
-//@require Ext.dom.AbstractElement-style
 
-//@define Ext.dom.AbstractElement-traversal
+Ext.define('Ext.dom.AbstractElement_traversal', {
+    override: 'Ext.dom.AbstractElement',
 
-//@define Ext.dom.AbstractElement
-
-
-
-Ext.dom.AbstractElement.override({
     
     findParent: function(simpleSelector, limit, returnEl) {
         var target = this.dom,
@@ -13074,15 +12646,795 @@ Ext.dom.AbstractElement.override({
 
 //@tag dom,core
 
+//@require Ext.Supports
+
+
+
+Ext.define('Ext.dom.AbstractElement', {
+    requires: [
+        'Ext.EventManager',
+        'Ext.dom.AbstractElement_static',
+        'Ext.dom.AbstractElement_alignment',
+        'Ext.dom.AbstractElement_insertion',
+        'Ext.dom.AbstractElement_position',
+        'Ext.dom.AbstractElement_style',
+        'Ext.dom.AbstractElement_traversal'
+    ],
+
+    trimRe: /^\s+|\s+$/g,
+    whitespaceRe: /\s/,
+    
+    inheritableStatics: {
+        trimRe: /^\s+|\s+$/g,
+        whitespaceRe: /\s/,
+
+        
+        get: function(el) {
+            var me = this,
+                document = window.document,
+                El = Ext.dom.Element,
+                cacheItem,
+                extEl,
+                dom,
+                id;
+
+            if (!el) {
+                return null;
+            }
+
+            if (typeof el == "string") { 
+                if (el == Ext.windowId) {
+                    return El.get(window);
+                } else if (el == Ext.documentId) {
+                    return El.get(document);
+                }
+                
+                cacheItem = Ext.cache[el];
+                
+                
+                
+                
+                if (cacheItem && cacheItem.skipGarbageCollection) {
+                    extEl = cacheItem.el;
+                    return extEl;
+                }
+                
+                if (!(dom = document.getElementById(el))) {
+                    return null;
+                }
+
+                if (cacheItem && cacheItem.el) {
+                    extEl = Ext.updateCacheEntry(cacheItem, dom).el;
+                } else {
+                    
+                    extEl = new El(dom, !!cacheItem);
+                }
+                return extEl;
+            } else if (el.tagName) { 
+                if (!(id = el.id)) {
+                    id = Ext.id(el);
+                }
+                cacheItem = Ext.cache[id];
+                if (cacheItem && cacheItem.el) {
+                    extEl = Ext.updateCacheEntry(cacheItem, el).el;
+                } else {
+                    
+                    extEl = new El(el, !!cacheItem);
+                }
+                return extEl;
+            } else if (el instanceof me) {
+                if (el != me.docEl && el != me.winEl) {
+                    id = el.id;
+                    
+                    
+                    cacheItem = Ext.cache[id];
+                    if (cacheItem) {
+                        Ext.updateCacheEntry(cacheItem, document.getElementById(id) || el.dom);
+                    }
+                }
+                return el;
+            } else if (el.isComposite) {
+                return el;
+            } else if (Ext.isArray(el)) {
+                return me.select(el);
+            } else if (el === document) {
+                
+                if (!me.docEl) {
+                    me.docEl = Ext.Object.chain(El.prototype);
+                    me.docEl.dom = document;
+                    me.docEl.id = Ext.id(document);
+                    me.addToCache(me.docEl);
+                }
+                return me.docEl;
+            } else if (el === window) {
+                if (!me.winEl) {
+                    me.winEl = Ext.Object.chain(El.prototype);
+                    me.winEl.dom = window;
+                    me.winEl.id = Ext.id(window);
+                    me.addToCache(me.winEl);
+                }
+                return me.winEl;
+            }
+            return null;
+        },
+
+        addToCache: function(el, id) {
+            if (el) {
+                Ext.addCacheEntry(id, el);
+            }
+            return el;
+        },
+
+        addMethods: function() {
+            this.override.apply(this, arguments);
+        },
+
+        
+        mergeClsList: function() {
+            var clsList, clsHash = {},
+                i, length, j, listLength, clsName, result = [],
+                changed = false,
+                trimRe = this.trimRe,
+                whitespaceRe = this.whitespaceRe;
+
+            for (i = 0, length = arguments.length; i < length; i++) {
+                clsList = arguments[i];
+                if (Ext.isString(clsList)) {
+                    clsList = clsList.replace(trimRe, '').split(whitespaceRe);
+                }
+                if (clsList) {
+                    for (j = 0, listLength = clsList.length; j < listLength; j++) {
+                        clsName = clsList[j];
+                        if (!clsHash[clsName]) {
+                            if (i) {
+                                changed = true;
+                            }
+                            clsHash[clsName] = true;
+                        }
+                    }
+                }
+            }
+
+            for (clsName in clsHash) {
+                result.push(clsName);
+            }
+            result.changed = changed;
+            return result;
+        },
+
+        
+        removeCls: function(existingClsList, removeClsList) {
+            var clsHash = {},
+                i, length, clsName, result = [],
+                changed = false,
+                whitespaceRe = this.whitespaceRe;
+
+            if (existingClsList) {
+                if (Ext.isString(existingClsList)) {
+                    existingClsList = existingClsList.replace(this.trimRe, '').split(whitespaceRe);
+                }
+                for (i = 0, length = existingClsList.length; i < length; i++) {
+                    clsHash[existingClsList[i]] = true;
+                }
+            }
+            if (removeClsList) {
+                if (Ext.isString(removeClsList)) {
+                    removeClsList = removeClsList.split(whitespaceRe);
+                }
+                for (i = 0, length = removeClsList.length; i < length; i++) {
+                    clsName = removeClsList[i];
+                    if (clsHash[clsName]) {
+                        changed = true;
+                        delete clsHash[clsName];
+                    }
+                }
+            }
+            for (clsName in clsHash) {
+                result.push(clsName);
+            }
+            result.changed = changed;
+            return result;
+        },
+
+        
+        VISIBILITY: 1,
+
+        
+        DISPLAY: 2,
+
+        
+        OFFSETS: 3,
+
+        
+        ASCLASS: 4
+    },
+
+    constructor: function(element, forceNew) {
+        var me = this,
+            dom = typeof element == 'string'
+                ? document.getElementById(element)
+                : element,
+            id;
+
+        if (!dom) {
+            return null;
+        }
+
+        id = dom.id;
+        if (!forceNew && id && Ext.cache[id]) {
+            
+            return Ext.cache[id].el;
+        }
+
+        
+        me.dom = dom;
+
+        
+        me.id = id || Ext.id(dom);
+
+        me.self.addToCache(me);
+    },
+
+    
+    set: function(o, useSet) {
+         var el = this.dom,
+             attr,
+             value;
+
+         for (attr in o) {
+             if (o.hasOwnProperty(attr)) {
+                 value = o[attr];
+                 if (attr == 'style') {
+                     this.applyStyles(value);
+                 }
+                 else if (attr == 'cls') {
+                     el.className = value;
+                 }
+                 else if (useSet !== false) {
+                     if (value === undefined) {
+                         el.removeAttribute(attr);
+                     } else {
+                        el.setAttribute(attr, value);
+                     }
+                 }
+                 else {
+                     el[attr] = value;
+                 }
+             }
+         }
+         return this;
+     },
+
+    
+    defaultUnit: "px",
+
+    
+    is: function(simpleSelector) {
+        return Ext.DomQuery.is(this.dom, simpleSelector);
+    },
+
+    
+    getValue: function(asNumber) {
+        var val = this.dom.value;
+        return asNumber ? parseInt(val, 10) : val;
+    },
+
+    
+    remove: function() {
+        var me = this,
+        dom = me.dom;
+
+        if (dom) {
+            Ext.removeNode(dom);
+            delete me.dom;
+        }
+    },
+
+    
+    contains: function(el) {
+        if (!el) {
+            return false;
+        }
+
+        var me = this,
+            dom = el.dom || el;
+
+        
+        return (dom === me.dom) || Ext.dom.AbstractElement.isAncestor(me.dom, dom);
+    },
+
+    
+    getAttribute: function(name, ns) {
+        var dom = this.dom;
+        return dom.getAttributeNS(ns, name) || dom.getAttribute(ns + ":" + name) || dom.getAttribute(name) || dom[name];
+    },
+
+    
+    update: function(html) {
+        if (this.dom) {
+            this.dom.innerHTML = html;
+        }
+        return this;
+    },
+
+
+    
+    setHTML: function(html) {
+        if(this.dom) {
+            this.dom.innerHTML = html;
+        }
+        return this;
+    },
+
+    
+    getHTML: function() {
+        return this.dom ? this.dom.innerHTML : '';
+    },
+
+    
+    hide: function() {
+        this.setVisible(false);
+        return this;
+    },
+
+    
+    show: function() {
+        this.setVisible(true);
+        return this;
+    },
+
+    
+    setVisible: function(visible, animate) {
+        var me = this,
+            statics = me.self,
+            mode = me.getVisibilityMode(),
+            prefix = Ext.baseCSSPrefix;
+
+        switch (mode) {
+            case statics.VISIBILITY:
+                me.removeCls([prefix + 'hidden-display', prefix + 'hidden-offsets']);
+                me[visible ? 'removeCls' : 'addCls'](prefix + 'hidden-visibility');
+            break;
+
+            case statics.DISPLAY:
+                me.removeCls([prefix + 'hidden-visibility', prefix + 'hidden-offsets']);
+                me[visible ? 'removeCls' : 'addCls'](prefix + 'hidden-display');
+            break;
+
+            case statics.OFFSETS:
+                me.removeCls([prefix + 'hidden-visibility', prefix + 'hidden-display']);
+                me[visible ? 'removeCls' : 'addCls'](prefix + 'hidden-offsets');
+            break;
+        }
+
+        return me;
+    },
+
+    getVisibilityMode: function() {
+        
+        
+        
+        var data = (this.$cache || this.getCache()).data,
+            visMode = data.visibilityMode;
+
+        if (visMode === undefined) {
+            data.visibilityMode = visMode = this.self.DISPLAY;
+        }
+        
+        return visMode;
+    },
+
+    
+    setVisibilityMode: function(mode) {
+        (this.$cache || this.getCache()).data.visibilityMode = mode;
+        return this;
+    },
+    
+    getCache: function() {
+        var me = this,
+            id = me.dom.id || Ext.id(me.dom);
+
+        
+        
+        
+        me.$cache = Ext.cache[id] || Ext.addCacheEntry(id, null, me.dom);
+            
+        return me.$cache;
+    }
+},
+function() {
+    var AbstractElement = this;
+
+    
+    Ext.getDetachedBody = function () {
+        var detachedEl = AbstractElement.detachedBodyEl;
+
+        if (!detachedEl) {
+            detachedEl = document.createElement('div');
+            AbstractElement.detachedBodyEl = detachedEl = new AbstractElement.Fly(detachedEl);
+            detachedEl.isDetachedBody = true;
+        }
+
+        return detachedEl;
+    };
+
+    
+    Ext.getElementById = function (id) {
+        var el = document.getElementById(id),
+            detachedBodyEl;
+
+        if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl)) {
+            el = detachedBodyEl.dom.querySelector('#' + Ext.escapeId(id));
+        }
+
+        return el;
+    };
+
+    
+    Ext.get = function(el) {
+        return Ext.dom.Element.get(el);
+    };
+
+    this.addStatics({
+        
+        Fly: new Ext.Class({
+            
+            
+            
+            
+            extend: AbstractElement,
+
+            
+            isFly: true,
+
+            constructor: function(dom) {
+                this.dom = dom;
+            },
+
+            
+            attach: function (dom) {
+
+                
+                this.dom = dom;
+                
+                
+                this.$cache = dom.id ? Ext.cache[dom.id] : null;
+                return this;
+            }
+        }),
+
+        _flyweights: {},
+
+        
+        fly: function(dom, named) {
+            var fly = null,
+                _flyweights = AbstractElement._flyweights;
+
+            named = named || '_global';
+
+            dom = Ext.getDom(dom);
+
+            if (dom) {
+                fly = _flyweights[named] || (_flyweights[named] = new AbstractElement.Fly());
+
+                
+                
+                fly.dom = dom;
+                
+                
+                fly.$cache = dom.id ? Ext.cache[dom.id] : null;
+            }
+            return fly;
+        }
+    });
+
+    
+    Ext.fly = function() {
+        return AbstractElement.fly.apply(AbstractElement, arguments);
+    };
+
+    (function (proto) {
+        
+        proto.destroy = proto.remove;
+
+        
+        if (document.querySelector) {
+            proto.getById = function (id, asDom) {
+                
+                
+                var dom = document.getElementById(id) ||
+                    this.dom.querySelector('#'+Ext.escapeId(id));
+                return asDom ? dom : (dom ? Ext.get(dom) : null);
+            };
+        } else {
+            proto.getById = function (id, asDom) {
+                var dom = document.getElementById(id);
+                return asDom ? dom : (dom ? Ext.get(dom) : null);
+            };
+        }
+    }(this.prototype));
+});
+
+//@tag dom,core
+
+//@require ../EventObject.js
+
+
+
+Ext.define('Ext.dom.AbstractQuery', {
+    
+    select: function(q, root) {
+        var results = [],
+            nodes,
+            i,
+            j,
+            qlen,
+            nlen;
+
+        root = root || document;
+
+        if (typeof root == 'string') {
+            root = document.getElementById(root);
+        }
+
+        q = q.split(",");
+
+        for (i = 0,qlen = q.length; i < qlen; i++) {
+            if (typeof q[i] == 'string') {
+                
+                
+                if (typeof q[i][0] == '@') {
+                    nodes = root.getAttributeNode(q[i].substring(1));
+                    results.push(nodes);
+                } else {
+                    nodes = root.querySelectorAll(q[i]);
+
+                    for (j = 0,nlen = nodes.length; j < nlen; j++) {
+                        results.push(nodes[j]);
+                    }
+                }
+            }
+        }
+
+        return results;
+    },
+
+    
+    selectNode: function(q, root) {
+        return this.select(q, root)[0];
+    },
+
+    
+    is: function(el, q) {
+        if (typeof el == "string") {
+            el = document.getElementById(el);
+        }
+        return this.select(q).indexOf(el) !== -1;
+    }
+
+});
+
+//@tag dom,core
+
+//@require AbstractQuery.js
+
+
+
+Ext.define('Ext.dom.AbstractHelper', {
+    emptyTags : /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i,
+    confRe : /^(?:tag|children|cn|html|tpl|tplData)$/i,
+    endRe : /end/i,
+
+    
+    attributeTransform: { cls : 'class', htmlFor : 'for' },
+
+    closeTags: {},
+
+    decamelizeName : (function () {
+        var camelCaseRe = /([a-z])([A-Z])/g,
+            cache = {};
+
+        function decamel (match, p1, p2) {
+            return p1 + '-' + p2.toLowerCase();
+        }
+
+        return function (s) {
+            return cache[s] || (cache[s] = s.replace(camelCaseRe, decamel));
+        };
+    }()),
+
+    generateMarkup: function(spec, buffer) {
+        var me = this,
+            specType = typeof spec,
+            attr, val, tag, i, closeTags;
+
+        if (specType == "string" || specType == "number") {
+            buffer.push(spec);
+        } else if (Ext.isArray(spec)) {
+            for (i = 0; i < spec.length; i++) {
+                if (spec[i]) {
+                    me.generateMarkup(spec[i], buffer);
+                }
+            }
+        } else {
+            tag = spec.tag || 'div';
+            buffer.push('<', tag);
+
+            for (attr in spec) {
+                if (spec.hasOwnProperty(attr)) {
+                    val = spec[attr];
+                    if (!me.confRe.test(attr)) {
+                        if (typeof val == "object") {
+                            buffer.push(' ', attr, '="');
+                            me.generateStyles(val, buffer).push('"');
+                        } else {
+                            buffer.push(' ', me.attributeTransform[attr] || attr, '="', val, '"');
+                        }
+                    }
+                }
+            }
+
+            
+            if (me.emptyTags.test(tag)) {
+                buffer.push('/>');
+            } else {
+                buffer.push('>');
+
+                
+                if ((val = spec.tpl)) {
+                    val.applyOut(spec.tplData, buffer);
+                }
+                if ((val = spec.html)) {
+                    buffer.push(val);
+                }
+                if ((val = spec.cn || spec.children)) {
+                    me.generateMarkup(val, buffer);
+                }
+
+                
+                closeTags = me.closeTags;
+                buffer.push(closeTags[tag] || (closeTags[tag] = '</' + tag + '>'));
+            }
+        }
+
+        return buffer;
+    },
+
+    
+    generateStyles: function (styles, buffer) {
+        var a = buffer || [],
+            name;
+
+        for (name in styles) {
+            if (styles.hasOwnProperty(name)) {
+                a.push(this.decamelizeName(name), ':', styles[name], ';');
+            }
+        }
+
+        return buffer || a.join('');
+    },
+
+    
+    markup: function(spec) {
+        if (typeof spec == "string") {
+            return spec;
+        }
+
+        var buf = this.generateMarkup(spec, []);
+        return buf.join('');
+    },
+
+    
+    applyStyles: function(el, styles) {
+        if (styles) {
+            var i = 0,
+                len,
+                style;
+
+            el = Ext.fly(el);
+            if (typeof styles == 'function') {
+                styles = styles.call();
+            }
+            if (typeof styles == 'string'){
+                styles = Ext.util.Format.trim(styles).split(/\s*(?::|;)\s*/);
+                for(len = styles.length; i < len;){
+                    el.setStyle(styles[i++], styles[i++]);
+                }
+            } else if (Ext.isObject(styles)) {
+                el.setStyle(styles);
+            }
+        }
+    },
+
+    
+    insertHtml: function(where, el, html) {
+        var hash = {},
+            hashVal,
+            setStart,
+            range,
+            frag,
+            rangeEl,
+            rs;
+
+        where = where.toLowerCase();
+
+        
+        hash['beforebegin'] = ['BeforeBegin', 'previousSibling'];
+        hash['afterend'] = ['AfterEnd', 'nextSibling'];
+
+        range = el.ownerDocument.createRange();
+        setStart = 'setStart' + (this.endRe.test(where) ? 'After' : 'Before');
+        if (hash[where]) {
+            range[setStart](el);
+            frag = range.createContextualFragment(html);
+            el.parentNode.insertBefore(frag, where == 'beforebegin' ? el : el.nextSibling);
+            return el[(where == 'beforebegin' ? 'previous' : 'next') + 'Sibling'];
+        }
+        else {
+            rangeEl = (where == 'afterbegin' ? 'first' : 'last') + 'Child';
+            if (el.firstChild) {
+                range[setStart](el[rangeEl]);
+                frag = range.createContextualFragment(html);
+                if (where == 'afterbegin') {
+                    el.insertBefore(frag, el.firstChild);
+                }
+                else {
+                    el.appendChild(frag);
+                }
+            }
+            else {
+                el.innerHTML = html;
+            }
+            return el[rangeEl];
+        }
+
+        throw 'Illegal insertion point -> "' + where + '"';
+    },
+
+    
+    insertBefore: function(el, o, returnElement) {
+        return this.doInsert(el, o, returnElement, 'beforebegin');
+    },
+
+    
+    insertAfter: function(el, o, returnElement) {
+        return this.doInsert(el, o, returnElement, 'afterend', 'nextSibling');
+    },
+
+    
+    insertFirst: function(el, o, returnElement) {
+        return this.doInsert(el, o, returnElement, 'afterbegin', 'firstChild');
+    },
+
+    
+    append: function(el, o, returnElement) {
+        return this.doInsert(el, o, returnElement, 'beforeend', '', true);
+    },
+
+    
+    overwrite: function(el, o, returnElement) {
+        el = Ext.getDom(el);
+        el.innerHTML = this.markup(o);
+        return returnElement ? Ext.get(el.firstChild) : el.firstChild;
+    },
+
+    doInsert: function(el, o, returnElement, pos, sibling, append) {
+        var newNode = this.insertHtml(pos, Ext.getDom(el), this.markup(o));
+        return returnElement ? Ext.get(newNode, true) : newNode;
+    }
+
+});
+
+//@tag dom,core
+
 //@define Ext.DomHelper
+
 
 //@define Ext.core.DomHelper
 
-//@require Ext.dom.AbstractElement-traversal
 
 
-
-(function() {
+Ext.define('Ext.dom.Helper', (function() {
 
 
 var afterbegin = 'afterbegin',
@@ -13110,13 +13462,13 @@ var afterbegin = 'afterbegin',
     };
 
 
-Ext.define('Ext.dom.Helper', {
+return {
     extend: 'Ext.dom.AbstractHelper',
     requires:['Ext.dom.AbstractElement'],
 
-    tableRe: /^table|tbody|tr|td$/i,
+    tableRe: /^(?:table|thead|tbody|tr|td)$/i,
 
-    tableElRe: /td|tr|tbody/i,
+    tableElRe: /td|tr|tbody|thead/i,
 
     
     useDom : false,
@@ -13183,10 +13535,13 @@ Ext.define('Ext.dom.Helper', {
         ns = el.nextSibling;
 
         if (ns) {
+            ns = el;
             el = document.createDocumentFragment();
+            
             while (ns) {
-                el.appendChild(ns);
-                ns = ns.nextSibling;
+                 nx = ns.nextSibling;
+                 el.appendChild(ns);
+                 ns = nx;
             }
         }
         return el;
@@ -13214,7 +13569,7 @@ Ext.define('Ext.dom.Helper', {
 
         if (tag == 'td' || (tag == 'tr' && (be || ab))) {
             node = this.ieTable(4, trs, html, tre);
-        } else if ((tag == 'tbody' && (be || ab)) ||
+        } else if (((tag == 'tbody' || tag == 'thead') && (be || ab)) ||
                 (tag == 'tr' && (bb || ae))) {
             node = this.ieTable(3, tbs, html, tbe);
         } else {
@@ -13373,13 +13728,11 @@ Ext.define('Ext.dom.Helper', {
         return new Ext.Template(html);
     }
 
-}, function() {
+};
+})(), function() {
     Ext.ns('Ext.core');
     Ext.DomHelper = Ext.core.DomHelper = new this;
 });
-
-
-}());
 
 //@tag dom,core
 
@@ -13404,7 +13757,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         trimRe = /^\s+|\s+$/g,
         tplRe = /\{(\d+)\}/g,
         modeRe = /^(\s?[\/>+~]\s?|\s|$)/,
-        tagTokenRe = /^(#)?([\w\-\*\\]+)/,
+        tagTokenRe = /^(#)?([\w\-\*\|\\]+)/,
         nthRe = /(\d*)n\+?(\d*)/,
         nthRe2 = /\D/,
         startIdRe = /^\s*\#/,
@@ -13417,7 +13770,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         shortHex = /\\([0-9a-fA-F]{1,6})\s{0,1}/g,
         nonHex = /\\([^0-9a-fA-F]{1})/g,
         escapes = /\\/g,
-        num, hasEscapes,
+        num, hasEscapes, supportsColonInGetElementsByTagName,
 
         
         
@@ -13561,7 +13914,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         if(!ns){
             return result;
         }
-        tagName = tagName || "*";
+        tagName = tagName.replace('|', ':') || "*";
         
         if(typeof ns.getElementsByTagName != "undefined"){
             ns = [ns];
@@ -13570,10 +13923,29 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         
         
         if(!mode){
-            for(i = 0, ni; ni = ns[i]; i++){
-                cs = ni.getElementsByTagName(tagName);
-                for(j = 0, ci; ci = cs[j]; j++){
-                    result[++ri] = ci;
+            tagName = unescapeCssSelector(tagName);
+            if (!supportsColonNsSeparator() && Ext.DomQuery.isXml(ns[0]) &&
+                tagName.indexOf(':') !== -1) {
+                
+                
+                
+                
+                
+                
+                for(i = 0, ni; ni = ns[i]; i++){
+                    cs = ni.getElementsByTagName(tagName.split(':').pop());
+                    for(j = 0, ci; ci = cs[j]; j++){
+                        if (ci.tagName === tagName) {
+                            result[++ri] = ci;
+                        }
+                    }
+                }
+            } else {
+                for(i = 0, ni; ni = ns[i]; i++){
+                    cs = ni.getElementsByTagName(tagName);
+                    for(j = 0, ci; ci = cs[j]; j++){
+                        result[++ri] = ci;
+                    }
                 }
             }
         
@@ -13816,6 +14188,26 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         ns = getNodes(ns, mode, "*");
         return byId(ns, id);
     }
+    
+    
+    
+    function supportsColonNsSeparator() {
+        var xml, doc;
+
+        if (supportsColonInGetElementsByTagName === undefined) {
+            xml = '<r><a:b xmlns:a="n"></a:b></r>';
+
+            if (window.DOMParser) {
+                doc = (new DOMParser()).parseFromString(xml, "application/xml");
+            } else {
+                doc = new ActiveXObject("Microsoft.XMLDOM");
+                doc.loadXML(xml);
+            }
+
+            supportsColonInGetElementsByTagName = !!doc.getElementsByTagName('a:b').length;
+        }
+        return supportsColonInGetElementsByTagName;
+    }
 
     return {
         getStyle : function(el, name){
@@ -13827,7 +14219,6 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
             
             var fn = ["var f = function(root){\n var mode; ++batch; var n = root || document;\n"],
-                mode,
                 lastPath,
                 matchers = Ext.DomQuery.matchers,
                 matchersLn = matchers.length,
@@ -14054,7 +14445,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 re: /^#([\w\-\\]+)/,
                 select: 'n = byId(n, "{1}");'
             },{
-                re: /^@([\w\-]+)/,
+                re: /^@([\w\-\.]+)/,
                 select: 'return {firstChild:{nodeValue:attrValue(n, "{1}")}};'
             }
         ],
@@ -14281,6 +14672,22 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                     }
                 }
                 return r;
+            },
+
+            focusable: function(candidates) {
+                var len = candidates.length,
+                    results = [],
+                    i = 0,
+                    c;
+
+                for (; i < len; i++) {
+                    c = candidates[i];
+                    if (Ext.fly(c).isFocusable()) {
+                        results.push(c);
+                    }
+                }
+
+                return results;
             }
         }
     };
@@ -14292,906 +14699,14 @@ Ext.query = Ext.DomQuery.select;
 
 //@tag dom,core
 
-//@require Query.js
 
-//@define Ext.dom.Element
-
-//@require Ext.dom.AbstractElement
-
-
-
-(function() {
-
-var HIDDEN = 'hidden',
-    DOC             = document,
-    VISIBILITY      = "visibility",
-    DISPLAY         = "display",
-    NONE            = "none",
-    XMASKED         = Ext.baseCSSPrefix + "masked",
-    XMASKEDRELATIVE = Ext.baseCSSPrefix + "masked-relative",
-    EXTELMASKMSG    = Ext.baseCSSPrefix + "mask-msg",
-    bodyRe          = /^body/i,
-    visFly,
-
-    
-    noBoxAdjust = Ext.isStrict ? {
-        select: 1
-    }: {
-        input: 1,
-        select: 1,
-        textarea: 1
-    },
-
-    
-    isScrolled = function(c) {
-        var r = [], ri = -1,
-            i, ci;
-        for (i = 0; ci = c[i]; i++) {
-            if (ci.scrollTop > 0 || ci.scrollLeft > 0) {
-                r[++ri] = ci;
-            }
-        }
-        return r;
-    },
-
-    Element = Ext.define('Ext.dom.Element', {
-
-    extend: 'Ext.dom.AbstractElement',
-
-    alternateClassName: ['Ext.Element', 'Ext.core.Element'],
-
-    addUnits: function() {
-        return this.self.addUnits.apply(this.self, arguments);
-    },
-
-    
-    focus: function(defer,  dom) {
-        var me = this,
-            scrollTop,
-            body;
-
-        dom = dom || me.dom;
-        body = (dom.ownerDocument || DOC).body || DOC.body;
-        try {
-            if (Number(defer)) {
-                Ext.defer(me.focus, defer, me, [null, dom]);
-            } else {
-                
-                
-                if (dom.offsetHeight > Element.getViewHeight()) {
-                    scrollTop = body.scrollTop;
-                }
-                dom.focus();
-                if (scrollTop !== undefined) {
-                    body.scrollTop = scrollTop;
-                }
-            }
-        } catch(e) {
-        }
-        return me;
-    },
-
-    
-    blur: function() {
-        try {
-            this.dom.blur();
-        } catch(e) {
-        }
-        return this;
-    },
-
-    
-    isBorderBox: function() {
-        var box = Ext.isBorderBox;
-        if (box) {
-            box = !((this.dom.tagName || "").toLowerCase() in noBoxAdjust);
-        }
-        return box;
-    },
-
-    
-    hover: function(overFn, outFn, scope, options) {
-        var me = this;
-        me.on('mouseenter', overFn, scope || me.dom, options);
-        me.on('mouseleave', outFn, scope || me.dom, options);
-        return me;
-    },
-
-    
-    getAttributeNS: function(ns, name) {
-        return this.getAttribute(name, ns);
-    },
-
-    getAttribute: (Ext.isIE && !(Ext.isIE9 && DOC.documentMode === 9)) ?
-        function(name, ns) {
-            var d = this.dom,
-                    type;
-            if (ns) {
-                type = typeof d[ns + ":" + name];
-                if (type != 'undefined' && type != 'unknown') {
-                    return d[ns + ":" + name] || null;
-                }
-                return null;
-            }
-            if (name === "for") {
-                name = "htmlFor";
-            }
-            return d[name] || null;
-        } : function(name, ns) {
-            var d = this.dom;
-            if (ns) {
-                return d.getAttributeNS(ns, name) || d.getAttribute(ns + ":" + name);
-            }
-            return  d.getAttribute(name) || d[name] || null;
-        },
-
-    
-    cacheScrollValues: function() {
-        var me = this,
-            scrolledDescendants,
-            el, i,
-            scrollValues = [],
-            result = function() {
-                for (i = 0; i < scrolledDescendants.length; i++) {
-                    el = scrolledDescendants[i];
-                    el.scrollLeft = scrollValues[i][0];
-                    el.scrollTop  = scrollValues[i][1];
-                }
-            };
-
-        if (!Ext.DomQuery.pseudos.isScrolled) {
-            Ext.DomQuery.pseudos.isScrolled = isScrolled;
-        }
-        scrolledDescendants = me.query(':isScrolled');
-        for (i = 0; i < scrolledDescendants.length; i++) {
-            el = scrolledDescendants[i];
-            scrollValues[i] = [el.scrollLeft, el.scrollTop];
-        }
-        return result;
-    },
-
-    
-    autoBoxAdjust: true,
-
-    
-    isVisible : function(deep) {
-        var me = this,
-            dom = me.dom,
-            stopNode = dom.ownerDocument.documentElement;
-
-        if (!visFly) {
-            visFly = new Element.Fly();
-        }
-
-        while (dom !== stopNode) {
-            
-            
-            if (!dom || dom.nodeType === 11 || (visFly.attach(dom)).isStyle(VISIBILITY, HIDDEN) || visFly.isStyle(DISPLAY, NONE)) {
-                return false;
-            }
-            
-            if (!deep) {
-                break;
-            }
-            dom = dom.parentNode;
-        }
-        return true;
-    },
-
-    
-    isDisplayed : function() {
-        return !this.isStyle(DISPLAY, NONE);
-    },
-
-    
-    enableDisplayMode : function(display) {
-        var me = this;
-        
-        me.setVisibilityMode(Element.DISPLAY);
-
-        if (!Ext.isEmpty(display)) {
-            (me.$cache || me.getCache()).data.originalDisplay = display;
-        }
-
-        return me;
-    },
-
-    
-    mask : function(msg, msgCls , elHeight) {
-        var me            = this,
-            dom           = me.dom,
-            
-            
-            setExpression = dom.style.setExpression,
-            data          = (me.$cache || me.getCache()).data,
-            maskEl        = data.maskEl,
-            maskMsg       = data.maskMsg;
-
-        if (!(bodyRe.test(dom.tagName) && me.getStyle('position') == 'static')) {
-            me.addCls(XMASKEDRELATIVE);
-        }
-        
-        
-        if (maskEl) {
-            maskEl.remove();
-        }
-        
-        if (maskMsg) {
-            maskMsg.remove();
-        }
-
-        Ext.DomHelper.append(dom, [{
-            cls : Ext.baseCSSPrefix + "mask"
-        }, {
-            cls : msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG,
-            cn  : {
-                tag: 'div',
-                html: msg || ''
-            }
-        }]);
-            
-        maskMsg = Ext.get(dom.lastChild);
-        maskEl = Ext.get(maskMsg.dom.previousSibling);
-        data.maskMsg = maskMsg;
-        data.maskEl = maskEl;
-
-        me.addCls(XMASKED);
-        maskEl.setDisplayed(true);
-
-        if (typeof msg == 'string') {
-            maskMsg.setDisplayed(true);
-            maskMsg.center(me);
-        } else {
-            maskMsg.setDisplayed(false);
-        }
-        
-        
-        
-        
-        
-        if (!Ext.supports.IncludePaddingInWidthCalculation && setExpression) {
-            
-            try {
-                maskEl.dom.style.setExpression('width', 'this.parentNode.clientWidth + "px"');
-            } catch (e) {}
-        }
-
-        
-        
-        if (!Ext.supports.IncludePaddingInHeightCalculation && setExpression) {
-            
-            try {
-                maskEl.dom.style.setExpression('height', 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + "px"');
-            } catch (e) {}
-        }
-        
-        else if (Ext.isIE && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
-            maskEl.setSize(undefined, elHeight || me.getHeight());
-        }
-        return maskEl;
-    },
-
-    
-    unmask : function() {
-        var me      = this,
-            data    = (me.$cache || me.getCache()).data,
-            maskEl  = data.maskEl,
-            maskMsg = data.maskMsg,
-            style;
-
-        if (maskEl) {
-            style = maskEl.dom.style;
-            
-            if (style.clearExpression) {
-                style.clearExpression('width');
-                style.clearExpression('height');
-            }
-            
-            if (maskEl) {
-                maskEl.remove();
-                delete data.maskEl;
-            }
-            
-            if (maskMsg) {
-                maskMsg.remove();
-                delete data.maskMsg;
-            }
-            
-            me.removeCls([XMASKED, XMASKEDRELATIVE]);
-        }
-    },
-
-    
-    isMasked : function() {
-        var me      = this,
-            data    = (me.$cache || me.getCache()).data,
-            maskEl  = data.maskEl,
-            maskMsg = data.maskMsg,
-            hasMask = false; 
-
-        if (maskEl && maskEl.isVisible()) {
-            if (maskMsg) {
-                maskMsg.center(me);
-            }
-            hasMask = true;
-        }
-        return hasMask;
-    },
-
-    
-    createShim : function() {
-        var el = DOC.createElement('iframe'),
-            shim;
-
-        el.frameBorder = '0';
-        el.className = Ext.baseCSSPrefix + 'shim';
-        el.src = Ext.SSL_SECURE_URL;
-        shim = Ext.get(this.dom.parentNode.insertBefore(el, this.dom));
-        shim.autoBoxAdjust = false;
-        return shim;
-    },
-
-    
-    addKeyListener : function(key, fn, scope){
-        var config;
-        if(typeof key != 'object' || Ext.isArray(key)){
-            config = {
-                target: this,
-                key: key,
-                fn: fn,
-                scope: scope
-            };
-        }else{
-            config = {
-                target: this,
-                key : key.key,
-                shift : key.shift,
-                ctrl : key.ctrl,
-                alt : key.alt,
-                fn: fn,
-                scope: scope
-            };
-        }
-        return new Ext.util.KeyMap(config);
-    },
-
-    
-    addKeyMap : function(config) {
-        return new Ext.util.KeyMap(Ext.apply({
-            target: this
-        }, config));
-    },
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-
-    
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-
-    
-    on: function(eventName, fn, scope, options) {
-        Ext.EventManager.on(this, eventName, fn, scope || this, options);
-        return this;
-    },
-
-    
-    un: function(eventName, fn, scope) {
-        Ext.EventManager.un(this, eventName, fn, scope || this);
-        return this;
-    },
-
-    
-    removeAllListeners: function() {
-        Ext.EventManager.removeAll(this);
-        return this;
-    },
-
-    
-    purgeAllListeners: function() {
-        Ext.EventManager.purgeElement(this);
-        return this;
-    }
-
-}, function() {
-
-    var EC              = Ext.cache,
-        El              = this,
-        AbstractElement = Ext.dom.AbstractElement,
-        focusRe         = /a|button|embed|iframe|img|input|object|select|textarea/i,
-        nonSpaceRe      = /\S/,
-        scriptTagRe     = /(?:<script([^>]*)?>)((\n|\r|.)*?)(?:<\/script>)/ig,
-        replaceScriptTagRe = /(?:<script.*?>)((\n|\r|.)*?)(?:<\/script>)/ig,
-        srcRe           = /\ssrc=([\'\"])(.*?)\1/i,
-        typeRe          = /\stype=([\'\"])(.*?)\1/i,
-        useDocForId = !(Ext.isIE6 || Ext.isIE7 || Ext.isIE8);
-
-    El.boxMarkup = '<div class="{0}-tl"><div class="{0}-tr"><div class="{0}-tc"></div></div></div><div class="{0}-ml"><div class="{0}-mr"><div class="{0}-mc"></div></div></div><div class="{0}-bl"><div class="{0}-br"><div class="{0}-bc"></div></div></div>';
-    
-
-    
-    
-    
-    function garbageCollect() {
-        if (!Ext.enableGarbageCollector) {
-            clearInterval(El.collectorThreadId);
-        } else {
-            var eid,
-                d,
-                o,
-                t;
-
-            for (eid in EC) {
-                if (!EC.hasOwnProperty(eid)) {
-                    continue;
-                }
-
-                o = EC[eid];
-
-                
-                if (o.skipGarbageCollection) {
-                    continue;
-                }
-
-                d = o.dom;
-
-
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                if (!d.parentNode || (!d.offsetParent && !Ext.getElementById(eid))) {
-                    if (d && Ext.enableListenerCollection) {
-                        Ext.EventManager.removeAll(d);
-                    }
-                    delete EC[eid];
-                }
-            }
-            
-            if (Ext.isIE) {
-                t = {};
-                for (eid in EC) {
-                    if (!EC.hasOwnProperty(eid)) {
-                        continue;
-                    }
-                    t[eid] = EC[eid];
-                }
-                EC = Ext.cache = t;
-            }
-        }
-    }
-
-    El.collectorThreadId = setInterval(garbageCollect, 30000);
-
-    
-    El.addMethods({
-
-        
-        monitorMouseLeave: function(delay, handler, scope) {
-            var me = this,
-                timer,
-                listeners = {
-                    mouseleave: function(e) {
-                        timer = setTimeout(Ext.Function.bind(handler, scope||me, [e]), delay);
-                    },
-                    mouseenter: function() {
-                        clearTimeout(timer);
-                    },
-                    freezeEvent: true
-                };
-
-            me.on(listeners);
-            return listeners;
-        },
-
-        
-        swallowEvent : function(eventName, preventDefault) {
-            var me = this,
-                e, eLen;
-            function fn(e) {
-                e.stopPropagation();
-                if (preventDefault) {
-                    e.preventDefault();
-                }
-            }
-
-            if (Ext.isArray(eventName)) {
-                eLen = eventName.length;
-
-                for (e = 0; e < eLen; e++) {
-                    me.on(eventName[e], fn);
-                }
-
-                return me;
-            }
-            me.on(eventName, fn);
-            return me;
-        },
-
-        
-        relayEvent : function(eventName, observable) {
-            this.on(eventName, function(e) {
-                observable.fireEvent(eventName, e);
-            });
-        },
-
-        
-        clean : function(forceReclean) {
-            var me   = this,
-                dom  = me.dom,
-                data = (me.$cache || me.getCache()).data,
-                n    = dom.firstChild,
-                ni   = -1,
-                nx;
-
-            if (data.isCleaned && forceReclean !== true) {
-                return me;
-            }
-
-            while (n) {
-                nx = n.nextSibling;
-                if (n.nodeType == 3) {
-                    
-                    if (!(nonSpaceRe.test(n.nodeValue))) {
-                        dom.removeChild(n);
-                    
-                    } else if (nx && nx.nodeType == 3) {
-                        n.appendData(Ext.String.trim(nx.data));
-                        dom.removeChild(nx);
-                        nx = n.nextSibling;
-                        n.nodeIndex = ++ni;
-                    }
-                } else {
-                    
-                    Ext.fly(n).clean();
-                    n.nodeIndex = ++ni;
-                }
-                n = nx;
-            }
-
-            data.isCleaned = true;
-            return me;
-        },
-
-        
-        load : function(options) {
-            this.getLoader().load(options);
-            return this;
-        },
-
-        
-        getLoader : function() {
-            var me = this,
-                data = (me.$cache || me.getCache()).data,
-                loader = data.loader;
-
-            if (!loader) {
-                data.loader = loader = new Ext.ElementLoader({
-                    target: me
-                });
-            }
-            return loader;
-        },
-
-        
-        syncContent: function(source) {
-            source = Ext.getDom(source);
-            var me = this,
-                sourceNodes = source.childNodes,
-                sourceLen = sourceNodes.length,
-                dest = me.dom,
-                destNodes = dest.childNodes,
-                destLen = destNodes.length,
-                i,  destNode, sourceNode,
-                nodeType;
-
-            
-            dest.style.cssText = source.style.cssText;
-            dest.className = source.className;
-
-            
-            if (sourceLen !== destLen) {
-                source.innerHTML = dest.innerHTML;
-                return;
-            }
-
-            
-            
-            for (i = 0; i < sourceLen; i++) {
-                sourceNode = sourceNodes[i];
-                destNode = destNodes[i];
-                nodeType = sourceNode.nodeType;
-
-                
-                if (nodeType !== destNode.nodeType || (nodeType === 1 && sourceNode.tagName !== destNode.tagName)) {
-                    dest.innerHTML = source.innerHTML;
-                    return;
-                }
-
-                
-                if (nodeType === 3) {
-                    destNode.data = sourceNode.data;
-                }
-                
-                else {
-                    if (sourceNode.id && destNode.id !== sourceNode.id) {
-                        destNode.id = sourceNode.id;
-                    }
-                    destNode.style.cssText = sourceNode.style.cssText;
-                    destNode.className = sourceNode.className;
-                    Ext.fly(destNode).syncContent(sourceNode);
-                }
-            }
-        },
-
-        
-        update : function(html, loadScripts, callback) {
-            var me = this,
-                id,
-                dom,
-                interval;
-
-            if (!me.dom) {
-                return me;
-            }
-            html = html || '';
-            dom = me.dom;
-
-            if (loadScripts !== true) {
-                dom.innerHTML = html;
-                Ext.callback(callback, me);
-                return me;
-            }
-
-            id  = Ext.id();
-            html += '<span id="' + id + '"></span>';
-
-            interval = setInterval(function() {
-                var hd,
-                    match,
-                    attrs,
-                    srcMatch,
-                    typeMatch,
-                    el,
-                    s;
-                if (!(el = DOC.getElementById(id))) {
-                    return false;
-                }
-                clearInterval(interval);
-                Ext.removeNode(el);
-                hd = Ext.getHead().dom;
-
-                while ((match = scriptTagRe.exec(html))) {
-                    attrs = match[1];
-                    srcMatch = attrs ? attrs.match(srcRe) : false;
-                    if (srcMatch && srcMatch[2]) {
-                       s = DOC.createElement("script");
-                       s.src = srcMatch[2];
-                       typeMatch = attrs.match(typeRe);
-                       if (typeMatch && typeMatch[2]) {
-                           s.type = typeMatch[2];
-                       }
-                       hd.appendChild(s);
-                    } else if (match[2] && match[2].length > 0) {
-                        if (window.execScript) {
-                           window.execScript(match[2]);
-                        } else {
-                           window.eval(match[2]);
-                        }
-                    }
-                }
-                Ext.callback(callback, me);
-            }, 20);
-            dom.innerHTML = html.replace(replaceScriptTagRe, '');
-            return me;
-        },
-
-        
-        removeAllListeners : function() {
-            this.removeAnchor();
-            Ext.EventManager.removeAll(this.dom);
-            return this;
-        },
-
-        
-        createProxy : function(config, renderTo, matchBox) {
-            config = (typeof config == 'object') ? config : {tag : "div", cls: config};
-
-            var me = this,
-                proxy = renderTo ? Ext.DomHelper.append(renderTo, config, true) :
-                                   Ext.DomHelper.insertBefore(me.dom, config, true);
-
-            proxy.setVisibilityMode(Element.DISPLAY);
-            proxy.hide();
-            if (matchBox && me.setBox && me.getBox) { 
-               proxy.setBox(me.getBox());
-            }
-            return proxy;
-        },
-        
-        
-        getScopeParent: function() {
-            var parent = this.dom.parentNode;
-            if (Ext.scopeResetCSS) {
-                
-                parent = parent.parentNode;
-                if (!Ext.supports.CSS3LinearGradient || !Ext.supports.CSS3BorderRadius) {
-                    
-                    
-                    parent = parent.parentNode;
-                }
-            }
-            return parent;
-        },
-
-        
-        needsTabIndex: function() {
-            if (this.dom) {
-                if ((this.dom.nodeName === 'a') && (!this.dom.href)) {
-                    return true;
-                }
-                return !focusRe.test(this.dom.nodeName);
-            }
-        },
-
-        
-        focusable: function () {
-            var dom = this.dom,
-                nodeName = dom.nodeName,
-                canFocus = false;
-
-            if (!dom.disabled) {
-                if (focusRe.test(nodeName)) {
-                    if ((nodeName !== 'a') || dom.href) {
-                        canFocus = true;
-                    }
-                } else {
-                    canFocus = !isNaN(dom.tabIndex);
-                }
-            }
-            return canFocus && this.isVisible(true);
-        }
-    });
-
-    if (Ext.isIE) {
-        El.prototype.getById = function (id, asDom) {
-            var dom = this.dom,
-                cacheItem, el, ret;
-
-            if (dom) {
-                
-                
-                el = (useDocForId && DOC.getElementById(id)) || dom.all[id];
-                if (el) {
-                    if (asDom) {
-                        ret = el;
-                    } else {
-                        
-                        
-                        cacheItem = EC[id];
-                        if (cacheItem && cacheItem.el) {
-                            ret = Ext.updateCacheEntry(cacheItem, el).el;
-                        } else {
-                            ret = new Element(el);
-                        }
-                    }
-                    return ret;
-                }
-            }
-
-            return asDom ? Ext.getDom(id) : El.get(id);
-        };
-    }
-
-    El.createAlias({
-        
-        addListener: 'on',
-        
-        removeListener: 'un',
-        
-        clearListeners: 'removeAllListeners'
-    });
-
-    El.Fly = AbstractElement.Fly = new Ext.Class({
-        extend: El,
-
-        constructor: function(dom) {
-            this.dom = dom;
-        },
-        
-        attach: AbstractElement.Fly.prototype.attach
-    });
-
-    if (Ext.isIE) {
-        Ext.getElementById = function (id) {
-            var el = DOC.getElementById(id),
-                detachedBodyEl;
-
-            if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl)) {
-                el = detachedBodyEl.dom.all[id];
-            }
-
-            return el;
-        };
-    } else if (!DOC.querySelector) {
-        Ext.getDetachedBody = Ext.getBody;
-
-        Ext.getElementById = function (id) {
-            return DOC.getElementById(id);
-        };
-    }
-});
-
-}());
-
-//@tag dom,core
-
-//@require Element.js
-
-//@define Ext.dom.Element-alignment
-
-//@define Ext.dom.Element
-
-
-
-Ext.dom.Element.override((function() {
-
+Ext.define('Ext.dom.Element_alignment', (function () {
     var doc = document,
-        win = window,
         alignRe = /^([a-z]+)-([a-z]+)(\?)?$/,
         round = Math.round;
 
     return {
+        override: 'Ext.dom.Element',
 
         
         getAnchorXY: function(anchor, local, mySize) {
@@ -15252,8 +14767,8 @@ Ext.dom.Element.override((function() {
                     myWidth,
                     myHeight,
                     alignToElRegion,
-                    viewportWidth = Ext.dom.Element.getViewWidth() - 10, 
-                    viewportHeight = Ext.dom.Element.getViewHeight() - 10, 
+                    viewportWidth = Ext.dom.Element.getViewWidth(),
+                    viewportHeight = Ext.dom.Element.getViewHeight(),
                     p1y,
                     p1x,
                     p2y,
@@ -15335,7 +14850,7 @@ Ext.dom.Element.override((function() {
             Ext.EventManager.onWindowResize(action, null);
 
             if (scroll) {
-                Ext.EventManager.on(win, 'scroll', action, null,
+                Ext.EventManager.on(window, 'scroll', action, null,
                         {buffer: !isNaN(monitorScroll) ? monitorScroll : 50});
             }
             action.call(me); 
@@ -15350,7 +14865,7 @@ Ext.dom.Element.override((function() {
             if (anchor && anchor.fn) {
                 Ext.EventManager.removeResizeListener(anchor.fn);
                 if (anchor.scroll) {
-                    Ext.EventManager.un(win, 'scroll', anchor.fn);
+                    Ext.EventManager.un(window, 'scroll', anchor.fn);
                 }
                 delete anchor.fn;
             }
@@ -15432,17 +14947,12 @@ Ext.dom.Element.override((function() {
 
 //@tag dom,core
 
-//@require Ext.dom.Element-alignment
-
-//@define Ext.dom.Element-anim
-
-//@define Ext.dom.Element
 
 
 
+Ext.define('Ext.dom.Element_anim', {
+    override: 'Ext.dom.Element',
 
-
-Ext.dom.Element.override({
     
     animate: function(config) {
         var me = this,
@@ -16144,15 +15654,10 @@ Ext.dom.Element.override({
 
 //@tag dom,core
 
-//@require Ext.dom.Element-anim
 
-//@define Ext.dom.Element-dd
+Ext.define('Ext.dom.Element_dd', {
+    override: 'Ext.dom.Element',
 
-//@define Ext.dom.Element
-
-
-
-Ext.dom.Element.override({
     
     initDD : function(group, config, overrides){
         var dd = new Ext.dd.DD(Ext.id(this.dom), group, config);
@@ -16174,15 +15679,11 @@ Ext.dom.Element.override({
 
 //@tag dom,core
 
-//@require Ext.dom.Element-dd
 
-//@define Ext.dom.Element-fx
-
-//@define Ext.dom.Element
-
-
-
-(function() {
+Ext.define('Ext.dom.Element_fx', {
+    override: 'Ext.dom.Element'
+},
+function() {
 
 var Element         = Ext.dom.Element,
     VISIBILITY      = "visibility",
@@ -16275,7 +15776,9 @@ Element.override({
             me.animate(Ext.applyIf({
                 callback: function() {
                     if (!visible) {
-                        me.setVisible(false).setOpacity(1);
+                        
+                        
+                        Ext.fly(dom, '_internal').setVisible(false).setOpacity(1);
                     }
                 },
                 to: {
@@ -16344,21 +15847,17 @@ Element.override({
     }
 });
 
-}());
+});
 
 //@tag dom,core
 
-//@require Ext.dom.Element-fx
 
-//@define Ext.dom.Element-position
+Ext.define('Ext.dom.Element_position', {
+    override: 'Ext.dom.Element'
+},
+function() {
 
-//@define Ext.dom.Element
-
-
-
-(function() {
-
-var Element = Ext.dom.Element,
+var Element = this,
     LEFT = "left",
     RIGHT = "right",
     TOP = "top",
@@ -16790,20 +16289,14 @@ Element.override({
     }
 });
 
-}());
-
+});
 
 //@tag dom,core
 
-//@require Ext.dom.Element-position
 
-//@define Ext.dom.Element-scroll
+Ext.define('Ext.dom.Element_scroll', {
+    override: 'Ext.dom.Element',
 
-//@define Ext.dom.Element
-
-
-
-Ext.dom.Element.override({
     
     isScrollable: function() {
         var dom = this.dom;
@@ -16974,17 +16467,13 @@ Ext.dom.Element.override({
 
 //@tag dom,core
 
-//@require Ext.dom.Element-scroll
 
-//@define Ext.dom.Element-style
+Ext.define('Ext.dom.Element_style', {
+    override: 'Ext.dom.Element'
+},
+function() {
 
-//@define Ext.dom.Element
-
-
-
-(function() {
-
-var Element = Ext.dom.Element,
+var Element = this,
     view = document.defaultView,
     adjustDirect2DTableRe = /table-row|table-.*-group/,
     INTERNAL = '_internal',
@@ -17085,7 +16574,6 @@ if (!view || !view.getComputedStyle) {
 Element.override({
     getHeight: function(contentHeight, preciseHeight) {
         var me = this,
-            dom = me.dom,
             hidden = me.isStyle('display', 'none'),
             height,
             floating;
@@ -17094,7 +16582,7 @@ Element.override({
             return 0;
         }
 
-        height = Math.max(dom.offsetHeight, dom.clientHeight) || 0;
+        height = me.dom.offsetHeight;
 
         
         if (Ext.supports.Direct2DBug) {
@@ -17132,13 +16620,16 @@ Element.override({
         
         if (Ext.supports.BoundingClientRect) {
             rect = dom.getBoundingClientRect();
-            width = rect.right - rect.left;
+            
+            
+            
+            
+            width = (me.vertical && !Ext.isIE9 && !Ext.supports.RotatedBoundingClientRect) ?
+                    (rect.bottom - rect.top) : (rect.right - rect.left);
             width = preciseWidth ? width : Math.ceil(width);
         } else {
             width = dom.offsetWidth;
         }
-
-        width = Math.max(width, dom.clientWidth) || 0;
 
         
         if (Ext.supports.Direct2DBug) {
@@ -17563,7 +17054,7 @@ Element.override({
             e.stopPropagation();
             return true;
         });
-        me.applyStyles("-moz-user-select: text; -khtml-user-select: text;");
+        me.applyStyles("-webkit-user-select: text; -moz-user-select: text; -khtml-user-select: text; -o-user-select: text; user-select: text;");
         me.removeCls(Ext.baseCSSPrefix + 'unselectable');
         return me;
     },
@@ -17574,10 +17065,67 @@ Element.override({
         me.dom.unselectable = "on";
 
         me.swallowEvent("selectstart", true);
-        me.applyStyles("-moz-user-select:-moz-none;-khtml-user-select:none;");
+        me.applyStyles("-webkit-user-select: none; -moz-user-select: -moz-none; -khtml-user-select: none; -o-user-select: none; user-select: none;");
         me.addCls(Ext.baseCSSPrefix + 'unselectable');
 
         return me;
+    },
+
+    
+    setVertical: function(cls) {
+        var me = this,
+            proto = Element.prototype,
+            hooks;
+
+        me.vertical = true;
+        if (cls) {
+            me.addCls(me.verticalCls = cls);
+        }
+
+        me.setWidth = proto.setHeight;
+        me.setHeight = proto.setWidth;
+        if (!Ext.isIE9m) {
+            
+            
+            
+            
+            me.getWidth = proto.getHeight;
+            me.getHeight = proto.getWidth;
+        }
+
+        
+        
+        
+        
+        
+        
+        
+        hooks = me.styleHooks = Ext.Object.chain(Element.prototype.styleHooks);
+        hooks.width = { name: 'height' };
+        hooks.height = { name: 'width' };
+    },
+
+    
+    setHorizontal: function() {
+        var me = this,
+            cls = me.verticalCls;
+
+        delete me.vertical;
+        if (cls) {
+            delete me.verticalCls;
+            me.removeCls(cls);
+        }
+
+        
+        delete me.setWidth;
+        delete me.setHeight;
+        if (!Ext.isIE9m) {
+            delete me.getWidth;
+            delete me.getHeight;
+        }
+
+        
+        delete me.styleHooks;
     }
 });
 
@@ -17624,7 +17172,7 @@ if (Ext.isIEQuirks || Ext.isIE && Ext.ieVersion <= 8) {
     }
 }
 
-}());
+});
 
 Ext.onReady(function () {
     var opacityRe = /alpha\(opacity=(.*)\)/i,
@@ -17678,24 +17226,975 @@ Ext.onReady(function () {
 
 //@tag dom,core
 
-//@require Ext.dom.Element-style
 
-//@define Ext.dom.Element-traversal
+Ext.define('Ext.dom.Element', function(Element) {
+    var HIDDEN          = 'hidden',
+        DOC             = document,
+        VISIBILITY      = "visibility",
+        DISPLAY         = "display",
+        NONE            = "none",
+        XMASKED         = Ext.baseCSSPrefix + "masked",
+        XMASKEDRELATIVE = Ext.baseCSSPrefix + "masked-relative",
+        EXTELMASKMSG    = Ext.baseCSSPrefix + "mask-msg",
+        bodyRe          = /^body/i,
+        visFly,
 
-//@define Ext.dom.Element
+        
+        noBoxAdjust = Ext.isStrict ? {
+            select: 1
+        }: {
+            input: 1,
+            select: 1,
+            textarea: 1
+        },
+
+        
+        isScrolled = function(c) {
+            var r = [], ri = -1,
+                i, ci;
+            for (i = 0; ci = c[i]; i++) {
+                if (ci.scrollTop > 0 || ci.scrollLeft > 0) {
+                    r[++ri] = ci;
+                }
+            }
+            return r;
+        };
+
+    return {
+
+        extend: 'Ext.dom.AbstractElement',
+
+        alternateClassName: ['Ext.Element', 'Ext.core.Element'],
+
+        requires: [
+            'Ext.dom.Query',
+
+            'Ext.dom.Element_alignment',
+            'Ext.dom.Element_anim',
+            'Ext.dom.Element_dd',
+            'Ext.dom.Element_fx',
+            'Ext.dom.Element_position',
+            'Ext.dom.Element_scroll',
+            'Ext.dom.Element_style'
+        ],
+
+        addUnits: function() {
+            return Element.addUnits.apply(Element, arguments);
+        },
+
+        
+        focus: function(defer,  dom) {
+            var me = this,
+                scrollTop,
+                body;
+
+            dom = dom || me.dom;
+            body = (dom.ownerDocument || DOC).body || DOC.body;
+            try {
+                if (Number(defer)) {
+                    Ext.defer(me.focus, defer, me, [null, dom]);
+                } else {
+                    
+                    
+                    if (dom.offsetHeight > Ext.dom.Element.getViewHeight()) {
+                        scrollTop = body.scrollTop;
+                    }
+                    dom.focus();
+                    if (scrollTop !== undefined) {
+                        body.scrollTop = scrollTop;
+                    }
+                }
+            } catch(e) {
+            }
+            return me;
+        },
+
+        
+        blur: function() {
+            try {
+                this.dom.blur();
+            } catch(e) {
+            }
+            return this;
+        },
+
+        
+        isBorderBox: function() {
+            var box = Ext.isBorderBox;
+            if (box) {
+                box = !((this.dom.tagName || "").toLowerCase() in noBoxAdjust);
+            }
+            return box;
+        },
+
+        
+        hover: function(overFn, outFn, scope, options) {
+            var me = this;
+            me.on('mouseenter', overFn, scope || me.dom, options);
+            me.on('mouseleave', outFn, scope || me.dom, options);
+            return me;
+        },
+
+        
+        getAttributeNS: function(ns, name) {
+            return this.getAttribute(name, ns);
+        },
+
+        getAttribute: (Ext.isIE && !(Ext.isIE9 && DOC.documentMode === 9)) ?
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+
+            function(name, ns) {
+                var d = this.dom,
+                        type;
+                if (ns) {
+                    type = typeof d[ns + ":" + name];
+                    if (type != 'undefined' && type != 'unknown') {
+                        return d[ns + ":" + name] || null;
+                    }
+                    return null;
+                }
+                if (name === "for") {
+                    name = "htmlFor";
+                }
+                return d[name] || null;
+            } : function(name, ns) {
+                var d = this.dom;
+                if (ns) {
+                    return d.getAttributeNS(ns, name) || d.getAttribute(ns + ":" + name);
+                }
+                return  d.getAttribute(name) || d[name] || null;
+            },
+
+        
+        cacheScrollValues: function() {
+            var me = this,
+                scrolledDescendants,
+                el, i,
+                scrollValues = [],
+                result = function() {
+                    for (i = 0; i < scrolledDescendants.length; i++) {
+                        el = scrolledDescendants[i];
+                        el.scrollLeft = scrollValues[i][0];
+                        el.scrollTop  = scrollValues[i][1];
+                    }
+                };
+
+            if (!Ext.DomQuery.pseudos.isScrolled) {
+                Ext.DomQuery.pseudos.isScrolled = isScrolled;
+            }
+            scrolledDescendants = me.query(':isScrolled');
+            for (i = 0; i < scrolledDescendants.length; i++) {
+                el = scrolledDescendants[i];
+                scrollValues[i] = [el.scrollLeft, el.scrollTop];
+            }
+            return result;
+        },
+
+        
+        autoBoxAdjust: true,
+
+        
+        isVisible : function(deep) {
+            var me = this,
+                dom = me.dom,
+                stopNode = dom.ownerDocument.documentElement;
+
+            if (!visFly) {
+                visFly = new Element.Fly();
+            }
+
+            while (dom !== stopNode) {
+                
+                
+                if (!dom || dom.nodeType === 11 || (visFly.attach(dom)).isStyle(VISIBILITY, HIDDEN) || visFly.isStyle(DISPLAY, NONE)) {
+                    return false;
+                }
+                
+                if (!deep) {
+                    break;
+                }
+                dom = dom.parentNode;
+            }
+            return true;
+        },
+
+        
+        isDisplayed : function() {
+            return !this.isStyle(DISPLAY, NONE);
+        },
+
+        
+        enableDisplayMode : function(display) {
+            var me = this;
+
+            me.setVisibilityMode(Element.DISPLAY);
+
+            if (!Ext.isEmpty(display)) {
+                (me.$cache || me.getCache()).data.originalDisplay = display;
+            }
+
+            return me;
+        },
+
+        
+        mask : function(msg, msgCls , elHeight) {
+            var me            = this,
+                dom           = me.dom,
+                
+                
+                setExpression = dom.style.setExpression,
+                data          = (me.$cache || me.getCache()).data,
+                maskShimEl    = data.maskShimEl,
+                maskEl        = data.maskEl,
+                maskMsg       = data.maskMsg,
+                widthExpression, heightExpression;
+
+            if (!(bodyRe.test(dom.tagName) && me.getStyle('position') == 'static')) {
+                me.addCls(XMASKEDRELATIVE);
+            }
+
+            
+            if (maskEl) {
+                maskEl.remove();
+            }
+
+            if (maskMsg) {
+                maskMsg.remove();
+            }
+
+            if (maskShimEl) {
+                maskShimEl.remove();
+            }
+
+            if (Ext.isIE6) {
+                maskShimEl = Ext.DomHelper.append(dom, {
+                    tag: 'iframe',
+                    cls : Ext.baseCSSPrefix + 'shim ' + Ext.baseCSSPrefix + 'mask-shim'
+                }, true);
+                data.maskShimEl = maskShimEl;
+                maskShimEl.setDisplayed(true);
+            }
+
+            Ext.DomHelper.append(dom, [{
+                cls : Ext.baseCSSPrefix + "mask"
+            }, {
+                cls : msgCls ? EXTELMASKMSG + " " + msgCls : EXTELMASKMSG,
+                cn  : {
+                    tag: 'div',
+                    html: msg || ''
+                }
+            }]);
+
+            maskMsg = Ext.get(dom.lastChild);
+            maskEl = Ext.get(maskMsg.dom.previousSibling);
+            data.maskMsg = maskMsg;
+            data.maskEl = maskEl;
+
+            me.addCls(XMASKED);
+            maskEl.setDisplayed(true);
+
+            if (typeof msg == 'string') {
+                maskMsg.setDisplayed(true);
+                maskMsg.center(me);
+            } else {
+                maskMsg.setDisplayed(false);
+            }
+            
+            
+            
+            
+            
+            if (!Ext.supports.IncludePaddingInWidthCalculation && setExpression) {
+                
+                try {
+                    maskEl.dom.style.setExpression('width', 'this.parentNode.clientWidth + "px"');
+                    widthExpression = 'this.parentNode.clientWidth + "px"';
+                    if (maskShimEl) {
+                        maskShimEl.dom.style.setExpression('width', widthExpression);
+                    }
+                    maskEl.dom.style.setExpression('width', widthExpression);
+                } catch (e) {}
+            }
+
+            
+            
+            if (!Ext.supports.IncludePaddingInHeightCalculation && setExpression) {
+                
+                try {
+                    heightExpression = 'this.parentNode.' + (dom == DOC.body ? 'scrollHeight' : 'offsetHeight') + ' + "px"';
+                    if (maskShimEl) {
+                        maskShimEl.dom.style.setExpression('height', heightExpression);
+                    }
+                    maskEl.dom.style.setExpression('height', heightExpression);
+                } catch (e) {}
+            }
+            
+            else if (Ext.isIE && !(Ext.isIE7 && Ext.isStrict) && me.getStyle('height') == 'auto') {
+                if (maskShimEl) {
+                    maskShimEl.setSize(undefined, elHeight || me.getHeight());
+                }
+                maskEl.setSize(undefined, elHeight || me.getHeight());
+            }
+            return maskEl;
+        },
+
+        
+        unmask : function() {
+            var me      = this,
+                data    = (me.$cache || me.getCache()).data,
+                maskEl  = data.maskEl,
+                maskShimEl = data.maskShimEl,
+                maskMsg = data.maskMsg,
+                style;
+
+            if (maskEl) {
+                style = maskEl.dom.style;
+                
+                if (style.clearExpression) {
+                    style.clearExpression('width');
+                    style.clearExpression('height');
+                }
+
+                if (maskEl) {
+                    maskEl.remove();
+                    delete data.maskEl;
+                }
+
+                if (maskMsg) {
+                    maskMsg.remove();
+                    delete data.maskMsg;
+                }
+
+                me.removeCls([XMASKED, XMASKEDRELATIVE]);
+
+                if (maskShimEl) {
+                    style = maskShimEl.dom.style;
+                    
+                    if (style.clearExpression) {
+                        style.clearExpression('width');
+                        style.clearExpression('height');
+                    }
+
+                    maskShimEl.remove();
+                    delete data.maskShimEl;
+                }
+            }
+        },
+
+        
+        isMasked : function() {
+            var me      = this,
+                data    = (me.$cache || me.getCache()).data,
+                maskEl  = data.maskEl,
+                maskMsg = data.maskMsg,
+                hasMask = false; 
+
+            if (maskEl && maskEl.isVisible()) {
+                if (maskMsg) {
+                    maskMsg.center(me);
+                }
+                hasMask = true;
+            }
+            return hasMask;
+        },
+
+        
+        createShim : function() {
+            var el = DOC.createElement('iframe'),
+                shim;
+
+            el.frameBorder = '0';
+            el.className = Ext.baseCSSPrefix + 'shim';
+            el.src = Ext.SSL_SECURE_URL;
+            shim = Ext.get(this.dom.parentNode.insertBefore(el, this.dom));
+            shim.autoBoxAdjust = false;
+            return shim;
+        },
+
+        
+        addKeyListener : function(key, fn, scope){
+            var config;
+            if(typeof key != 'object' || Ext.isArray(key)){
+                config = {
+                    target: this,
+                    key: key,
+                    fn: fn,
+                    scope: scope
+                };
+            }else{
+                config = {
+                    target: this,
+                    key : key.key,
+                    shift : key.shift,
+                    ctrl : key.ctrl,
+                    alt : key.alt,
+                    fn: fn,
+                    scope: scope
+                };
+            }
+            return new Ext.util.KeyMap(config);
+        },
+
+        
+        addKeyMap : function(config) {
+            return new Ext.util.KeyMap(Ext.apply({
+                target: this
+            }, config));
+        },
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+        
+        
+        
+        
+
+        
+        
+        
+        
+        
+        
+        
+
+        
+        
+        
+        
+        
+        
+        
+
+        
+        
+        
+        
+
+        
+        
+        
+        
+        
+        
+        
+        
+
+        
+        on: function(eventName, fn, scope, options) {
+            Ext.EventManager.on(this, eventName, fn, scope || this, options);
+            return this;
+        },
+
+        
+        un: function(eventName, fn, scope) {
+            Ext.EventManager.un(this, eventName, fn, scope || this);
+            return this;
+        },
+
+        
+        removeAllListeners: function() {
+            Ext.EventManager.removeAll(this);
+            return this;
+        },
+
+        
+        purgeAllListeners: function() {
+            Ext.EventManager.purgeElement(this);
+            return this;
+        },
+
+        select: function(selector) {
+            return Element.select(selector, false,  this.dom);
+        }
+    };
+}, function() {
+
+    var DOC             = document,
+        EC              = Ext.cache,
+        Element         = this,
+        AbstractElement = Ext.dom.AbstractElement,
+        focusRe         = /a|button|embed|iframe|img|input|object|select|textarea/i,
+        nonSpaceRe      = /\S/,
+        scriptTagRe     = /(?:<script([^>]*)?>)((\n|\r|.)*?)(?:<\/script>)/ig,
+        replaceScriptTagRe = /(?:<script.*?>)((\n|\r|.)*?)(?:<\/script>)/ig,
+        srcRe           = /\ssrc=([\'\"])(.*?)\1/i,
+        typeRe          = /\stype=([\'\"])(.*?)\1/i,
+        useDocForId = !(Ext.isIE6 || Ext.isIE7 || Ext.isIE8);
+
+    Element.boxMarkup = '<div class="{0}-tl"><div class="{0}-tr"><div class="{0}-tc"></div></div></div><div class="{0}-ml"><div class="{0}-mr"><div class="{0}-mc"></div></div></div><div class="{0}-bl"><div class="{0}-br"><div class="{0}-bc"></div></div></div>';
+    
+
+    
+    
+    
+    function garbageCollect() {
+        if (!Ext.enableGarbageCollector) {
+            clearInterval(Element.collectorThreadId);
+        } else {
+            var eid,
+                d,
+                o,
+                t;
+
+            for (eid in EC) {
+                if (!EC.hasOwnProperty(eid)) {
+                    continue;
+                }
+
+                o = EC[eid];
+
+                
+                if (o.skipGarbageCollection) {
+                    continue;
+                }
+
+                d = o.dom;
 
 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                if (!d.parentNode || (!d.offsetParent && !Ext.getElementById(eid))) {
+                    if (d && Ext.enableListenerCollection) {
+                        Ext.EventManager.removeAll(d);
+                    }
+                    delete EC[eid];
+                }
+            }
+            
+            if (Ext.isIE) {
+                t = {};
+                for (eid in EC) {
+                    if (!EC.hasOwnProperty(eid)) {
+                        continue;
+                    }
+                    t[eid] = EC[eid];
+                }
+                EC = Ext.cache = t;
+            }
+        }
+    }
 
-Ext.dom.Element.override({
-    select: function(selector) {
-        return Ext.dom.Element.select(selector, false,  this.dom);
+    Element.collectorThreadId = setInterval(garbageCollect, 30000);
+
+    
+    Element.addMethods({
+
+        
+        monitorMouseLeave: function(delay, handler, scope) {
+            var me = this,
+                timer,
+                listeners = {
+                    mouseleave: function(e) {
+                        timer = setTimeout(Ext.Function.bind(handler, scope||me, [e]), delay);
+                    },
+                    mouseenter: function() {
+                        clearTimeout(timer);
+                    },
+                    freezeEvent: true
+                };
+
+            me.on(listeners);
+            return listeners;
+        },
+
+        
+        swallowEvent : function(eventName, preventDefault) {
+            var me = this,
+                e, eLen;
+            function fn(e) {
+                e.stopPropagation();
+                if (preventDefault) {
+                    e.preventDefault();
+                }
+            }
+
+            if (Ext.isArray(eventName)) {
+                eLen = eventName.length;
+
+                for (e = 0; e < eLen; e++) {
+                    me.on(eventName[e], fn);
+                }
+
+                return me;
+            }
+            me.on(eventName, fn);
+            return me;
+        },
+
+        
+        relayEvent : function(eventName, observable) {
+            this.on(eventName, function(e) {
+                observable.fireEvent(eventName, e);
+            });
+        },
+
+        
+        clean : function(forceReclean) {
+            var me   = this,
+                dom  = me.dom,
+                data = (me.$cache || me.getCache()).data,
+                n    = dom.firstChild,
+                ni   = -1,
+                nx;
+
+            if (data.isCleaned && forceReclean !== true) {
+                return me;
+            }
+
+            while (n) {
+                nx = n.nextSibling;
+                if (n.nodeType == 3) {
+                    
+                    if (!(nonSpaceRe.test(n.nodeValue))) {
+                        dom.removeChild(n);
+                    
+                    } else if (nx && nx.nodeType == 3) {
+                        n.appendData(Ext.String.trim(nx.data));
+                        dom.removeChild(nx);
+                        nx = n.nextSibling;
+                        n.nodeIndex = ++ni;
+                    }
+                } else {
+                    
+                    Ext.fly(n).clean();
+                    n.nodeIndex = ++ni;
+                }
+                n = nx;
+            }
+
+            data.isCleaned = true;
+            return me;
+        },
+
+        
+        load : function(options) {
+            this.getLoader().load(options);
+            return this;
+        },
+
+        
+        getLoader : function() {
+            var me = this,
+                data = (me.$cache || me.getCache()).data,
+                loader = data.loader;
+
+            if (!loader) {
+                data.loader = loader = new Ext.ElementLoader({
+                    target: me
+                });
+            }
+            return loader;
+        },
+
+        
+        syncContent: function(source) {
+            source = Ext.getDom(source);
+            var me = this,
+                sourceNodes = source.childNodes,
+                sourceLen = sourceNodes.length,
+                dest = me.dom,
+                destNodes = dest.childNodes,
+                destLen = destNodes.length,
+                i,  destNode, sourceNode,
+                nodeType, newAttrs, attLen, attName;
+
+            
+            if (dest.mergeAttributes) {
+                dest.mergeAttributes(source, true);
+
+                
+                
+                dest.src = source.src;
+            } else {
+                newAttrs = source.attributes;
+                attLen = newAttrs.length;
+                for (i = 0; i < attLen; i++) {
+                    attName = newAttrs[i].name;
+                    if (attName !== 'id') {
+                        dest.setAttribute(attName, newAttrs[i].value);
+                    }
+                }
+            }
+
+            
+            if (sourceLen !== destLen) {
+                dest.innerHTML = source.innerHTML;
+                return;
+            }
+
+            
+            
+            for (i = 0; i < sourceLen; i++) {
+                sourceNode = sourceNodes[i];
+                destNode = destNodes[i];
+                nodeType = sourceNode.nodeType;
+
+                
+                if (nodeType !== destNode.nodeType || (nodeType === 1 && sourceNode.tagName !== destNode.tagName)) {
+                    dest.innerHTML = source.innerHTML;
+                    return;
+                }
+
+                
+                if (nodeType === 3) {
+                    destNode.data = sourceNode.data;
+                }
+                
+                else {
+                    if (sourceNode.id && destNode.id !== sourceNode.id) {
+                        destNode.id = sourceNode.id;
+                    }
+                    destNode.style.cssText = sourceNode.style.cssText;
+                    destNode.className = sourceNode.className;
+                    Ext.fly(destNode).syncContent(sourceNode);
+                }
+            }
+        },
+
+        
+        update : function(html, loadScripts, callback) {
+            var me = this,
+                id,
+                dom,
+                interval;
+
+            if (!me.dom) {
+                return me;
+            }
+            html = html || '';
+            dom = me.dom;
+
+            if (loadScripts !== true) {
+                dom.innerHTML = html;
+                Ext.callback(callback, me);
+                return me;
+            }
+
+            id  = Ext.id();
+            html += '<span id="' + id + '"></span>';
+
+            interval = setInterval(function() {
+                var hd,
+                    match,
+                    attrs,
+                    srcMatch,
+                    typeMatch,
+                    el,
+                    s;
+                if (!(el = DOC.getElementById(id))) {
+                    return false;
+                }
+                clearInterval(interval);
+                Ext.removeNode(el);
+                hd = Ext.getHead().dom;
+
+                while ((match = scriptTagRe.exec(html))) {
+                    attrs = match[1];
+                    srcMatch = attrs ? attrs.match(srcRe) : false;
+                    if (srcMatch && srcMatch[2]) {
+                       s = DOC.createElement("script");
+                       s.src = srcMatch[2];
+                       typeMatch = attrs.match(typeRe);
+                       if (typeMatch && typeMatch[2]) {
+                           s.type = typeMatch[2];
+                       }
+                       hd.appendChild(s);
+                    } else if (match[2] && match[2].length > 0) {
+                        if (window.execScript) {
+                           window.execScript(match[2]);
+                        } else {
+                           window.eval(match[2]);
+                        }
+                    }
+                }
+                Ext.callback(callback, me);
+            }, 20);
+            dom.innerHTML = html.replace(replaceScriptTagRe, '');
+            return me;
+        },
+
+        
+        removeAllListeners : function() {
+            this.removeAnchor();
+            Ext.EventManager.removeAll(this.dom);
+            return this;
+        },
+
+        
+        createProxy : function(config, renderTo, matchBox) {
+            config = (typeof config == 'object') ? config : {tag : "div", cls: config};
+
+            var me = this,
+                proxy = renderTo ? Ext.DomHelper.append(renderTo, config, true) :
+                                   Ext.DomHelper.insertBefore(me.dom, config, true);
+
+            proxy.setVisibilityMode(Element.DISPLAY);
+            proxy.hide();
+            if (matchBox && me.setBox && me.getBox) { 
+               proxy.setBox(me.getBox());
+            }
+            return proxy;
+        },
+        
+        
+        getScopeParent: function() {
+            var parent = this.dom.parentNode;
+            if (Ext.scopeResetCSS) {
+                
+                parent = parent.parentNode;
+                if (!Ext.supports.CSS3LinearGradient || !Ext.supports.CSS3BorderRadius) {
+                    
+                    
+                    parent = parent.parentNode;
+                }
+            }
+            return parent;
+        },
+
+        
+        needsTabIndex: function() {
+            if (this.dom) {
+                if ((this.dom.nodeName === 'a') && (!this.dom.href)) {
+                    return true;
+                }
+                return !focusRe.test(this.dom.nodeName);
+            }
+        },
+
+        
+        isFocusable: function ( asFocusEl) {
+            var dom = this.dom,
+                tabIndex = dom.tabIndex,
+                nodeName = dom.nodeName,
+                canFocus = false;
+
+            if (dom && !dom.disabled) {
+                
+                
+                if (tabIndex === -1) {
+                    canFocus = Ext.FocusManager && Ext.FocusManager.enabled && asFocusEl;
+                }
+                else {
+                    
+                    if (focusRe.test(nodeName)) {
+                        if ((nodeName !== 'a') || dom.href) {
+                            canFocus = true;
+                        }
+                    }
+                    
+                    else {
+                        canFocus = tabIndex >= 0;
+                    }
+                }
+                canFocus = canFocus && this.isVisible(true);
+            }
+            return canFocus;
+        }
+    });
+
+    if (Ext.isIE) {
+        Element.prototype.getById = function (id, asDom) {
+            var dom = this.dom,
+                cacheItem, el, ret;
+
+            if (dom) {
+                
+                
+                el = (useDocForId && DOC.getElementById(id)) || dom.all[id];
+                if (el) {
+                    if (asDom) {
+                        ret = el;
+                    } else {
+                        
+                        
+                        cacheItem = EC[id];
+                        if (cacheItem && cacheItem.el) {
+                            ret = Ext.updateCacheEntry(cacheItem, el).el;
+                        } else {
+                            ret = new Element(el);
+                        }
+                    }
+                    return ret;
+                }
+            }
+
+            return asDom ? Ext.getDom(id) : Element.get(id);
+        };
+    }
+
+    Element.createAlias({
+        
+        addListener: 'on',
+        
+        removeListener: 'un',
+        
+        clearListeners: 'removeAllListeners',
+        
+        focusable: 'isFocusable'
+    });
+
+    Element.Fly = AbstractElement.Fly = new Ext.Class({
+        extend: Element,
+
+        constructor: function(dom) {
+            this.dom = dom;
+        },
+        
+        attach: AbstractElement.Fly.prototype.attach
+    });
+
+    if (Ext.isIE) {
+        Ext.getElementById = function (id) {
+            var el = DOC.getElementById(id),
+                detachedBodyEl;
+
+            if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl)) {
+                el = detachedBodyEl.dom.all[id];
+            }
+
+            return el;
+        };
+    } else if (!DOC.querySelector) {
+        Ext.getDetachedBody = Ext.getBody;
+
+        Ext.getElementById = function (id) {
+            return DOC.getElementById(id);
+        };
     }
 });
 
 //@tag dom,core
-
-//@require Ext.dom.Element-traversal
-
 
 
 Ext.define('Ext.dom.CompositeElementLite', {

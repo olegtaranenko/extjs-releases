@@ -74,6 +74,9 @@
  *   - **`E{display*=none}`** css value "display" that contains the substring "none"
  *   - **`E{display%=2}`** css value "display" that is evenly divisible by 2
  *   - **`E{display!=none}`** css value "display" that does not equal "none"
+ * 
+ * ## XML Namespaces:
+ *   - **`ns|E`** an element with tag E and namespace prefix ns
  *
  * [1]: http://www.w3.org/TR/2005/WD-css3-selectors-20051215/#selectors
  */
@@ -87,7 +90,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         trimRe = /^\s+|\s+$/g,
         tplRe = /\{(\d+)\}/g,
         modeRe = /^(\s?[\/>+~]\s?|\s|$)/,
-        tagTokenRe = /^(#)?([\w\-\*\\]+)/,
+        tagTokenRe = /^(#)?([\w\-\*\|\\]+)/,
         nthRe = /(\d*)n\+?(\d*)/,
         nthRe2 = /\D/,
         startIdRe = /^\s*\#/,
@@ -100,7 +103,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         shortHex = /\\([0-9a-fA-F]{1,6})\s{0,1}/g,
         nonHex = /\\([^0-9a-fA-F]{1})/g,
         escapes = /\\/g,
-        num, hasEscapes,
+        num, hasEscapes, supportsColonInGetElementsByTagName,
 
         // replaces a long hex regex match group with the appropriate ascii value
         // $args indicate regex match pos
@@ -244,7 +247,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         if(!ns){
             return result;
         }
-        tagName = tagName || "*";
+        tagName = tagName.replace('|', ':') || "*";
         // convert to array
         if(typeof ns.getElementsByTagName != "undefined"){
             ns = [ns];
@@ -253,10 +256,29 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         // no mode specified, grab all elements by tagName
         // at any depth
         if(!mode){
-            for(i = 0, ni; ni = ns[i]; i++){
-                cs = ni.getElementsByTagName(tagName);
-                for(j = 0, ci; ci = cs[j]; j++){
-                    result[++ri] = ci;
+            tagName = unescapeCssSelector(tagName);
+            if (!supportsColonNsSeparator() && Ext.DomQuery.isXml(ns[0]) &&
+                tagName.indexOf(':') !== -1) {
+                // Some browsers (e.g. WebKit and Opera do not support the following syntax
+                // in xml documents: getElementsByTagName('ns:tagName'). To work around
+                // this, we remove the namespace prefix from the tagName, get the elements
+                // by tag name only, and then compare each element's tagName property to
+                // the tagName with namespace prefix attached to ensure that the tag is in
+                // the proper namespace.
+                for(i = 0, ni; ni = ns[i]; i++){
+                    cs = ni.getElementsByTagName(tagName.split(':').pop());
+                    for(j = 0, ci; ci = cs[j]; j++){
+                        if (ci.tagName === tagName) {
+                            result[++ri] = ci;
+                        }
+                    }
+                }
+            } else {
+                for(i = 0, ni; ni = ns[i]; i++){
+                    cs = ni.getElementsByTagName(tagName);
+                    for(j = 0, ci; ci = cs[j]; j++){
+                        result[++ri] = ci;
+                    }
                 }
             }
         // Direct Child mode (/ or >)
@@ -499,6 +521,26 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         ns = getNodes(ns, mode, "*");
         return byId(ns, id);
     }
+    
+    // Returns true if the browser supports the following syntax:
+    // document.getElementsByTagName('namespacePrefix:tagName')
+    function supportsColonNsSeparator() {
+        var xml, doc;
+
+        if (supportsColonInGetElementsByTagName === undefined) {
+            xml = '<r><a:b xmlns:a="n"></a:b></r>';
+
+            if (window.DOMParser) {
+                doc = (new DOMParser()).parseFromString(xml, "application/xml");
+            } else {
+                doc = new ActiveXObject("Microsoft.XMLDOM");
+                doc.loadXML(xml);
+            }
+
+            supportsColonInGetElementsByTagName = !!doc.getElementsByTagName('a:b').length;
+        }
+        return supportsColonInGetElementsByTagName;
+    }
 
     return {
         getStyle : function(el, name){
@@ -516,7 +558,6 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
             // setup fn preamble
             var fn = ["var f = function(root){\n var mode; ++batch; var n = root || document;\n"],
-                mode,
                 lastPath,
                 matchers = Ext.DomQuery.matchers,
                 matchersLn = matchers.length,
@@ -815,7 +856,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 re: /^#([\w\-\\]+)/,
                 select: 'n = byId(n, "{1}");'
             },{
-                re: /^@([\w\-]+)/,
+                re: /^@([\w\-\.]+)/,
                 select: 'return {firstChild:{nodeValue:attrValue(n, "{1}")}};'
             }
         ],
@@ -1077,16 +1118,32 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                     }
                 }
                 return r;
+            },
+
+            focusable: function(candidates) {
+                var len = candidates.length,
+                    results = [],
+                    i = 0,
+                    c;
+
+                for (; i < len; i++) {
+                    c = candidates[i];
+                    if (Ext.fly(c).isFocusable()) {
+                        results.push(c);
+                    }
+                }
+
+                return results;
             }
         }
     };
 }());
 
 /**
- * Shorthand of {@link Ext.dom.Query#select}
- * @member Ext
- * @method query
- * @inheritdoc Ext.dom.Query#select
- */
+* Shorthand of {@link Ext.dom.Query#select}
+* @member Ext
+* @method query
+* @inheritdoc Ext.dom.Query#select
+*/
 Ext.query = Ext.DomQuery.select;
 

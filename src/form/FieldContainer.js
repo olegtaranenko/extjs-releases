@@ -141,13 +141,21 @@ Ext.define('Ext.form.FieldContainer', {
         // Init mixins
         me.initLabelable();
         me.initFieldAncestor();
+        
+        if (me.labelAlign == 'top') {
+            // We need to add an extra offset to the DOM checks because
+            // the label is rendered inside the target element.
+            // See Ext.layout.container.Container::getPositionOffset
+            // for more details
+            me.itemNodeOffset = 1;
+        }
 
         me.callParent();
     },
 
     beforeRender: function(){
         this.callParent(arguments);
-        this.beforeLabelableRender(arguments);
+        this.beforeLabelableRender();
     },
 
     /**
@@ -156,7 +164,14 @@ Ext.define('Ext.form.FieldContainer', {
      */
     onLabelableAdded: function(labelable) {
         var me = this;
-        me.mixins.fieldAncestor.onLabelableAdded.call(this, labelable);
+        
+        // Fix for https://sencha.jira.com/browse/EXTJSIV-6424
+        // In FF, positioning absolutely within a TD positions relative to the TR!
+        // So we must add the width of a visible, left-aligned label cell to the x coordinate.
+        if (Ext.isGecko && me.layout.type === 'absolute' && !me.hideLabel && me.labelAlign !== 'top') {
+            labelable.x += (me.labelWidth + me.labelPad);
+        }
+        me.mixins.fieldAncestor.onLabelableAdded.call(me, labelable);
         me.updateLabel();
     },
 
@@ -166,7 +181,7 @@ Ext.define('Ext.form.FieldContainer', {
      */
     onLabelableRemoved: function(labelable) {
         var me = this;
-        me.mixins.fieldAncestor.onLabelableRemoved.call(this, labelable);
+        me.mixins.fieldAncestor.onLabelableRemoved.call(me, labelable);
         me.updateLabel();
     },
 

@@ -115,6 +115,12 @@ Ext.define('Ext.chart.series.Bar', {
      */
     yPadding: 10,
 
+    /**
+     * @cfg {Boolean} stacked
+     * If set to `true` then bars for multiple `yField` values will be rendered stacked on top of one another.
+     * Otherwise, they will be rendered side-by-side. Defaults to `false`.
+     */
+
     constructor: function(config) {
         this.callParent(arguments);
         var me = this,
@@ -163,13 +169,17 @@ Ext.define('Ext.chart.series.Bar', {
         }
     },
 
-    // @private sets the bar girth.
+    // @private returns the bar girth.
     getBarGirth: function() {
         var me = this,
             store = me.chart.getChartStore(),
             column = me.column,
             ln = store.getCount(),
             gutter = me.gutter / 100;
+
+        if (me.style && me.style.width) {
+            return me.style.width;
+        }
 
         return (me.chart.chartBBox[column ? 'width' : 'height'] - me[column ? 'xPadding' : 'yPadding'] * 2) / (ln * (gutter + 1) - gutter);
     },
@@ -190,6 +200,7 @@ Ext.define('Ext.chart.series.Bar', {
             data = store.data.items,
             i, ln, record,
             bars = [].concat(me.yField),
+            barsLoc,
             barsLen = bars.length,
             groupBarsLen = barsLen,
             groupGutter = me.groupGutter / 100,
@@ -205,6 +216,7 @@ Ext.define('Ext.chart.series.Bar', {
             mabs = math.abs,
             boundAxes = me.getAxesForXAndYFields(),
             boundYAxis = boundAxes.yAxis,
+            minX, maxX, colsScale, colsZero, gutter,
             ends, shrunkBarWidth, groupBarWidth, bbox, minY, maxY, axis, out,
             scale, zero, total, rec, j, plus, minus;
 
@@ -272,8 +284,41 @@ Ext.define('Ext.chart.series.Bar', {
         else if (minY / maxY < 0) {
             zero = zero - minY * scale * (column ? -1 : 1);
         }
+
+        // If the columns are bound to the x-axis, calculate their positions
+        if (me.boundColumn) {
+            axis = chart.axes.get(boundAxes.xAxis);
+            if (axis) {
+                ends = axis.applyData();
+                minX = ends.from;
+                maxX = ends.to;
+            }
+            if (me.xField && !Ext.isNumber(minX)) {
+                out = me.getMinMaxYValues();
+                minX = out[0];
+                maxX = out[1];
+            }
+            if (!Ext.isNumber(minX)) {
+                minX = 0;
+            }
+            if (!Ext.isNumber(maxX)) {
+                maxX = 0;
+            }
+            gutter = me.getGutters()[0];
+            colsScale = (bbox.width - gutter * 2) / ((maxX - minX) || 1);
+            colsZero = bbox.x + gutter;
+        
+            barsLoc = [];
+            for (i = 0, ln = data.length; i < ln; i++) {
+                record = data[i];
+                rec = record.get(me.xField);
+                barsLoc[i] = colsZero + (rec - minX) * colsScale - (groupBarWidth / 2);
+            }
+        }
+
         return {
             bars: bars,
+            barsLoc: barsLoc,
             bbox: bbox,
             shrunkBarWidth: shrunkBarWidth,
             barsLen: barsLen,
@@ -318,12 +363,13 @@ Ext.define('Ext.chart.series.Bar', {
             barsLen = bounds.barsLen,
             colors = me.colorArrayStyle,
             colorLength = colors && colors.length || 0,
+            themeIndex = me.themeIdx,
             math = Math,
             mmax = math.max,
             mmin = math.min,
             mabs = math.abs,
             j, yValue, height, totalDim, totalNegDim, bottom, top, hasShadow, barAttr, attrs, counter,
-            shadowIndex, shadow, sprite, offset, floorY;
+            shadowIndex, shadow, sprite, offset, floorY, idx;
 
         for (i = 0, total = data.length; i < total; i++) {
             record = data[i];
@@ -339,14 +385,16 @@ Ext.define('Ext.chart.series.Bar', {
                 }
                 yValue = record.get(bounds.bars[j]);
                 height = Math.round((yValue - mmax(bounds.minY, 0)) * bounds.scale);
+                idx = themeIndex + (barsLen > 1 ? j : 0);
                 barAttr = {
-                    fill: colors[(barsLen > 1 ? j : 0) % colorLength]
+                    fill: colors[idx % colorLength]
                 };
                 if (column) {
                     Ext.apply(barAttr, {
                         height: height,
                         width: mmax(bounds.groupBarWidth, 0),
-                        x: (bbox.x + xPadding + (barWidth - shrunkBarWidth) * 0.5 + i * barWidth * (1 + gutter) + counter * bounds.groupBarWidth * (1 + groupGutter) * !stacked),
+                        x: (me.boundColumn ? bounds.barsLoc[i] 
+                                           : (bbox.x + xPadding + (barWidth - shrunkBarWidth) * 0.5 + i * barWidth * (1 + gutter) + counter * bounds.groupBarWidth * (1 + groupGutter) * !stacked)),
                         y: bottom - height
                     });
                 }
@@ -514,6 +562,9 @@ Ext.define('Ext.chart.series.Bar', {
             animate = chart.animate,
             stacked = me.stacked,
             column = me.column,
+            chartAxes = chart.axes,
+            boundAxes = me.getAxesForXAndYFields(),
+            boundXAxis = boundAxes.xAxis,
             enableShadows = chart.shadow,
             shadowGroups = me.shadowGroups,
             shadowGroupsLn = shadowGroups.length,
@@ -539,6 +590,10 @@ Ext.define('Ext.chart.series.Bar', {
         me.unHighlightItem();
         me.cleanHighlights();
         
+        me.boundColumn = (boundXAxis && Ext.Array.contains(me.axis,boundXAxis) 
+                            && chartAxes.get(boundXAxis) 
+                            && chartAxes.get(boundXAxis).isNumericAxis);
+
         me.getPaths();
         bounds = me.bounds;
         items = me.items;
@@ -676,7 +731,7 @@ Ext.define('Ext.chart.series.Bar', {
             }
             x = attr.x + groupBarWidth / 2;
             y = display == insideStart ?
-                    (zero + ((height / 2 + 3) * (yValue >= 0 ? -1 : 1))) :
+                    ((attr.height + attr.y) + ((height / 2 + 3) * (yValue >= 0 ? -1 : 1))) :
                     (yValue >= 0 ? (attr.y + ((height / 2 + 3) * (display == outside ? -1 : 1))) :
                                    (attr.y + attr.height + ((height / 2 + 3) * (display === outside ? 1 : -1))));
         }

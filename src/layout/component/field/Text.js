@@ -12,12 +12,10 @@ Ext.define('Ext.layout.component.field.Text', {
     canGrowWidth: true,
 
     beginLayoutCycle: function(ownerContext) {
-        var me = this;
-        
-        me.callParent(arguments);
+        this.callParent(arguments);
         
         // Clear height, in case a previous layout cycle stretched it.
-        if (ownerContext.shrinkWrap) {
+        if (ownerContext.heightModel.shrinkWrap) {
             ownerContext.inputContext.el.setStyle('height', '');
         }
     },

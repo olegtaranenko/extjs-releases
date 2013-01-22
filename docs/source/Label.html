@@ -96,11 +96,11 @@ Ext.define('Ext.chart.Label', {
      *   Default value: function(v) { return v; }
      */
 
-    // @private a regex to parse url type colors.
-    colorStringRe: /url\s*\(\s*#([^\/)]+)\s*\)/,
+<span id='Ext-chart-Label-property-colorStringRe'>    // @private a regex to parse url type colors.
+</span>    colorStringRe: /url\s*\(\s*#([^\/)]+)\s*\)/,
 
-    // @private the mixin constructor. Used internally by Series.
-    constructor: function(config) {
+<span id='Ext-chart-Label-method-constructor'>    // @private the mixin constructor. Used internally by Series.
+</span>    constructor: function(config) {
         var me = this;
         me.label = Ext.applyIf(me.label || {},
         {
@@ -110,9 +110,7 @@ Ext.define('Ext.chart.Label', {
             minMargin: 50,
             font: &quot;11px Helvetica, sans-serif&quot;,
             orientation: &quot;horizontal&quot;,
-            renderer: function(v) {
-                return v;
-            }
+            renderer: Ext.identityFn
         });
 
         if (me.label.display !== 'none') {
@@ -120,8 +118,8 @@ Ext.define('Ext.chart.Label', {
         }
     },
 
-    // @private a method to render all labels in the labelGroup
-    renderLabels: function() {
+<span id='Ext-chart-Label-method-renderLabels'>    // @private a method to render all labels in the labelGroup
+</span>    renderLabels: function() {
         var me = this,
             chart = me.chart,
             gradients = chart.gradients,
@@ -178,14 +176,13 @@ Ext.define('Ext.chart.Label', {
                         //set contrast
                         if (config.contrast &amp;&amp; item.sprite) {
                             sprite = item.sprite;
-                            //set the color string to the color to be set.
-                            if (sprite._endStyle) {
+                            //set the color string to the color to be set, only read the
+                            // _endStyle/_to if we're animating, otherwise they're not relevant
+                            if (animate &amp;&amp; sprite._endStyle) {
                                 colorString = sprite._endStyle.fill;
-                            }
-                            else if (sprite._to) {
+                            } else if (animate &amp;&amp; sprite._to) {
                                 colorString = sprite._to.fill;
-                            }
-                            else {
+                            } else {
                                 colorString = sprite.attr.fill;
                             }
                             colorString = colorString || sprite.attr.fill;
@@ -236,8 +233,8 @@ Ext.define('Ext.chart.Label', {
         me.hideLabels(hides);
     },
 
-    hideLabels: function(hides){
-        var labelsGroup = this.labelsGroup,
+<span id='Ext-chart-Label-method-hideLabels'>    hideLabels: function(hides){
+</span>        var labelsGroup = this.labelsGroup,
             hlen = !!hides &amp;&amp; hides.length;
 
         if (!labelsGroup) {

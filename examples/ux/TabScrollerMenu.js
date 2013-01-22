@@ -1,11 +1,6 @@
 Ext.ns('Ext.ux');
 /**
- * @class Ext.ux.TabScrollerMenu
- * @extends Object
- * Plugin (ptype = 'tabscrollermenu') for adding a tab menu to a TabBar is the Tabs overflow.
- * @constructor
- * @param {Object} config Configuration options
- * @ptype tabscrollermenu
+ * Plugin for adding a tab menu to a TabBar is the Tabs overflow.
  */
 Ext.define('Ext.ux.TabScrollerMenu', {
     alias: 'plugin.tabscrollermenu',
@@ -24,6 +19,11 @@ Ext.define('Ext.ux.TabScrollerMenu', {
      * @cfg {String} menuPrefixText Text to prefix the submenus.
      */
     menuPrefixText: 'Items',
+
+    /**
+     * Creates new TabScrollerMenu.
+     * @param {Object} config Configuration options
+     */
     constructor: function(config) {
         Ext.apply(this, config);
     },

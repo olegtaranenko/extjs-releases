@@ -664,5 +664,4 @@
         return cls;
     };
     //</feature>
-
 }());

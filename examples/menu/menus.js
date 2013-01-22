@@ -10,7 +10,7 @@ Ext.onReady(function(){
     
     // functions to display feedback
     function onButtonClick(btn){
-        Ext.example.msg('Button Click','You clicked the "{0}" button.', btn.text);
+        Ext.example.msg('Button Click','You clicked the "{0}" button.', btn.displayText || btn.text);
     }
 
     function onItemClick(item){
@@ -130,16 +130,19 @@ Ext.onReady(function(){
                     defaults: {
                         xtype: 'button',
                         scale: 'large',
-                        iconAlign: 'left'
+                        iconAlign: 'left',
+                        handler: onButtonClick
                     },
                     items: [{
                         text: 'User<br/>manager',
                         iconCls: 'edit',
-                        width: 90
+                        width: 90,
+                        displayText: 'User manager'
                     },{
                         iconCls: 'add',
                         tooltip: 'Add user',
-                        width: 40
+                        width: 40,
+                        displayText: 'Add user'
                     },{
                         colspan: 2,
                         text: 'Import',

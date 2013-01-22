@@ -206,6 +206,11 @@ Ext.supports = {
      * @type {Boolean}
      */
     PointerEvents: 'pointerEvents' in document.documentElement.style,
+    
+    /**
+     * @property LocalStorage True if localStorage is supported
+     */
+    LocalStorage: 'localStorage' in window && window['localStorage'] !== null,
 
     /**
      * @property CSS3BoxShadow True if document environment supports the CSS3 box-shadow style.
@@ -575,6 +580,33 @@ Ext.supports = {
             identity: 'BoundingClientRect',
             fn: function(doc, div) {
                 return Ext.isFunction(div.getBoundingClientRect);
+            }
+        },
+        /**
+         * @property RotatedBoundingClientRect True if the BoundingClientRect is
+         * rotated when the element is rotated using a CSS transform.
+         * @type {Boolean}
+         */
+        {
+            identity: 'RotatedBoundingClientRect',
+            fn: function() {
+                var body = document.body,
+                    supports = false,
+                    el = document.createElement('div'),
+                    style = el.style;
+
+                if (el.getBoundingClientRect) {
+                    style.WebkitTransform = style.MozTransform =
+                        style.OTransform = style.transform = 'rotate(90deg)';
+                    style.width = '100px';
+                    style.height = '30px';
+                    body.appendChild(el)
+
+                    supports = el.getBoundingClientRect().height !== 100;
+                    body.removeChild(el);
+                }
+               
+                return supports;
             }
         },
         {

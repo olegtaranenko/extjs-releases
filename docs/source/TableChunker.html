@@ -22,8 +22,8 @@
 Ext.define('Ext.view.TableChunker', {
     singleton: true,
     requires: ['Ext.XTemplate'],
-    metaTableTpl: [
-        '{%if (this.openTableWrap)out.push(this.openTableWrap())%}',
+<span id='Ext-view-TableChunker-property-metaTableTpl'>    metaTableTpl: [
+</span>        '{%if (this.openTableWrap)out.push(this.openTableWrap())%}',
         '&lt;table class=&quot;' + Ext.baseCSSPrefix + 'grid-table ' + Ext.baseCSSPrefix + 'grid-table-resizer&quot; border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; {[this.embedFullWidth(values)]}&gt;',
             '&lt;tbody&gt;',
             '&lt;tr class=&quot;' + Ext.baseCSSPrefix + 'grid-header-row&quot;&gt;',
@@ -42,22 +42,21 @@ Ext.define('Ext.view.TableChunker', {
         '{%if (this.closeTableWrap)out.push(this.closeTableWrap())%}'
     ],
 
-    constructor: function() {
-        Ext.XTemplate.prototype.recurse = function(values, reference) {
+<span id='Ext-view-TableChunker-method-constructor'>    constructor: function() {
+</span>        Ext.XTemplate.prototype.recurse = function(values, reference) {
             return this.apply(reference ? values[reference] : values);
         };
     },
 
-    embedFeature: function(values, parent, x, xcount) {
-        var tpl = '';
-        if (!values.disabled) {
-            tpl = values.getFeatureTpl(values, parent, x, xcount);
+<span id='Ext-view-TableChunker-method-embedFeature'>    embedFeature: function(values, parent, x, xcount) {
+</span>        if (!values.disabled) {
+            return values.getFeatureTpl(values, parent, x, xcount);
         }
-        return tpl;
+        return '';
     },
 
-    embedFullWidth: function(values) {
-        var result = 'style=&quot;width:{fullWidth}px;';
+<span id='Ext-view-TableChunker-method-embedFullWidth'>    embedFullWidth: function(values) {
+</span>        var result = 'style=&quot;width:{fullWidth}px;';
 
         // If there are no records, we need to give the table a height so that it
         // is displayed and causes q scrollbar if the width exceeds the View's width.
@@ -67,16 +66,16 @@ Ext.define('Ext.view.TableChunker', {
         return result + '&quot;';
     },
 
-    openRows: function() {
-        return '&lt;tpl for=&quot;rows&quot;&gt;';
+<span id='Ext-view-TableChunker-method-openRows'>    openRows: function() {
+</span>        return '&lt;tpl for=&quot;rows&quot;&gt;';
     },
 
-    closeRows: function() {
-        return '&lt;/tpl&gt;';
+<span id='Ext-view-TableChunker-method-closeRows'>    closeRows: function() {
+</span>        return '&lt;/tpl&gt;';
     },
 
-    metaRowTpl: [
-        '&lt;tr class=&quot;' + Ext.baseCSSPrefix + 'grid-row {[this.embedRowCls()]}&quot; {[this.embedRowAttr()]}&gt;',
+<span id='Ext-view-TableChunker-property-metaRowTpl'>    metaRowTpl: [
+</span>        '&lt;tr class=&quot;' + Ext.baseCSSPrefix + 'grid-row {[this.embedRowCls()]}&quot; {[this.embedRowAttr()]}&gt;',
             '&lt;tpl for=&quot;columns&quot;&gt;',
                 '&lt;td class=&quot;{cls} ' + Ext.baseCSSPrefix + 'grid-cell ' + Ext.baseCSSPrefix + 'grid-cell-{columnId} {{id}-modified} {{id}-tdCls} {[this.firstOrLastCls(xindex, xcount)]}&quot; {{id}-tdAttr}&gt;',
                     '&lt;div {unselectableAttr} class=&quot;' + Ext.baseCSSPrefix + 'grid-cell-inner {unselectableCls}&quot; style=&quot;text-align: {align}; {{id}-style};&quot;&gt;{{id}}&lt;/div&gt;',
@@ -84,53 +83,58 @@ Ext.define('Ext.view.TableChunker', {
             '&lt;/tpl&gt;',
         '&lt;/tr&gt;'
     ],
-
-    firstOrLastCls: function(xindex, xcount) {
+    
+<span id='Ext-view-TableChunker-method-firstOrLastCls'>    firstOrLastCls: function(xindex, xcount) {
+</span>        var result = '';
+        
         if (xindex === 1) {
-            return Ext.view.Table.prototype.firstCls;
-        } else if (xindex === xcount) {
-            return Ext.view.Table.prototype.lastCls;
+            result = Ext.view.Table.prototype.firstCls;
         }
+        
+        if (xindex === xcount) {
+            result += ' ' + Ext.view.Table.prototype.lastCls;
+        }
+        return result;
     },
     
-    embedRowCls: function() {
-        return '{rowCls}';
+<span id='Ext-view-TableChunker-method-embedRowCls'>    embedRowCls: function() {
+</span>        return '{rowCls}';
     },
     
-    embedRowAttr: function() {
-        return '{rowAttr}';
+<span id='Ext-view-TableChunker-method-embedRowAttr'>    embedRowAttr: function() {
+</span>        return '{rowAttr}';
     },
     
-    openTableWrap: undefined,
-    
-    closeTableWrap: undefined,
-
-    getTableTpl: function(cfg, textOnly) {
-        var tpl,
+<span id='Ext-view-TableChunker-property-openTableWrap'>    openTableWrap: undefined,
+</span>    
+<span id='Ext-view-TableChunker-property-closeTableWrap'>    closeTableWrap: undefined,
+</span>
+<span id='Ext-view-TableChunker-method-getTableTpl'>    getTableTpl: function(cfg, textOnly) {
+</span>        var me = this,
+            tpl,
             tableTplMemberFns = {
-                openRows: this.openRows,
-                closeRows: this.closeRows,
-                embedFeature: this.embedFeature,
-                embedFullWidth: this.embedFullWidth,
-                openTableWrap: this.openTableWrap,
-                closeTableWrap: this.closeTableWrap
+                openRows: me.openRows,
+                closeRows: me.closeRows,
+                embedFeature: me.embedFeature,
+                embedFullWidth: me.embedFullWidth,
+                openTableWrap: me.openTableWrap,
+                closeTableWrap: me.closeTableWrap
             },
             tplMemberFns = {},
-            features = cfg.features || [],
-            ln = features.length,
+            features = cfg.features,
+            featureCount = features ? features.length : 0,
             i  = 0,
             memberFns = {
-                embedRowCls: this.embedRowCls,
-                embedRowAttr: this.embedRowAttr,
-                firstOrLastCls: this.firstOrLastCls,
+                embedRowCls: me.embedRowCls,
+                embedRowAttr: me.embedRowAttr,
+                firstOrLastCls: me.firstOrLastCls,
                 unselectableAttr: cfg.enableTextSelection ? '' : 'unselectable=&quot;on&quot;',
                 unselectableCls: cfg.enableTextSelection ? '' : Ext.baseCSSPrefix + 'unselectable'
             },
-            // copy the default
-            metaRowTpl = Array.prototype.slice.call(this.metaRowTpl, 0),
-            metaTableTpl;
-            
-        for (; i &lt; ln; i++) {
+            // copy the template spec array if there are Features which might mutate it 
+            metaRowTpl = featureCount ? Array.prototype.slice.call(me.metaRowTpl, 0) : me.metaRowTpl;
+
+        for (; i &lt; featureCount; i++) {
             if (!features[i].disabled) {
                 features[i].mutateMetaRowTpl(metaRowTpl);
                 Ext.apply(memberFns, features[i].getMetaRowTplFragments());
@@ -138,20 +142,16 @@ Ext.define('Ext.view.TableChunker', {
                 Ext.apply(tableTplMemberFns, features[i].getTableFragments());
             }
         }
-        
-        metaRowTpl = new Ext.XTemplate(metaRowTpl.join(''), memberFns);
-        cfg.row = metaRowTpl.applyTemplate(cfg);
-        
-        metaTableTpl = new Ext.XTemplate(this.metaTableTpl.join(''), tableTplMemberFns);
-        
-        tpl = metaTableTpl.applyTemplate(cfg);
+
+        cfg.row = new Ext.XTemplate(metaRowTpl.join(''), memberFns).applyTemplate(cfg);
+
+        tpl = new Ext.XTemplate(me.metaTableTpl.join(''), tableTplMemberFns).applyTemplate(cfg);
         
         // TODO: Investigate eliminating.
         if (!textOnly) {
             tpl = new Ext.XTemplate(tpl, tplMemberFns);
         }
         return tpl;
-        
     }
 });
 </pre>

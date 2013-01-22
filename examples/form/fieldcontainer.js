@@ -205,10 +205,14 @@ Ext.onReady(function() {
             {
                 text   : 'Save',
                 handler: function() {
-                    var form = this.up('form').getForm(),
-                        s = '';
+                    var form   = this.up('form').getForm(),
+                        encode = Ext.String.htmlEncode,
+                        s      = '';
+
                     if (form.isValid()) {
                         Ext.iterate(form.getValues(), function(key, value) {
+                            value = encode(value);
+                            
                             s += Ext.util.Format.format("{0} = {1}<br />", key, value);
                         }, this);
 

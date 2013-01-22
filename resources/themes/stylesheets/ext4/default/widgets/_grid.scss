@@ -12,11 +12,6 @@
             border-width: 1px;
             border-top-color: $grid-header-background-color;
         }
-
-        // Hide using visibility so that its available width can be calculated correctly
-        .#{$prefix}grid-header-ct-hidden {
-            visibility: hidden;
-        }
     }
 
     .#{$prefix}grid-empty {
@@ -71,7 +66,12 @@
     }
 
     .#{$prefix}accordion-item .#{$prefix}grid-header-ct {
-        border-width: 0 0 1px 0!important;
+        border-width: 0 0 1px !important;
+    }
+
+    // When hideHeaders: true, we need !important to override above rule
+    .#{$prefix}accordion-item .#{$prefix}grid-header-ct-hidden {
+        border: 0 !important;
     }
 
     .#{$prefix}column-header {
@@ -242,11 +242,14 @@
     }
 
     .#{$prefix}grid-row-selected .#{$prefix}grid-cell,
-    .#{$prefix}grid-row-selected .#{$prefix}grid-rowwrap-div {
+    .#{$prefix}grid-row-selected .#{$prefix}grid-rowwrap-div,
+    .#{$prefix}grid-row-selected .#{$prefix}grid-cell-rowbody {
+        background-color: $grid-row-cell-selected-background-color !important;
+    }
+    
+    .#{$prefix}grid-row-selected .#{$prefix}grid-cell {
         border-style: $grid-row-cell-selected-border-style;
         border-color: $grid-row-cell-selected-border-color;
-
-        background-color: $grid-row-cell-selected-background-color !important;
     }
 
     .#{$prefix}grid-rowwrap-div {
@@ -254,7 +257,7 @@
         .#{$prefix}grid-cell-inner {
             border-width: 0;
 
-            background: transparent;
+            background-color: transparent;
         }
     }
 
@@ -896,4 +899,17 @@
             margin-left: 15px;
         }
     }
+
+    // Inner locked grid has a 1px border. Last cell looks bad with an extra grey one.
+    // The rules must be last because they override default header and cell bordering.
+    // Must use the border-right property because we have to override the .x-column-header border-right setting.
+    .#{$prefix}grid-inner-locked {
+        .#{$prefix}column-header-last {
+            border-right: 0 none;
+        }
+        .#{$prefix}grid-cell-last {
+            border-right: 0 none;
+        }
+    }
+
 }

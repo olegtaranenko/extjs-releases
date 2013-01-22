@@ -272,7 +272,7 @@
  *    that are shrink-wrapped. If a component has raw content (not container items), the
  *    componentLayout must publish these values instead.
  * 
- * @protected
+ * @private
  */
 Ext.define('Ext.layout.Context', {
     requires: [

@@ -15,7 +15,11 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext-util-DelayedTask-method-constructor'><span id='Ext-util-DelayedTask'>/**
+  <pre class="prettyprint lang-js">//@tag dom,core
+//@require ../Support.js
+//@define Ext.util.DelayedTask
+
+<span id='Ext-util-DelayedTask-method-constructor'><span id='Ext-util-DelayedTask'>/**
 </span></span> * @class Ext.util.DelayedTask
  * 
  * The DelayedTask class provides a convenient way to &quot;buffer&quot; the execution of a method,
@@ -58,6 +62,7 @@ Ext.util.DelayedTask = function(fn, scope, args) {
             clearInterval(id);
             id = null;
             fn.apply(scope, args || []);
+            Ext.EventManager.idleEvent.fire();
         };
 
 <span id='Ext-util-DelayedTask-method-delay'>    /**

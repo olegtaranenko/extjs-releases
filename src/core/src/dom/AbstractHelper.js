@@ -7,7 +7,7 @@
  */
 Ext.define('Ext.dom.AbstractHelper', {
     emptyTags : /^(?:br|frame|hr|img|input|link|meta|range|spacer|wbr|area|param|col)$/i,
-    confRe : /(?:tag|children|cn|html|tpl|tplData)$/i,
+    confRe : /^(?:tag|children|cn|html|tpl|tplData)$/i,
     endRe : /end/i,
 
     // Since cls & for are reserved words, we need to transform them
@@ -30,9 +30,10 @@ Ext.define('Ext.dom.AbstractHelper', {
 
     generateMarkup: function(spec, buffer) {
         var me = this,
+            specType = typeof spec,
             attr, val, tag, i, closeTags;
 
-        if (typeof spec == "string") {
+        if (specType == "string" || specType == "number") {
             buffer.push(spec);
         } else if (Ext.isArray(spec)) {
             for (i = 0; i < spec.length; i++) {

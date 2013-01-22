@@ -26,8 +26,6 @@ Ext.onReady(function () {
         }
     });
     var chart = Ext.create('Ext.chart.Chart', {
-            id: 'chartCmp',
-            xtype: 'chart',
             animate: true,
             shadow: true,
             store: store1,
@@ -87,7 +85,7 @@ Ext.onReady(function () {
             }]
         });
         
-    var win = Ext.create('Ext.Window', {
+    var win = Ext.create('Ext.window.Window', {
         width: 800,
         height: 600,
         minHeight: 400,
@@ -95,7 +93,7 @@ Ext.onReady(function () {
         hidden: false,
         maximizable: true,
         title: 'Bar Chart',
-        renderTo: Ext.getBody(),
+        autoShow: true,
         layout: 'fit',
         tbar: [{
             text: 'Save Chart',
@@ -111,7 +109,10 @@ Ext.onReady(function () {
         }, {
             text: 'Reload Data',
             handler: function() {
-                store1.loadData(generateData());
+                // Add a short delay to prevent fast sequential clicks
+                window.loadTask.delay(100, function() {
+                    store1.loadData(generateData());
+                });
             }
         }],
         items: chart

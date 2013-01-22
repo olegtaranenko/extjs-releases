@@ -58,6 +58,8 @@ Ext.define('Ext.layout.container.Form', {
     tableCls: Ext.baseCSSPrefix + 'form-layout-table',
 
     type: 'form',
+    
+    createsInnerCt: true,
 
     manageOverflow: 2,
 

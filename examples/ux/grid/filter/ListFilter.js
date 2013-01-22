@@ -1,6 +1,4 @@
 /**
- * @class Ext.ux.grid.filter.ListFilter
- * @extends Ext.ux.grid.filter.Filter
  * <p>List filters are able to be preloaded/backed by an Ext.data.Store to load
  * their options the first time they are shown. ListFilter utilizes the
  * {@link Ext.ux.grid.menu.ListMenu} component.</p>
@@ -137,7 +135,6 @@ filter : [{"type":"list","value":"small,medium","field":"size"}]
     },
 
     /**
-     * @private
      * Template method that is to return <tt>true</tt> if the filter
      * has enough configuration information to be activated.
      * @return {Boolean}

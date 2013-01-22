@@ -15,25 +15,30 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext-dom-AbstractElement'>/**
-</span> * @class Ext.dom.AbstractElement
- * @extend Ext.Base
- * @private
+  <pre class="prettyprint lang-js">//@tag dom,core
+//@require Ext.Supports
+
+<span id='Ext-dom-AbstractElement'>/**
+</span> * @private
  */
-(function() {
-
-var document = window.document,
-    trimRe = /^\s+|\s+$/g,
-    whitespaceRe = /\s/;
-
-if (!Ext.cache){
-    Ext.cache = {};
-}
-
 Ext.define('Ext.dom.AbstractElement', {
+    requires: [
+        'Ext.EventManager',
+        'Ext.dom.AbstractElement_static',
+        'Ext.dom.AbstractElement_alignment',
+        'Ext.dom.AbstractElement_insertion',
+        'Ext.dom.AbstractElement_position',
+        'Ext.dom.AbstractElement_style',
+        'Ext.dom.AbstractElement_traversal'
+    ],
 
+<span id='Ext-dom-AbstractElement-property-trimRe'>    trimRe: /^\s+|\s+$/g,
+</span><span id='Ext-dom-AbstractElement-property-whitespaceRe'>    whitespaceRe: /\s/,
+</span>    
     inheritableStatics: {
-
+<span id='Ext-dom-AbstractElement-property-trimRe'>        trimRe: /^\s+|\s+$/g,
+</span><span id='Ext-dom-AbstractElement-property-whitespaceRe'>        whitespaceRe: /\s/,
+</span>
 <span id='Ext-dom-AbstractElement-static-method-get'>        /**
 </span>         * Retrieves Ext.dom.Element objects. {@link Ext#get} is alias for {@link Ext.dom.Element#get}.
          *
@@ -50,6 +55,7 @@ Ext.define('Ext.dom.AbstractElement', {
          */
         get: function(el) {
             var me = this,
+                document = window.document,
                 El = Ext.dom.Element,
                 cacheItem,
                 extEl,
@@ -136,15 +142,15 @@ Ext.define('Ext.dom.AbstractElement', {
             return null;
         },
 
-        addToCache: function(el, id) {
-            if (el) {
+<span id='Ext-dom-AbstractElement-method-addToCache'>        addToCache: function(el, id) {
+</span>            if (el) {
                 Ext.addCacheEntry(id, el);
             }
             return el;
         },
 
-        addMethods: function() {
-            this.override.apply(this, arguments);
+<span id='Ext-dom-AbstractElement-method-addMethods'>        addMethods: function() {
+</span>            this.override.apply(this, arguments);
         },
 
 <span id='Ext-dom-AbstractElement-static-method-mergeClsList'>        /**
@@ -163,7 +169,9 @@ myElement.dom.className = Ext.core.Element.mergeClsList(this.initialClasses, 'x-
         mergeClsList: function() {
             var clsList, clsHash = {},
                 i, length, j, listLength, clsName, result = [],
-                changed = false;
+                changed = false,
+                trimRe = this.trimRe,
+                whitespaceRe = this.whitespaceRe;
 
             for (i = 0, length = arguments.length; i &lt; length; i++) {
                 clsList = arguments[i];
@@ -206,11 +214,12 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         removeCls: function(existingClsList, removeClsList) {
             var clsHash = {},
                 i, length, clsName, result = [],
-                changed = false;
+                changed = false,
+                whitespaceRe = this.whitespaceRe;
 
             if (existingClsList) {
                 if (Ext.isString(existingClsList)) {
-                    existingClsList = existingClsList.replace(trimRe, '').split(whitespaceRe);
+                    existingClsList = existingClsList.replace(this.trimRe, '').split(whitespaceRe);
                 }
                 for (i = 0, length = existingClsList.length; i &lt; length; i++) {
                     clsHash[existingClsList[i]] = true;
@@ -276,8 +285,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         ASCLASS: 4
     },
 
-    constructor: function(element, forceNew) {
-        var me = this,
+<span id='Ext-dom-AbstractElement-method-constructor'>    constructor: function(element, forceNew) {
+</span>        var me = this,
             dom = typeof element == 'string'
                 ? document.getElementById(element)
                 : element,
@@ -496,8 +505,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         return me;
     },
 
-    getVisibilityMode: function() {
-        // Only flyweights won't have a $cache object, by calling getCache the cache
+<span id='Ext-dom-AbstractElement-method-getVisibilityMode'>    getVisibilityMode: function() {
+</span>        // Only flyweights won't have a $cache object, by calling getCache the cache
         // will be created for future accesses. As such, we're eliminating the method
         // call since it's mostly redundant
         var data = (this.$cache || this.getCache()).data,
@@ -518,19 +527,19 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         return this;
     },
     
-    getCache: function() {
-        var me = this,
+<span id='Ext-dom-AbstractElement-method-getCache'>    getCache: function() {
+</span>        var me = this,
             id = me.dom.id || Ext.id(me.dom);
 
         // Note that we do not assign an ID to the calling object here.
-        // An Ext.dom.Element will have one assigned at construction, and an Ext.dom.AbstractElement.Fly must not have one.
+        // An Ext.dom.Element will have one assigned at construction, and an Ext.dom.Element.Fly must not have one.
         // We assign an ID to the DOM element if it does not have one.
         me.$cache = Ext.cache[id] || Ext.addCacheEntry(id, null, me.dom);
             
         return me.$cache;
     }
-    
-}, function() {
+},
+function() {
     var AbstractElement = this;
 
 <span id='Ext-method-getDetachedBody'>    /**
@@ -574,9 +583,10 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     };
 
     this.addStatics({
-<span id='Ext-dom-AbstractElement-Fly'>        /**
-</span>         * @class Ext.dom.AbstractElement.Fly
-         * @extends Ext.dom.AbstractElement
+<span id='Ext-dom-Element-Fly'>        /**
+</span>         * @class Ext.dom.Element.Fly
+         * @alternateClassName Ext.dom.AbstractElement.Fly
+         * @extends Ext.dom.Element
          *
          * A non-persistent wrapper for a DOM element which may be used to execute methods of {@link Ext.dom.Element}
          * upon a DOM element without creating an instance of {@link Ext.dom.Element}.
@@ -588,9 +598,13 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * may themselves make use of {@link Ext#fly} and may change the DOM element to which the instance refers.
          */
         Fly: new Ext.Class({
+            // Although here the class is extending from AbstractElement,
+            // the class will be overwritten by Element definition with
+            // a class extending from Element instead.
+            // Therefore above we document it as extending Ext.Element.
             extend: AbstractElement,
 
-<span id='Ext-dom-AbstractElement-Fly-property-isFly'>            /**
+<span id='Ext-dom-Element-Fly-property-isFly'>            /**
 </span>             * @property {Boolean} isFly
              * This is `true` to identify Element flyweights
              */
@@ -600,7 +614,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
                 this.dom = dom;
             },
 
-<span id='Ext-dom-AbstractElement-Fly-method-attach'>            /**
+<span id='Ext-dom-Element-Fly-method-attach'>            /**
 </span>             * @private
              * Attach this fliyweight instance to the passed DOM element.
              *
@@ -620,7 +634,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         _flyweights: {},
 
 <span id='Ext-dom-AbstractElement-static-method-fly'>        /**
-</span>         * Gets the singleton {@link Ext.dom.AbstractElement.Fly flyweight} element, with the passed node as the active element.
+</span>         * Gets the singleton {@link Ext.dom.Element.Fly flyweight} element, with the passed node as the active element.
          * 
          * Because it is a singleton, this Flyweight does not have an ID, and must be used and discarded in a single line.
          * You may not keep and use the reference to this singleton over multiple lines because methods that you call
@@ -636,7 +650,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * @param {String/HTMLElement} dom The dom node or id
          * @param {String} [named] Allows for creation of named reusable flyweights to prevent conflicts (e.g.
          * internally Ext uses &quot;_global&quot;)
-         * @return {Ext.dom.AbstractElement.Fly} The singleton flyweight object (or null if no matching element was found)
+         * @return {Ext.dom.Element.Fly} The singleton flyweight object (or null if no matching element was found)
          * @static
          * @member Ext.dom.AbstractElement
          */
@@ -704,8 +718,6 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         }
     }(this.prototype));
 });
-
-}());
 </pre>
 </body>
 </html>

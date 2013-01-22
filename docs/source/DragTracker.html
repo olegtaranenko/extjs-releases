@@ -142,7 +142,7 @@ Ext.define('Ext.dd.DragTracker', {
              * drag operation begins after either the mouse has been moved by {@link #tolerance} pixels,
              * or after the {@link #autoStart} timer fires.
              *
-             * Return false to veto the drag operation.
+             * Return `false` to veto the drag operation.
              *
              * @param {Object} this
              * @param {Object} e event object
@@ -247,21 +247,21 @@ Ext.define('Ext.dd.DragTracker', {
         }
     },
 
-    disable: function() {
-        this.disabled = true;
+<span id='Ext-dd-DragTracker-method-disable'>    disable: function() {
+</span>        this.disabled = true;
     },
 
-    enable: function() {
-        this.disabled = false;
+<span id='Ext-dd-DragTracker-method-enable'>    enable: function() {
+</span>        this.disabled = false;
     },
 
-    destroy : function() {
-        this.clearListeners();
+<span id='Ext-dd-DragTracker-method-destroy'>    destroy : function() {
+</span>        this.clearListeners();
         delete this.el;
     },
 
-    // When the pointer enters a tracking element, fire a mouseover if the mouse entered from outside.
-    // This is mouseenter functionality, but we cannot use mouseenter because we are using &quot;delegate&quot; to filter mouse targets
+<span id='Ext-dd-DragTracker-method-onMouseOver'>    // When the pointer enters a tracking element, fire a mouseover if the mouse entered from outside.
+</span>    // This is mouseenter functionality, but we cannot use mouseenter because we are using &quot;delegate&quot; to filter mouse targets
     onMouseOver: function(e, target) {
         var me = this;
         if (!me.disabled) {
@@ -275,8 +275,8 @@ Ext.define('Ext.dd.DragTracker', {
         }
     },
 
-    // When the pointer exits a tracking element, fire a mouseout.
-    // This is mouseleave functionality, but we cannot use mouseleave because we are using &quot;delegate&quot; to filter mouse targets
+<span id='Ext-dd-DragTracker-method-onMouseOut'>    // When the pointer exits a tracking element, fire a mouseout.
+</span>    // This is mouseleave functionality, but we cannot use mouseleave because we are using &quot;delegate&quot; to filter mouse targets
     onMouseOut: function(e) {
         var me = this;
         
@@ -290,8 +290,8 @@ Ext.define('Ext.dd.DragTracker', {
         }
     },
 
-    onMouseDown: function(e, target){
-        var me = this,
+<span id='Ext-dd-DragTracker-method-onMouseDown'>    onMouseDown: function(e, target){
+</span>        var me = this,
             el;
         
         // If this is disabled, or the mousedown has been processed by an upstream DragTracker, return
@@ -337,8 +337,8 @@ Ext.define('Ext.dd.DragTracker', {
         }
     },
 
-    onMouseMove: function(e, target){
-        var me = this,
+<span id='Ext-dd-DragTracker-method-onMouseMove'>    onMouseMove: function(e, target){
+</span>        var me = this,
             xy = e.getXY(),
             s = me.startXY;
 
@@ -362,8 +362,8 @@ Ext.define('Ext.dd.DragTracker', {
         }
     },
 
-    onMouseUp: function(e) {
-        var me = this;
+<span id='Ext-dd-DragTracker-method-onMouseUp'>    onMouseUp: function(e) {
+</span>        var me = this;
         // Clear the flag which ensures onMouseOut fires only after the mouse button
         // is lifted if the mouseout happens *during* a drag.
         me.mouseIsDown = false;
@@ -409,24 +409,24 @@ Ext.define('Ext.dd.DragTracker', {
         delete Ext.EventObject.dragTracked;
     },
 
-    triggerStart: function(e) {
-        var me = this;
+<span id='Ext-dd-DragTracker-method-triggerStart'>    triggerStart: function(e) {
+</span>        var me = this;
         me.clearStart();
         me.active = true;
         me.onStart(e);
         me.fireEvent('dragstart', me, e);
     },
 
-    clearStart : function() {
-        var timer = this.timer;
+<span id='Ext-dd-DragTracker-method-clearStart'>    clearStart : function() {
+</span>        var timer = this.timer;
         if (timer) {
             clearTimeout(timer);
             delete this.timer;
         }
     },
 
-    stopSelect : function(e) {
-        e.stopEvent();
+<span id='Ext-dd-DragTracker-method-stopSelect'>    stopSelect : function(e) {
+</span>        e.stopEvent();
         return false;
     },
 
@@ -513,8 +513,8 @@ Ext.define('Ext.dd.DragTracker', {
         return me._constrainRegion;
     },
 
-    getXY : function(constrain){
-        return constrain ? this.constrainModes[constrain](this, this.lastXY) : this.lastXY;
+<span id='Ext-dd-DragTracker-method-getXY'>    getXY : function(constrain){
+</span>        return constrain ? this.constrainModes[constrain](this, this.lastXY) : this.lastXY;
     },
 
 <span id='Ext-dd-DragTracker-method-getOffset'>    /**
@@ -530,7 +530,7 @@ Ext.define('Ext.dd.DragTracker', {
      *    based upon the current mouse position, and then coerced into the constrainRegion. The returned
      *    mouse position is then adjusted by the same delta as was used to coerce the region.\
      *
-     * @param constrainMode {String} (Optional) If omitted the true mouse position is returned. May be passed
+     * @param {String} constrainMode (Optional) If omitted the true mouse position is returned. May be passed
      * as `point` or `dragTarget`. See above.
      * @returns {Number[]} The `X, Y` offset from the mousedown point, optionally constrained.
      */
@@ -541,8 +541,8 @@ Ext.define('Ext.dd.DragTracker', {
         return [xy[0]-s[0], xy[1]-s[1]];
     },
 
-    constrainModes: {
-        // Constrain the passed point to within the constrain region
+<span id='Ext-dd-DragTracker-property-constrainModes'>    constrainModes: {
+</span>        // Constrain the passed point to within the constrain region
         point: function(me, xy) {
             var dr = me.dragRegion,
                 constrainTo = me.getConstrainRegion();

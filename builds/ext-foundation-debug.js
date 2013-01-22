@@ -1,40 +1,21 @@
 /*
-Ext JS 4.1 - JavaScript Library
-Copyright (c) 2006-2012, Sencha Inc.
-All rights reserved.
-licensing@sencha.com
+This file is part of Ext JS 4.1
 
-http://www.sencha.com/license
+Copyright (c) 2011-2012 Sencha Inc
 
-Open Source License
-------------------------------------------------------------------------------------------
-This version of Ext JS is licensed under the terms of the Open Source GPL 3.0 license. 
+Contact:  http://www.sencha.com/contact
 
-http://www.gnu.org/licenses/gpl.html
+Commercial Usage
+Licensees holding valid commercial licenses may use this file in accordance with the Commercial
+Software License Agreement provided with the Software or, alternatively, in accordance with the
+terms contained in a written agreement between you and Sencha.
 
-There are several FLOSS exceptions available for use with this release for
-open source applications that are distributed under a license other than GPL.
+If you are unsure which license is appropriate for your use, please contact the sales department
+at http://www.sencha.com/contact.
 
-* Open Source License Exception for Applications
-
-  http://www.sencha.com/products/floss-exception.php
-
-* Open Source License Exception for Development
-
-  http://www.sencha.com/products/ux-exception.php
-
-
-Alternate Licensing
-------------------------------------------------------------------------------------------
-Commercial and OEM Licenses are available for an alternate download of Ext JS.
-This is the appropriate option if you are creating proprietary applications and you are 
-not prepared to distribute and share the source code of your application under the 
-GPL v3 license. Please visit http://www.sencha.com/license for more details.
-
---
-
-This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT OF THIRD-PARTY INTELLECTUAL PROPERTY RIGHTS.  See the GNU General Public License for more details.
+Build date: 2012-10-25 15:13:53 (240477695016a85fb9ed1098fd5f8e116327fcc3)
 */
+
 //@tag foundation,core
 
 
@@ -107,6 +88,11 @@ Ext._startTime = new Date().getTime();
 
         
         emptyFn: emptyFn,
+        
+        
+        identityFn: function(o) {
+            return o;
+        },
 
         
         emptyString: new String(),
@@ -543,6 +529,10 @@ Ext.globalEval = Ext.global.execScript
         
         
         (function(){
+            
+            
+            
+            var Ext = this.Ext;
             eval($$code);
         }());
     };
@@ -556,7 +546,8 @@ Ext.globalEval = Ext.global.execScript
 (function() {
 
 
-var version = '4.1.1.1', Version;
+
+var version = '4.1.3.548', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         
@@ -790,6 +781,42 @@ Ext.String = (function() {
         };
 
     return {
+        
+        
+        insert: function(s, value, index) {
+            if (!s) {
+                return value;
+            }
+            
+            if (!value) {
+                return s;
+            }
+            
+            var len = s.length;
+            
+            if (!index && index !== 0) {
+                index = len;
+            }
+            
+            if (index < 0) {
+                index *= -1;
+                if (index >= len) {
+                    
+                    index = 0;
+                } else {
+                    index = len - index;
+                }
+            }
+            
+            if (index === 0) {
+                s = value + s;
+            } else if (index >= s.length) {
+                s += value;
+            } else {
+                s = s.substr(0, index) + value + s.substr(index);
+            }
+            return s;
+        },
 
         
         createVarName: function(s) {
@@ -1900,14 +1927,15 @@ Ext.Function = {
         var method = origFn;
         if (!Ext.isFunction(newFn)) {
             return origFn;
-        }
-        else {
+        } else {
+            returnValue = Ext.isDefined(returnValue) ? returnValue : null;
             return function() {
                 var me = this,
                     args = arguments;
+                    
                 newFn.target = me;
                 newFn.method = origFn;
-                return (newFn.apply(scope || me || Ext.global, args) !== false) ? origFn.apply(me || Ext.global, args) : returnValue || null;
+                return (newFn.apply(scope || me || Ext.global, args) !== false) ? origFn.apply(me || Ext.global, args) : returnValue;
             };
         }
     },
@@ -2399,19 +2427,141 @@ Ext.urlDecode = function() {
 
 
 
-(function() {
+Ext.Date = new function() {
+  var utilDate = this,
+      stripEscapeRe = /(\\.)/g,
+      hourInfoRe = /([gGhHisucUOPZ]|MS)/,
+      dateInfoRe = /([djzmnYycU]|MS)/,
+      slashRe = /\\/gi,
+      numberTokenRe = /\{(\d+)\}/g,
+      MSFormatRe = new RegExp('\\/Date\\(([-+])?(\\d+)(?:[+-]\\d{4})?\\)\\/'),
+      code = [
+        
+        "var me = this, dt, y, m, d, h, i, s, ms, o, O, z, zz, u, v, W, year, jan4, week1monday,",
+            "def = me.defaults,",
+            "from = Ext.Number.from,",
+            "results = String(input).match(me.parseRegexes[{0}]);", 
 
+        "if(results){",
+            "{1}",
 
+            "if(u != null){", 
+                "v = new Date(u * 1000);", 
+            "}else{",
+                
+                
+                
+                "dt = me.clearTime(new Date);",
 
+                "y = from(y, from(def.y, dt.getFullYear()));",
+                "m = from(m, from(def.m - 1, dt.getMonth()));",
+                "d = from(d, from(def.d, dt.getDate()));",
 
-function xf(format) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    return format.replace(/\{(\d+)\}/g, function(m, i) {
-        return args[i];
-    });
-}
+                "h  = from(h, from(def.h, dt.getHours()));",
+                "i  = from(i, from(def.i, dt.getMinutes()));",
+                "s  = from(s, from(def.s, dt.getSeconds()));",
+                "ms = from(ms, from(def.ms, dt.getMilliseconds()));",
 
-Ext.Date = {
+                "if(z >= 0 && y >= 0){",
+                    
+                    
+
+                    
+                    
+                    "v = me.add(new Date(y < 100 ? 100 : y, 0, 1, h, i, s, ms), me.YEAR, y < 100 ? y - 100 : 0);",
+
+                    
+                    "v = !strict? v : (strict === true && (z <= 364 || (me.isLeapYear(v) && z <= 365))? me.add(v, me.DAY, z) : null);",
+                "}else if(strict === true && !me.isValid(y, m + 1, d, h, i, s, ms)){", 
+                    "v = null;", 
+                "}else{",
+                    "if (W) {", 
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        "year = y || (new Date()).getFullYear(),",
+                        "jan4 = new Date(year, 0, 4, 0, 0, 0),",
+                        "week1monday = new Date(jan4.getTime() - ((jan4.getDay() - 1) * 86400000));",
+                        "v = Ext.Date.clearTime(new Date(week1monday.getTime() + ((W - 1) * 604800000)));",
+                    "} else {",
+                        
+                        
+                        "v = me.add(new Date(y < 100 ? 100 : y, m, d, h, i, s, ms), me.YEAR, y < 100 ? y - 100 : 0);",
+                    "}",
+                "}",
+            "}",
+        "}",
+
+        "if(v){",
+            
+            "if(zz != null){",
+                
+                "v = me.add(v, me.SECOND, -v.getTimezoneOffset() * 60 - zz);",
+            "}else if(o){",
+                
+                "v = me.add(v, me.MINUTE, -v.getTimezoneOffset() + (sn == '+'? -1 : 1) * (hr * 60 + mn));",
+            "}",
+        "}",
+
+        "return v;"
+      ].join('\n');
+
+  
+  
+  
+  function xf(format) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return format.replace(numberTokenRe, function(m, i) {
+          return args[i];
+      });
+  }
+
+  Ext.apply(utilDate, {
     
     now: Date.now || function() {
         return +new Date();
@@ -2461,9 +2611,22 @@ Ext.Date = {
         "MS": function(input, strict) {
             
             
-            var re = new RegExp('\\/Date\\(([-+])?(\\d+)(?:[+-]\\d{4})?\\)\\/'),
-                r = (input || '').match(re);
-            return r? new Date(((r[1] || '') + r[2]) * 1) : null;
+            var r = (input || '').match(MSFormatRe);
+            return r ? new Date(((r[1] || '') + r[2]) * 1) : null;
+        },
+        "time": function(input, strict) {
+            var num = parseInt(input, 10);
+            if (num || num === 0) {
+                return new Date(num);
+            }
+            return null;
+        },
+        "timestamp": function(input, strict) {
+            var num = parseInt(input, 10);
+            if (num || num === 0) {
+                return new Date(num * 1000);
+            }
+            return null;
         }
     },
     parseRegexes: [],
@@ -2473,6 +2636,12 @@ Ext.Date = {
         "MS": function() {
             
             return '\\/Date(' + this.getTime() + ')\\/';
+        },
+        "time": function(){
+            return this.getTime().toString();
+        },
+        "timestamp": function(){
+            return utilDate.format(this, 'U');
         }
     },
 
@@ -2589,34 +2758,22 @@ Ext.Date = {
     
 
     
-    formatContainsHourInfo : (function(){
-        var stripEscapeRe = /(\\.)/g,
-            hourInfoRe = /([gGhHisucUOPZ]|MS)/;
-        return function(format){
-            return hourInfoRe.test(format.replace(stripEscapeRe, ''));
-        };
-    }()),
+    formatContainsHourInfo : function(format){
+        return hourInfoRe.test(format.replace(stripEscapeRe, ''));
+    },
 
     
-    formatContainsDateInfo : (function(){
-        var stripEscapeRe = /(\\.)/g,
-            dateInfoRe = /([djzmnYycU]|MS)/;
-
-        return function(format){
-            return dateInfoRe.test(format.replace(stripEscapeRe, ''));
-        };
-    }()),
+    formatContainsDateInfo : function(format){
+        return dateInfoRe.test(format.replace(stripEscapeRe, ''));
+    },
     
     
-    unescapeFormat: (function() { 
-        var slashRe = /\\/gi;
-        return function(format) {
-            
-            
-            
-            return format.replace(slashRe, '');
-        }
-    }()),
+    unescapeFormat: function(format) {
+        
+        
+        
+        return format.replace(slashRe, '');
+    },
 
     
     formatCodes : {
@@ -2691,7 +2848,7 @@ Ext.Date = {
         if (p[format] == null) {
             utilDate.createParser(format);
         }
-        return p[format](input, Ext.isDefined(strict) ? strict : utilDate.useStrict);
+        return p[format].call(utilDate, input, Ext.isDefined(strict) ? strict : utilDate.useStrict);
     },
 
     
@@ -2735,107 +2892,44 @@ Ext.Date = {
     },
 
     
-    createParser : (function() {
-        var code = [
-            "var dt, y, m, d, h, i, s, ms, o, z, zz, u, v,",
-                "def = Ext.Date.defaults,",
-                "results = String(input).match(Ext.Date.parseRegexes[{0}]);", 
+    createParser : function(format) {
+        var regexNum = utilDate.parseRegexes.length,
+            currentGroup = 1,
+            calc = [],
+            regex = [],
+            special = false,
+            ch = "",
+            i = 0,
+            len = format.length,
+            atEnd = [],
+            obj;
 
-            "if(results){",
-                "{1}",
-
-                "if(u != null){", 
-                    "v = new Date(u * 1000);", 
-                "}else{",
-                    
-                    
-                    
-                    "dt = Ext.Date.clearTime(new Date);",
-
-                    
-                    "y = Ext.Number.from(y, Ext.Number.from(def.y, dt.getFullYear()));",
-                    "m = Ext.Number.from(m, Ext.Number.from(def.m - 1, dt.getMonth()));",
-                    "d = Ext.Number.from(d, Ext.Number.from(def.d, dt.getDate()));",
-
-                    
-                    "h  = Ext.Number.from(h, Ext.Number.from(def.h, dt.getHours()));",
-                    "i  = Ext.Number.from(i, Ext.Number.from(def.i, dt.getMinutes()));",
-                    "s  = Ext.Number.from(s, Ext.Number.from(def.s, dt.getSeconds()));",
-                    "ms = Ext.Number.from(ms, Ext.Number.from(def.ms, dt.getMilliseconds()));",
-
-                    "if(z >= 0 && y >= 0){",
-                        
-                        
-
-                        
-                        
-                        "v = Ext.Date.add(new Date(y < 100 ? 100 : y, 0, 1, h, i, s, ms), Ext.Date.YEAR, y < 100 ? y - 100 : 0);",
-
-                        
-                        "v = !strict? v : (strict === true && (z <= 364 || (Ext.Date.isLeapYear(v) && z <= 365))? Ext.Date.add(v, Ext.Date.DAY, z) : null);",
-                    "}else if(strict === true && !Ext.Date.isValid(y, m + 1, d, h, i, s, ms)){", 
-                        "v = null;", 
-                    "}else{",
-                        
-                        
-                        "v = Ext.Date.add(new Date(y < 100 ? 100 : y, m, d, h, i, s, ms), Ext.Date.YEAR, y < 100 ? y - 100 : 0);",
-                    "}",
-                "}",
-            "}",
-
-            "if(v){",
-                
-                "if(zz != null){",
-                    
-                    "v = Ext.Date.add(v, Ext.Date.SECOND, -v.getTimezoneOffset() * 60 - zz);",
-                "}else if(o){",
-                    
-                    "v = Ext.Date.add(v, Ext.Date.MINUTE, -v.getTimezoneOffset() + (sn == '+'? -1 : 1) * (hr * 60 + mn));",
-                "}",
-            "}",
-
-            "return v;"
-        ].join('\n');
-
-        return function(format) {
-            var regexNum = utilDate.parseRegexes.length,
-                currentGroup = 1,
-                calc = [],
-                regex = [],
-                special = false,
-                ch = "",
-                i = 0,
-                len = format.length,
-                atEnd = [],
-                obj;
-
-            for (; i < len; ++i) {
-                ch = format.charAt(i);
-                if (!special && ch == "\\") {
-                    special = true;
-                } else if (special) {
-                    special = false;
-                    regex.push(Ext.String.escape(ch));
-                } else {
-                    obj = utilDate.formatCodeToRegex(ch, currentGroup);
-                    currentGroup += obj.g;
-                    regex.push(obj.s);
-                    if (obj.g && obj.c) {
-                        if (obj.calcAtEnd) {
-                            atEnd.push(obj.c);
-                        } else {
-                            calc.push(obj.c);
-                        }
+        for (; i < len; ++i) {
+            ch = format.charAt(i);
+            if (!special && ch == "\\") {
+                special = true;
+            } else if (special) {
+                special = false;
+                regex.push(Ext.String.escape(ch));
+            } else {
+                obj = utilDate.formatCodeToRegex(ch, currentGroup);
+                currentGroup += obj.g;
+                regex.push(obj.s);
+                if (obj.g && obj.c) {
+                    if (obj.calcAtEnd) {
+                        atEnd.push(obj.c);
+                    } else {
+                        calc.push(obj.c);
                     }
                 }
             }
-            
-            calc = calc.concat(atEnd);
+        }
 
-            utilDate.parseRegexes[regexNum] = new RegExp("^" + regex.join('') + "$", 'i');
-            utilDate.parseFunctions[format] = Ext.functionFactory("input", "strict", xf(code, regexNum, calc.join('')));
-        };
-    }()),
+        calc = calc.concat(atEnd);
+
+        utilDate.parseRegexes[regexNum] = new RegExp("^" + regex.join('') + "$", 'i');
+        utilDate.parseFunctions[format] = Ext.functionFactory("input", "strict", xf(code, regexNum, calc.join('')));
+    },
 
     
     parseCodes : {
@@ -2888,14 +2982,14 @@ Ext.Date = {
             s:"(\\d{1,3})" 
         },
         W: {
-            g:0,
-            c:null,
-            s:"(?:\\d{2})" 
+            g:1,
+            c:"W = parseInt(results[{0}], 10);\n",
+            s:"(\\d{2})" 
         },
         F: function() {
             return {
                 g:1,
-                c:"m = parseInt(Ext.Date.getMonthNumber(results[{0}]), 10);\n", 
+                c:"m = parseInt(me.getMonthNumber(results[{0}]), 10);\n", 
                 s:"(" + utilDate.monthNames.join("|") + ")"
             };
         },
@@ -2925,8 +3019,11 @@ Ext.Date = {
             c:null,
             s:"(?:1|0)"
         },
-        o: function() {
-            return utilDate.formatCodeToRegex("Y");
+        o: { 
+            g: 1,
+            c: "y = parseInt(results[{0}], 10);\n",
+            s: "(\\d{4})" 
+
         },
         Y: {
             g:1,
@@ -2936,7 +3033,7 @@ Ext.Date = {
         y: {
             g:1,
             c:"var ty = parseInt(results[{0}], 10);\n"
-                + "y = ty > Ext.Date.y2kYear ? 1900 + ty : 2000 + ty;\n", 
+                + "y = ty > me.y2kYear ? 1900 + ty : 2000 + ty;\n", 
             s:"(\\d{1,2})"
         },
         
@@ -3274,44 +3371,73 @@ Ext.Date = {
     add : function(date, interval, value) {
         var d = Ext.Date.clone(date),
             Date = Ext.Date,
-            day;
+            day, decimalValue, base = 0;
         if (!interval || value === 0) {
             return d;
         }
 
-        switch(interval.toLowerCase()) {
-            case Ext.Date.MILLI:
-                d.setMilliseconds(d.getMilliseconds() + value);
-                break;
-            case Ext.Date.SECOND:
-                d.setSeconds(d.getSeconds() + value);
-                break;
-            case Ext.Date.MINUTE:
-                d.setMinutes(d.getMinutes() + value);
-                break;
-            case Ext.Date.HOUR:
-                d.setHours(d.getHours() + value);
-                break;
-            case Ext.Date.DAY:
-                d.setDate(d.getDate() + value);
-                break;
-            case Ext.Date.MONTH:
-                day = date.getDate();
-                if (day > 28) {
-                    day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.MONTH, value)).getDate());
-                }
-                d.setDate(day);
-                d.setMonth(date.getMonth() + value);
-                break;
-            case Ext.Date.YEAR:
-                day = date.getDate();
-                if (day > 28) {
-                    day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.YEAR, value)).getDate());
-                }
-                d.setDate(day);
-                d.setFullYear(date.getFullYear() + value);
-                break;
+        decimalValue = value - parseInt(value, 10);
+        value = parseInt(value, 10);
+
+        if (value) {
+            switch(interval.toLowerCase()) {
+                case Ext.Date.MILLI:
+                    d.setMilliseconds(d.getMilliseconds() + value);
+                    break;
+                case Ext.Date.SECOND:
+                    d.setSeconds(d.getSeconds() + value);
+                    break;
+                case Ext.Date.MINUTE:
+                    d.setMinutes(d.getMinutes() + value);
+                    break;
+                case Ext.Date.HOUR:
+                    d.setHours(d.getHours() + value);
+                    break;
+                case Ext.Date.DAY:
+                    d.setDate(d.getDate() + value);
+                    break;
+                case Ext.Date.MONTH:
+                    day = date.getDate();
+                    if (day > 28) {
+                        day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.MONTH, value)).getDate());
+                    }
+                    d.setDate(day);
+                    d.setMonth(date.getMonth() + value);
+                    break;
+                case Ext.Date.YEAR:
+                    day = date.getDate();
+                    if (day > 28) {
+                        day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.YEAR, value)).getDate());
+                    }
+                    d.setDate(day);
+                    d.setFullYear(date.getFullYear() + value);
+                    break;
+            }
         }
+
+        if (decimalValue) {
+            switch (interval.toLowerCase()) {
+                case Ext.Date.MILLI:    base = 1;               break;
+                case Ext.Date.SECOND:   base = 1000;            break;
+                case Ext.Date.MINUTE:   base = 1000*60;         break;
+                case Ext.Date.HOUR:     base = 1000*60*60;      break;
+                case Ext.Date.DAY:      base = 1000*60*60*24;   break;
+
+                case Ext.Date.MONTH:
+                    day = utilDate.getDaysInMonth(d);
+                    base = 1000*60*60*24*day;
+                    break;
+
+                case Ext.Date.YEAR:
+                    day = (utilDate.isLeapYear(d) ? 366 : 365);
+                    base = 1000*60*60*24*day;
+                    break;
+            }
+            if (base) {
+                d.setTime(d.getTime() + base * decimalValue); 
+            }
+        }
+
         return d;
     },
 
@@ -3324,7 +3450,7 @@ Ext.Date = {
     
     compat: function() {
         var nativeDate = window.Date,
-            p, u,
+            p,
             statics = ['useStrict', 'formatCodeToRegex', 'parseFunctions', 'parseRegexes', 'formatFunctions', 'y2kYear', 'MILLI', 'SECOND', 'MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR', 'defaults', 'dayNames', 'monthNames', 'monthNumbers', 'getShortMonthName', 'getShortDayName', 'getMonthNumber', 'formatCodes', 'isValid', 'parseDate', 'getFormatCode', 'createFormat', 'createParser', 'parseCodes'],
             proto = ['dateFormat', 'format', 'getTimezone', 'getGMTOffset', 'getDayOfYear', 'getWeekOfYear', 'isLeapYear', 'getFirstDayOfMonth', 'getLastDayOfMonth', 'getDaysInMonth', 'getSuffix', 'clone', 'isDST', 'clearTime', 'add', 'between'],
             sLen    = statics.length,
@@ -3347,11 +3473,8 @@ Ext.Date = {
             };
         }
     }
+  });
 };
-
-var utilDate = Ext.Date;
-
-}());
 
 //@tag foundation,core
 
@@ -3551,7 +3674,7 @@ var noArgs = [],
                 if (members.hasOwnProperty(name)) {
                     member = members[name];
 
-                    if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn) {
+                    if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                         member.$owner = this;
                         member.$name = name;
                     }
@@ -3565,7 +3688,7 @@ var noArgs = [],
 
         
         addMember: function(name, member) {
-            if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn) {
+            if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                 member.$owner = this;
                 member.$name = name;
             }
@@ -3632,6 +3755,8 @@ var noArgs = [],
                 for (name in members) { 
                     if (name == 'statics') {
                         statics = members[name];
+                    } else if (name == 'inheritableStatics'){
+                        me.addInheritableStatics(members[name]);
                     } else if (name == 'config') {
                         me.addConfig(members[name], true);
                     } else {
@@ -3649,7 +3774,7 @@ var noArgs = [],
                     if (members.hasOwnProperty(name)) {
                         member = members[name];
 
-                        if (typeof member == 'function' && !member.$className && member !== Ext.emptyFn) {
+                        if (typeof member == 'function' && !member.$className && member !== Ext.emptyFn && member !== Ext.identityFn) {
                             if (typeof member.$owner != 'undefined') {
                                 member = cloneFunction(member);
                             }
@@ -3681,8 +3806,8 @@ var noArgs = [],
 
             
             return (method = this.callParent.caller) && (method.$previous ||
-                ((method = method.$owner ? method : method.caller) &&
-                    method.$owner.superclass.self[method.$name])).apply(this, args || noArgs);
+                  ((method = method.$owner ? method : method.caller) &&
+                        method.$owner.superclass.self[method.$name])).apply(this, args || noArgs);
         },
 
         
@@ -3691,8 +3816,8 @@ var noArgs = [],
 
             
             return (method = this.callSuper.caller) &&
-                ((method = method.$owner ? method : method.caller) &&
-                    method.$owner.superclass.self[method.$name]).apply(this, args || noArgs);
+                    ((method = method.$owner ? method : method.caller) &&
+                      method.$owner.superclass.self[method.$name]).apply(this, args || noArgs);
         },
 
         
@@ -3728,6 +3853,7 @@ var noArgs = [],
             }
 
             prototype.mixins[name] = mixin;
+            return this;
         },
 
         
@@ -3821,8 +3947,8 @@ var noArgs = [],
             
             var method,
                 superMethod = (method = this.callSuper.caller) &&
-                    ((method = method.$owner ? method : method.caller) &&
-                        method.$owner.superclass[method.$name]);
+                        ((method = method.$owner ? method : method.caller) &&
+                          method.$owner.superclass[method.$name]);
 
 
             return superMethod.apply(this, args || noArgs);
@@ -4418,7 +4544,6 @@ var noArgs = [],
 
         return cls;
     };
-
 }());
 
 //@tag foundation,core
@@ -4872,7 +4997,7 @@ var noArgs = [],
                 Manager.processCreate(className, this, data);
             });
         },
-        
+
         processCreate: function(className, cls, clsData){
             var me = this,
                 postprocessor = clsData.postprocessors.shift(),
@@ -4945,7 +5070,7 @@ var noArgs = [],
 
             
             me.onCreated(classReady, me, overriddenClassName);
- 
+
             return me;
         },
 
@@ -5183,7 +5308,12 @@ var noArgs = [],
 
     
     Manager.registerPostprocessor('singleton', function(name, cls, data, fn) {
-        fn.call(this, name, new cls(), data);
+        if (data.singleton) {
+            fn.call(this, name, new cls(), data);
+        }
+        else {
+            return true;
+        }
         return false;
     });
 
@@ -5227,7 +5357,7 @@ var noArgs = [],
             } else {
                 config = config || {};
             }
-            
+
             if (config.isComponent) {
                 return config;
             }
@@ -5239,7 +5369,7 @@ var noArgs = [],
             if (!className) {
                 load = true;
             }
-            
+
             T = Manager.get(className);
             if (load || !T) {
                 return Manager.instantiateByAlias(alias, config);
@@ -5258,6 +5388,7 @@ var noArgs = [],
 
             return Manager.create.apply(Manager, arguments);
         },
+
 
         
         getClassName: alias(Manager, 'getName'),
@@ -5372,6 +5503,18 @@ var noArgs = [],
 
 }(Ext.Class, Ext.Function.alias, Array.prototype.slice, Ext.Array.from, Ext.global));
 
+
+
+if (Ext._alternatesMetadata) {
+   Ext.ClassManager.addNameAlternateMappings(Ext._alternatesMetadata);
+   Ext._alternatesMetadata = null;
+}
+
+if (Ext._aliasMetadata) {
+    Ext.ClassManager.addNameAliasMappings(Ext._aliasMetadata);
+    Ext._aliasMetadata = null;
+}
+
 //@tag foundation,core
 
 //@require ClassManager.js
@@ -5394,7 +5537,8 @@ Ext.Loader = new function() {
         isInHistory = {},
         history = [],
         slashDotSlashRe = /\/\.\//g,
-        dotRe = /\./g;
+        dotRe = /\./g,
+        setPathCount = 0;
 
     Ext.apply(Loader, {
 
@@ -5457,7 +5601,7 @@ Ext.Loader = new function() {
         
         setPath: flexSetter(function(name, path) {
             Loader.config.paths[name] = path;
-
+            setPathCount++;
             return Loader;
         }),
 
@@ -5465,9 +5609,14 @@ Ext.Loader = new function() {
         addClassPathMappings: function(paths) {
             var name;
 
-            for(name in paths){
-                Loader.config.paths[name] = paths[name];
+            if(setPathCount == 0){
+                Loader.config.paths = paths;
+            } else {
+                for(name in paths){
+                    Loader.config.paths[name] = paths[name];
+                }
             }
+            setPathCount++;
             return Loader;
         },
 
@@ -5731,7 +5880,11 @@ Ext.Loader = new function() {
                 if (collect) {
                     for (prop in script) {
                         try {
-                            script[prop] = null;
+                            if (prop != 'src') {
+                                
+                                
+                                script[prop] = null;
+                            }
                             delete script[prop];      
                         } catch (cleanEx) {
                             

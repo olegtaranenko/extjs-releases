@@ -32,18 +32,18 @@ Ext.define('Ext.layout.component.Dock', {
 
     alternateClassName: 'Ext.layout.component.AbstractDock',
 
-    /* End Definitions */
-
+<span id='Ext-layout-component-Dock-property-type'>    /* End Definitions */
+</span>
     type: 'dock',
 
-    initializedBorders: -1,
-
-    horizontalCollapsePolicy: { width: true, x: true },
-
-    verticalCollapsePolicy: { height: true, y: true },
-
-    finishRender: function () {
-        var me = this,
+<span id='Ext-layout-component-Dock-property-initializedBorders'>    initializedBorders: -1,
+</span>
+<span id='Ext-layout-component-Dock-property-horizontalCollapsePolicy'>    horizontalCollapsePolicy: { width: true, x: true },
+</span>
+<span id='Ext-layout-component-Dock-property-verticalCollapsePolicy'>    verticalCollapsePolicy: { height: true, y: true },
+</span>
+<span id='Ext-layout-component-Dock-method-finishRender'>    finishRender: function () {
+</span>        var me = this,
             target, items;
 
         me.callParent();
@@ -54,23 +54,23 @@ Ext.define('Ext.layout.component.Dock', {
         me.finishRenderItems(target, items);
     },
 
-    isItemBoxParent: function (itemContext) {
-        return true;
+<span id='Ext-layout-component-Dock-method-isItemBoxParent'>    isItemBoxParent: function (itemContext) {
+</span>        return true;
     },
 
-    isItemShrinkWrap: function (item) {
-        return true;
+<span id='Ext-layout-component-Dock-method-isItemShrinkWrap'>    isItemShrinkWrap: function (item) {
+</span>        return true;
     },
 
-    dockOpposites: {
-        top: 'bottom',
+<span id='Ext-layout-component-Dock-property-dockOpposites'>    dockOpposites: {
+</span>        top: 'bottom',
         right: 'left',
         bottom: 'top',
         left: 'right'
     },
 
-    handleItemBorders: function() {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-handleItemBorders'>    handleItemBorders: function() {
+</span>        var me = this,
             owner = me.owner,
             borders, docked,
             oldBorders = me.borders,
@@ -161,8 +161,8 @@ Ext.define('Ext.layout.component.Dock', {
         me.borders = borders;
     },
 
-    beforeLayoutCycle: function (ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-beforeLayoutCycle'>    beforeLayoutCycle: function (ownerContext) {
+</span>        var me = this,
             owner = me.owner,
             shrinkWrap = me.sizeModels.shrinkWrap,
             collapsedHorz, collapsedVert;
@@ -191,8 +191,8 @@ Ext.define('Ext.layout.component.Dock', {
         }
     },
 
-    beginLayout: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-beginLayout'>    beginLayout: function(ownerContext) {
+</span>        var me = this,
             owner = me.owner,
             docked = me.getLayoutItems(),
             layoutContext = ownerContext.context,
@@ -239,8 +239,8 @@ Ext.define('Ext.layout.component.Dock', {
         ownerContext.bodyContext = ownerContext.getEl('body');
     },
 
-    beginLayoutCycle: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-beginLayoutCycle'>    beginLayoutCycle: function(ownerContext) {
+</span>        var me = this,
             docked = ownerContext.dockedItems,
             len = docked.length,
             owner = me.owner,
@@ -296,8 +296,8 @@ Ext.define('Ext.layout.component.Dock', {
         }
     },
 
-    calculate: function (ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-calculate'>    calculate: function (ownerContext) {
+</span>        var me = this,
             measure = me.measureAutoDimensions(ownerContext, ownerContext.measureDimensions),
             state = ownerContext.state,
             horzDone = state.horzDone,
@@ -777,8 +777,8 @@ Ext.define('Ext.layout.component.Dock', {
         }
     },
 
-    finishedLayout: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-finishedLayout'>    finishedLayout: function(ownerContext) {
+</span>        var me = this,
             target = ownerContext.target;
 
         me.callParent(arguments);
@@ -792,8 +792,8 @@ Ext.define('Ext.layout.component.Dock', {
         }
     },
 
-    getAnimatePolicy: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-getAnimatePolicy'>    getAnimatePolicy: function(ownerContext) {
+</span>        var me = this,
             lastCollapsedState, policy;
 
         if (ownerContext.isCollapsingOrExpanding == 1) {
@@ -872,8 +872,8 @@ Ext.define('Ext.layout.component.Dock', {
         return dockedItems || [];
     },
 
-    getItemWeight: function (item, order) {
-        var weight = item.weight || this.owner.defaultDockWeights[item.dock];
+<span id='Ext-layout-component-Dock-method-getItemWeight'>    getItemWeight: function (item, order) {
+</span>        var weight = item.weight || this.owner.defaultDockWeights[item.dock];
         return weight[order] || weight;
     },
 
@@ -906,19 +906,19 @@ Ext.define('Ext.layout.component.Dock', {
         return result;
     },
 
-    // Content size includes padding but not borders, so subtract them off
-    measureContentWidth: function (ownerContext) {
+<span id='Ext-layout-component-Dock-method-measureContentWidth'>    // Content size includes padding but not borders, so subtract them off
+</span>    measureContentWidth: function (ownerContext) {
         var bodyContext = ownerContext.bodyContext;
         return bodyContext.el.getWidth() - bodyContext.getBorderInfo().width;
     },
 
-    measureContentHeight: function (ownerContext) {
-        var bodyContext = ownerContext.bodyContext;
+<span id='Ext-layout-component-Dock-method-measureContentHeight'>    measureContentHeight: function (ownerContext) {
+</span>        var bodyContext = ownerContext.bodyContext;
         return bodyContext.el.getHeight() - bodyContext.getBorderInfo().height;
     },
     
-    redoLayout: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-redoLayout'>    redoLayout: function(ownerContext) {
+</span>        var me = this,
             owner = me.owner;
         
         // If we are collapsing...
@@ -936,8 +936,8 @@ Ext.define('Ext.layout.component.Dock', {
         } 
     },
 
-    // @private override inherited.
-    // We need to render in the correct order, top/left before bottom/right
+<span id='Ext-layout-component-Dock-method-renderChildren'>    // @private override inherited.
+</span>    // We need to render in the correct order, top/left before bottom/right
     renderChildren: function() {
         var me = this,
             items = me.getDockedItems(),
@@ -1007,8 +1007,8 @@ Ext.define('Ext.layout.component.Dock', {
         }
     },
 
-    undoLayout: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-component-Dock-method-undoLayout'>    undoLayout: function(ownerContext) {
+</span>        var me = this,
             owner = me.owner;
         
         // If we are collapsing...
@@ -1028,8 +1028,8 @@ Ext.define('Ext.layout.component.Dock', {
         } 
     },
 
-    sizePolicy: {
-        nostretch: {
+<span id='Ext-layout-component-Dock-property-sizePolicy'>    sizePolicy: {
+</span>        nostretch: {
             setsWidth: 0,
             setsHeight: 0
         },
@@ -1075,8 +1075,8 @@ Ext.define('Ext.layout.component.Dock', {
         }
     },
 
-    getItemSizePolicy: function (item) {
-        var policy = this.sizePolicy,
+<span id='Ext-layout-component-Dock-method-getItemSizePolicy'>    getItemSizePolicy: function (item) {
+</span>        var policy = this.sizePolicy,
             dock, vertical;
 
         if (item.stretch === false) {
@@ -1122,8 +1122,8 @@ Ext.define('Ext.layout.component.Dock', {
         item.addClsWithUI('docked-' + item.dock);
     },
 
-    afterRemove : function(item) {
-        this.callParent(arguments);
+<span id='Ext-layout-component-Dock-method-afterRemove'>    afterRemove : function(item) {
+</span>        this.callParent(arguments);
         if (this.itemCls) {
             item.el.removeCls(this.itemCls + '-' + item.dock);
         }

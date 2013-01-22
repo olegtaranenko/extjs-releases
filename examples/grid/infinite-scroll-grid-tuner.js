@@ -25,7 +25,9 @@ Ext.define('BigDataSimlet', {
 
             data.length = 0;
             for (var r = 0, k = me.numRecords; r < k; r++) {
-                var rec = {};
+                var rec = {
+                    id: 'rec-' + r
+                };
                 for (var i = 0; i < me.numFields; i++) {
                     rec['field' + i] = 'row' + (r + 1) + '/col' + (i+1);
                 }
@@ -232,6 +234,7 @@ Ext.onReady(function() {
             i,
             oldStore = store;
 
+        Ext.suspendLayouts();
         store.removeAll();
         store.pageMap.clear();
         logPanel.body.update('');
@@ -262,6 +265,7 @@ Ext.onReady(function() {
         // Load the first page. It will be diverted through the prefetch buffer.
         store.loadPage(1);
         oldStore.destroy();
+        Ext.resumeLayouts(true);
     }
 
     new Ext.Viewport({

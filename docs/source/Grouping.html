@@ -86,17 +86,30 @@ Ext.define('Ext.grid.feature.Grouping', {
     extend: 'Ext.grid.feature.Feature',
     alias: 'feature.grouping',
 
-    eventPrefix: 'group',
-    eventSelector: '.' + Ext.baseCSSPrefix + 'grid-group-hd',
-    bodySelector: '.' + Ext.baseCSSPrefix + 'grid-group-body',
-
-    constructor: function() {
-        var me = this;
+<span id='Ext-grid-feature-Grouping-property-eventPrefix'>    eventPrefix: 'group',
+</span><span id='Ext-grid-feature-Grouping-property-eventSelector'>    eventSelector: '.' + Ext.baseCSSPrefix + 'grid-group-hd',
+</span><span id='Ext-grid-feature-Grouping-property-bodySelector'>    bodySelector: '.' + Ext.baseCSSPrefix + 'grid-group-body',
+</span>
+<span id='Ext-grid-feature-Grouping-method-constructor'>    constructor: function() {
+</span>        var me = this;
 
         me.collapsedState = {};
         me.callParent(arguments);
     },
-    
+
+<span id='Ext-grid-feature-Grouping-method-init'>    init: function() {
+</span>        var me = this,
+            headerCt;
+
+        me.callParent(arguments);
+        headerCt = me.view.headerCt;
+        headerCt.mon(headerCt, {
+            columnhide: me.onColumnHideShow,
+            columnshow: me.onColumnHideShow,
+            scope: me
+        });
+    },
+
 <span id='Ext-grid-feature-Grouping-event-groupclick'>    /**
 </span>     * @event groupclick
      * @param {Ext.view.Table} view
@@ -183,10 +196,10 @@ Ext.define('Ext.grid.feature.Grouping', {
      */
     depthToIndent: 17,
 
-    collapsedCls: Ext.baseCSSPrefix + 'grid-group-collapsed',
-    hdCollapsedCls: Ext.baseCSSPrefix + 'grid-group-hd-collapsed',
-    hdCollapsibleCls: Ext.baseCSSPrefix + 'grid-group-hd-collapsible',
-
+<span id='Ext-grid-feature-Grouping-property-collapsedCls'>    collapsedCls: Ext.baseCSSPrefix + 'grid-group-collapsed',
+</span><span id='Ext-grid-feature-Grouping-property-hdCollapsedCls'>    hdCollapsedCls: Ext.baseCSSPrefix + 'grid-group-hd-collapsed',
+</span><span id='Ext-grid-feature-Grouping-property-hdCollapsibleCls'>    hdCollapsibleCls: Ext.baseCSSPrefix + 'grid-group-hd-collapsible',
+</span>
     //&lt;locale&gt;
 <span id='Ext-grid-feature-Grouping-cfg-groupByText'>    /**
 </span>     * @cfg {String} [groupByText=&quot;Group by this field&quot;]
@@ -235,8 +248,8 @@ Ext.define('Ext.grid.feature.Grouping', {
      */
     collapsible: true,
 
-    enable: function() {
-        var me    = this,
+<span id='Ext-grid-feature-Grouping-method-enable'>    enable: function() {
+</span>        var me    = this,
             view  = me.view,
             store = view.store,
             groupToggleMenuItem;
@@ -250,15 +263,16 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
         me.callParent();
         groupToggleMenuItem = me.view.headerCt.getMenu().down('#groupToggleMenuItem');
-        groupToggleMenuItem.setChecked(true, true);
+        if (groupToggleMenuItem) {
+            groupToggleMenuItem.setChecked(true, true);
+        }
         me.refreshIf();
     },
 
-    disable: function() {
-        var me    = this,
+<span id='Ext-grid-feature-Grouping-method-disable'>    disable: function() {
+</span>        var me    = this,
             view  = me.view,
             store = view.store,
-            remote = store.remoteGroup,
             groupToggleMenuItem,
             lastGroup;
 
@@ -272,13 +286,14 @@ Ext.define('Ext.grid.feature.Grouping', {
 
         me.callParent();
         groupToggleMenuItem = me.view.headerCt.getMenu().down('#groupToggleMenuItem');
-        groupToggleMenuItem.setChecked(true, true);
-        groupToggleMenuItem.setChecked(false, true);
+        if (groupToggleMenuItem) {
+            groupToggleMenuItem.setChecked(false, true);
+        }
         me.refreshIf();
     },
 
-    refreshIf: function() {
-        var ownerCt = this.grid.ownerCt,
+<span id='Ext-grid-feature-Grouping-method-refreshIf'>    refreshIf: function() {
+</span>        var ownerCt = this.grid.ownerCt,
             view = this.view;
             
         if (!view.store.remoteGroup &amp;&amp; !this.blockRefresh) {
@@ -292,8 +307,8 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
     },
 
-    getFeatureTpl: function(values, parent, x, xcount) {
-        return [
+<span id='Ext-grid-feature-Grouping-method-getFeatureTpl'>    getFeatureTpl: function(values, parent, x, xcount) {
+</span>        return [
             '&lt;tpl if=&quot;typeof rows !== \'undefined\'&quot;&gt;',
                 // group row tpl
                 '&lt;tr id=&quot;{groupHeaderId}&quot; class=&quot;' + Ext.baseCSSPrefix + 'grid-group-hd {hdCollapsedCls} {collapsibleClass}&quot;&gt;&lt;td class=&quot;' + Ext.baseCSSPrefix + 'grid-cell&quot; colspan=&quot;' + parent.columns.length + '&quot; {[this.indentByDepth(values)]}&gt;&lt;div class=&quot;' + Ext.baseCSSPrefix + 'grid-cell-inner&quot;&gt;&lt;div class=&quot;' + Ext.baseCSSPrefix + 'grid-group-title&quot;&gt;{collapsed}{[this.renderGroupHeaderTpl(values, parent)]}&lt;/div&gt;&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;',
@@ -303,8 +318,8 @@ Ext.define('Ext.grid.feature.Grouping', {
         ].join('');
     },
 
-    getFragmentTpl: function() {
-        var me = this;
+<span id='Ext-grid-feature-Grouping-method-getFragmentTpl'>    getFragmentTpl: function() {
+</span>        var me = this;
         return {
             indentByDepth: me.indentByDepth,
             depthToIndent: me.depthToIndent,
@@ -314,19 +329,19 @@ Ext.define('Ext.grid.feature.Grouping', {
         };
     },
 
-    indentByDepth: function(values) {
-        return 'style=&quot;padding-left:'+ ((values.depth || 0) * this.depthToIndent) + 'px;&quot;';
+<span id='Ext-grid-feature-Grouping-method-indentByDepth'>    indentByDepth: function(values) {
+</span>        return 'style=&quot;padding-left:'+ ((values.depth || 0) * this.depthToIndent) + 'px;&quot;';
     },
 
-    // Containers holding these components are responsible for
-    // destroying them, we are just deleting references.
+<span id='Ext-grid-feature-Grouping-method-destroy'>    // Containers holding these components are responsible for
+</span>    // destroying them, we are just deleting references.
     destroy: function() {
         delete this.view;
         delete this.prunedHeader;
     },
 
-    // perhaps rename to afterViewRender
-    attachEvents: function() {
+<span id='Ext-grid-feature-Grouping-method-attachEvents'>    // perhaps rename to afterViewRender
+</span>    attachEvents: function() {
         var me = this,
             view = me.view;
 
@@ -356,8 +371,8 @@ Ext.define('Ext.grid.feature.Grouping', {
         me.unblock();
     },
 
-    // If we add a new item that doesn't belong to a rendered group, refresh the view
-    onAdd: function(store, records){
+<span id='Ext-grid-feature-Grouping-method-onAdd'>    // If we add a new item that doesn't belong to a rendered group, refresh the view
+</span>    onAdd: function(store, records){
         var me = this,
             view = me.view,
             groupField = me.getGroupField(),
@@ -399,15 +414,15 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
     },
 
-    onUpdate: function(store, record, type, changedFields){
-        var view = this.view;
+<span id='Ext-grid-feature-Grouping-method-onUpdate'>    onUpdate: function(store, record, type, changedFields){
+</span>        var view = this.view;
         if (view.rendered &amp;&amp; !changedFields || Ext.Array.contains(changedFields, this.getGroupField())) {
             view.refresh();
         }
     },
 
-    onRemove: function(store, record) {
-        var me = this,
+<span id='Ext-grid-feature-Grouping-method-onRemove'>    onRemove: function(store, record) {
+</span>        var me = this,
             groupField = me.getGroupField(),
             removedGroup = record.get(groupField),
             view = me.view;
@@ -420,25 +435,41 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
     },
 
-    injectGroupingMenu: function() {
-        var me       = this,
+<span id='Ext-grid-feature-Grouping-method-injectGroupingMenu'>    injectGroupingMenu: function() {
+</span>        var me       = this,
             headerCt = me.view.headerCt;
 
         headerCt.showMenuBy = me.showMenuBy;
         headerCt.getMenuItems = me.getMenuItems();
     },
 
-    showMenuBy: function(t, header) {
-        var menu = this.getMenu(),
+<span id='Ext-grid-feature-Grouping-method-onColumnHideShow'>    onColumnHideShow: function() {
+</span>        var menu = this.grid.headerCt.getMenu(),
+            groupToggleMenuItem  = menu.down('#groupMenuItem');
+
+        // &quot;Group by this field&quot; must be disabled if there's only one column left visible.
+        if (this.view.headerCt.getVisibleGridColumns(true).length &gt; 1) {
+            groupToggleMenuItem.enable();
+        } else {
+            groupToggleMenuItem.disable();
+        }
+    },
+
+<span id='Ext-grid-feature-Grouping-method-showMenuBy'>    showMenuBy: function(t, header) {
+</span>        var menu = this.getMenu(),
             groupMenuItem  = menu.down('#groupMenuItem'),
-            groupableMth = header.groupable === false ?  'disable' : 'enable';
-            
-        groupMenuItem[groupableMth]();
+            groupMenuMeth = header.groupable === false ?  'disable' : 'enable',
+            groupToggleMenuItem  = menu.down('#groupToggleMenuItem');
+
+        groupMenuItem[groupMenuMeth]();
+        if (groupToggleMenuItem) {
+            groupToggleMenuItem[this.view.store.isGrouped() ?  'enable' : 'disable']();
+        }
         Ext.grid.header.Container.prototype.showMenuBy.apply(this, arguments);
     },
 
-    getMenuItems: function() {
-        var me                 = this,
+<span id='Ext-grid-feature-Grouping-method-getMenuItems'>    getMenuItems: function() {
+</span>        var me                 = this,
             groupByText        = me.groupByText,
             disabled           = me.disabled || !me.getGroupField(),
             showGroupsText     = me.showGroupsText,
@@ -491,12 +522,12 @@ Ext.define('Ext.grid.feature.Grouping', {
         me.refreshIf();
     },
 
-    block: function(){
-        this.blockRefresh = this.view.blockRefresh = true;
+<span id='Ext-grid-feature-Grouping-method-block'>    block: function(){
+</span>        this.blockRefresh = this.view.blockRefresh = true;
     },
 
-    unblock: function(){
-        this.blockRefresh = this.view.blockRefresh = false;
+<span id='Ext-grid-feature-Grouping-method-unblock'>    unblock: function(){
+</span>        this.blockRefresh = this.view.blockRefresh = false;
     },
 
 <span id='Ext-grid-feature-Grouping-method-onGroupToggleMenuItemClick'>    /**
@@ -524,15 +555,15 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
     },
 
-    getGroupedHeader: function(){
-        var groupField = this.getGroupField(),
+<span id='Ext-grid-feature-Grouping-method-getGroupedHeader'>    getGroupedHeader: function(){
+</span>        var groupField = this.getGroupField(),
             headerCt = this.view.headerCt;
 
         return groupField ? headerCt.down('[dataIndex=' + groupField + ']') : null;
     },
 
-    getGroupField: function(){
-        var group = this.view.store.groupers.first();
+<span id='Ext-grid-feature-Grouping-method-getGroupField'>    getGroupField: function(){
+</span>        var group = this.view.store.groupers.first();
         if (group) {
             return group.property;
         }
@@ -686,8 +717,8 @@ Ext.define('Ext.grid.feature.Grouping', {
         view.refreshSize();
     },
 
-    onGroupChange: function(){
-        var me = this,
+<span id='Ext-grid-feature-Grouping-method-onGroupChange'>    onGroupChange: function(){
+</span>        var me = this,
             field = me.getGroupField(),
             menuItem,
             visibleGridColumns,
@@ -746,34 +777,34 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
     },
 
-    // Injects isRow and closeRow into the metaRowTpl.
-    getMetaRowTplFragments: function() {
+<span id='Ext-grid-feature-Grouping-method-getMetaRowTplFragments'>    // Injects isRow and closeRow into the metaRowTpl.
+</span>    getMetaRowTplFragments: function() {
         return {
             isRow: this.isRow,
             closeRow: this.closeRow
         };
     },
 
-    // injected into rowtpl and wrapped around metaRowTpl
-    // becomes part of the standard tpl
+<span id='Ext-grid-feature-Grouping-method-isRow'>    // injected into rowtpl and wrapped around metaRowTpl
+</span>    // becomes part of the standard tpl
     isRow: function() {
         return '&lt;tpl if=&quot;typeof rows === \'undefined\'&quot;&gt;';
     },
 
-    // injected into rowtpl and wrapped around metaRowTpl
-    // becomes part of the standard tpl
+<span id='Ext-grid-feature-Grouping-method-closeRow'>    // injected into rowtpl and wrapped around metaRowTpl
+</span>    // becomes part of the standard tpl
     closeRow: function() {
         return '&lt;/tpl&gt;';
     },
 
-    // isRow and closeRow are injected via getMetaRowTplFragments
-    mutateMetaRowTpl: function(metaRowTpl) {
+<span id='Ext-grid-feature-Grouping-method-mutateMetaRowTpl'>    // isRow and closeRow are injected via getMetaRowTplFragments
+</span>    mutateMetaRowTpl: function(metaRowTpl) {
         metaRowTpl.unshift('{[this.isRow()]}');
         metaRowTpl.push('{[this.closeRow()]}');
     },
 
-    // injects an additional style attribute via tdAttrKey with the proper
-    // amount of padding
+<span id='Ext-grid-feature-Grouping-method-getAdditionalData'>    // injects an additional style attribute via tdAttrKey with the proper
+</span>    // amount of padding
     getAdditionalData: function(data, idx, record, orig) {
         var view = this.view,
             hCt  = view.headerCt,
@@ -793,8 +824,8 @@ Ext.define('Ext.grid.feature.Grouping', {
         return o;
     },
 
-    // return matching preppedRecords
-    getGroupRows: function(group, records, preppedRecords, fullWidth) {
+<span id='Ext-grid-feature-Grouping-method-getGroupRows'>    // return matching preppedRecords
+</span>    getGroupRows: function(group, records, preppedRecords, fullWidth) {
         var me = this,
             children = group.children,
             rows = group.rows = [],
@@ -826,7 +857,7 @@ Ext.define('Ext.grid.feature.Grouping', {
             }
         }
 
-        group.groupField = groupField,
+        group.groupField = groupField;
         group.groupHeaderId = me.getGroupHeaderId(group.name);
         group.groupBodyId = me.getGroupBodyId(group.name);
         group.fullWidth = fullWidth;
@@ -855,18 +886,18 @@ Ext.define('Ext.grid.feature.Grouping', {
         return group;
     },
 
-    // Create an associated DOM id for the group's header element given the group name
-    getGroupHeaderId: function(groupName) {
+<span id='Ext-grid-feature-Grouping-method-getGroupHeaderId'>    // Create an associated DOM id for the group's header element given the group name
+</span>    getGroupHeaderId: function(groupName) {
         return this.view.id + '-hd-' + groupName;
     },
 
-    // Create an associated DOM id for the group's body element given the group name
-    getGroupBodyId: function(groupName) {
+<span id='Ext-grid-feature-Grouping-method-getGroupBodyId'>    // Create an associated DOM id for the group's body element given the group name
+</span>    getGroupBodyId: function(groupName) {
         return this.view.id + '-bd-' + groupName;
     },
 
-    // Get the group name from an associated element whether it's within a header or a body
-    getGroupName: function(element) {
+<span id='Ext-grid-feature-Grouping-method-getGroupName'>    // Get the group name from an associated element whether it's within a header or a body
+</span>    getGroupName: function(element) {
         var me = this,
             targetEl;
                 
@@ -883,8 +914,8 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
     },
 
-    // return the data in a grouped format.
-    collectData: function(records, preppedRecords, startIndex, fullWidth, o) {
+<span id='Ext-grid-feature-Grouping-method-collectData'>    // return the data in a grouped format.
+</span>    collectData: function(records, preppedRecords, startIndex, fullWidth, o) {
         var me    = this,
             store = me.view.store,
             collapsedState = me.collapsedState,
@@ -917,8 +948,8 @@ Ext.define('Ext.grid.feature.Grouping', {
         return o;
     },
 
-    // adds the groupName to the groupclick, groupdblclick, groupcontextmenu
-    // events that are fired on the view. Chose not to return the actual
+<span id='Ext-grid-feature-Grouping-method-getFireEventArgs'>    // adds the groupName to the groupclick, groupdblclick, groupcontextmenu
+</span>    // events that are fired on the view. Chose not to return the actual
     // group itself because of its expense and because developers can simply
     // grab the group via store.getGroups(groupName)
     getFireEventArgs: function(type, view, targetEl, e) {

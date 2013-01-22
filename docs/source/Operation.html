@@ -223,15 +223,15 @@ Ext.define('Ext.data.Operation', {
         }
     },
     
-    updateRecord: function(clientRec, serverRec) {
-        // if the client record is not a phantom, make sure the ids match before replacing the client data with server data.
+<span id='Ext-data-Operation-method-updateRecord'>    updateRecord: function(clientRec, serverRec) {
+</span>        // if the client record is not a phantom, make sure the ids match before replacing the client data with server data.
         if(serverRec &amp;&amp; (clientRec.phantom || clientRec.getId() === serverRec.getId())) {
             clientRec.copyFrom(serverRec);
         }
     },
 
-    // Private.
-    // Record matching function used by commitRecords
+<span id='Ext-data-Operation-method-matchClientRec'>    // Private.
+</span>    // Record matching function used by commitRecords
     // IMPORTANT: This is called in the scope of the clientRec being matched
     matchClientRec: function(record) {
         var clientRec = this,

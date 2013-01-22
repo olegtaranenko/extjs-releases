@@ -81,6 +81,8 @@ Ext.define('Ext.layout.container.Column', {
         setsWidth: 1,
         setsHeight: 0
     },
+    
+    createsInnerCt: true,
 
     childEls: [
         'innerCt'

@@ -13,14 +13,14 @@ Ext.define('Ext.tip.Tip', {
      * @cfg {Boolean} [closable=false]
      * True to render a close tool button into the tooltip header.
      */
+    
     /**
-     * @cfg {Number} width
+     * @cfg {Number} [width='auto']
      * Width in pixels of the tip.  Width will be ignored if it
      * exceeds the bounds of {@link #minWidth} or {@link #maxWidth}.  The maximum
      * supported value is 500.
-     * 
-     * Defaults to auto.
      */
+    
     /**
      * @cfg {Number} minWidth
      * The minimum width of the tip in pixels.
@@ -33,7 +33,7 @@ Ext.define('Ext.tip.Tip', {
     maxWidth : 300,
     /**
      * @cfg {Boolean/String} shadow
-     * True or "sides" for the default effect, "frame" for 4-way shadow, and "drop"
+     * `true` or "sides" for the default effect, "frame" for 4-way shadow, and "drop"
      * for bottom-right shadow.
      */
     shadow : "sides",
@@ -46,7 +46,7 @@ Ext.define('Ext.tip.Tip', {
     defaultAlign : "tl-bl?",
     /**
      * @cfg {Boolean} constrainPosition
-     * If true, then the tooltip will be automatically constrained to stay within
+     * If `true`, then the tooltip will be automatically constrained to stay within
      * the browser viewport.
      */
     constrainPosition : true,
@@ -121,13 +121,13 @@ Ext.define('Ext.tip.Tip', {
      * **Experimental**. Shows this tip at a position relative to another element using
      * a standard {@link Ext.Element#alignTo} anchor position value.  Example usage:
      *
-     *    // Show the tip at the default position ('tl-br?')
-     *    tip.showBy('my-el');
+     *     // Show the tip at the default position ('tl-br?')
+     *     tip.showBy('my-el');
      *
-     *    // Show the tip's top-left corner anchored to the element's top-right corner
-     *    tip.showBy('my-el', 'tl-tr');
+     *     // Show the tip's top-left corner anchored to the element's top-right corner
+     *     tip.showBy('my-el', 'tl-tr');
      *
-     * @param {String/HTMLElement/Ext.Element} el An HTMLElement, Ext.Element or string
+     * @param {String/HTMLElement/Ext.Element} el An HTMLElement, {@link Ext.Element} or string
      * id of the target element to align to.
      *
      * @param {String} [position] A valid {@link Ext.Element#alignTo} anchor position.
@@ -140,7 +140,7 @@ Ext.define('Ext.tip.Tip', {
 
     /**
      * @private
-     * Set Tip draggable using base Component's draggability
+     * Set Tip draggable using base Component's draggability.
      */
     initDraggable : function(){
         var me = this;

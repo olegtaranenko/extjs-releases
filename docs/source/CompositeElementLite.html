@@ -15,7 +15,8 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext-dom-CompositeElementLite'>/**
+  <pre class="prettyprint lang-js">//@tag dom,core
+<span id='Ext-dom-CompositeElementLite'>/**
 </span> * This class encapsulates a *collection* of DOM elements, providing methods to filter members, or to perform collective
  * actions upon the whole set.
  *
@@ -37,7 +38,7 @@
 Ext.define('Ext.dom.CompositeElementLite', {
     alternateClassName: 'Ext.CompositeElementLite',
 
-    requires: ['Ext.dom.Element'],
+    requires: ['Ext.dom.Element', 'Ext.dom.Query'],
 
     statics: {
 <span id='Ext-dom-CompositeElementLite-method-importElementMethods'>        /**
@@ -64,8 +65,8 @@ Ext.define('Ext.dom.CompositeElementLite', {
         }
     },
 
-    constructor: function(elements, root) {
-<span id='Ext-dom-CompositeElementLite-property-elements'>        /**
+<span id='Ext-dom-CompositeElementLite-method-constructor'>    constructor: function(elements, root) {
+</span><span id='Ext-dom-CompositeElementLite-property-elements'>        /**
 </span>         * @property {HTMLElement[]} elements
          * The Array of DOM elements which this CompositeElement encapsulates.
          *
@@ -105,14 +106,14 @@ Ext.define('Ext.dom.CompositeElementLite', {
      */
     isComposite: true,
 
-    // private
-    getElement: function(el) {
+<span id='Ext-dom-CompositeElementLite-method-getElement'>    // private
+</span>    getElement: function(el) {
         // Set the shared flyweight dom property to the current element
         return this.el.attach(el);
     },
 
-    // private
-    transformElement: function(el) {
+<span id='Ext-dom-CompositeElementLite-method-transformElement'>    // private
+</span>    transformElement: function(el) {
         return Ext.getDom(el);
     },
 
@@ -155,8 +156,8 @@ Ext.define('Ext.dom.CompositeElementLite', {
         return this;
     },
 
-    invoke: function(fn, args) {
-        var elements = this.elements,
+<span id='Ext-dom-CompositeElementLite-method-invoke'>    invoke: function(fn, args) {
+</span>        var elements = this.elements,
             ln = elements.length,
             element,
             i;
@@ -188,8 +189,8 @@ Ext.define('Ext.dom.CompositeElementLite', {
         return out;
     },
 
-    // fixes scope with flyweight
-    addListener: function(eventName, handler, scope, opt) {
+<span id='Ext-dom-CompositeElementLite-method-addListener'>    // fixes scope with flyweight
+</span>    addListener: function(eventName, handler, scope, opt) {
         var els = this.elements,
                 len = els.length,
                 i, e;
@@ -324,8 +325,8 @@ Ext.define('Ext.dom.CompositeElementLite', {
         this.elements = [];
     },
 
-    addElements: function(els, root) {
-        if (!els) {
+<span id='Ext-dom-CompositeElementLite-method-addElements'>    addElements: function(els, root) {
+</span>        if (!els) {
             return this;
         }
 

@@ -8,16 +8,24 @@
 Ext.define('Ext.selection.TreeModel', {
     extend: 'Ext.selection.RowModel',
     alias: 'selection.treemodel',
-    
-    // typically selection models prune records from the selection
-    // model when they are removed, because the TreeView constantly
-    // adds/removes records as they are expanded/collapsed
+
+    /**
+     * @cfg {Boolean} pruneRemoved @hide
+     */
+    /**
+     * @property {Boolean} pruneRemoved
+     * Typically, selection models prune records from the selection
+     * model when records are removed from a view's associated Store.
+     *
+     * However, because the TreeView constantly adds/removes records as branch nodes
+     * are expanded/collapsed, this property is set to `false` in this class.
+     */
     pruneRemoved: false,
-    
+
     onKeyRight: function(e, t) {
         var focused = this.getLastFocused(),
             view    = this.view;
-            
+  
         if (focused) {
             // tree node is already expanded, go down instead
             // this handles both the case where we navigate to firstChild and if
@@ -30,12 +38,12 @@ Ext.define('Ext.selection.TreeModel', {
             }
         }
     },
-    
+
     onKeyLeft: function(e, t) {
         var focused = this.getLastFocused(),
             view    = this.view,
             viewSm  = view.getSelectionModel(),
-            parentNode, parentRecord;
+            parentNode;
 
         if (focused) {
             parentNode = focused.parentNode;

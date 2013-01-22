@@ -31,19 +31,19 @@ Ext.define('Ext.layout.Layout', {
      * `true` in this class to identify an object as an instantiated Layout, or subclass thereof.
      */
     isLayout: true,
-    initialized: false,
-    running: false,
-
-    autoSizePolicy: {
-        setsWidth: 0,
+<span id='Ext-layout-Layout-property-initialized'>    initialized: false,
+</span><span id='Ext-layout-Layout-property-running'>    running: false,
+</span>
+<span id='Ext-layout-Layout-property-autoSizePolicy'>    autoSizePolicy: {
+</span>        setsWidth: 0,
         setsHeight: 0
     },
 
     statics: {
-        layoutsByType: {},
-
-        create: function(layout, defaultType) {
-            var ClassManager = Ext.ClassManager,
+<span id='Ext-layout-Layout-property-layoutsByType'>        layoutsByType: {},
+</span>
+<span id='Ext-layout-Layout-method-create'>        create: function(layout, defaultType) {
+</span>            var ClassManager = Ext.ClassManager,
                 layoutsByType = this.layoutsByType,
                 alias, className, config, layoutClass, type, load;
 
@@ -77,8 +77,8 @@ Ext.define('Ext.layout.Layout', {
         }
     },
 
-    constructor : function(config) {
-        var me = this;
+<span id='Ext-layout-Layout-method-constructor'>    constructor : function(config) {
+</span>        var me = this;
 
         me.id = Ext.id(null, me.type + '-');
         Ext.apply(me, config);
@@ -234,10 +234,10 @@ Ext.define('Ext.layout.Layout', {
      */
     
     redoLayout: Ext.emptyFn,
-    undoLayout: Ext.emptyFn,
-
-    getAnimatePolicy: function() {
-        return this.animatePolicy;
+<span id='Ext-layout-Layout-method-undoLayout'>    undoLayout: Ext.emptyFn,
+</span>
+<span id='Ext-layout-Layout-method-getAnimatePolicy'>    getAnimatePolicy: function() {
+</span>        return this.animatePolicy;
     },
 
 <span id='Ext-layout-Layout-method-getItemSizePolicy'>    /**
@@ -261,12 +261,12 @@ Ext.define('Ext.layout.Layout', {
         return this.autoSizePolicy;
     },
 
-    isItemBoxParent: function (itemContext) {
-        return false;
+<span id='Ext-layout-Layout-method-isItemBoxParent'>    isItemBoxParent: function (itemContext) {
+</span>        return false;
     },
 
-    isItemLayoutRoot: function (item) {
-        var sizeModel = item.getSizeModel(),
+<span id='Ext-layout-Layout-method-isItemLayoutRoot'>    isItemLayoutRoot: function (item) {
+</span>        var sizeModel = item.getSizeModel(),
             width = sizeModel.width,
             height = sizeModel.height;
 
@@ -280,12 +280,12 @@ Ext.define('Ext.layout.Layout', {
         return !width.shrinkWrap &amp;&amp; !height.shrinkWrap;
     },
 
-    isItemShrinkWrap: function (item) {
-        return item.shrinkWrap;
+<span id='Ext-layout-Layout-method-isItemShrinkWrap'>    isItemShrinkWrap: function (item) {
+</span>        return item.shrinkWrap;
     },
 
-    isRunning: function () {
-        return !!this.ownerContext;
+<span id='Ext-layout-Layout-method-isRunning'>    isRunning: function () {
+</span>        return !!this.ownerContext;
     },
 
     //-----------------------------------------------------
@@ -308,8 +308,8 @@ Ext.define('Ext.layout.Layout', {
      *         target: childElement
      *     }
      */
-    //-----------------------------------------------------
-
+<span id='Ext-layout-Layout-method-getItemsRenderTree'>    //-----------------------------------------------------
+</span>
     getItemsRenderTree: function (items, renderCfgs) {
         var length = items.length,
             i, item, itemConfig, result;
@@ -350,10 +350,10 @@ Ext.define('Ext.layout.Layout', {
         return result;
     },
 
-    finishRender: Ext.emptyFn,
-
-    finishRenderItems: function (target, items) {
-        var length = items.length,
+<span id='Ext-layout-Layout-method-finishRender'>    finishRender: Ext.emptyFn,
+</span>
+<span id='Ext-layout-Layout-method-finishRenderItems'>    finishRenderItems: function (target, items) {
+</span>        var length = items.length,
             i, item;
 
         for (i = 0; i &lt; length; i++) {
@@ -370,8 +370,8 @@ Ext.define('Ext.layout.Layout', {
         }
     },
 
-    renderChildren: function () {
-        var me = this,
+<span id='Ext-layout-Layout-method-renderChildren'>    renderChildren: function () {
+</span>        var me = this,
             items = me.getLayoutItems(),
             target = me.getRenderTarget();
 
@@ -412,22 +412,32 @@ Ext.define('Ext.layout.Layout', {
      */
     isValidParent : function(item, target, position) {
         var itemDom = item.el ? item.el.dom : Ext.getDom(item),
-            targetDom = (target &amp;&amp; target.dom) || target;
+            targetDom = (target &amp;&amp; target.dom) || target,
+            parentNode = itemDom.parentNode,
+            className;
 
         // If it's resizable+wrapped, the position element is the wrapper.
-        if (itemDom.parentNode &amp;&amp; itemDom.parentNode.className.indexOf(Ext.baseCSSPrefix + 'resizable-wrap') !== -1) {
-            itemDom = itemDom.parentNode;
+        if (parentNode) {
+            className = parentNode.className;
+            if (className &amp;&amp; className.indexOf(Ext.baseCSSPrefix + 'resizable-wrap') !== -1) {
+                itemDom = itemDom.parentNode;
+            }
         }
 
         // Test DOM nodes for equality using &quot;===&quot; : http://jsperf.com/dom-equality-test
         if (itemDom &amp;&amp; targetDom) {
             if (typeof position == 'number') {
+                position = this.getPositionOffset(position);
                 return itemDom === targetDom.childNodes[position];
             }
             return itemDom.parentNode === targetDom;
         }
 
         return false;
+    },
+    
+<span id='Ext-layout-Layout-method-getPositionOffset'>    getPositionOffset: function(position){
+</span>        return position;
     },
 
 <span id='Ext-layout-Layout-method-configureItem'>    /**
@@ -489,8 +499,8 @@ Ext.define('Ext.layout.Layout', {
         this.initialized = true;
     },
 
-    // @private Sets the layout owner
-    setOwner : function(owner) {
+<span id='Ext-layout-Layout-method-setOwner'>    // @private Sets the layout owner
+</span>    setOwner : function(owner) {
         this.owner = owner;
     },
 
@@ -502,12 +512,12 @@ Ext.define('Ext.layout.Layout', {
         return [];
     },
 
-    // Placeholder empty functions for subclasses to extend
-    afterRenderItem: Ext.emptyFn,
-    onAdd : Ext.emptyFn,
-    onRemove : Ext.emptyFn,
-    onDestroy : Ext.emptyFn,
-
+<span id='Ext-layout-Layout-method-afterRenderItem'>    // Placeholder empty functions for subclasses to extend
+</span>    afterRenderItem: Ext.emptyFn,
+<span id='Ext-layout-Layout-method-onAdd'>    onAdd : Ext.emptyFn,
+</span><span id='Ext-layout-Layout-method-onRemove'>    onRemove : Ext.emptyFn,
+</span><span id='Ext-layout-Layout-method-onDestroy'>    onDestroy : Ext.emptyFn,
+</span>
 <span id='Ext-layout-Layout-method-afterRemove'>    /**
 </span>     * Removes layout's itemCls and owning Container's itemCls.
      * Clears the managed dimensions flags
@@ -559,8 +569,8 @@ Ext.define('Ext.layout.Layout', {
         me.onDestroy();
     },
 
-    sortWeightedItems: function (items, reverseProp) {
-        for (var i = 0, length = items.length; i &lt; length; ++i) {
+<span id='Ext-layout-Layout-method-sortWeightedItems'>    sortWeightedItems: function (items, reverseProp) {
+</span>        for (var i = 0, length = items.length; i &lt; length; ++i) {
             items[i].$i = i;
         }
 

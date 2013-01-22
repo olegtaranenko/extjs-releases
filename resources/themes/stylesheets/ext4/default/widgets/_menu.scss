@@ -89,7 +89,7 @@
         height: 16px;
         position: absolute;
         top: 6px;
-        right: 4px;
+        right: 2px;
         background: no-repeat center center;
     }
 
@@ -98,8 +98,12 @@
         color: $menu-text-color;
     }
 
+    .#{$prefix}right-check-item-text {
+        padding-right: 22px;
+    }
+
     .#{$prefix}menu-item-checked {
-        .#{$prefix}menu-item-icon {
+        .#{$prefix}menu-item-icon, .#{$prefix}menu-item-icon-right {
             background-image: theme-background-image($theme-name, $menu-icon-checked);
         }
         .#{$prefix}menu-group-icon {
@@ -108,7 +112,7 @@
     }
 
     .#{$prefix}menu-item-unchecked {
-        .#{$prefix}menu-item-icon {
+        .#{$prefix}menu-item-icon, .#{$prefix}menu-item-icon-right {
             background-image: theme-background-image($theme-name, $menu-icon-unchecked);
         }
         .#{$prefix}menu-group-icon {
@@ -198,5 +202,15 @@
 
     .#{$prefix}menu-date-item {
         border-color: #99BBE8;
+    }
+
+    // When Fields are added to Menus...
+    .#{$prefix}menu-item .#{$prefix}field-label-cell {
+        vertical-align: middle;
+    }
+    .#{$prefix}menu-item .#{$prefix}form-item-label {
+        font-size: ceil($font-size * .9);
+        color: $menu-text-color;
+        padding-left: 34px;
     }
 }

@@ -52,22 +52,22 @@ Ext.define('Ext.layout.container.Auto', {
 
     extend: 'Ext.layout.container.Container',
 
-    /* End Definitions */
-
+<span id='Ext-layout-container-Auto-property-type'>    /* End Definitions */
+</span>
     type: 'autocontainer',
 
-    childEls: [
-        'clearEl'
+<span id='Ext-layout-container-Auto-property-childEls'>    childEls: [
+</span>        'clearEl'
     ],
 
-    renderTpl: [
-        '{%this.renderBody(out,values)%}',
+<span id='Ext-layout-container-Auto-property-renderTpl'>    renderTpl: [
+</span>        '{%this.renderBody(out,values)%}',
         // clear element is needed to prevent the bottom margins of the last child element from collapsing
         '&lt;div id=&quot;{ownerId}-clearEl&quot; class=&quot;', Ext.baseCSSPrefix, 'clear&quot; role=&quot;presentation&quot;&gt;&lt;/div&gt;'
     ],
 
-    // TODO - do we need to clear sizes in beginLayout?
-
+<span id='Ext-layout-container-Auto-method-calculate'>    // TODO - do we need to clear sizes in beginLayout?
+</span>
     calculate: function(ownerContext) {
         var me = this,
             containerSize;

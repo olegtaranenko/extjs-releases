@@ -52,6 +52,7 @@
 
 .#{$prefix}item-disabled .#{$prefix}form-item-label,
 .#{$prefix}item-disabled .#{$prefix}form-field,
+.#{$prefix}item-disabled .#{$prefix}form-display-field,
 .#{$prefix}item-disabled .#{$prefix}form-cb-label,
 .#{$prefix}item-disabled .#{$prefix}form-trigger {
     @include opacity(0.3);
@@ -79,13 +80,6 @@
 
 .#{$prefix}masked-relative {
     position: relative;
-}
-
-@if $include-ie {
-    .#{$prefix}ie6 .#{$prefix}masked select,
-    .#{$prefix}ie6.#{$prefix}body-masked select {
-        visibility: hidden !important;
-    }
 }
 
 // Element shadows for browsers that support CSS3 box-shadow

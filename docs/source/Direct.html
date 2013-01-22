@@ -101,11 +101,11 @@ Ext.define('Ext.data.proxy.Direct', {
      * of the same name will override these params when they are in conflict.
      */
 
-    // private
-    paramOrderRe: /[\s,|]/,
+<span id='Ext-data-proxy-Direct-property-paramOrderRe'>    // private
+</span>    paramOrderRe: /[\s,|]/,
 
-    constructor: function(config){
-        var me = this,
+<span id='Ext-data-proxy-Direct-method-constructor'>    constructor: function(config){
+</span>        var me = this,
             paramOrder,
             fn,
             api;
@@ -130,10 +130,10 @@ Ext.define('Ext.data.proxy.Direct', {
         }
     },
 
-    doRequest: function(operation, callback, scope) {
-        var me = this,
+<span id='Ext-data-proxy-Direct-method-doRequest'>    doRequest: function(operation, callback, scope) {
+</span>        var me = this,
             writer = me.getWriter(),
-            request = me.buildRequest(operation, callback, scope),
+            request = me.buildRequest(operation),
             fn = me.api[request.action]  || me.directFn,
             params = request.params,
             args = [],
@@ -165,34 +165,32 @@ Ext.define('Ext.data.proxy.Direct', {
         fn.apply(window, args);
     },
 
-    /*
-     * Inherit docs. We don't apply any encoding here because
+<span id='Ext-data-proxy-Direct-property-applyEncoding'>    /*
+</span>     * Inherit docs. We don't apply any encoding here because
      * all of the direct requests go out as jsonData
      */
-    applyEncoding: function(value){
-        return value;
-    },
+    applyEncoding: Ext.identityFn,
 
-    createRequestCallback: function(request, operation, callback, scope){
-        var me = this;
+<span id='Ext-data-proxy-Direct-method-createRequestCallback'>    createRequestCallback: function(request, operation, callback, scope){
+</span>        var me = this;
 
         return function(data, event){
             me.processResponse(event.status, operation, request, event, callback, scope);
         };
     },
 
-    // inherit docs
-    extractResponseData: function(response){
+<span id='Ext-data-proxy-Direct-method-extractResponseData'>    // inherit docs
+</span>    extractResponseData: function(response){
         return Ext.isDefined(response.result) ? response.result : response.data;
     },
 
-    // inherit docs
-    setException: function(operation, response) {
+<span id='Ext-data-proxy-Direct-method-setException'>    // inherit docs
+</span>    setException: function(operation, response) {
         operation.setException(response.message);
     },
 
-    // inherit docs
-    buildUrl: function(){
+<span id='Ext-data-proxy-Direct-method-buildUrl'>    // inherit docs
+</span>    buildUrl: function(){
         return '';
     }
 });

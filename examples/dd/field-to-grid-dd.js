@@ -135,14 +135,16 @@ Ext.define('Ext.ux.PanelFieldDragZone', {
 //  Call the DRagZone's constructor. The Panel must have been rendered.
     init: function(panel) {
         if (panel.nodeType) {
+            // Called via dragzone::init
             Ext.ux.PanelFieldDragZone.superclass.init.apply(this, arguments);
         } else {
+            // Called via plugin::init
             if (panel.rendered) {
                 Ext.ux.PanelFieldDragZone.superclass.constructor.call(this, panel.getEl());
                 var i = Ext.fly(panel.getEl()).select('input');
                 i.unselectable();
             } else {
-                panel.on('afterlayout', this.init, this, {single: true});
+                panel.on('afterrender', this.init, this, {single: true});
             }
         }
     },
@@ -154,33 +156,34 @@ Ext.define('Ext.ux.PanelFieldDragZone', {
 //  object which contains our own data, plus a "ddel" property which is a DOM
 //  node which provides a "view" of the dragged data.
     getDragData: function(e) {
-        var t = e.getTarget('input');
-        if (t) {
-            e.stopEvent();
+        var targetLabel = e.getTarget('label', null, true),
+            oldMark,
+            field,
+            dragEl;
 
-//          Ugly code to "detach" the drag gesture from the input field.
-//          Without this, Opera never changes the mouseover target from the input field
-//          even when dragging outside of the field - it just keeps selecting.
-            if (Ext.isOpera) {
-                Ext.fly(t).on('mousemove', function(e1){
-                    t.style.visibility = 'hidden';
-                    Ext.defer(function(){
-                        t.style.visibility = '';
-                    }, 1);
-                }, null, {single:true});
+        if (targetLabel) {
+
+            // Get the data we are dragging: the Field
+            // create a ddel for the drag proxy to display
+            field = Ext.getCmp(targetLabel.up('.' + Ext.form.Labelable.prototype.formItemCls).id);
+            // Temporary prevent marking the field as invalid, since it causes changes
+            // to the underlying dom element which can cause problems in IE
+            oldMark = field.preventMark;
+            field.preventMark = true;
+            if (field.isValid()) {
+                field.preventMark = oldMark;
+                dragEl = document.createElement('div');
+                dragEl.className = 'x-form-text';
+                dragEl.appendChild(document.createTextNode(field.getRawValue()));
+                Ext.fly(dragEl).setWidth(field.getEl().getWidth());
+                return {
+                    field: field,
+                    ddel: dragEl
+                };
+            } else {
+                e.stopEvent();
             }
-
-//          Get the data we are dragging: the Field
-//          create a ddel for the drag proxy to display
-            var f = Ext.ComponentQuery.query('field[inputEl]{inputEl.id=="' + t.id + '"}')[0];
-            var d = document.createElement('div');
-            d.className = 'x-form-text';
-            d.appendChild(document.createTextNode(t.value));
-            Ext.fly(d).setWidth(f.getEl().getWidth());
-            return {
-                field: f,
-                ddel: d
-            };
+            field.preventMark = oldMark;
         }
     },
 

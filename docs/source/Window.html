@@ -76,6 +76,12 @@ Ext.define('Ext.window.Window', {
      * Id or element from which the window should animate while opening.
      */
 
+<span id='Ext-window-Window-cfg-ghost'>    /**
+</span>     * @cfg {Boolean/Function} ghost
+     * Set to false to disable the ghost panel during dragging the window.
+     * Do note that you should not set this to true, by default it is a function.
+     */
+
 <span id='Ext-window-Window-cfg-defaultFocus'>    /**
 </span>     * @cfg {String/Number/Ext.Component} defaultFocus
      * Specifies a Component to receive focus when this Window is focused.
@@ -104,6 +110,11 @@ Ext.define('Ext.window.Window', {
 <span id='Ext-window-Window-cfg-maximized'>    /**
 </span>     * @cfg {Boolean} [maximized=false]
      * True to initially display the window in a maximized state.
+     */
+    
+<span id='Ext-window-Window-cfg-hideShadowOnDeactivate'>    /**
+</span>     * @cfg {Boolean} [hideShadowOnDeactivate=false]
+     * True to hide this Window's shadow when another floating item in the same z-index stack is activated.
      */
 
 <span id='Ext-window-Window-cfg-baseCls'>    /**
@@ -145,12 +156,6 @@ Ext.define('Ext.window.Window', {
      */
     constrainHeader: false,
 
-<span id='Ext-window-Window-cfg-constrainTo'>    /**
-</span>     * @cfg {Ext.util.Region/Ext.Element} constrainTo
-     * A {@link Ext.util.Region Region} (or an element from which a Region measurement will be read) which is used
-     * to constrain the window.
-     */
-
 <span id='Ext-window-Window-cfg-plain'>    /**
 </span>     * @cfg {Boolean} plain
      * True to render the window body with a transparent background so that it will blend into the framing elements,
@@ -177,11 +182,11 @@ Ext.define('Ext.window.Window', {
      */
     maximizable: false,
 
-    // inherit docs
-    minHeight: 50,
+<span id='Ext-window-Window-property-minHeight'>    // inherit docs
+</span>    minHeight: 50,
 
-    // inherit docs
-    minWidth: 50,
+<span id='Ext-window-Window-property-minWidth'>    // inherit docs
+</span>    minWidth: 50,
 
 <span id='Ext-window-Window-cfg-expandOnShow'>    /**
 </span>     * @cfg {Boolean} expandOnShow
@@ -190,8 +195,8 @@ Ext.define('Ext.window.Window', {
      */
     expandOnShow: true,
 
-    // inherited docs, same default
-    collapsible: false,
+<span id='Ext-window-Window-property-collapsible'>    // inherited docs, same default
+</span>    collapsible: false,
 
 <span id='Ext-window-Window-cfg-closable'>    /**
 </span>     * @cfg {Boolean} closable
@@ -232,18 +237,18 @@ Ext.define('Ext.window.Window', {
      */
     floating: true,
 
-    ariaRole: 'alertdialog',
-
-    itemCls: Ext.baseCSSPrefix + 'window-item',
-    
-    initialAlphaNum: /^[a-z0-9]/,
-
-    overlapHeader: true,
-
-    ignoreHeaderBorderManagement: true,
-
-    // Flag to Renderable to always look up the framing styles for this Component
-    alwaysFramed: true,
+<span id='Ext-window-Window-property-ariaRole'>    ariaRole: 'alertdialog',
+</span>
+<span id='Ext-window-Window-property-itemCls'>    itemCls: Ext.baseCSSPrefix + 'window-item',
+</span>    
+<span id='Ext-window-Window-property-initialAlphaNum'>    initialAlphaNum: /^[a-z0-9]/,
+</span>
+<span id='Ext-window-Window-property-overlapHeader'>    overlapHeader: true,
+</span>
+<span id='Ext-window-Window-property-ignoreHeaderBorderManagement'>    ignoreHeaderBorderManagement: true,
+</span>
+<span id='Ext-window-Window-property-alwaysFramed'>    // Flag to Renderable to always look up the framing styles for this Component
+</span>    alwaysFramed: true,
 
 <span id='Ext-window-Window-property-isWindow'>    /**
 </span>     * @property {Boolean} isWindow
@@ -251,8 +256,8 @@ Ext.define('Ext.window.Window', {
      */
     isWindow: true,
 
-    // private
-    initComponent: function() {
+<span id='Ext-window-Window-method-initComponent'>    // @private
+</span>    initComponent: function() {
         var me = this;
         // Explicitly set frame to false, since alwaysFramed is
         // true, we only want to lookup framing in a specific instance
@@ -322,8 +327,8 @@ Ext.define('Ext.window.Window', {
         me.addStateEvents(['maximize', 'restore', 'resize', 'dragend']);
     },
 
-    getElConfig: function () {
-        var me = this,
+<span id='Ext-window-Window-method-getElConfig'>    getElConfig: function () {
+</span>        var me = this,
             elConfig;
 
         elConfig = me.callParent();
@@ -332,23 +337,35 @@ Ext.define('Ext.window.Window', {
     },
 
     // State Management
-    // private
-
-    getState: function() {
+    
+<span id='Ext-window-Window-method-getState'>    // @private
+</span>    getState: function() {
         var me = this,
             state = me.callParent() || {},
-            maximized = !!me.maximized;
+            maximized = !!me.maximized,
+            ghostBox = me.ghostBox,
+            pos;
 
+        
         state.maximized = maximized;
+        if (maximized) {
+            pos = me.restorePos;
+        } else if (ghostBox) {
+            // If we're animating a show, it will be from offscreen, so
+            // grab the position from the final box
+            pos = [ghostBox.x, ghostBox.y];
+        } else {
+            pos = me.getPosition();
+        }
         Ext.apply(state, {
             size: maximized ? me.restoreSize : me.getSize(),
-            pos: maximized ? me.restorePos : me.getPosition()
+            pos: pos
         });
         return state;
     },
 
-    applyState: function(state){
-        var me = this;
+<span id='Ext-window-Window-method-applyState'>    applyState: function(state){
+</span>        var me = this;
 
         if (state) {
             me.maximized = state.maximized;
@@ -367,8 +384,8 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
-    onMouseDown: function (e) {
+<span id='Ext-window-Window-method-onMouseDown'>    // @private
+</span>    onMouseDown: function (e) {
         var preventFocus;
             
         if (this.floating) {
@@ -379,8 +396,8 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
-    onRender: function(ct, position) {
+<span id='Ext-window-Window-method-onRender'>    // @private
+</span>    onRender: function(ct, position) {
         var me = this;
         me.callParent(arguments);
         me.focusEl = me.el;
@@ -394,9 +411,10 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
-    afterRender: function() {
+<span id='Ext-window-Window-method-afterRender'>    // @private
+</span>    afterRender: function() {
         var me = this,
+            header = me.header,
             keyMap;
 
         me.callParent();
@@ -405,6 +423,9 @@ Ext.define('Ext.window.Window', {
         if (me.maximized) {
             me.maximized = false;
             me.maximize();
+            if (header) {
+                header.removeCls(header.indicateDragCls)
+            }
         }
 
         if (me.closable) {
@@ -425,7 +446,7 @@ Ext.define('Ext.window.Window', {
      */
     initDraggable: function() {
         var me = this,
-            ddConfig;
+            ddConfig, dd;
 
         if (!me.header) {
             me.updateHeader(true);
@@ -459,13 +480,23 @@ Ext.define('Ext.window.Window', {
              * extra logic is needed at these points, use {@link Ext.Function#createInterceptor createInterceptor} or
              * {@link Ext.Function#createSequence createSequence} to augment the existing implementations.
              */
-            me.dd = new Ext.util.ComponentDragger(this, ddConfig);
-            me.relayEvents(me.dd, ['dragstart', 'drag', 'dragend']);
+            dd = me.dd = new Ext.util.ComponentDragger(this, ddConfig);
+            me.relayEvents(dd, ['dragstart', 'drag', 'dragend']);
+            if (me.maximized) {
+                dd.disable();
+            }
+        }
+    },
+    
+<span id='Ext-window-Window-method-initResizable'>    initResizable: function(){
+</span>        this.callParent(arguments);
+        if (this.maximized) {
+            this.resizer.disable();
         }
     },
 
-    // private
-    onEsc: function(k, e) {
+<span id='Ext-window-Window-method-onEsc'>    // @private
+</span>    onEsc: function(k, e) {
         // Only process ESC if the FocusManager is not doing it
         if (!Ext.FocusManager || !Ext.FocusManager.enabled || Ext.FocusManager.focusedCmp === this) {
             e.stopEvent();
@@ -473,8 +504,8 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
-    beforeDestroy: function() {
+<span id='Ext-window-Window-method-beforeDestroy'>    // @private
+</span>    beforeDestroy: function() {
         var me = this;
         if (me.rendered) {
             delete this.animateTarget;
@@ -580,8 +611,8 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    beforeLayout: function () {
-        var shadow = this.el.shadow;
+<span id='Ext-window-Window-method-beforeLayout'>    beforeLayout: function () {
+</span>        var shadow = this.el.shadow;
 
         this.callParent();
         if (shadow) {
@@ -589,8 +620,8 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    onShow: function() {
-        var me = this;
+<span id='Ext-window-Window-method-onShow'>    onShow: function() {
+</span>        var me = this;
 
         me.callParent(arguments);
         if (me.expandOnShow) {
@@ -603,8 +634,8 @@ Ext.define('Ext.window.Window', {
         }
    },
 
-    // private
-    doClose: function() {
+<span id='Ext-window-Window-method-doClose'>    // @private
+</span>    doClose: function() {
         var me = this;
 
         // Being called as callback after going through the hide call below
@@ -619,8 +650,8 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
-    afterHide: function() {
+<span id='Ext-window-Window-method-afterHide'>    // @private
+</span>    afterHide: function() {
         var me = this;
 
         // No longer subscribe to resizing now that we're hidden
@@ -635,8 +666,8 @@ Ext.define('Ext.window.Window', {
         me.callParent(arguments);
     },
 
-    // private
-    onWindowResize: function() {
+<span id='Ext-window-Window-method-onWindowResize'>    // @private
+</span>    onWindowResize: function() {
         var me = this,
             sizeModel;
 
@@ -647,9 +678,9 @@ Ext.define('Ext.window.Window', {
             if (sizeModel.width.natural || sizeModel.height.natural) {
                 me.updateLayout();
             }
+            me.doConstrain();
         }
 
-        me.doConstrain();
     },
 
 <span id='Ext-window-Window-method-minimize'>    /**
@@ -663,8 +694,8 @@ Ext.define('Ext.window.Window', {
         return this;
     },
 
-    afterCollapse: function() {
-        var me = this;
+<span id='Ext-window-Window-method-afterCollapse'>    afterCollapse: function() {
+</span>        var me = this;
 
         if (me.maximizable) {
             me.tools.maximize.hide();
@@ -676,8 +707,8 @@ Ext.define('Ext.window.Window', {
         me.callParent(arguments);
     },
 
-    afterExpand: function() {
-        var me = this;
+<span id='Ext-window-Window-method-afterExpand'>    afterExpand: function() {
+</span>        var me = this;
 
         if (me.maximized) {
             me.tools.restore.show();
@@ -696,7 +727,8 @@ Ext.define('Ext.window.Window', {
      * @return {Ext.window.Window} this
      */
     maximize: function() {
-        var me = this;
+        var me = this,
+            header = me.header;
 
         if (!me.maximized) {
             me.expand(false);
@@ -713,6 +745,9 @@ Ext.define('Ext.window.Window', {
 
             if (me.dd) {
                 me.dd.disable();
+                if (header) {
+                   header.removeCls(header.indicateDragCls)
+                }
             }
             if (me.resizer) {
                 me.resizer.disable();
@@ -737,7 +772,8 @@ Ext.define('Ext.window.Window', {
      */
     restore: function() {
         var me = this,
-            tools = me.tools;
+            tools = me.tools,
+            header = me.header;
 
         if (me.maximized) {
             delete me.hasSavedRestore;
@@ -769,6 +805,9 @@ Ext.define('Ext.window.Window', {
             // Allow users to drag and drop again
             if (me.dd) {
                 me.dd.enable();
+                if (header) {
+                    header.addCls(header.indicateDragCls)
+                }
             }
             
             if (me.resizer) {
@@ -800,8 +839,9 @@ Ext.define('Ext.window.Window', {
         if (yes &amp;&amp; !veto) {
             // we should be listening...
             if (!currentlyMonitoring) {
-                // but we aren't, so set it up
-                Ext.EventManager.onWindowResize(me.onWindowResize, me);
+                // but we aren't, so set it up.
+                // Delay so that we jump over any Viewport resize activity
+                Ext.EventManager.onWindowResize(me.onWindowResize, me, {delay: 1});
                 me._monitoringResize = true;
             }
         } else if (currentlyMonitoring) {

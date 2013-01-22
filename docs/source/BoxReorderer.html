@@ -37,8 +37,8 @@ Ext.define('Ext.ux.BoxReorderer', {
      */
     animate: 100,
 
-    constructor: function() {
-        this.addEvents(
+<span id='Ext-ux-BoxReorderer-method-constructor'>    constructor: function() {
+</span>        this.addEvents(
 <span id='Ext-ux-BoxReorderer-event-StartDrag'>            /**
 </span>             * @event StartDrag
              * Fires when dragging of a child Component begins.
@@ -82,8 +82,8 @@ Ext.define('Ext.ux.BoxReorderer', {
         this.mixins.observable.constructor.apply(this, arguments);
     },
 
-    init: function(container) {
-        var me = this;
+<span id='Ext-ux-BoxReorderer-method-init'>    init: function(container) {
+</span>        var me = this;
  
         me.container = container;
  
@@ -110,8 +110,8 @@ Ext.define('Ext.ux.BoxReorderer', {
         }
     },
 
-    afterFirstLayout: function() {
-        var me = this,
+<span id='Ext-ux-BoxReorderer-method-afterFirstLayout'>    afterFirstLayout: function() {
+</span>        var me = this,
             layout = me.container.getLayout(),
             names = layout.names,
             dd;
@@ -144,20 +144,20 @@ Ext.define('Ext.ux.BoxReorderer', {
         dd.endAttr = names.right;
     },
 
-    getDragCmp: function(e) {
-        return this.container.getChildByElement(e.getTarget(this.itemSelector, 10));
+<span id='Ext-ux-BoxReorderer-method-getDragCmp'>    getDragCmp: function(e) {
+</span>        return this.container.getChildByElement(e.getTarget(this.itemSelector, 10));
     },
 
-    // check if the clicked component is reorderable
-    clickValidator: function(e) {
+<span id='Ext-ux-BoxReorderer-method-clickValidator'>    // check if the clicked component is reorderable
+</span>    clickValidator: function(e) {
         var cmp = this.getDragCmp(e);
 
         // If cmp is null, this expression MUST be coerced to boolean so that createInterceptor is able to test it against false
         return !!(cmp &amp;&amp; cmp.reorderable !== false);
     },
 
-    onMouseDown: function(e) {
-        var me = this,
+<span id='Ext-ux-BoxReorderer-method-onMouseDown'>    onMouseDown: function(e) {
+</span>        var me = this,
             container = me.container,
             containerBox,
             cmpEl,
@@ -193,8 +193,8 @@ Ext.define('Ext.ux.BoxReorderer', {
         }
     },
 
-    startDrag: function() {
-        var me = this,
+<span id='Ext-ux-BoxReorderer-method-startDrag'>    startDrag: function() {
+</span>        var me = this,
             dragCmp = me.dragCmp;
             
         if (dragCmp) {
@@ -287,8 +287,8 @@ Ext.define('Ext.ux.BoxReorderer', {
         me.curIndex = newIndex;
     },
 
-    onDrag: function(e) {
-        var me = this,
+<span id='Ext-ux-BoxReorderer-method-onDrag'>    onDrag: function(e) {
+</span>        var me = this,
             newIndex;
 
         newIndex = me.getNewIndex(e.getPoint());
@@ -299,8 +299,8 @@ Ext.define('Ext.ux.BoxReorderer', {
 
     },
 
-    endDrag: function(e) {
-        if (e) {
+<span id='Ext-ux-BoxReorderer-method-endDrag'>    endDrag: function(e) {
+</span>        if (e) {
             e.stopEvent();
         }
         var me = this,

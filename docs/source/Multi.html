@@ -48,12 +48,12 @@ Ext.define('Ext.slider.Multi', {
         'Ext.layout.component.field.Slider'
     ],
 
-    childEls: [
-        'endEl', 'innerEl'
+<span id='Ext-slider-Multi-property-childEls'>    childEls: [
+</span>        'endEl', 'innerEl'
     ],
 
-    // note: {id} here is really {inputId}, but {cmpId} is available
-    fieldSubTpl: [
+<span id='Ext-slider-Multi-property-fieldSubTpl'>    // note: {id} here is really {inputId}, but {cmpId} is available
+</span>    fieldSubTpl: [
         '&lt;div id=&quot;{id}&quot; class=&quot;' + Ext.baseCSSPrefix + 'slider {fieldCls} {vertical}&quot; aria-valuemin=&quot;{minValue}&quot; aria-valuemax=&quot;{maxValue}&quot; aria-valuenow=&quot;{value}&quot; aria-valuetext=&quot;{value}&quot;&gt;',
             '&lt;div id=&quot;{cmpId}-endEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'slider-end&quot; role=&quot;presentation&quot;&gt;',
                 '&lt;div id=&quot;{cmpId}-innerEl&quot; class=&quot;' + Ext.baseCSSPrefix + 'slider-inner&quot; role=&quot;presentation&quot;&gt;',
@@ -174,8 +174,8 @@ Ext.define('Ext.slider.Multi', {
      */
     constrainThumbs: true,
 
-    componentLayout: 'sliderfield',
-
+<span id='Ext-slider-Multi-property-componentLayout'>    componentLayout: 'sliderfield',
+</span>
 <span id='Ext-slider-Multi-cfg-useTips'>    /**
 </span>     * @cfg {Object/Boolean} useTips
      * True to use an {@link Ext.slider.Tip} to display tips for the value. This option may also
@@ -194,10 +194,10 @@ Ext.define('Ext.slider.Multi', {
      */
     tipText : null,
 
-    ariaRole: 'slider',
-
-    // private override
-    initValue: function() {
+<span id='Ext-slider-Multi-property-ariaRole'>    ariaRole: 'slider',
+</span>
+<span id='Ext-slider-Multi-method-initValue'>    // private override
+</span>    initValue: function() {
         var me = this,
             extValue = Ext.value,
             // Fallback for initial values: values config -&gt; value config -&gt; minValue config -&gt; 0
@@ -214,8 +214,8 @@ Ext.define('Ext.slider.Multi', {
         }
     },
 
-    // private override
-    initComponent : function() {
+<span id='Ext-slider-Multi-method-initComponent'>    // private override
+</span>    initComponent : function() {
         var me = this,
             tipPlug,
             hasTip,
@@ -366,8 +366,8 @@ Ext.define('Ext.slider.Multi', {
         }
     },
 
-    // private override
-    getSubTplData : function() {
+<span id='Ext-slider-Multi-method-getSubTplData'>    // private override
+</span>    getSubTplData : function() {
         var me = this;
 
         return Ext.apply(me.callParent(), {
@@ -379,8 +379,8 @@ Ext.define('Ext.slider.Multi', {
         });
     },
 
-    onRender : function() {
-        var me = this,
+<span id='Ext-slider-Multi-method-onRender'>    onRender : function() {
+</span>        var me = this,
             thumbs = me.thumbs,
             len = thumbs.length,
             i = 0,
@@ -626,14 +626,40 @@ Ext.define('Ext.slider.Multi', {
 <span id='Ext-slider-Multi-method-setValue'>    /**
 </span>     * Programmatically sets the value of the Slider. Ensures that the value is constrained within the minValue and
      * maxValue.
-     * @param {Number} index Index of the thumb to move
+     * 
+     * Setting a single value:
+     *     // Set the second slider value, don't animate
+     *     mySlider.setValue(1, 50, false);
+     * 
+     * Setting multiple values at once
+     *     // Set 3 thumb values, animate
+     *     mySlider.setValue([20, 40, 60], true);
+     * 
+     * @param {Number/Number[]} index Index of the thumb to move. Alternatively, it can be an array of values to set
+     * for each thumb in the slider.
      * @param {Number} value The value to set the slider to. (This will be constrained within minValue and maxValue)
      * @param {Boolean} [animate=true] Turn on or off animation
+     * @return {Ext.slider.Multi} this
      */
     setValue : function(index, value, animate, changeComplete) {
         var me = this,
-            thumb = me.thumbs[index];
+            thumbs = me.thumbs,
+            thumb, len, i, values;
+            
+        if (Ext.isArray(index)) {
+            values = index;
+            animate = value;
+            
+            for (i = 0, len = values.length; i &lt; len; ++i) {
+                thumb = thumbs[i];
+                if (thumb) {
+                    me.setValue(i, values[i], animate);
+                }    
+            }
+            return me;
+        }
 
+        thumb = me.thumbs[index];
         // ensures value is contstrained and snapped
         value = me.normalizeValue(value);
 
@@ -656,6 +682,7 @@ Ext.define('Ext.slider.Multi', {
                 }
             }
         }
+        return me;
     },
 
 <span id='Ext-slider-Multi-method-calculateThumbPosition'>    /**
@@ -663,7 +690,16 @@ Ext.define('Ext.slider.Multi', {
      * Given a value within this Slider's range, calculates a Thumb's percentage CSS position to map that value.
      */
     calculateThumbPosition : function(v) {
-        return (v - this.minValue) / (this.maxValue - this.minValue) * 100;
+        var me = this,
+            minValue = me.minValue,
+            pos = (v - minValue) / (me.maxValue - minValue) * 100;
+
+        // If the total number of records is &lt;= pageSize then return minValue.
+        if (isNaN(pos)) {
+            pos = minValue;
+        }
+
+        return pos;
     },
 
 <span id='Ext-slider-Multi-method-getRatio'>    /**
@@ -703,8 +739,8 @@ Ext.define('Ext.slider.Multi', {
         return this.minValue + (this.maxValue - this.minValue) * (pos / 100);
     },
 
-    //private
-    onDisable: function() {
+<span id='Ext-slider-Multi-method-onDisable'>    //private
+</span>    onDisable: function() {
         var me = this,
             i = 0,
             thumbs = me.thumbs,
@@ -738,8 +774,8 @@ Ext.define('Ext.slider.Multi', {
         }
     },
 
-    //private
-    onEnable: function() {
+<span id='Ext-slider-Multi-method-onEnable'>    //private
+</span>    onEnable: function() {
         var me = this,
             i = 0,
             thumbs = me.thumbs,
@@ -812,13 +848,13 @@ Ext.define('Ext.slider.Multi', {
         return values;
     },
 
-    getSubmitValue: function() {
-        var me = this;
+<span id='Ext-slider-Multi-method-getSubmitValue'>    getSubmitValue: function() {
+</span>        var me = this;
         return (me.disabled || !me.submitValue) ? null : me.getValue();
     },
 
-    reset: function() {
-        var me = this,
+<span id='Ext-slider-Multi-method-reset'>    reset: function() {
+</span>        var me = this,
             arr = [].concat(me.originalValue),
             a     = 0,
             aLen  = arr.length,
@@ -835,8 +871,8 @@ Ext.define('Ext.slider.Multi', {
         delete me.wasValid;
     },
     
-    setReadOnly: function(readOnly){
-        var me = this,
+<span id='Ext-slider-Multi-method-setReadOnly'>    setReadOnly: function(readOnly){
+</span>        var me = this,
             thumbs = me.thumbs,
             len = thumbs.length,
             i = 0;
@@ -855,8 +891,8 @@ Ext.define('Ext.slider.Multi', {
            
     },
 
-    // private
-    beforeDestroy : function() {
+<span id='Ext-slider-Multi-method-beforeDestroy'>    // private
+</span>    beforeDestroy : function() {
         var me     = this,
             thumbs = me.thumbs,
             t      = 0,

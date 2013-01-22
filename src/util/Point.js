@@ -15,10 +15,11 @@ Ext.define('Ext.util.Point', {
         /**
          * Returns a new instance of Ext.util.Point base on the pageX / pageY values of the given event
          * @static
-         * @param {Event} e The event
+         * @param {Ext.EventObject/Event} e The event
          * @return {Ext.util.Point}
          */
         fromEvent: function(e) {
+            e = e.browserEvent || e;
             e = (e.changedTouches && e.changedTouches.length > 0) ? e.changedTouches[0] : e;
             return new this(e.pageX, e.pageY);
         }

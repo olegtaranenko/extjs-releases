@@ -12,7 +12,7 @@ Ext.onReady(function () {
     
     var baseColor = '#eee';
     
-    Ext.define('Ext.chart.theme.Fancy', {
+    Ext.define('Ext.ux.chart.theme.Fancy', {
         extend: 'Ext.chart.theme.Base',
         
         constructor: function(config) {
@@ -36,11 +36,11 @@ Ext.onReady(function () {
                 colors: colors
             }, config)]);
         }
+    }, function(){
+        Ext.chart.theme.Fancy = Ext.ux.chart.theme.Fancy;
     });
 
     var chart = Ext.create('Ext.chart.Chart', {
-            id: 'chartCmp',
-            xtype: 'chart',
             theme: 'Fancy',
             animate: {
                 easing: 'bounceOut',
@@ -184,7 +184,10 @@ Ext.onReady(function () {
         }, {
             text: 'Reload Data',
             handler: function() {
-                store1.loadData(generateData(5, 0));
+                // Add a short delay to prevent fast sequential clicks
+                window.loadTask.delay(100, function() {
+                    store1.loadData(generateData(5, 0));
+                });
             }
         }],
         items: chart

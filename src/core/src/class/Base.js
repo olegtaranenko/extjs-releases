@@ -296,7 +296,7 @@ var noArgs = [],
                 if (members.hasOwnProperty(name)) {
                     member = members[name];
 
-                    if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn) {
+                    if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                         member.$owner = this;
                         member.$name = name;
                         //<debug>
@@ -319,7 +319,7 @@ var noArgs = [],
          * @param member
          */
         addMember: function(name, member) {
-            if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn) {
+            if (typeof member == 'function' && !member.$isClass && member !== Ext.emptyFn && member !== Ext.identityFn) {
                 member.$owner = this;
                 member.$name = name;
                 //<debug>
@@ -479,6 +479,8 @@ var noArgs = [],
                 for (name in members) { // hasOwnProperty is checked in the next loop...
                     if (name == 'statics') {
                         statics = members[name];
+                    } else if (name == 'inheritableStatics'){
+                        me.addInheritableStatics(members[name]);
                     } else if (name == 'config') {
                         me.addConfig(members[name], true);
                     } else {
@@ -496,7 +498,7 @@ var noArgs = [],
                     if (members.hasOwnProperty(name)) {
                         member = members[name];
 
-                        if (typeof member == 'function' && !member.$className && member !== Ext.emptyFn) {
+                        if (typeof member == 'function' && !member.$className && member !== Ext.emptyFn && member !== Ext.identityFn) {
                             if (typeof member.$owner != 'undefined') {
                                 member = cloneFunction(member);
                             }
@@ -533,8 +535,8 @@ var noArgs = [],
 
             // This code is intentionally inlined for the least number of debugger stepping
             return (method = this.callParent.caller) && (method.$previous ||
-                ((method = method.$owner ? method : method.caller) &&
-                    method.$owner.superclass.self[method.$name])).apply(this, args || noArgs);
+                  ((method = method.$owner ? method : method.caller) &&
+                        method.$owner.superclass.self[method.$name])).apply(this, args || noArgs);
         },
 
         // Documented downwards
@@ -543,8 +545,8 @@ var noArgs = [],
 
             // This code is intentionally inlined for the least number of debugger stepping
             return (method = this.callSuper.caller) &&
-                ((method = method.$owner ? method : method.caller) &&
-                    method.$owner.superclass.self[method.$name]).apply(this, args || noArgs);
+                    ((method = method.$owner ? method : method.caller) &&
+                      method.$owner.superclass.self[method.$name]).apply(this, args || noArgs);
         },
 
         //<feature classSystem.mixins>
@@ -588,6 +590,7 @@ var noArgs = [],
             //</feature>
 
             prototype.mixins[name] = mixin;
+            return this;
         },
         //</feature>
 
@@ -879,40 +882,40 @@ var noArgs = [],
          * This method is used by an override to call the superclass method but bypass any
          * overridden method. This is often done to "patch" a method that contains a bug
          * but for whatever reason cannot be fixed directly.
-         *
+         * 
          * Consider:
-         *
+         * 
          *      Ext.define('Ext.some.Class', {
          *          method: function () {
          *              console.log('Good');
          *          }
          *      });
-         *
+         * 
          *      Ext.define('Ext.some.DerivedClass', {
          *          method: function () {
          *              console.log('Bad');
-         *
+         * 
          *              // ... logic but with a bug ...
-         *
+         *              
          *              this.callParent();
          *          }
          *      });
-         *
+         * 
          * To patch the bug in `DerivedClass.method`, the typical solution is to create an
          * override:
-         *
+         * 
          *      Ext.define('App.paches.DerivedClass', {
          *          override: 'Ext.some.DerivedClass',
-         *
+         *          
          *          method: function () {
          *              console.log('Fixed');
-         *
+         * 
          *              // ... logic but with bug fixed ...
          *
          *              this.callSuper();
          *          }
          *      });
-         *
+         * 
          * The patch method cannot use `callParent` to call the superclass `method` since
          * that would call the overridden method containing the bug. In other words, the
          * above patch would only produce "Fixed" then "Good" in the console log, whereas,
@@ -930,8 +933,8 @@ var noArgs = [],
             // to be.
             var method,
                 superMethod = (method = this.callSuper.caller) &&
-                    ((method = method.$owner ? method : method.caller) &&
-                        method.$owner.superclass[method.$name]);
+                        ((method = method.$owner ? method : method.caller) &&
+                          method.$owner.superclass[method.$name]);
 
             //<debug error>
             if (!superMethod) {
@@ -951,7 +954,7 @@ var noArgs = [],
 
                 if (!(methodName in parentClass)) {
                     throw new Error("this.callSuper() was called but there's no such method (" + methodName +
-                        ") found in the parent class (" + (Ext.getClassName(parentClass) || 'Object') + ")");
+                                ") found in the parent class (" + (Ext.getClassName(parentClass) || 'Object') + ")");
                 }
             }
             //</debug>

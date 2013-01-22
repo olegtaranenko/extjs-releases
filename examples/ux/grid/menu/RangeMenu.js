@@ -1,6 +1,4 @@
 /**
- * @class Ext.ux.grid.menu.RangeMenu
- * @extends Ext.menu.Menu
  * Custom implementation of {@link Ext.menu.Menu} that has preconfigured items for entering numeric
  * range comparison values: less-than, greater-than, and equal-to. This is used internally
  * by {@link Ext.ux.grid.filter.NumericFilter} to create its menu.
@@ -134,15 +132,10 @@ menuItemCfgs : {
                 cfg = {
                     itemId: 'range-' + item,
                     enableKeyEvents: true,
-                    hideLabel: false,
-                    fieldLabel: me.iconTpl.apply({
-                        cls: me.itemIconCls[item] || 'no-icon',
-                        text: me.fieldLabels[item] || '',
-                        src: Ext.BLANK_IMAGE_URL
-                    }),
+                    hideEmptyLabel: false,
+                    labelCls: 'ux-rangemenu-icon ' + me.itemIconCls[item],
                     labelSeparator: '',
                     labelWidth: 29,
-                    labelStyle: 'position: relative;',
                     listeners: {
                         scope: me,
                         change: me.onInputChange,
@@ -254,14 +247,4 @@ menuItemCfgs : {
         // restart the timer
         this.updateTask.delay(this.updateBuffer);
     }
-}, function() {
-
-    /**
-     * @cfg {Ext.XTemplate} iconTpl
-     * A template for generating the label for each field in the menu
-     */
-    this.prototype.iconTpl = Ext.create('Ext.XTemplate',
-        '<img src="{src}" alt="{text}" class="' + Ext.baseCSSPrefix + 'menu-item-icon ux-rangemenu-icon {cls}" />'
-    );
-
 });

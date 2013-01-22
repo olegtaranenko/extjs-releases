@@ -128,9 +128,8 @@ Ext.define('Ext.grid.LockingView', {
 
     getCell: function(record, column){
         var view = this.getViewForColumn(column),
-            row;
-
-        row = view.getNode(record);
+            row = view.getNode(record);
+            
         return Ext.fly(row).down(column.getCellSelector());
     },
 
@@ -140,6 +139,11 @@ Ext.define('Ext.grid.LockingView', {
             result = this.normalView.getRecord(node);
         }
         return result;
+    },
+    
+    scrollBy: function(){
+        var normal = this.normalView;
+        normal.scrollBy.apply(normal, arguments);
     },
 
     addElListener: function(eventName, fn, scope){

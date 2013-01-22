@@ -72,8 +72,16 @@ Ext.define('Ext.grid.header.Container', {
     //<locale>
     columnsText: 'Columns',
     //</locale>
+    
+    dirtyCls: Ext.baseCSSPrefix + 'grid-dirty-cell',
 
     headerOpenCls: Ext.baseCSSPrefix + 'column-header-open',
+    
+    menuSortAscCls: Ext.baseCSSPrefix + 'hmenu-sort-asc',
+    
+    menuSortDescCls: Ext.baseCSSPrefix + 'hmenu-sort-desc',
+    
+    menuColsIcon: Ext.baseCSSPrefix + 'cols-icon',
 
     // private; will probably be removed by 4.0
     triStateSort: false,
@@ -200,6 +208,18 @@ Ext.define('Ext.grid.header.Container', {
             'menucreate'
         );
     },
+    
+    isLayoutRoot: function(){
+        // Since we're docked, the width is always calculated
+        // If we're hidden, the height is explicitly 0, which
+        // means we'll be considered a layout root. However, we
+        // still need the view to layout to update the underlying
+        // table to match the size.
+        if (this.hiddenHeaders) {
+            return false;
+        }
+        return this.callParent();    
+    },
 
     onDestroy: function() {
         var me = this;
@@ -293,9 +313,13 @@ Ext.define('Ext.grid.header.Container', {
         me.callParent(arguments);
 
         // Upon add of any column we need to purge the *HeaderContainer's* cache of leaf view columns.
-        if (headerCt) {
-            headerCt.purgeCache();
-        }
+        me.bubble(function(c) {
+            if (c instanceof Ext.grid.header.Container) {
+                c.purgeCache();
+            } else {
+                return false;
+            }
+        });
     },
 
     // Invalidate column cache on remove
@@ -315,9 +339,13 @@ Ext.define('Ext.grid.header.Container', {
         //</debug>
 
         // Upon removal of any column we need to purge the *HeaderContainer's* cache of leaf view columns.
-        if (headerCt) {
-            me.purgeCache();
-        }
+        me.bubble(function(c) {
+            if (c instanceof Ext.grid.header.Container) {
+                c.purgeCache();
+            } else {
+                return false;
+            }
+        });
     },
 
     // @private
@@ -345,7 +373,7 @@ Ext.define('Ext.grid.header.Container', {
 
     afterRender: function() {
         this.callParent();
-        this.setSortState();
+        this.setSortState(undefined, true);
         
     },
     
@@ -391,90 +419,37 @@ Ext.define('Ext.grid.header.Container', {
                 item.setChecked(visible, true);
             }
             // delay this since the headers may fire a number of times if we're hiding/showing groups
-            me.menuTask.delay(50);
+            if (menu.isVisible()) {
+                me.menuTask.delay(50);
+            }
         }
     },
-    
-    /**
-     * @private
-     * Gets all "leaf" menu nodes and returns the checked count for those leaves.
-     * Only includes columns that are hideable via the menu
-     */
-    getLeafMenuItems: function() {
+
+    updateMenuDisabledState: function(menu) {
         var me = this,
-            columns = me.getGridColumns(),
-            items = [],
-            i = 0,
-            count = 0,
+            columns = me.query(':not([hidden])'),
+            i,
             len = columns.length,
-            menu = me.getMenu(),
-            item;
+            item,
+            checkItem,
+            method;
 
-        for (; i < len; ++i) {
+        // If called from menu creation, it will be passed to avoid infinite recursion
+        if (!menu) {
+            menu = me.getMenu();
+        }
+
+        for (i = 0; i < len; ++i) {
             item = columns[i];
-            if (item.hideable) {
-                item = me.getMenuItemForHeader(menu, item);
-                if (item) {
-                    items.push(item);
-                    if (item.checked) {
-                        ++count;
-                    }
+            checkItem = me.getMenuItemForHeader(menu, item);
+            if (checkItem) {
+                method = item.isHideable() ? 'enable' : 'disable';
+                if (checkItem.menu) {
+                    method += 'CheckChange';
                 }
-            } else if (!item.hidden && !item.menuDisabled) {
-                ++count;
+                checkItem[method]();
             }
         }
-
-        return {
-            items: items,
-            checkedCount: count    
-        };
-    },
-    
-    updateMenuDisabledState: function(){
-        var me = this,
-            result = me.getLeafMenuItems(),
-            total = result.checkedCount,
-            items = result.items,
-            len = items.length,
-            i = 0,
-            rootItem = me.getMenu().child('#columnItem');
-            
-        if (total <= 1) {
-            // only one column visible, prevent hiding of the remaining item
-            me.disableMenuItems(rootItem, Ext.ComponentQuery.query('[checked=true]', items)[0]);
-        } else {
-            // at least 2 visible, set the state appropriately
-            for (; i < len; ++i) {
-                me.setMenuItemState(total, rootItem, items[i]);
-            }
-        }
-    },
-    
-    disableMenuItems: function(rootItem, item){
-        while (item && item != rootItem) {
-            item.disableCheckChange();
-            item = item.parentMenu.ownerItem;
-        }
-    },
-    
-    setMenuItemState: function(total, rootItem, item){
-        var parentMenu,
-            checkedChildren;
-            
-        while (item && item != rootItem) {
-            parentMenu = item.parentMenu;
-            checkedChildren = item.parentMenu.query('[checked=true]:not([menu])').length;
-            item.enableCheckChange();
-            item = parentMenu.ownerItem;
-            if (checkedChildren === total) {
-                // contains all the checked children, jump out the item and all parents
-                break;
-            }
-        }
-        
-        // while we're not at the top, disable from the current item up
-        this.disableMenuItems(rootItem, item);
     },
     
     getMenuItemForHeader: function(menu, header){
@@ -564,8 +539,7 @@ Ext.define('Ext.grid.header.Container', {
 
         menu.activeHeader = menu.ownerCt = header;
         menu.setFloatParent(header);
-        // TODO: remove coupling to Header's titleContainer el
-        header.titleEl.addCls(this.headerOpenCls);
+        header.setMenuActive(true);
 
         // enable or disable asc & desc menu items based on header being sortable
         sortableMth = header.sortable ? 'enable' : 'disable';
@@ -579,14 +553,11 @@ Ext.define('Ext.grid.header.Container', {
     },
 
     // remove the trigger open class when the menu is hidden
-    onMenuDeactivate: function() {
-        var menu = this.getMenu();
-        // TODO: remove coupling to Header's titleContainer el
-        menu.activeHeader.titleEl.removeCls(this.headerOpenCls);
+    onMenuDeactivate: function(menu) {
+        menu.activeHeader.setMenuActive(false);
     },
 
     moveHeader: function(fromIdx, toIdx) {
-
         // An automatically expiring lock
         this.tempLock();
         this.onHeaderMoved(this.move(fromIdx, toIdx), 1, fromIdx, toIdx);
@@ -633,9 +604,9 @@ Ext.define('Ext.grid.header.Container', {
                     scope: me
                 }
             });
-            me.updateMenuDisabledState();
             me.fireEvent('menucreate', me, me.menu);
         }
+        me.updateMenuDisabledState(me.menu);
         return me.menu;
     },
 
@@ -653,13 +624,13 @@ Ext.define('Ext.grid.header.Container', {
             menuItems = [{
                 itemId: 'ascItem',
                 text: me.sortAscText,
-                cls: Ext.baseCSSPrefix + 'hmenu-sort-asc',
+                cls: me.menuSortAscCls,
                 handler: me.onSortAscClick,
                 scope: me
             },{
                 itemId: 'descItem',
                 text: me.sortDescText,
-                cls: Ext.baseCSSPrefix + 'hmenu-sort-desc',
+                cls: me.menuSortDescCls,
                 handler: me.onSortDescClick,
                 scope: me
             }];
@@ -668,8 +639,9 @@ Ext.define('Ext.grid.header.Container', {
             menuItems.push('-', {
                 itemId: 'columnItem',
                 text: me.columnsText,
-                cls: Ext.baseCSSPrefix + 'cols-icon',
-                menu: hideableColumns
+                cls: me.menuColsIcon,
+                menu: hideableColumns,
+                hideOnClick: false
             });
         }
         return menuItems;
@@ -754,7 +726,7 @@ Ext.define('Ext.grid.header.Container', {
         for (; i < headersLn; i++) {
             header = headers[i];
 
-            if (header.hidden || header.up('headercontainer[hidden=true]')) {
+            if (header.hidden || header.hiddenAncestor) {
                 width = 0;
             } else {
                 width = header.getDesiredWidth();
@@ -828,23 +800,42 @@ Ext.define('Ext.grid.header.Container', {
     }, 
 
     /**
-     * Returns an array of all columns which map to Store fields. This goes down to the lowest column header
+     * Returns an array of all columns which map to Store fields. This goes down to the leaf column header
      * level, and does not return **grouped** headers which contain sub headers.
+     *
+     * It includes hidden headers because they are still rendered into a table view, but with zero width.
+     *
+     * Headers which have a hidden ancestor have a `hiddenAncestor: true` property injected so that they can also be rendered at zero width without interrogating
+     * that header's ownerCt axis for a hidden ancestor.
+     *
      * @param {Boolean} refreshCache If omitted, the cached set of columns will be returned. Pass true to refresh the cache.
      * @returns {Array}
      */
-    getGridColumns: function(refreshCache) {
+    getGridColumns: function(refreshCache /* private - used in recursion*/, root, inResult, hiddenAncestor) {
         var me = this,
-            result = refreshCache ? null : me.gridDataColumns;
+            result = refreshCache ? null : inResult || me.gridDataColumns,
+            items, i, len, item;
 
-        // Not already got the column cache, so collect the base columns
-        if (!result) {
-            me.gridDataColumns = result = [];
-            me.cascade(function(c) {
-                if ((c !== me) && !c.isGroupHeader) {
-                    result.push(c);
+        // If we are called in recursion, or we have no results (first time, or forcing a cache refresh)
+        // Then either recurse down into any group headers or push leaf headers into the result stack.
+        if (inResult || !result) {
+            root = root || me;
+            result = inResult || [];
+            hiddenAncestor = hiddenAncestor || root.hidden;
+            if (root.items) {
+                items = root.items.items;
+                len = items.length;
+                for (i = 0; i < len; i++) {
+                    item = items[i];
+                    if (item.isGroupHeader) {
+                        me.getGridColumns(false, item, result, hiddenAncestor);
+                    } else {
+                        item.hiddenAncestor = hiddenAncestor;
+                        result.push(item);
+                   }
                 }
-            });
+            }
+            me.gridDataColumns = result;
         }
 
         return result;
@@ -877,7 +868,7 @@ Ext.define('Ext.grid.header.Container', {
     getHeaderIndex: function(header) {
         // If we are being asked the index of a group header, find the first leaf header node, and return the index of that
         if (header.isGroupHeader) {
-            header = header.down(':not([isgroupHeader])');
+            header = header.down(':not([isGroupHeader])');
         }
         return Ext.Array.indexOf(this.getGridColumns(), header);
     },
@@ -915,6 +906,7 @@ Ext.define('Ext.grid.header.Container', {
             obj       = {},
             headers   = me.gridDataColumns || me.getGridColumns(),
             headersLn = headers.length,
+            dirtyCls = me.dirtyCls,
             colIdx    = 0,
             header,
             headerId,
@@ -957,7 +949,7 @@ Ext.define('Ext.grid.header.Container', {
             }
             // </debug>
             if (me.markDirty) {
-                obj[headerId + '-modified'] = record.isModified(header.dataIndex) ? Ext.baseCSSPrefix + 'grid-dirty-cell' : '';
+                obj[headerId + '-modified'] = record.isModified(header.dataIndex) ? dirtyCls : '';
             }
             obj[headerId+'-tdCls'] = metaData.tdCls;
             obj[headerId+'-tdAttr'] = metaData.tdAttr;

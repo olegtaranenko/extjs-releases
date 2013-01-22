@@ -59,26 +59,50 @@ Ext.define('Ext.tree.View', {
 
     initComponent: function() {
         var me = this,
-            treeStore = me.panel.getStore();
+            treeStore = me.panel.getStore(),
+            store = me.store;
 
         if (me.initialConfig.animate === undefined) {
             me.animate = Ext.enableFx;
         }
 
-        me.store = new Ext.data.NodeStore({
-            treeStore: treeStore,
-            recursive: true,
-            rootVisible: me.rootVisible,
-            listeners: {
-                beforeexpand: me.onBeforeExpand,
-                expand: me.onExpand,
-                beforecollapse: me.onBeforeCollapse,
-                collapse: me.onCollapse,
-                write: me.onStoreWrite,
-                datachanged: me.onStoreDataChanged,
-                scope: me
-            }
+        if (!store || store === treeStore) {
+            me.store = store = new Ext.data.NodeStore({
+                treeStore: treeStore,
+                recursive: true,
+                rootVisible: me.rootVisible
+            });
+        }
+
+        store.on({
+            beforeexpand: me.onBeforeExpand,
+            expand: me.onExpand,
+            beforecollapse: me.onBeforeCollapse,
+            collapse: me.onCollapse,
+            write: me.onStoreWrite,
+            datachanged: me.onStoreDataChanged,
+            collapsestart: me.beginBulkUpdate,
+            collapsecomplete: me.endBulkUpdate,
+            scope: me
         });
+
+        treeStore.on({
+            scope: me,
+            beforefill: me.onBeforeFill,
+            fillcomplete: me.onFillComplete,
+            beforebulkremove: me.beginBulkUpdate,
+            bulkremovecomplete: me.endBulkUpdate
+        });
+        
+        if (!treeStore.remoteSort) {
+            // If we're local sorting, we don't want the view to be
+            // continually updated during the sort process
+            treeStore.on({
+                scope: me,
+                beforesort: me.onBeforeSort,
+                sort: me.onSort
+            });
+        }
 
         if (me.node) {
             me.setRootNode(me.node);
@@ -101,7 +125,16 @@ Ext.define('Ext.tree.View', {
              * @param {Number} index                        The index of the node
              * @param {HTMLElement} item                    The HTML element for the node that was collapsed
              */
-            'afteritemcollapse'
+            'afteritemcollapse',
+            /**
+             * @event nodedragover
+             * Fires when a tree node is being targeted for a drag drop, return false to signal drop not allowed.
+             * @param {Ext.data.NodeInterface} targetNode The target node
+             * @param {String} position The drop position, "before", "after" or "append",
+             * @param {Object} dragData Data relating to the drag operation
+             * @param {Ext.EventObject} e The event object for the drag 
+             */
+            'nodedragover'
         );
         me.callParent(arguments);
         me.on({
@@ -119,6 +152,73 @@ Ext.define('Ext.tree.View', {
         });
     },
     
+    onBeforeFill: function(treeStore, fillRoot){
+        var store = this.store,
+            index = store.indexOf(fillRoot);
+        
+        // Filling a bunch of nodes, save the index of the root and the next sibling. When
+        // the load is finished, the new records will be those that exist between the two.
+        this.fillRootIndex = index;
+        this.fillSibling = store.getAt(index + 1);
+        store.suspendEvents();
+        
+    },
+    
+    onFillComplete: function(treeStore, fillRoot, newNodes){
+        var me = this,
+            store = me.store,
+            start = me.fillRootIndex + 1,
+            sibling = me.fillSibling,
+            end, records;
+            
+        store.resumeEvents();
+        delete me.fillSibling;
+        delete me.fillRootIndex;
+        
+        // Always update the current node, since the load may be triggered
+        // by .load() directly instead of .expand() on the node
+        fillRoot.triggerUIUpdate();
+        
+        // In the cases of expand, the records might not be in the store yet,
+        // so jump out early and expand will handle it later
+        if (!newNodes.length || store.indexOf(newNodes[0]) === -1) {
+            return;
+        }
+            
+        if (sibling) {
+            end = store.indexOf(sibling) - 1;
+        } 
+        
+        records = store.getRange(start, end);
+        me.onAdd(store, records, start);
+    },
+    
+    onBeforeSort: function(){
+        this.store.suspendEvents(); 
+    },
+    
+    onSort: function(o){
+        // The store will fire sort events for the nodes that bubble from the tree.
+        // We only want the final one when sorting is completed, fired by the store
+        if (o.isStore) {
+            this.store.resumeEvents();
+            this.refresh();
+        } 
+    },
+
+    // Overridden from base class
+    // TreeView uses the individual record remove event rather than the bulkremove
+    getStoreListeners: function() {
+        var me = this;
+        return {
+            refresh: me.onDataRefresh,
+            add: me.onAdd,
+            remove: me.onRemove,
+            update: me.onUpdate,
+            clear: me.refresh
+        };
+    },
+
     getMaskStore: function(){
         return this.panel.getStore();    
     },
@@ -323,23 +423,31 @@ Ext.define('Ext.tree.View', {
     },
 
     endBulkUpdate: function(){
+        var me = this;
         this.bulkUpdate = false;
+        if (me.rendered) {
+            me.refreshSize();
+            me.updateIndexes();
+        }
     },
 
     onRemove : function(ds, record, index) {
         var me = this,
-            bulk = me.bulkUpdate;
+            bulk = me.bulkUpdate,
+            empty;
             
         if (me.viewReady) {
             me.doRemove(record, index);
             if (!bulk) {
                 me.updateIndexes(index);
             }
-            if (me.store.getCount() === 0){
+            empty = me.store.getCount() === 0;
+            if (empty){
                 me.refresh();
             }
-            if (!bulk) {
-                me.fireEvent('itemremove', record, index);
+            me.fireEvent('itemremove', record, index);
+            if (!bulk && !empty) {
+                me.refreshSize();
             }
         }
     },
@@ -407,8 +515,9 @@ Ext.define('Ext.tree.View', {
         animWrap = me.getAnimWrap(parent, false);
 
         if (!animWrap) {
-            me.isExpandingOrCollapsing = false;
+            parent.isExpandingOrCollapsing = false;
             me.fireEvent('afteritemexpand', parent, index, node);
+            me.refreshSize();
             return;
         }
 
@@ -424,7 +533,7 @@ Ext.define('Ext.tree.View', {
                 scope: me,
                 lastframe: function() {
                     // Move all the nodes out of the anim wrap to their proper location
-                    animWrap.el.insertSibling(targetEl.query(me.itemSelector), 'before');
+                    animWrap.el.insertSibling(targetEl.query(me.itemSelector), 'before', true);
                     animWrap.el.remove();
                     me.refreshSize();
                     delete me.animWraps[animWrap.record.internalId];
@@ -432,7 +541,7 @@ Ext.define('Ext.tree.View', {
                 }
             },
             callback: function() {
-                me.isExpandingOrCollapsing = false;
+                parent.isExpandingOrCollapsing = false;
                 me.fireEvent('afteritemexpand', parent, index, node);
             }
         });
@@ -470,7 +579,7 @@ Ext.define('Ext.tree.View', {
             node = me.getNode(parent),
             index = node ? me.indexOf(node) : -1,
             animWrap = me.getAnimWrap(parent),
-            animateEl, targetEl;
+            animateEl;
 
         // The item has already been removed by a parent node
         if (index === -1) {
@@ -478,13 +587,13 @@ Ext.define('Ext.tree.View', {
         }
 
         if (!animWrap) {
-            me.isExpandingOrCollapsing = false;
+            parent.isExpandingOrCollapsing = false;
             me.fireEvent('afteritemcollapse', parent, index, node);
+            me.refreshSize();
             return;
         }
 
         animateEl = animWrap.animateEl;
-        targetEl = animWrap.targetEl;
 
         queue[id] = true;
 
@@ -502,7 +611,7 @@ Ext.define('Ext.tree.View', {
                 }             
             },
             callback: function() {
-                me.isExpandingOrCollapsing = false;
+                parent.isExpandingOrCollapsing = false;
                 me.fireEvent('afteritemcollapse', parent, index, node);
             }
         });
@@ -524,15 +633,16 @@ Ext.define('Ext.tree.View', {
             rows = data.rows,
             len = rows.length,
             i = 0,
+            Format = Ext.util.Format,
             row, record;
 
         for (; i < len; i++) {
             row = rows[i];
             record = records[i];
             if (record.get('qtip')) {
-                row.rowAttr = 'data-qtip="' + record.get('qtip') + '"';
+                row.rowAttr = 'data-qtip="' + Format.htmlEncode(record.get('qtip')) + '"';
                 if (record.get('qtitle')) {
-                    row.rowAttr += ' ' + 'data-qtitle="' + record.get('qtitle') + '"';
+                    row.rowAttr += ' ' + 'data-qtitle="' + Format.htmlEncode(record.get('qtitle')) + '"';
                 }
             }
             if (record.isExpanded()) {
@@ -551,47 +661,62 @@ Ext.define('Ext.tree.View', {
 
     /**
      * Expands a record that is loaded in the view.
+     * 
+     * If an animated collapse or expand of the record is in progress, this call will be ignored.
      * @param {Ext.data.Model} record The record to expand
      * @param {Boolean} [deep] True to expand nodes all the way down the tree hierarchy.
      * @param {Function} [callback] The function to run after the expand is completed
      * @param {Object} [scope] The scope of the callback function.
      */
     expand: function(record, deep, callback, scope) {
-        return record.expand(deep, callback, scope);
+        var me = this,
+            doAnimate = !!me.animate;
+
+        // Block toggling if we are already animating an expand or collapse operation.
+        if (!doAnimate || !record.isExpandingOrCollapsing) {
+            if (!record.isLeaf()) {
+                record.isExpandingOrCollapsing = doAnimate;
+            }
+            return record.expand(deep, callback, scope);
+        }
     },
 
     /**
      * Collapses a record that is loaded in the view.
+     * 
+     * If an animated collapse or expand of the record is in progress, this call will be ignored.
      * @param {Ext.data.Model} record The record to collapse
      * @param {Boolean} [deep] True to collapse nodes all the way up the tree hierarchy.
      * @param {Function} [callback] The function to run after the collapse is completed
      * @param {Object} [scope] The scope of the callback function.
      */
     collapse: function(record, deep, callback, scope) {
-        return record.collapse(deep, callback, scope);
+        var me = this,
+            doAnimate = !!me.animate;
+
+        // Block toggling if we are already animating an expand or collapse operation.
+        if (!doAnimate || !record.isExpandingOrCollapsing) {
+            if (!record.isLeaf()) {
+                record.isExpandingOrCollapsing = doAnimate;
+            }
+            return record.collapse(deep, callback, scope);
+        }
     },
 
     /**
      * Toggles a record between expanded and collapsed.
+     * 
+     * If an animated collapse or expand of the record is in progress, this call will be ignored.
      * @param {Ext.data.Model} record
      * @param {Boolean} [deep] True to collapse nodes all the way up the tree hierarchy.
      * @param {Function} [callback] The function to run after the expand/collapse is completed
      * @param {Object} [scope] The scope of the callback function.
      */
     toggle: function(record, deep, callback, scope) {
-        var me = this,
-            doAnimate = !!this.animate;
-
-        // Block toggling if we are already animating an expand or collapse operation.
-        if (!doAnimate || !this.isExpandingOrCollapsing) {
-            if (!record.isLeaf()) {
-                this.isExpandingOrCollapsing = doAnimate;
-            }
-            if (record.isExpanded()) {
-                me.collapse(record, deep, callback, scope);
-            } else {
-                me.expand(record, deep, callback, scope);
-            }
+        if (record.isExpanded()) {
+            this.collapse(record, deep, callback, scope);
+        } else {
+            this.expand(record, deep, callback, scope);
         }
     },
 

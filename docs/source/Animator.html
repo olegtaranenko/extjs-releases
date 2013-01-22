@@ -102,8 +102,8 @@ Ext.define('Ext.fx.Animator', {
      */
     delay: 0,
 
-    /* private used to track a delayed starting time */
-    delayStart: 0,
+<span id='Ext-fx-Animator-property-delayStart'>    /* private used to track a delayed starting time */
+</span>    delayStart: 0,
 
 <span id='Ext-fx-Animator-cfg-dynamic'>    /**
 </span>     * @cfg {Boolean} dynamic
@@ -416,12 +416,12 @@ keyframes : {
         me.fireEvent('afteranimate', me, me.startTime, new Date() - me.startTime);
     },
     
-    isReady: function() {
-        return this.paused === false &amp;&amp; this.running === false &amp;&amp; this.iterations &gt; 0;
+<span id='Ext-fx-Animator-method-isReady'>    isReady: function() {
+</span>        return this.paused === false &amp;&amp; this.running === false &amp;&amp; this.iterations &gt; 0;
     },
     
-    isRunning: function() {
-        // Explicitly return false, we don't want to be run continuously by the manager
+<span id='Ext-fx-Animator-method-isRunning'>    isRunning: function() {
+</span>        // Explicitly return false, we don't want to be run continuously by the manager
         return false;
     }
 });</pre>

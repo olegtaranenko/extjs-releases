@@ -9,6 +9,7 @@
  *
  * The series class supports listeners via the Observable syntax. Some of these listeners are:
  *
+ *  - `itemclick` When the user interacts with a marker.
  *  - `itemmouseup` When the user interacts with a marker.
  *  - `itemmousedown` When the user interacts with a marker.
  *  - `itemmousemove` When the user iteracts with a marker.
@@ -105,6 +106,7 @@ Ext.define('Ext.chart.series.Series', {
      * @cfg {Object} listeners
      * An (optional) object with event callbacks. All event callbacks get the target *item* as first parameter. The callback functions are:
      *
+     *  - itemclick
      *  - itemmouseover
      *  - itemmouseout
      *  - itemmousedown
@@ -126,6 +128,7 @@ Ext.define('Ext.chart.series.Series', {
 
         me.addEvents({
             scope: me,
+            itemclick: true,
             itemmouseover: true,
             itemmouseout: true,
             itemmousedown: true,
@@ -165,7 +168,7 @@ Ext.define('Ext.chart.series.Series', {
      */
     eachRecord: function(fn, scope) {
         var chart = this.chart;
-        (chart.substore || chart.store).each(fn, scope);
+        chart.getChartStore().each(fn, scope);
     },
 
     /**
@@ -174,7 +177,7 @@ Ext.define('Ext.chart.series.Series', {
      */
     getRecordCount: function() {
         var chart = this.chart,
-            store = chart.substore || chart.store;
+            store = chart.getChartStore();
         return store ? store.getCount() : 0;
     },
 
@@ -222,11 +225,10 @@ Ext.define('Ext.chart.series.Series', {
         } else {
             me.animating = true;
             return sprite.animate(Ext.apply(Ext.applyIf(attr, me.chart.animate), {
-                listeners: {
-                    'afteranimate': function() {
-                        me.animating = false;
-                        me.fireEvent('afterrender');
-                    }
+                // use callback, don't overwrite listeners
+                callback: function() {
+                    me.animating = false;
+                    me.fireEvent('afterrender');
                 }
             }));
         }
@@ -396,7 +398,7 @@ Ext.define('Ext.chart.series.Series', {
                 return stroke;
             }
         }
-        return (me.colorArrayStyle)?me.colorArrayStyle[me.seriesIdx % me.colorArrayStyle.length]:'#000';
+        return (me.colorArrayStyle)?me.colorArrayStyle[me.themeIdx % me.colorArrayStyle.length]:'#000';
     },
 
     /**

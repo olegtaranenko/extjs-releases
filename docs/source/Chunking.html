@@ -22,16 +22,16 @@ Ext.define('Ext.grid.feature.Chunking', {
     extend: 'Ext.grid.feature.Feature',
     alias: 'feature.chunking',
 
-    chunkSize: 20,
-    rowHeight: Ext.isIE ? 27 : 26,
-    visibleChunk: 0,
-    hasFeatureEvent: false,
-    attachEvents: function() {
-        this.view.el.on('scroll', this.onBodyScroll, this, {buffer: 300});
+<span id='Ext-grid-feature-Chunking-property-chunkSize'>    chunkSize: 20,
+</span><span id='Ext-grid-feature-Chunking-property-rowHeight'>    rowHeight: Ext.isIE ? 27 : 26,
+</span><span id='Ext-grid-feature-Chunking-property-visibleChunk'>    visibleChunk: 0,
+</span><span id='Ext-grid-feature-Chunking-property-hasFeatureEvent'>    hasFeatureEvent: false,
+</span><span id='Ext-grid-feature-Chunking-method-attachEvents'>    attachEvents: function() {
+</span>        this.view.el.on('scroll', this.onBodyScroll, this, {buffer: 300});
     },
 
-    onBodyScroll: function(e, t) {
-        var view = this.view,
+<span id='Ext-grid-feature-Chunking-method-onBodyScroll'>    onBodyScroll: function(e, t) {
+</span>        var view = this.view,
             top  = t.scrollTop,
             nextChunk = Math.floor(top / this.rowHeight / this.chunkSize);
         if (nextChunk !== this.visibleChunk) {
@@ -44,8 +44,8 @@ Ext.define('Ext.grid.feature.Chunking', {
         }
     },
 
-    collectData: function(records, preppedRecords, startIndex, fullWidth, o) {
-        //headerCt = this.view.headerCt,
+<span id='Ext-grid-feature-Chunking-method-collectData'>    collectData: function(records, preppedRecords, startIndex, fullWidth, o) {
+</span>        //headerCt = this.view.headerCt,
         //colums = headerCt.getColumnsForTpl(),
         var me = this,
             recordCount = o.rows.length,
@@ -80,8 +80,8 @@ Ext.define('Ext.grid.feature.Chunking', {
         return o;
     },
 
-    getTableFragments: function() {
-        return {
+<span id='Ext-grid-feature-Chunking-method-getTableFragments'>    getTableFragments: function() {
+</span>        return {
             openTableWrap: function() {
                 return '&lt;tpl for=&quot;chunks&quot;&gt;&lt;div class=&quot;' + Ext.baseCSSPrefix + 'grid-chunk&quot; style=&quot;height: {chunkHeight}px;&quot;&gt;';
             },

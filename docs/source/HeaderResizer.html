@@ -24,8 +24,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
     requires: ['Ext.dd.DragTracker', 'Ext.util.Region'],
     alias: 'plugin.gridheaderresizer',
 
-    disabled: false,
-
+<span id='Ext-grid-plugin-HeaderResizer-property-disabled'>    disabled: false,
+</span>
     config: {
 <span id='Ext-grid-plugin-HeaderResizer-cfg-dynamic'>        /**
 </span>         * @cfg {Boolean} dynamic
@@ -35,14 +35,14 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         dynamic: false
     },
 
-    colHeaderCls: Ext.baseCSSPrefix + 'column-header',
-
-    minColWidth: 40,
-    maxColWidth: 1000,
-    wResizeCursor: 'col-resize',
-    eResizeCursor: 'col-resize',
-    // not using w and e resize bc we are only ever resizing one
-    // column
+<span id='Ext-grid-plugin-HeaderResizer-property-colHeaderCls'>    colHeaderCls: Ext.baseCSSPrefix + 'column-header',
+</span>
+<span id='Ext-grid-plugin-HeaderResizer-property-minColWidth'>    minColWidth: 40,
+</span><span id='Ext-grid-plugin-HeaderResizer-property-maxColWidth'>    maxColWidth: 1000,
+</span><span id='Ext-grid-plugin-HeaderResizer-property-wResizeCursor'>    wResizeCursor: 'col-resize',
+</span><span id='Ext-grid-plugin-HeaderResizer-property-eResizeCursor'>    eResizeCursor: 'col-resize',
+</span><span id='Ext-grid-plugin-HeaderResizer-method-init'>    // not using w and e resize bc we are only ever resizing one
+</span>    // column
     //wResizeCursor: Ext.isWebKit ? 'w-resize' : 'col-resize',
     //eResizeCursor: Ext.isWebKit ? 'e-resize' : 'col-resize',
 
@@ -61,8 +61,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         }
     },
 
-    afterHeaderRender: function() {
-        var headerCt = this.headerCt,
+<span id='Ext-grid-plugin-HeaderResizer-method-afterHeaderRender'>    afterHeaderRender: function() {
+</span>        var headerCt = this.headerCt,
             el = headerCt.el;
 
         headerCt.mon(el, 'mousemove', this.onHeaderCtMouseMove, this);
@@ -79,8 +79,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         });
     },
 
-    // As we mouse over individual headers, change the cursor to indicate
-    // that resizing is available, and cache the resize target header for use
+<span id='Ext-grid-plugin-HeaderResizer-method-onHeaderCtMouseMove'>    // As we mouse over individual headers, change the cursor to indicate
+</span>    // that resizing is available, and cache the resize target header for use
     // if/when they mousedown.
     onHeaderCtMouseMove: function(e, t) {
         var me = this,
@@ -149,8 +149,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         }
     },
 
-    // only start when there is an activeHd
-    onBeforeStart : function(e){
+<span id='Ext-grid-plugin-HeaderResizer-method-onBeforeStart'>    // only start when there is an activeHd
+</span>    onBeforeStart : function(e){
         var t = e.getTarget();
         // cache the activeHd because it will be cleared.
         this.dragHd = this.activeHd;
@@ -165,8 +165,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         }
     },
 
-    // get the region to constrain to, takes into account max and min col widths
-    getConstrainRegion: function() {
+<span id='Ext-grid-plugin-HeaderResizer-method-getConstrainRegion'>    // get the region to constrain to, takes into account max and min col widths
+</span>    getConstrainRegion: function() {
         var me       = this,
             dragHdEl = me.dragHd.el,
             region   = Ext.util.Region.getRegion(dragHdEl),
@@ -186,8 +186,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         );
     },
 
-    // initialize the left and right hand side markers around
-    // the header that we are resizing
+<span id='Ext-grid-plugin-HeaderResizer-method-onStart'>    // initialize the left and right hand side markers around
+</span>    // the header that we are resizing
     onStart: function(e){
         var me       = this,
             dragHd   = me.dragHd,
@@ -227,8 +227,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         }
     },
 
-    // synchronize the rhsMarker with the mouse movement
-    onDrag: function(e){
+<span id='Ext-grid-plugin-HeaderResizer-method-onDrag'>    // synchronize the rhsMarker with the mouse movement
+</span>    onDrag: function(e){
         if (!this.dynamic) {
             var xy          = this.tracker.getXY('point'),
                 gridSection = this.headerCt.up('[scrollerOwner]'),
@@ -244,8 +244,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         }
     },
 
-    onEnd: function(e){
-        this.headerCt.dragging = false;
+<span id='Ext-grid-plugin-HeaderResizer-method-onEnd'>    onEnd: function(e){
+</span>        this.headerCt.dragging = false;
         if (this.dragHd) {
             if (!this.dynamic) {
                 var dragHd      = this.dragHd,
@@ -262,8 +262,8 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         }
     },
 
-    doResize: function() {
-        if (this.dragHd) {
+<span id='Ext-grid-plugin-HeaderResizer-method-doResize'>    doResize: function() {
+</span>        if (this.dragHd) {
             var dragHd = this.dragHd,
                 nextHd,
                 offset = this.tracker.getOffset('point');
@@ -293,15 +293,15 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
         }
     },
 
-    disable: function() {
-        this.disabled = true;
+<span id='Ext-grid-plugin-HeaderResizer-method-disable'>    disable: function() {
+</span>        this.disabled = true;
         if (this.tracker) {
             this.tracker.disable();
         }
     },
 
-    enable: function() {
-        this.disabled = false;
+<span id='Ext-grid-plugin-HeaderResizer-method-enable'>    enable: function() {
+</span>        this.disabled = false;
         if (this.tracker) {
             this.tracker.enable();
         }

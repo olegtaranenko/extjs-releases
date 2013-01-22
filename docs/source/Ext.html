@@ -15,7 +15,8 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext'>/**
+  <pre class="prettyprint lang-js">//@tag foundation,core
+<span id='Ext'>/**
 </span> * @class Ext
  * @singleton
  */
@@ -104,9 +105,17 @@ Ext._startTime = new Date().getTime();
         name: Ext.sandboxName || 'Ext',
 
 <span id='Ext-property-emptyFn'>        /**
-</span>         * A reusable empty function
+</span>         * @property {Function}
+         * A reusable empty function
          */
         emptyFn: emptyFn,
+        
+<span id='Ext-method-identityFn'>        /**
+</span>         * A reusable identity function. The function will always return the first argument, unchanged.
+         */
+        identityFn: function(o) {
+            return o;
+        },
 
 <span id='Ext-property-emptyString'>        /**
 </span>         * A zero length string which will pass a truth test. Useful for passing to methods
@@ -748,6 +757,10 @@ Ext.globalEval = Ext.global.execScript
         // IMPORTANT: because we use eval we cannot place this in the above function or it
         // will break the compressor's ability to rename local variables...
         (function(){
+            // This var should not be replaced by the compressor. We need to do this so
+            // that Ext refers to the global Ext, if we're sandboxing it may
+            // refer to the local instance inside the closure
+            var Ext = this.Ext;
             eval($$code);
         }());
     };

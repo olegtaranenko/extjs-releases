@@ -21,8 +21,8 @@
  */
 Ext.define('Ext.grid.CellEditor', {
     extend: 'Ext.Editor',
-    constructor: function(config) {
-        config = Ext.apply({}, config);
+<span id='Ext-grid-CellEditor-method-constructor'>    constructor: function(config) {
+</span>        config = Ext.apply({}, config);
         
         if (config.field) {
             config.field.monitorTab = false;
@@ -65,7 +65,7 @@ Ext.define('Ext.grid.CellEditor', {
                 me.cellTextValue = textNode.nodeValue;
                 // The text node has to have at least one character in it, or the cell borders
                 // in IE quirks mode will not show correctly, so let's use a non-breaking space.
-                textNode.nodeValue = '\u00a0';
+                textNode.nodeValue = me.emptyText;
             }
         }
         me.callParent(arguments);
@@ -77,10 +77,15 @@ Ext.define('Ext.grid.CellEditor', {
      */
     onHide: function() {
         var me = this,
-            innerCell = me.boundEl.first();
+            innerCell = me.boundEl.first(),
+            node = me.cellTextNode;
 
-        if (innerCell &amp;&amp; me.cellTextNode) {
-            me.cellTextNode.nodeValue = me.cellTextValue;
+        if (innerCell &amp;&amp; node) {
+            // The value may have changed since we started, so only restore it
+            // if the value is the same as our space we set earlier
+            if (node.nodeValue == me.emptyText) {
+                node.nodeValue = me.cellTextValue;
+            }
             delete me.cellTextNode;
             delete me.cellTextValue;
         }
@@ -174,18 +179,20 @@ Ext.define('Ext.grid.CellEditor', {
         me.alignTo(boundEl, me.alignment, offsets);
     },
     
-    onEditorTab: function(e){
-        var field = this.field;
+<span id='Ext-grid-CellEditor-method-onEditorTab'>    onEditorTab: function(e){
+</span>        var field = this.field;
         if (field.onEditorTab) {
             field.onEditorTab(e);
         }
     },
-
-    alignment: &quot;tl-tl&quot;,
-    hideEl : false,
-    cls: Ext.baseCSSPrefix + &quot;small-editor &quot; + Ext.baseCSSPrefix + &quot;grid-editor&quot;,
-    shim: false,
-    shadow: false
-});</pre>
+    
+<span id='Ext-grid-CellEditor-property-emptyText'>    emptyText: '\u00a0',
+</span>
+<span id='Ext-grid-CellEditor-property-alignment'>    alignment: &quot;tl-tl&quot;,
+</span><span id='Ext-grid-CellEditor-property-hideEl'>    hideEl : false,
+</span><span id='Ext-grid-CellEditor-property-cls'>    cls: Ext.baseCSSPrefix + &quot;small-editor &quot; + Ext.baseCSSPrefix + &quot;grid-editor&quot;,
+</span><span id='Ext-grid-CellEditor-property-shim'>    shim: false,
+</span><span id='Ext-grid-CellEditor-property-shadow'>    shadow: false
+</span>});</pre>
 </body>
 </html>

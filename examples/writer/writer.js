@@ -182,6 +182,10 @@ Ext.define('Writer.Grid', {
                 text: 'ID',
                 width: 40,
                 sortable: true,
+                resizable: false,
+                draggable: false,
+                hideable: false,
+                menuDisabled: true,
                 dataIndex: 'id'
             }, {
                 header: 'Email',

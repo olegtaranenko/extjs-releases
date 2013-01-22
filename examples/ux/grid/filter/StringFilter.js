@@ -1,6 +1,4 @@
 /**
- * @class Ext.ux.grid.filter.StringFilter
- * @extends Ext.ux.grid.filter.Filter
  * Filter by a configurable Ext.form.field.Text
  * <p><b><u>Example Usage:</u></b></p>
  * <pre><code>
@@ -80,7 +78,6 @@ Ext.define('Ext.ux.grid.filter.StringFilter', {
     },
 
     /**
-     * @private
      * Template method that is to return <tt>true</tt> if the filter
      * has enough configuration information to be activated.
      * @return {Boolean}

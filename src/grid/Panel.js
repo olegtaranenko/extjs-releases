@@ -190,7 +190,9 @@ Ext.define('Ext.grid.Panel', {
         'enableColumnHide',
         'enableColumnMove',
         'enableColumnResize',
-        'sortableColumns'
+        'sortableColumns',
+        'columnLines',
+        'rowLines'
     ],
     normalCfgCopy: [ 
         'verticalScroller', 
@@ -212,11 +214,23 @@ Ext.define('Ext.grid.Panel', {
      */
 
     /**
+     * @event beforereconfigure
+     * Fires before a reconfigure to enable modification of incoming Store and columns.
+     * @param {Ext.grid.Panel} this
+     * @param {Ext.data.Store} store The store that was passed to the {@link #method-reconfigure} method
+     * @param {Object[]} columns The column configs that were passed to the {@link #method-reconfigure} method
+     * @param {Ext.data.Store} oldStore The store that will be replaced
+     * @param {Ext.grid.column.Column[]} The column headers that will be replaced.
+     */
+
+    /**
      * @event reconfigure
      * Fires after a reconfigure.
      * @param {Ext.grid.Panel} this
      * @param {Ext.data.Store} store The store that was passed to the {@link #method-reconfigure} method
      * @param {Object[]} columns The column configs that were passed to the {@link #method-reconfigure} method
+     * @param {Ext.data.Store} oldStore The store that was replaced
+     * @param {Ext.grid.column.Column[]} The column headers that were replaced.
      */
 
     /**

@@ -5,7 +5,7 @@ Ext.define('Ext.tree.ViewDropZone', {
     extend: 'Ext.view.DropZone',
 
     /**
-     * @cfg {Boolean} allowParentInsert
+     * @cfg {Boolean} allowParentInserts
      * Allow inserting a dragged node between an expanded parent node and its first child that will become a
      * sibling of the parent when dropped.
      */
@@ -32,7 +32,7 @@ Ext.define('Ext.tree.ViewDropZone', {
 
     indicatorCls: Ext.baseCSSPrefix + 'tree-ddindicator',
 
-    // private
+    // @private
     expandNode : function(node) {
         var view = this.view;
         if (!node.isLeaf() && !node.isExpanded()) {
@@ -41,12 +41,12 @@ Ext.define('Ext.tree.ViewDropZone', {
         }
     },
 
-    // private
+    // @private
     queueExpand : function(node) {
         this.expandProcId = Ext.Function.defer(this.expandNode, this.expandDelay, this, [node]);
     },
 
-    // private
+    // @private
     cancelExpand : function() {
         if (this.expandProcId) {
             clearTimeout(this.expandProcId);
@@ -73,7 +73,7 @@ Ext.define('Ext.tree.ViewDropZone', {
             return noAppend ? false : 'append';
         }
 
-        if (!this.allowParentInsert) {
+        if (!this.allowParentInserts) {
             noBelow = record.hasChildNodes() && record.isExpanded();
         }
 
@@ -126,10 +126,7 @@ Ext.define('Ext.tree.ViewDropZone', {
         if (Ext.Array.contains(draggedRecords, targetNode)) {
              return false;
         }
-
-        // @TODO: fire some event to notify that there is a valid drop possible for the node you're dragging
-        // Yes: this.fireViewEvent(blah....) fires an event through the owning View.
-        return true;
+        return view.fireEvent('nodedragover', targetNode, position, data, e) !== false;
     },
 
     onNodeOver : function(node, dragZone, e, data) {
@@ -197,19 +194,26 @@ Ext.define('Ext.tree.ViewDropZone', {
             view = me.view,
             parentNode = targetNode.parentNode,
             store = view.getStore(),
+            Model = view.getStore().treeStore.model,
             recordDomNodes = [],
-            records, i, len,
+            records, i, len, record,
             insertionMethod, argList,
             needTargetExpand,
             transferData,
             processDrop;
 
-        // If the copy flag is set, create a copy of the Models with the same IDs
+        // If the copy flag is set, create a copy of the models
         if (data.copy) {
             records = data.records;
             data.records = [];
             for (i = 0, len = records.length; i < len; i++) {
-                data.records.push(Ext.apply({}, records[i].data));
+                record = records[i];
+                if (record.isNode) {
+                    data.records.push(record.copy(undefined, true));
+                } else {
+                    // If it's not a node, make a node copy
+                    data.records.push(new Model(record[record.persistenceProperty], record.getId()));
+                }
             }
         }
 

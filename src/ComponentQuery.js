@@ -25,6 +25,30 @@
  * - `component[autoScroll]`
  * - `panel[title="Test"]`
  *
+ * Attributes can use the '=' or '~=' operators to do the pattern matching.
+ *
+ * The '=' operator will return the results that <strong>exactly</strong> match:
+ *
+ *     Ext.Component.query('panel[cls=my-cls]')
+ *
+ * Will match the following Component:
+ *
+ *     Ext.create('Ext.Panel', {
+ *         cls : 'my-cls'
+ *     });
+ *
+ * The '~=' operator will return results that <strong>exactly</strong> matches one of the whitespace-separated values:
+ *
+ *     Ext.Component.query('panel[cls~=my-cls]')
+ *
+ * Will match the follow Component:
+ *
+ *     Ext.create('My.Panel', {
+ *         cls : 'foo-cls my-cls bar-cls'
+ *     });
+ *
+ * This is because it <strong>exactly</strong> matched the 'my-cls' within the cls config.
+ *
  * Member expressions from candidate Components may be tested. If the expression returns a *truthy* value,
  * the candidate Component will be included in the query:
  *
@@ -53,9 +77,11 @@
  *
  * Default pseudos include:
  *
- * - not
- * - first
- * - last
+ * * `not` Negates a selector.
+ * * `first` Filters out all except the first matching item for a selector.
+ * * `last` Filters out all except the last matching item for a selector.
+ * * `focusable` Filters out all except components which are currently able to recieve focus.
+ * * `nth-child` Filters components by ordinal position in the selection.
  *
  * Queries return an array of components.
  * Here are some example queries.
@@ -71,6 +97,9 @@
  *
  *     // retrieve all grids and trees
  *     var gridsAndTrees = Ext.ComponentQuery.query('gridpanel, treepanel');
+ *     
+ *     // Focus first component
+ *     myFormPanel.child(':focusable').focus();
  *
  * For easy access to queries based from a particular Container see the {@link Ext.container.Container#query},
  * {@link Ext.container.Container#down} and {@link Ext.container.Container#child} methods. Also see
@@ -82,6 +111,8 @@ Ext.define('Ext.ComponentQuery', {
 }, function() {
 
     var cq = this,
+        nthRe = /(\d*)n\+?(\d*)/,
+        nthRe2 = /\D/,
 
         // A function source code pattern with a placeholder which accepts an expression which yields a truth value when applied
         // as a member on each item in the passed array.
@@ -159,8 +190,7 @@ Ext.define('Ext.ComponentQuery', {
 
         // Filters the passed candidate array and returns only items which have the passed className
         filterByClassName = function(items, className) {
-            var EA = Ext.Array,
-                result = [],
+            var result = [],
                 i = 0,
                 length = items.length,
                 candidate;
@@ -178,10 +208,29 @@ Ext.define('Ext.ComponentQuery', {
             var result = [],
                 i = 0,
                 length = items.length,
-                candidate;
+                candidate, getValue;
+
             for (; i < length; i++) {
                 candidate = items[i];
-                if (!value ? !!candidate[property] : (String(candidate[property]) === value)) {
+
+                if (operator === '~=') {
+                    getValue = null;
+
+                    if (candidate[property]) {
+                        getValue = String(candidate[property]);
+                    }
+
+                    if (getValue) {
+                        //We need an array
+                        if (!Ext.isArray(getValue)) {
+                            getValue = getValue.split(' ');
+                        }
+
+                        if (Ext.Array.indexOf(getValue, value) !== -1) {
+                            result.push(candidate);
+                        }
+                    }
+                } else if (!value ? !!candidate[property] : (String(candidate[property]) === value)) {
                     result.push(candidate);
                 }
             }
@@ -263,8 +312,8 @@ Ext.define('Ext.ComponentQuery', {
             if (!root) {
                 workingItems = Ext.ComponentManager.all.getArray();
             }
-            // Root is a candidate Array
-            else if (Ext.isArray(root)) {
+            // Root is an iterable object like an Array, or system Collection, eg HtmlCollection
+            else if (Ext.isIterable(root)) {
                 workingItems = root;
             }
             // Root is a MixedCollection
@@ -363,6 +412,41 @@ Ext.define('Ext.ComponentQuery', {
                     ret.push(components[len - 1]);
                 }
                 return ret;
+            },
+            focusable: function(cmps) {
+                var len = cmps.length,
+                    results = [],
+                    i = 0,
+                    c;
+
+                for (; i < len; i++) {
+                    c = cmps[i];
+                    // If this is a generally focusable Component (has a focusEl, is rendered, enabled and visible)
+                    // then it is currently focusable if focus management is enabled or if it is an input field, a button or a menu item
+                    if (c.isFocusable()) {
+                        results.push(c);
+                    }
+                }
+
+                return results;
+            },
+            "nth-child" : function(c, a) {
+                var result = [],
+                    m = nthRe.exec(a == "even" && "2n" || a == "odd" && "2n+1" || !nthRe2.test(a) && "n+" + a || a),
+                    f = (m[1] || 1) - 0, l = m[2] - 0,
+                    i, n, nodeIndex;
+                for (i = 0; n = c[i]; i++) {
+                    nodeIndex = i + 1;
+                    if (f == 1) {
+                        if (l == 0 || nodeIndex == l) {
+                            result.push(n);
+                        }
+                    } else if ((nodeIndex + l) % f == 0){
+                        result.push(n);
+                    }
+                }
+
+                return result;
             }
         },
 

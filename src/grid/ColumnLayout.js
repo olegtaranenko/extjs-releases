@@ -133,7 +133,7 @@ Ext.define('Ext.grid.ColumnLayout', {
         // If we have not been through this already, and the owning Container is configured
         // forceFit, is not a group column and and there is a valid width, then convert
         // widths to flexes, and loop back.
-        if (!state.flexesCalculated && owner.forceFit && !owner.isHeader) {
+        if (!ownerContext.flexedItems.length && !state.flexesCalculated && owner.forceFit && !owner.isHeader) {
             childItems = ownerContext.childItems;
             len = childItems.length;
 

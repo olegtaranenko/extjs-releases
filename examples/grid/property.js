@@ -22,13 +22,49 @@ Ext.onReady(function(){
         }
     });
     
+    Ext.create('Ext.button.Button', {
+        renderTo: 'button-container',
+        text: 'New data source',
+        margin: '0 0 0 10',
+        handler: function(){
+            propsGrid.setSource({
+                firstName: 'Mike',
+                lastName: 'Bray',
+                dob: new Date(1986, 3, 15),
+                color: 'Red',
+                score: null
+            }, {
+                firstName: {
+                    displayName: 'First Name'
+                },
+                lastName: {
+                    displayName: 'Last Name'
+                },
+                dob: {
+                    displayName: 'D.O.B'
+                },
+                color: {
+                    displayName: 'Color',
+                    editor: new Ext.form.field.ComboBox({
+                        store: ['Red', 'Green', 'Blue'],
+                        forceSelection: true
+                    }),
+                    renderer: function(v){
+                        var lower = v.toLowerCase();
+                        return Ext.String.format('<span style="color: {0};">{1}</span>', lower, v);
+                    }
+                }, 
+                score: {
+                    displayName: 'Score',
+                    type: 'number'
+                }
+            });
+        }    
+    });
+    
     var propsGrid = Ext.create('Ext.grid.property.Grid', {
         width: 300,
         renderTo: 'grid-container',
-        propertyNames: {
-            tested: 'QA',
-            borderWidth: 'Border Width'
-        },
         source: {
             "(name)": "Properties Grid",
             "grouping": false,
@@ -38,6 +74,14 @@ Ext.onReady(function(){
             "tested": false,
             "version": 0.01,
             "borderWidth": 1
+        },
+        sourceConfig: {
+            borderWidth: {
+                displayName: 'Border Width'
+            },
+            tested: {
+                displayName: 'QA'
+            }
         }
     });
 });

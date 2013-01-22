@@ -11,6 +11,15 @@
  * Writers are not needed for any kind of local storage - whether via a {@link Ext.data.proxy.WebStorage Web Storage
  * proxy} (see {@link Ext.data.proxy.LocalStorage localStorage} and {@link Ext.data.proxy.SessionStorage
  * sessionStorage}) or just in memory via a {@link Ext.data.proxy.Memory MemoryProxy}.
+ * 
+ * # Dates
+ * Before sending dates to the server, they can be formatted using one of the {@link Ext.Date} formats.
+ * These formats can be specified both on the field and the writer itself. In terms of precedence, from highest to lowest:
+ * 
+ * -  {@link #dateFormat Writer.dateFormat} The writer dateFormat will always have the highest precedence
+ * -  {@link Ext.data.Field#dateWriteFormat} The dateWriteFormat will be used if no format is specified on the writer
+ * -  {@link Ext.data.Field#dateFormat Field.dateFormat}/{@link Ext.data.Field#dateReadFormat Field.dateReadFormat} 
+ * Finally, if none of the above options are specified the field will be formatted using the format that was used to read the date from the server.
  */
 Ext.define('Ext.data.writer.Writer', {
     alias: 'writer.base',
@@ -22,6 +31,12 @@ Ext.define('Ext.data.writer.Writer', {
      * modified. Note that any fields that have {@link Ext.data.Field#persist} set to false will still be ignored.
      */
     writeAllFields: true,
+    
+    /**
+     * @cfg {String} dateFormat
+     * This is used for each field of type date in the model to format the value before
+     * it is sent to the server.
+     */
     
     /**
      * @cfg {String} nameProperty
@@ -98,13 +113,11 @@ Ext.define('Ext.data.writer.Writer', {
     getRecordData: function(record, operation) {
         var isPhantom = record.phantom === true,
             writeAll = this.writeAllFields || isPhantom,
-            nameProperty = this.nameProperty,
             fields = record.fields,
             fieldItems = fields.items,
             data = {},
             clientIdProperty = record.clientIdProperty,
             changes,
-            name,
             field,
             key,
             value,
@@ -116,15 +129,7 @@ Ext.define('Ext.data.writer.Writer', {
             for (f = 0; f < fLen; f++) {
                 field = fieldItems[f];
                 if (field.persist) {
-                    name = field[nameProperty] || field.name;
-                    value = record.get(field.name);
-                    if (field.serialize) {
-                        data[name] = field.serialize(value, record);
-                    } else if (field.type === Ext.data.Types.DATE && field.dateFormat) {
-                        data[name] = Ext.Date.format(value, field.dateFormat);
-                    } else {
-                        data[name] = value;
-                    }
+                    this.writeValue(data, field, record);
                 }
             }
         } else {
@@ -134,15 +139,7 @@ Ext.define('Ext.data.writer.Writer', {
                 if (changes.hasOwnProperty(key)) {
                     field = fields.get(key);
                     if (field.persist) {
-                        name = field[nameProperty] || field.name;
-                        value = record.get(field.name);
-                        if (field.serialize) {
-                            data[name] = field.serialize(value, record);
-                        } else if (field.type === Ext.data.Types.DATE && field.dateFormat) {
-                            data[name] = Ext.Date.format(value, field.dateFormat);
-                        } else {
-                            data[name] = value;
-                        }
+                        this.writeValue(data, field, record);
                     }
                 }
             }
@@ -159,5 +156,19 @@ Ext.define('Ext.data.writer.Writer', {
         }
 
         return data;
+    },
+    
+    writeValue: function(data, field, record){
+        var name = field[this.nameProperty] || field.name,
+            dateFormat = this.dateFormat || field.dateWriteFormat || field.dateFormat,
+            value = record.get(field.name);
+            
+        if (field.serialize) {
+            data[name] = field.serialize(value, record);
+        } else if (field.type === Ext.data.Types.DATE && dateFormat && Ext.isDate(value)) {
+            data[name] = Ext.Date.format(value, dateFormat);
+        } else {
+            data[name] = value;
+        }
     }
 });

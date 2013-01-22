@@ -58,11 +58,11 @@ Ext.define('Ext.resizer.Resizer', {
 
     alternateClassName: 'Ext.Resizable',
 
-    handleCls: Ext.baseCSSPrefix + 'resizable-handle',
-    pinnedCls: Ext.baseCSSPrefix + 'resizable-pinned',
-    overCls:   Ext.baseCSSPrefix + 'resizable-over',
-    wrapCls:   Ext.baseCSSPrefix + 'resizable-wrap',
-
+<span id='Ext-resizer-Resizer-property-handleCls'>    handleCls: Ext.baseCSSPrefix + 'resizable-handle',
+</span><span id='Ext-resizer-Resizer-property-pinnedCls'>    pinnedCls: Ext.baseCSSPrefix + 'resizable-pinned',
+</span><span id='Ext-resizer-Resizer-property-overCls'>    overCls:   Ext.baseCSSPrefix + 'resizable-over',
+</span><span id='Ext-resizer-Resizer-property-wrapCls'>    wrapCls:   Ext.baseCSSPrefix + 'resizable-wrap',
+</span>
 <span id='Ext-resizer-Resizer-cfg-dynamic'>    /**
 </span>     * @cfg {Boolean} dynamic
      * Specify as true to update the {@link #target} (Element or {@link Ext.Component Component}) dynamically during
@@ -383,12 +383,12 @@ Ext.define('Ext.resizer.Resizer', {
         me.forceHandlesHeight();
     },
 
-    disable: function() {
-        this.resizeTracker.disable();
+<span id='Ext-resizer-Resizer-method-disable'>    disable: function() {
+</span>        this.resizeTracker.disable();
     },
 
-    enable: function() {
-        this.resizeTracker.enable();
+<span id='Ext-resizer-Resizer-method-enable'>    enable: function() {
+</span>        this.resizeTracker.enable();
     },
 
 <span id='Ext-resizer-Resizer-method-onBeforeResize'>    /**
@@ -461,8 +461,8 @@ Ext.define('Ext.resizer.Resizer', {
         return this.target;
     },
 
-    destroy: function() {
-        var i = 0,
+<span id='Ext-resizer-Resizer-method-destroy'>    destroy: function() {
+</span>        var i = 0,
             handles = this.handles,
             len = handles.length,
             positions = this.possiblePositions;

@@ -122,9 +122,10 @@ Ext.define('Ext.panel.Tool', {
      * Specify as false to allow click event to propagate.
      */
     stopEvent: true,
-    
-    height: 15,
-    width: 15,
+
+    // Tool size is fixed so that Box layout can avoid measurements.
+    height: 16,
+    width: 16,
 
     //<debug>
     _toolTypes: {
@@ -202,7 +203,7 @@ Ext.define('Ext.panel.Tool', {
 
         me.callParent(arguments);
         if (me.tooltip) {
-            if (Ext.isObject(me.tooltip)) {
+            if (Ext.quickTipsActive && Ext.isObject(me.tooltip)) {
                 Ext.tip.QuickTipManager.register(Ext.apply({
                     target: me.id
                 }, me.tooltip));
@@ -272,7 +273,7 @@ Ext.define('Ext.panel.Tool', {
 
     // inherit docs
     onDestroy: function(){
-        if (Ext.isObject(this.tooltip)) {
+        if (Ext.quickTipsActive && Ext.isObject(this.tooltip)) {
             Ext.tip.QuickTipManager.unregister(this.id);
         }
         this.callParent();

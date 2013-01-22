@@ -69,7 +69,66 @@ Ext.define('Ext.grid.feature.RowBody', {
 
     eventPrefix: 'rowbody',
     eventSelector: '.' + Ext.baseCSSPrefix + 'grid-rowbody-tr',
-    
+
+    init: function() {
+        var me = this,
+            selModel = me.view.getSelectionModel();
+
+        me.grid.mon(me.view, {
+            element: 'el',
+            mousedown: me.onMouseDown,
+            scope: me
+        });
+
+        if (!selModel.isCellModel) {
+            me.grid.mon(selModel, {
+                select: me.onSelect,
+                deselect: me.onDeselect,
+                scope: me
+            });
+        }
+        me.callParent(arguments);
+    },
+
+    onMouseDown: function(e) {
+        var me = this,
+            tableRow = e.getTarget('tr.' + me.rowBodyTrCls);
+
+        // If we have mousedowned on a row body TR and its previous sibling is a grid row, pass that onto the view for processing
+        if (tableRow && Ext.fly(tableRow = tableRow.previousSibling).is(me.view.rowSelector)) {
+            e.target = tableRow;
+            me.view.handleEvent(e);
+        }
+    },
+
+    onSelect: function(selModel, record, rowIndex) {
+        var me = this,
+            view = me.view,
+            selectedRow = view.getNode(rowIndex);
+
+        // If the selected row is followed by a row body row, add the selected class to that
+        if (selectedRow) {
+            selectedRow = Ext.fly(selectedRow.nextSibling);
+            if (selectedRow && selectedRow.is(me.rowBodySelector)) {
+                selectedRow.addCls(view.selectedItemCls);
+            }
+        }
+    },
+
+    onDeselect: function(selModel, record, rowIndex) {
+        var me = this,
+            view = me.view,
+            selectedRow = view.getNode(rowIndex);
+
+        // If the selected row is followed by a row body row, remove the selected class from that
+        if (selectedRow) {
+            selectedRow = Ext.fly(selectedRow.nextSibling);
+            if (selectedRow && selectedRow.is(me.rowBodySelector)) {
+                selectedRow.removeCls(view.selectedItemCls);
+            }
+        }
+    },
+
     getRowBody: function(values) {
         return [
             '<tr class="' + this.rowBodyTrCls + ' {rowBodyCls}">',
@@ -113,4 +172,6 @@ Ext.define('Ext.grid.feature.RowBody', {
             rowBodyColspan: colspan
         };
     }
+}, function() {
+    this.prototype.rowBodySelector = 'tr.' + this.prototype.rowBodyTrCls
 });

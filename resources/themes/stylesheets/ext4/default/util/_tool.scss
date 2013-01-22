@@ -1,6 +1,6 @@
 @mixin extjs-tool {
     .#{$prefix}tool {
-        height: $tool-size;
+        padding: $tool-padding;
 
         img {
             overflow: hidden;
@@ -21,14 +21,15 @@
     .#{$prefix}panel-header-horizontal,
     .#{$prefix}window-header-horizontal {
         .#{$prefix}tool {
-                margin-left: 2px;
+            margin-left: 1px;
         }
     }
 
     .#{$prefix}panel-header-vertical,
     .#{$prefix}window-header-vertical {
         .#{$prefix}tool {
-                margin-top: 2px;
+            margin-top: 1px;
+            padding: rotate90($tool-padding);
         }
     }
 

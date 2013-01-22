@@ -1,6 +1,4 @@
 /**
- * @class Ext.ux.grid.filter.Filter
- * @extends Ext.util.Observable
  * Abstract base class for filter implementations.
  */
 Ext.define('Ext.ux.grid.filter.Filter', {

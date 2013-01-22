@@ -8,10 +8,14 @@ Ext.require([
 Ext.onReady(function(){
     Ext.define('Book',{
         extend: 'Ext.data.Model',
+        proxy: {
+            type: 'ajax',
+            reader: 'xml'
+        },
         fields: [
             // set up the fields mapping into the xml doc
             // The first needs mapping, the others are very basic
-            {name: 'Author', mapping: 'ItemAttributes > Author'},
+            {name: 'Author', mapping: '@author.name'},
             'Title',
             'Manufacturer',
             'ProductGroup',

@@ -717,6 +717,24 @@ Ext.define('Ext.layout.container.Container', {
             gotHeight: gotHeight
         };
     },
+    
+    // This method is used to offset the DOM position when checking
+    // whether the element is a certain child of the target. This is
+    // required in cases where the extra elements prepended to the target
+    // before any of the items. An example of this is when using labelAlign: 'top'
+    // on a field. The label appears first in the DOM before any child items are
+    // created, so when we check the position we need to add an extra offset.
+    // Containers that create an innerCt are exempt because this new element
+    // preserves the order
+    getPositionOffset: function(position) {
+        if (!this.createsInnerCt) {
+            var offset = this.owner.itemNodeOffset;
+            if (offset) {
+                position += offset;
+            }
+        }
+        return position;
+    },
 
     /**
      * Returns an array of child components either for a render phase (Performed in the beforeLayout

@@ -21,12 +21,12 @@
 Ext.define('Ext.tree.ViewDragZone', {
     extend: 'Ext.view.DragZone',
 
-    isPreventDrag: function(e, record) {
-        return (record.get('allowDrag') === false) || !!e.getTarget(this.view.expanderSelector);
+<span id='Ext-tree-ViewDragZone-method-isPreventDrag'>    isPreventDrag: function(e, record) {
+</span>        return (record.get('allowDrag') === false) || !!e.getTarget(this.view.expanderSelector);
     },
     
-    afterRepair: function() {
-        var me = this,
+<span id='Ext-tree-ViewDragZone-method-afterRepair'>    afterRepair: function() {
+</span>        var me = this,
             view = me.view,
             selectedRowCls = view.selectedItemCls,
             records = me.dragData.records,

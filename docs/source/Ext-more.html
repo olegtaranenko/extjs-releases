@@ -15,7 +15,10 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js"><span id='Ext'>/**
+  <pre class="prettyprint lang-js">//@tag extras,core
+//@require misc/JSON.js
+
+<span id='Ext'>/**
 </span> * @class Ext
  *
  * The Ext namespace (global object) encapsulates all classes, singletons, and
@@ -187,18 +190,6 @@ Ext.apply(Ext, {
             return doc || (doc = Ext.get(document));
         };
     }()),
-
-<span id='Ext-method-getCmp'>    /**
-</span>     * This is shorthand reference to {@link Ext.ComponentManager#get}.
-     * Looks up an existing {@link Ext.Component Component} by {@link Ext.Component#id id}
-     *
-     * @param {String} id The component {@link Ext.Component#id id}
-     * @return Ext.Component The Component, `undefined` if not found, or `null` if a
-     * Class was found.
-    */
-    getCmp: function(id) {
-        return Ext.ComponentManager.get(id);
-    },
 
 <span id='Ext-method-getOrientation'>    /**
 </span>     * Returns the current orientation of the mobile device
@@ -533,7 +524,8 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
     nullLog = function () {};
     nullLog.info = nullLog.warn = nullLog.error = Ext.emptyFn;
 
-    Ext.setVersion('extjs', '4.1.1');
+    // also update Version.js
+    Ext.setVersion('extjs', '4.1.2');
     Ext.apply(Ext, {
 <span id='Ext-property-SSL_SECURE_URL'>        /**
 </span>         * @property {String} SSL_SECURE_URL
@@ -766,17 +758,53 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          */
         isIE7 : isIE7,
 
+<span id='Ext-property-isIE7m'>        /**
+</span>         * True if the detected browser is Internet Explorer 7.x or lower.
+         * @type Boolean
+         */
+        isIE7m : isIE6 || isIE7,
+
+<span id='Ext-property-isIE7p'>        /**
+</span>         * True if the detected browser is Internet Explorer 7.x or higher.
+         * @type Boolean
+         */
+        isIE7p : isIE &amp;&amp; !isIE6,
+
 <span id='Ext-property-isIE8'>        /**
 </span>         * True if the detected browser is Internet Explorer 8.x.
          * @type Boolean
          */
         isIE8 : isIE8,
 
+<span id='Ext-property-isIE8m'>        /**
+</span>         * True if the detected browser is Internet Explorer 8.x or lower.
+         * @type Boolean
+         */
+        isIE8m : isIE6 || isIE7 || isIE8,
+
+<span id='Ext-property-isIE8p'>        /**
+</span>         * True if the detected browser is Internet Explorer 8.x or higher.
+         * @type Boolean
+         */
+        isIE8p : isIE &amp;&amp; !(isIE6 || isIE7),
+
 <span id='Ext-property-isIE9'>        /**
 </span>         * True if the detected browser is Internet Explorer 9.x.
          * @type Boolean
          */
         isIE9 : isIE9,
+
+<span id='Ext-property-isIE9m'>        /**
+</span>         * True if the detected browser is Internet Explorer 9.x or lower.
+         * @type Boolean
+         */
+        isIE9m : isIE6 || isIE7 || isIE8 || isIE9,
+
+<span id='Ext-property-isIE9p'>        /**
+</span>         * True if the detected browser is Internet Explorer 9.x or higher.
+         * @type Boolean
+         */
+        isIE9p : isIE &amp;&amp; !(isIE6 || isIE7 || isIE8),
 
 <span id='Ext-property-isGecko'>        /**
 </span>         * True if the detected browser uses the Gecko layout engine (e.g. Mozilla, Firefox).
@@ -1295,17 +1323,50 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
 }());
 
 <span id='Ext-method-application'>/**
-</span> * Loads Ext.app.Application class and starts it up with given configuration after the page is ready.
+</span> * Loads Ext.app.Application class and starts it up with given configuration after the
+ * page is ready.
  *
- * See Ext.app.Application for details.
+ * See `Ext.app.Application` for details.
  *
  * @param {Object} config
  */
 Ext.application = function(config) {
-    Ext.require('Ext.app.Application');
+    var App, paths, ns;
 
+    if (typeof config === &quot;string&quot;) {
+        Ext.require(config, function(){
+            App = Ext.ClassManager.get(config);
+        });
+    } else {
+        // The &quot;paths&quot; and &quot;appFolder&quot; configs have to be processed before other things
+        // can really start loading...
+        //
+        Ext.Loader.setPath(config.name, config.appFolder || 'app');
+        paths = config.paths;
+
+        if (paths) {
+            for (ns in paths) {
+                if (paths.hasOwnProperty(ns)) {
+                    Ext.Loader.setPath(ns, paths[ns]);
+                }
+            }
+        }
+
+        // Let Ext.define do the hard work but don't assign a class name.
+        //
+        Ext.define(config.name + &quot;.$application&quot;, Ext.apply({
+                extend: 'Ext.app.Application' // can be replaced by config!
+            }, config),
+            // call here when the App class gets full defined
+            function () {
+                App = this;
+            });
+    }
+    
     Ext.onReady(function() {
-        new Ext.app.Application(config);
+        // this won't be called until App has been created and its requires have been
+        // met...
+        Ext.app.Application.instance = new App();
     });
 };
 </pre>

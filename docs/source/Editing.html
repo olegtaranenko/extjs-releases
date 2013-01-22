@@ -54,14 +54,14 @@ Ext.define('Ext.grid.plugin.Editing', {
      */
     triggerEvent: undefined,
 
-    // private
-    defaultFieldXType: 'textfield',
+<span id='Ext-grid-plugin-Editing-property-defaultFieldXType'>    // @private
+</span>    defaultFieldXType: 'textfield',
 
-    // cell, row, form
-    editStyle: '',
+<span id='Ext-grid-plugin-Editing-property-editStyle'>    // cell, row, form
+</span>    editStyle: '',
 
-    constructor: function(config) {
-        var me = this;
+<span id='Ext-grid-plugin-Editing-method-constructor'>    constructor: function(config) {
+</span>        var me = this;
 
         me.addEvents(
 <span id='Ext-grid-plugin-Editing-event-beforeedit'>            /**
@@ -177,8 +177,8 @@ Ext.define('Ext.grid.plugin.Editing', {
         });
     },
 
-    // private
-    init: function(grid) {
+<span id='Ext-grid-plugin-Editing-method-init'>    // @private
+</span>    init: function(grid) {
         var me = this;
 
         me.grid = grid;
@@ -253,13 +253,13 @@ Ext.define('Ext.grid.plugin.Editing', {
         delete me.keyNav;
     },
 
-    // private
-    getEditStyle: function() {
+<span id='Ext-grid-plugin-Editing-method-getEditStyle'>    // @private
+</span>    getEditStyle: function() {
         return this.editStyle;
     },
 
-    // private
-    initFieldAccessors: function(columns) {
+<span id='Ext-grid-plugin-Editing-method-initFieldAccessors'>    // @private
+</span>    initFieldAccessors: function(columns) {
         columns = [].concat(columns);
 
         var me   = this,
@@ -282,8 +282,8 @@ Ext.define('Ext.grid.plugin.Editing', {
         }
     },
 
-    // private
-    removeFieldAccessors: function(columns) {
+<span id='Ext-grid-plugin-Editing-method-removeFieldAccessors'>    // @private
+</span>    removeFieldAccessors: function(columns) {
         columns = [].concat(columns);
 
         var c,
@@ -298,8 +298,8 @@ Ext.define('Ext.grid.plugin.Editing', {
         }
     },
 
-    // private
-    // remaps to the public API of Ext.grid.column.Column.getEditor
+<span id='Ext-grid-plugin-Editing-method-getColumnField'>    // @private
+</span>    // remaps to the public API of Ext.grid.column.Column.getEditor
     getColumnField: function(columnHeader, defaultField) {
         var field = columnHeader.field;
 
@@ -329,8 +329,8 @@ Ext.define('Ext.grid.plugin.Editing', {
         }
     },
 
-    // private
-    // remaps to the public API of Ext.grid.column.Column.setEditor
+<span id='Ext-grid-plugin-Editing-method-setColumnField'>    // @private
+</span>    // remaps to the public API of Ext.grid.column.Column.setEditor
     setColumnField: function(column, field) {
         if (Ext.isObject(field) &amp;&amp; !field.isFormField) {
             field = Ext.ComponentManager.create(field, this.defaultFieldXType);
@@ -338,18 +338,18 @@ Ext.define('Ext.grid.plugin.Editing', {
         column.field = field;
     },
 
-    // private
-    initEvents: function() {
+<span id='Ext-grid-plugin-Editing-method-initEvents'>    // @private
+</span>    initEvents: function() {
         var me = this;
         me.initEditTriggers();
         me.initCancelTriggers();
     },
 
-    // @abstract
-    initCancelTriggers: Ext.emptyFn,
+<span id='Ext-grid-plugin-Editing-method-initCancelTriggers'>    // @abstract
+</span>    initCancelTriggers: Ext.emptyFn,
     
-    // private
-    initEditTriggers: function() {
+<span id='Ext-grid-plugin-Editing-method-initEditTriggers'>    // @private
+</span>    initEditTriggers: function() {
         var me = this,
             view = me.view;
 
@@ -381,34 +381,34 @@ Ext.define('Ext.grid.plugin.Editing', {
         view.on('render', me.initKeyNavHeaderEvents, me, {single: true});
     },
 
-    // Override of View's method so that we can pre-empt the View's processing if the view is being triggered by a mousedown
-    beforeViewCellFocus: function(position) {
+<span id='Ext-grid-plugin-Editing-method-beforeViewCellFocus'>    // Override of View's method so that we can pre-empt the View's processing if the view is being triggered by a mousedown
+</span>    beforeViewCellFocus: function(position) {
         // Pass call on to view if the navigation is from the keyboard, or we are not going to edit this cell.
         if (this.view.selModel.keyNavigation || !this.editing || !this.isCellEditable || !this.isCellEditable(position.row, position.columnHeader)) {
             this.view.focusCell.apply(this.view, arguments);
         }
     },
 
-    // private. Used if we are triggered by the rowfocus event
-    onRowFocus: function(record, row, rowIdx) {
+<span id='Ext-grid-plugin-Editing-method-onRowFocus'>    // @private Used if we are triggered by the rowfocus event
+</span>    onRowFocus: function(record, row, rowIdx) {
         this.startEdit(row, 0);
     },
 
-    // private. Used if we are triggered by the cellfocus event
-    onCellFocus: function(record, cell, position) {
+<span id='Ext-grid-plugin-Editing-method-onCellFocus'>    // @private Used if we are triggered by the cellfocus event
+</span>    onCellFocus: function(record, cell, position) {
         this.startEdit(position.row, position.column);
     },
 
-    // private. Used if we are triggered by a cellclick event
-    onCellClick: function(view, cell, colIdx, record, row, rowIdx, e) {
+<span id='Ext-grid-plugin-Editing-method-onCellClick'>    // @private Used if we are triggered by a cellclick event
+</span>    onCellClick: function(view, cell, colIdx, record, row, rowIdx, e) {
         // cancel editing if the element that was clicked was a tree expander
         if(!view.expanderSelector || !e.getTarget(view.expanderSelector)) {
             this.startEdit(record, view.getHeaderAtIndex(colIdx));
         }
     },
 
-    initAddRemoveHeaderEvents: function(){
-        var me = this;
+<span id='Ext-grid-plugin-Editing-method-initAddRemoveHeaderEvents'>    initAddRemoveHeaderEvents: function(){
+</span>        var me = this;
         me.mon(me.grid.headerCt, {
             scope: me,
             add: me.onColumnAdd,
@@ -416,8 +416,8 @@ Ext.define('Ext.grid.plugin.Editing', {
         });
     },
 
-    initKeyNavHeaderEvents: function() {
-        var me = this;
+<span id='Ext-grid-plugin-Editing-method-initKeyNavHeaderEvents'>    initKeyNavHeaderEvents: function() {
+</span>        var me = this;
 
         me.keyNav = Ext.create('Ext.util.KeyNav', me.view.el, {
             enter: me.onEnterKey,
@@ -426,22 +426,22 @@ Ext.define('Ext.grid.plugin.Editing', {
         });
     },
     
-    // private
-    onColumnAdd: function(ct, column) {
+<span id='Ext-grid-plugin-Editing-method-onColumnAdd'>    // @private
+</span>    onColumnAdd: function(ct, column) {
         if (column.isHeader) {
             this.initFieldAccessors(column);
         }
     },
 
-    // private
-    onColumnRemove: function(ct, column) {
+<span id='Ext-grid-plugin-Editing-method-onColumnRemove'>    // @private
+</span>    onColumnRemove: function(ct, column) {
         if (column.isHeader) {
             this.removeFieldAccessors(column);
         }
     },
 
-    // private
-    onEnterKey: function(e) {
+<span id='Ext-grid-plugin-Editing-method-onEnterKey'>    // @private
+</span>    onEnterKey: function(e) {
         var me = this,
             grid = me.grid,
             selModel = grid.getSelectionModel(),
@@ -454,7 +454,7 @@ Ext.define('Ext.grid.plugin.Editing', {
         if (selModel.getCurrentPosition) {
             pos = selModel.getCurrentPosition();
             if (pos) {
-                record = grid.store.getAt(pos.row);
+                record = grid.getView().getStore().getAt(pos.row);
                 columnHeader = grid.headerCt.getHeaderAtIndex(pos.column);
             }
         }
@@ -469,9 +469,9 @@ Ext.define('Ext.grid.plugin.Editing', {
         }
     },
 
-    // private
-    onEscKey: function(e) {
-        this.cancelEdit();
+<span id='Ext-grid-plugin-Editing-method-onEscKey'>    // @private
+</span>    onEscKey: function(e) {
+        return this.cancelEdit();
     },
 
 <span id='Ext-grid-plugin-Editing-method-beforeEdit'>    /**
@@ -542,6 +542,12 @@ Ext.define('Ext.grid.plugin.Editing', {
         } else {
             rowIdx = view.indexOf(node);
         }
+        
+        // The record may be removed from the store but the view
+        // not yet updated, so check it exists
+        if (!record) {
+            return;
+        }
 
         return {
             grid   : grid,
@@ -579,8 +585,8 @@ Ext.define('Ext.grid.plugin.Editing', {
         me.editing = false;
     },
 
-    // @abstract
-    validateEdit: function() {
+<span id='Ext-grid-plugin-Editing-method-validateEdit'>    // @abstract
+</span>    validateEdit: function() {
         var me = this,
             context = me.context;
 

@@ -25,16 +25,16 @@ Ext.define('Ext.tree.Column', {
     extend: 'Ext.grid.column.Column',
     alias: 'widget.treecolumn',
 
-    tdCls: Ext.baseCSSPrefix + 'grid-cell-treecolumn',
-    
-    treePrefix: Ext.baseCSSPrefix + 'tree-',
-    elbowPrefix: Ext.baseCSSPrefix + 'tree-elbow-',
-    expanderCls: Ext.baseCSSPrefix + 'tree-expander',
-    imgText: '&lt;img src=&quot;{1}&quot; class=&quot;{0}&quot; /&gt;',
-    checkboxText: '&lt;input type=&quot;button&quot; role=&quot;checkbox&quot; class=&quot;{0}&quot; {1} /&gt;',
-
-    initComponent: function() {
-        var me = this;
+<span id='Ext-tree-Column-property-tdCls'>    tdCls: Ext.baseCSSPrefix + 'grid-cell-treecolumn',
+</span>    
+<span id='Ext-tree-Column-property-treePrefix'>    treePrefix: Ext.baseCSSPrefix + 'tree-',
+</span><span id='Ext-tree-Column-property-elbowPrefix'>    elbowPrefix: Ext.baseCSSPrefix + 'tree-elbow-',
+</span><span id='Ext-tree-Column-property-expanderCls'>    expanderCls: Ext.baseCSSPrefix + 'tree-expander',
+</span><span id='Ext-tree-Column-property-imgText'>    imgText: '&lt;img src=&quot;{1}&quot; class=&quot;{0}&quot; /&gt;',
+</span><span id='Ext-tree-Column-property-checkboxText'>    checkboxText: '&lt;input type=&quot;button&quot; role=&quot;checkbox&quot; class=&quot;{0}&quot; {1} /&gt;',
+</span>
+<span id='Ext-tree-Column-method-initComponent'>    initComponent: function() {
+</span>        var me = this;
         
         me.origRenderer = me.renderer || me.defaultRenderer;
         me.origScope = me.scope || window;
@@ -45,8 +45,8 @@ Ext.define('Ext.tree.Column', {
         me.callParent();
     },
     
-    treeRenderer: function(value, metaData, record, rowIdx, colIdx, store, view){
-        var me = this,
+<span id='Ext-tree-Column-method-treeRenderer'>    treeRenderer: function(value, metaData, record, rowIdx, colIdx, store, view){
+</span>        var me = this,
             buf = [],
             format = Ext.String.format,
             depth = record.getDepth(),
@@ -115,10 +115,8 @@ Ext.define('Ext.tree.Column', {
         return buf.join('');
     },
 
-    defaultRenderer: function(value) {
-        return value;
-    }
-});
+<span id='Ext-tree-Column-property-defaultRenderer'>    defaultRenderer: Ext.identityFn
+</span>});
 </pre>
 </body>
 </html>

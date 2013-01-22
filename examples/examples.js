@@ -14,36 +14,31 @@ Ext.samples = {
                     "text": "Feed Viewer",
                     "url": "feed-viewer/feed-viewer.html",
                     "icon": "feeds.gif",
-                    "desc": "RSS feed reader example application that features a swappable reader panel layout.",
-                    "status": "updated"
+                    "desc": "RSS feed reader example application that features a swappable reader panel layout."
                 },
                 {
                     "text": "Ext JS Calendar",
                     "url": "calendar/index.html",
                     "icon": "calendar.gif",
-                    "desc": "Example Calendar application. Demonstrates the new Day, Week and Month views and how to combine them.",
-                    "status": "new"
+                    "desc": "Example Calendar application. Demonstrates the new Day, Week and Month views and how to combine them."
                 },
                 {
                     "text": "Web Desktop",
                     "url": "desktop/desktop.html",
                     "icon": "desktop.gif",
-                    "desc": "Demonstrates how one could build a desktop in the browser using Ext components including a module plugin system.",
-                    "status": "updated"
+                    "desc": "Demonstrates how one could build a desktop in the browser using Ext components including a module plugin system."
                 },
                 {
                     "text": "Portal Demo",
                     "url": "portal/portal.html",
                     "icon": "portal.gif",
-                    "desc": "A page layout using several custom extensions to provide a web portal interface.",
-                    "status": "updated"
+                    "desc": "A page layout using several custom extensions to provide a web portal interface."
                 },
                 {
                     "text": "Ext JS 3 & 4 on one page",
                     "url": "sandbox/sandbox.html",
                     "icon": "sandbox.gif",
-                    "desc": "This example demonstrates Ext JS 4's sandboxing behavior which allows you to run Ext JS 3 & 4 on the same page.",
-                    "status": "new"
+                    "desc": "This example demonstrates Ext JS 4's sandboxing behavior which allows you to run Ext JS 3 & 4 on the same page."
                 },
                 {
                     "text": "Image Viewer",
@@ -61,10 +56,27 @@ Ext.samples = {
                     "text": "Simple Tasks",
                     "url": "simple-tasks/index.html",
                     "icon": "tasks.gif",
-                    "desc": "Complete personal task management application example",
-                    "status": "new"
+                    "desc": "Complete personal task management application example"
                 }
             ]
+        },
+        {
+            "title": "Enterprise",
+            "items": [
+                {
+                    "text": "SOAP Grid",
+                    "url": "grid/soap-grid.html",
+                    "icon": "soap-grid.gif",
+                    "desc": "Grid loaded from SOAP data"
+                },
+                {
+                    "text": "AMF Grid",
+                    "url": "grid/amf-grid.html",
+                    "icon": "amf-grid.gif",
+                    "desc": "Grid loaded from binary AMF (Action Message Format) data"
+                }
+            ]
+
         },
         {
             "title": "Accessibility",
@@ -73,8 +85,7 @@ Ext.samples = {
                     "text": "Keyboard Feed Viewer",
                     "url": "key-feed-viewer/feed-viewer.html",
                     "icon": "keyboard.gif",
-                    "desc": "Shows Ext JS 4's comprehensive keyboard support for users who have difficulty using a pointing device",
-                    "status": "new"
+                    "desc": "Shows Ext JS 4's comprehensive keyboard support for users who have difficulty using a pointing device"
 
                 },
                 {
@@ -92,8 +103,7 @@ Ext.samples = {
                     "text": "Basic Array Grid",
                     "url": "grid/array-grid.html",
                     "icon": "grid-array.gif",
-                    "desc": "A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions.",
-                    "status": "updated"
+                    "desc": "A basic read-only grid loaded from local array data that demonstrates the use of custom column renderer functions."
                 },
                 {
                     "text": "XML Grid",
@@ -129,8 +139,7 @@ Ext.samples = {
                     "text": "Grid Filtering",
                     "url": "grid-filtering/grid-filter-local.html",
                     "icon": "grid-filter.gif",
-                    "desc": "Grid feature providing custom data filtering menus that support various data types.",
-                    "status": "updated"
+                    "desc": "Grid feature providing custom data filtering menus that support various data types."
                 },
                 {
                     "text": "Grid Data Binding (basic)",
@@ -154,43 +163,38 @@ Ext.samples = {
                     "text": "Grid Cell Editing",
                     "url": "grid/cell-editing.html",
                     "icon": "grid-cell-editing.gif",
-                    "desc": "An example that shows cell editing in a Grid Panel.",
-                    "status": "updated"
+                    "desc": "An example that shows cell editing in a Grid Panel."
                 },
                 {
                     "text": "Grouped Header Grid",
                     "url": "grid/group-header-grid.html",
                     "icon": "grid-grouped-headers.gif",
-                    "desc": "A basic grouping grid showing collapsible data groups that can be customized via the 'Group By' header menu option.",
-                    "status": "updated"
+                    "desc": "A basic grouping grid showing collapsible data groups that can be customized via the 'Group By' header menu option."
                 },
                 {
                     "text": "Grid Grouping with Summary",
                     "url": "grid/group-summary-grid.html",
                     "icon": "grid-summary.gif",
-                    "desc": "Advanced grouping grid that allows cell editing and includes custom dynamic summary calculations.",
-                    "status": "updated"
+                    "desc": "Advanced grouping grid that allows cell editing and includes custom dynamic summary calculations."
                 },
                 {
                     "text": "Infinite Grid",
                     "url": "grid/infinite-scroll.html",
                     "icon": "grid-infinite-scroll.gif",
                     "desc": "Sample grid which scrolls through thousands of rows dynamically loaded from a server",
-                    "status": "new"
+                    "status": "updated"
                 },
                 {
                     "text": "Grid with Live Search Capability",
                     "url": "grid/live-search-grid.html",
                     "icon": "grid-live-search.gif",
-                    "desc": "Grid with Live Search Capability.",
-                    "status": "new"
+                    "desc": "Grid with Live Search Capability."
                 },
                 {
                     "text": "Grid with Locking Capability",
                     "url": "grid/locking-grid.html",
                     "icon": "grid-locking.gif",
-                    "desc": "An example extension that introduces the ability to add locking columns to the GridPanel.",
-                    "status": "updated"
+                    "desc": "An example extension that introduces the ability to add locking columns to the GridPanel."
                 },
                 {
                     "text": "Grouping with Remote Summary",
@@ -202,8 +206,7 @@ Ext.samples = {
                     "text": "Grid Row Editing",
                     "url": "grid/row-editing.html",
                     "icon": "grid-row-editor.gif",
-                    "desc": "An editable grid which allows the user to make modifications to an entire record at once.",
-                    "status": "updated"
+                    "desc": "An editable grid which allows the user to make modifications to an entire record at once."
                 },
                 {
                     "text": "RESTful Store with GridPanel and RowEditor",
@@ -215,7 +218,13 @@ Ext.samples = {
                     "text": "Editable Grid with Writable Store",
                     "url": "writer/writer.html",
                     "icon": "writer-thumb.gif",
-                    "desc": "This Store uses Data's writer to automatically generate CRUD requests to the server through a standard HttpProxy."
+                    "desc": "This Store uses Data's writer to automatically generate CRUD requests to the server through a standard Ajax Proxy."
+                },
+                {
+                    "text": "Editable Grid with JSONP Writable Store",
+                    "url": "writer/writer-jsonp.html",
+                    "icon": "writer-thumb.gif",
+                    "desc": "This Store uses Data's writer to automatically generate CRUD requests to the server through a standard JsonP Proxy."
                 },
                 {
                     "text": "Buffered Scrolling",
@@ -228,8 +237,7 @@ Ext.samples = {
                     "text": "List View",
                     "url": "grid/list-view.html",
                     "icon": "list-view.gif",
-                    "desc": "Ext 4 replaces Ext.ListView with the default Ext.grid.Panel.",
-                    "status": "updated"
+                    "desc": "Ext 4 replaces Ext.ListView with the default Ext.grid.Panel."
                 },
                 {
                     "text": "Progress Bar Pager",
@@ -244,6 +252,12 @@ Ext.samples = {
                     "desc": "Create a property grid from an object."
                 },
                 {
+                    "text": "Reconfigure Grid",
+                    "url": "grid/reconfigure.html",
+                    "icon": "grid-reconfigure.png",
+                    "desc": "Reconfigure the columns & data of a grid dynamically"
+                },
+                {
                     "text": "Grid From Markup",
                     "url": "grid/transform-dom.html",
                     "icon": "grid-transform.gif",
@@ -253,22 +267,20 @@ Ext.samples = {
                     "text": "Locking Grouping Grid with Summary",
                     "url": "grid/locking-group-summary-grid.html",
                     "icon": "grid-summary.gif",
-                    "desc": "Advanced grouping grid that allows cell editing and includes custom dynamic summary calculations. With column locking capability",
-                    "status": "new"
+                    "desc": "Advanced grouping grid that allows cell editing and includes custom dynamic summary calculations. With column locking capability"
                 },
                 {
                     "text": "Infinite Grid with remote filter",
                     "url": "grid/infinite-scroll-with-filter.html",
                     "icon": "grid-infinite-scroll.gif",
                     "desc": "Sample grid which scrolls through thousands of rows dynamically loaded from a server with a filtering UI",
-                    "status": "new"
+                    "status": "updated"
                 },
                 {
                     "text": "Locking Grouping Grid with Summary and grouped headers",
                     "url": "grid/locking-grp-summary-grp-hdrs-grid.html",
                     "icon": "grid-summary.gif",
-                    "desc": "Grouped grid with locked columns and grouped column headers",
-                    "status": "new"
+                    "desc": "Grouped grid with locked columns and grouped column headers"
                 }
             ]
         },
@@ -279,155 +291,133 @@ Ext.samples = {
                     "text": "Area Charts",
                     "url": "charts/Area.html",
                     "icon": "chart-area.gif",
-                    "desc": "Display 7 sets of random data in an area series. Reload data will randomly generate a new set of data in the store.",
-                    "status": "new"
+                    "desc": "Display 7 sets of random data in an area series. Reload data will randomly generate a new set of data in the store."
                 },
                 {
                     "text": "Custom Area Charts",
                     "url": "charts/Area - BrowserStats.html",
                     "icon": "area-browsers.gif",
-                    "desc": "Display browser usage trends in an area series. This chart uses custom gradients for the colors and the legend is interactive.",
-                    "status": "new"
+                    "desc": "Display browser usage trends in an area series. This chart uses custom gradients for the colors and the legend is interactive."
                 },
                 {
                     "text": "Bar Charts",
                     "url": "charts/Bar.html",
                     "icon": "chart-bar.gif",
-                    "desc": "Display a sets of random data in a bar series. Reload data will randomly generate a new set of data in the store.",
-                    "status": "new"
+                    "desc": "Display a sets of random data in a bar series. Reload data will randomly generate a new set of data in the store."
                 },
                 {
                     "text": "Custom Bar Charts",
                     "url": "charts/BarRenderer.html",
                     "icon": "chart-bar-renderer.gif",
-                    "desc": "Displaying a horizontal bar series with a bar renderer that modifies the color of each bar.",
-                    "status": "new"
+                    "desc": "Displaying a horizontal bar series with a bar renderer that modifies the color of each bar."
                 },
                 {
                     "text": "Complex Dashboard",
                     "url": "charts/FormDashboard.html",
                     "icon": "form-dashboard.gif",
-                    "desc": "Showing companies information in a complex dashboard. Edit the information for each record in the form to see live updates in the charts and grid.",
-                    "status": "new"
+                    "desc": "Showing companies information in a complex dashboard. Edit the information for each record in the form to see live updates in the charts and grid."
                 },
                 {
                     "text": "Rich Tips",
                     "url": "charts/TipsChart.html",
                     "icon": "rich-tips.gif",
-                    "desc": "Showing a line series with rich tips. Tips show dynamic information in Grid and Pie chart components.",
-                    "status": "new"
+                    "desc": "Showing a line series with rich tips. Tips show dynamic information in Grid and Pie chart components."
                 },
                 {
                     "text": "Themed Line Charts",
                     "url": "charts/Charts.html",
                     "icon": "chart-themed.gif",
-                    "desc": "Using 3.x theme. Displaying multiple charts and mixed charts with mouse over and click interaction.",
-                    "status": "new"
+                    "desc": "Using 3.x theme. Displaying multiple charts and mixed charts with mouse over and click interaction."
                 },
                 {
                     "text": "Column Charts",
                     "url": "charts/Column.html",
                     "icon": "chart-column.gif",
-                    "desc": "Display a set of random data in a column series. Reload data will randomly generate a new set of data in the store.",
-                    "status": "new"
+                    "desc": "Display a set of random data in a column series. Reload data will randomly generate a new set of data in the store."
                 },
                 {
                     "text": "Line Charts",
                     "url": "charts/Line.html",
                     "icon": "chart-line.gif",
-                    "desc": "Display 2 sets of random data in a line series. Reload data will randomly generate a new set of data in the store.",
-                    "status": "new"
+                    "desc": "Display 2 sets of random data in a line series. Reload data will randomly generate a new set of data in the store."
                 },
                 {
                     "text": "Column Custom Background",
                     "url": "charts/Column2.html",
                     "icon": "column2.gif",
-                    "desc": "A Column chart with customized theme and animation transitions",
-                    "status": "new"
+                    "desc": "A Column chart with customized theme and animation transitions"
                 },
                 {
                     "text": "Mixed Series Chart",
                     "url": "charts/Mixed.html",
                     "icon": "chart-mixed.gif",
-                    "desc": "Display 3 sets of random data using a line, bar, and scatter series. Reload data will randomly generate a new set of data in the store.",
-                    "status": "new"
+                    "desc": "Display 3 sets of random data using a line, bar, and scatter series. Reload data will randomly generate a new set of data in the store."
                 },
                 {
                     "text": "Pie Charts",
                     "url": "charts/Pie.html",
                     "icon": "chart-pie.gif",
-                    "desc": "Display 5 sets of random data using a pie chart. Reload data will randomly generate a new set of data in the store.",
-                    "status": "new"
+                    "desc": "Display 5 sets of random data using a pie chart. Reload data will randomly generate a new set of data in the store."
                 },
                 {
                     "text": "Custom Pie Charts",
                     "url": "charts/PieRenderer.html",
                     "icon": "chart-pie-renderer.gif",
-                    "desc": "Display 5 sets of random data using a pie chart. A renderer has been set up on to dynamically change the length and color of each slice based on the data.",
-                    "status": "new"
+                    "desc": "Display 5 sets of random data using a pie chart. A renderer has been set up on to dynamically change the length and color of each slice based on the data."
                 },
                 {
                     "text": "Radar Charts",
                     "url": "charts/Radar.html",
                     "icon": "chart-radar.gif",
-                    "desc": "Display 3 sets of random data in a radar series. Note this example uses a radial axis.",
-                    "status": "new"
+                    "desc": "Display 3 sets of random data in a radar series. Note this example uses a radial axis."
                 },
                 {
                     "text": "Filled Radar Charts",
                     "url": "charts/RadarFill.html",
                     "icon": "chart-radar-fill.gif",
-                    "desc": "Display 3 sets of random data in a filled radar series. Click or hover on the legend items to highlight and remove them from the chart.",
-                    "status": "new"
+                    "desc": "Display 3 sets of random data in a filled radar series. Click or hover on the legend items to highlight and remove them from the chart."
                 },
                 {
                     "text": "Scatter Charts",
                     "url": "charts/Scatter - Renderer.html",
                     "icon": "chart-scatter.gif",
-                    "desc": "Display 2 sets of random data in a scatter series. A renderer has been set up on to dynamically change the size and color of the items based upon it's data.",
-                    "status": "new"
+                    "desc": "Display 2 sets of random data in a scatter series. A renderer has been set up on to dynamically change the size and color of the items based upon it's data."
                 },
                 {
                     "text": "Stacked Bar Charts",
                     "url": "charts/StackedBar.html",
                     "icon": "chart-bar-stacked.gif",
-                    "desc": "Showing movie taking by genre as a stacked bar chart sample. Filter the stacks by clicking on the legend items.",
-                    "status": "new"
+                    "desc": "Showing movie taking by genre as a stacked bar chart sample. Filter the stacks by clicking on the legend items."
                 },
                 {
                     "text": "Live Updated Chart",
                     "url": "charts/LiveUpdates.html",
                     "icon": "live-updated.gif",
-                    "desc": "Showing a line series with data updating at a regular interval.",
-                    "status": "new"
+                    "desc": "Showing a line series with data updating at a regular interval."
                 },
                 {
                     "text": "Live Animated Chart",
                     "url": "charts/LiveAnimated.html",
                     "icon": "live-animated.gif",
-                    "desc": "Showing a line series with smooth transitions on data updating at regular intervals.",
-                    "status": "new"
+                    "desc": "Showing a line series with smooth transitions on data updating at regular intervals."
                 },
                 {
                     "text": "Gauge Chart",
                     "url": "charts/Gauge.html",
                     "icon": "gauge.gif",
-                    "desc": "Display three custom gauge charts bound to different data stores with different configuration options and easings.",
-                    "status": "new"
+                    "desc": "Display three custom gauge charts bound to different data stores with different configuration options and easings."
                 },
                 {
                     "text": "Grouped Bar",
                     "url": "charts/GroupedBar.html",
                     "icon": "grouped-bar.gif",
-                    "desc": "Display 3 sets of random data in a grouped bar series.",
-                    "status": "new"
+                    "desc": "Display 3 sets of random data in a grouped bar series."
                 },
                 {
                     "text": "Reload Chart",
                     "url": "charts/ReloadChart.html",
                     "icon": "reload-chart.gif",
-                    "desc": "Display a Column Chart Sample that animates when refreshing the data set",
-                    "status": "new"
+                    "desc": "Display a Column Chart Sample that animates when refreshing the data set"
                 }
             ]
         },
@@ -450,15 +440,13 @@ Ext.samples = {
                    "text": "Tab overflow menu",
                    "url": "tabs/tab-scroller-menu.html",
                    "icon": "tabs-adv.gif",
-                   "desc": "Demonstrates the TabPanel overflow menu extension, which makes management of large numbers of tabs easier",
-                   "status": "updated"
+                   "desc": "Demonstrates the TabPanel overflow menu extension, which makes management of large numbers of tabs easier"
                 },
                 {
                    "text": "Group Tabs",
                    "url": "grouptabs/grouptabs.html",
                    "icon": "group-tabs.gif",
-                   "desc": "A custom example on how to setup tab grouping using vertical tabs.",
-                   "status": "new"
+                   "desc": "A custom example on how to setup tab grouping using vertical tabs."
                 }
             ]
         },
@@ -469,8 +457,7 @@ Ext.samples = {
                     "text": "Window Variations",
                     "url": "window/window.html",
                     "icon": "window-layout.gif",
-                    "desc": "A collection of Windows in different configurations, showing headers attached to any side of the window.",
-                    "status": "new"
+                    "desc": "A collection of Windows in different configurations, showing headers attached to any side of the window."
                 },
                 {
                     "text": "Layout Window",
@@ -505,8 +492,7 @@ Ext.samples = {
                     "text": "TreeGrid",
                     "url": "tree/treegrid.html",
                     "icon": "tree-columns.gif",
-                    "desc": "The TreeGrid component",
-                    "status": "updated"
+                    "desc": "The TreeGrid component"
                 },
                 {
                     "text": "Check Tree",
@@ -519,6 +505,12 @@ Ext.samples = {
                     "url": "tree/xml-tree.html",
                     "icon": "tree-xml-loader.gif",
                     "desc": "A custom TreeLoader implementation that demonstrates loading a tree from an XML document."
+                },
+                {
+                    "text": "Custom Drop Logic",
+                    "url": "tree/custom-drop-logic.html",
+                    "icon": "tree-custom-node-logic.png",
+                    "desc": "Apply custom logic to determine where nodes can be moved."
                 }
             ]
         },
@@ -535,8 +527,7 @@ Ext.samples = {
                     "text": "Border Layout",
                     "url": "layout/border.html",
                     "icon": "border-layout.gif",
-                    "desc": "A complex BorderLayout implementation that shows nesting multiple components and sub-layouts.",
-                    "status": "updated"
+                    "desc": "A complex BorderLayout implementation that shows nesting multiple components and sub-layouts."
                 },
                 {
                     "text": "Accordion Layout",
@@ -584,8 +575,7 @@ Ext.samples = {
                     "text": "Complex Layout",
                     "url": "layout/complex.html",
                     "icon": "complex-layout.gif",
-                    "desc": "A complex layout example.",
-                    "status": "updated"
+                    "desc": "A complex layout example."
                 }
             ]
         },
@@ -596,29 +586,25 @@ Ext.samples = {
                     "text": "Resizable Sencha Logo",
                     "url": "draw/Sencha.html",
                     "icon": "draw-sencha.gif",
-                    "desc": "Resolution independent Sencha logo in a resizable component.",
-                    "status": "new"
+                    "desc": "Resolution independent Sencha logo in a resizable component."
                 },
                 {
                     "text": "Browser Logos",
                     "url": "draw/Logos.html",
                     "icon": "draw-logos.gif",
-                    "desc": "Resolution independent logos of all the popular browsers.",
-                    "status": "new"
+                    "desc": "Resolution independent logos of all the popular browsers."
                 },
                 {
                     "text": "Tiger",
                     "url": "draw/Tiger.html",
                     "icon": "draw-tiger.gif",
-                    "desc": "The classic SVG Tiger in a floatable, draggable component. Scalable to any size, fully resolution independent.",
-                    "status": "new"
+                    "desc": "The classic SVG Tiger in a floatable, draggable component. Scalable to any size, fully resolution independent."
                 },
                 {
                     "text": "Rotate Text",
                     "url": "draw/Rotate Text.html",
                     "icon": "draw-rotate-text.gif",
-                    "desc": "Create text in a Draw Component which can be rotated easily in any browser.",
-                    "status": "new"
+                    "desc": "Create text in a Draw Component which can be rotated easily in any browser."
                 }
             ]
         },
@@ -658,8 +644,7 @@ Ext.samples = {
                     "text": "Basic Toolbar",
                     "url": "menu/menus.html",
                     "icon": "toolbar.gif",
-                    "desc": "Toolbar and menus that contain various components like date pickers, color pickers, sub-menus and more.",
-                    "status": "updated"
+                    "desc": "Toolbar and menus that contain various components like date pickers, color pickers, sub-menus and more."
                 },
                 {
                     "text": "Toolbar Button Groups",
@@ -671,15 +656,13 @@ Ext.samples = {
                     "text": "Vertical Toolbars",
                     "url": "toolbar/vertical-toolbars.html",
                     "icon": "toolbar.gif",
-                    "desc": "Vertical Toolbars on the left and right. Combined vertical and horizontal toolbars.",
-                    "status": "new"
+                    "desc": "Vertical Toolbars on the left and right. Combined vertical and horizontal toolbars."
                 },
                 {
                    "text": "Ext Grid Actions",
                    "url": "menu/action-grid.html",
                    "icon": "actions-grid.gif",
-                   "desc": "Bind the same behavior to multiple buttons, toolbar and menu items using the Ext.Action class.",
-                   "status": "updated"
+                   "desc": "Bind the same behavior to multiple buttons, toolbar and menu items using the Ext.Action class."
                 },
                 {
                     "text": "Reorderable Toolbar",
@@ -738,8 +721,7 @@ Ext.samples = {
                     "text": "DataView",
                     "url": "view/data-view.html",
                     "icon": "data-view.gif",
-                    "desc": "This example shows how to use an Ext.view.View",
-                    "status": "updated"
+                    "desc": "This example shows how to use an Ext.view.View"
                 },
                 {
                     "text": "Animated DataView",
@@ -780,8 +762,7 @@ Ext.samples = {
                     "text": "Contact Us Form",
                     "url": "form/contact-form.html",
                     "icon": "form-contact.gif",
-                    "desc": "An example of a common popup Contact Us form.",
-                    "status": "new"
+                    "desc": "An example of a common popup Contact Us form."
                 },
                 {
                     "text": "Custom Search Fields",
@@ -793,15 +774,13 @@ Ext.samples = {
                     "text": "Binding a Grid to a Form",
                     "url": "form/form-grid.html",
                     "icon": "form-grid-binding.gif",
-                    "desc": "A grid embedded within a FormPanel that automatically loads records into the form on row selection.",
-                    "status": "updated"
+                    "desc": "A grid embedded within a FormPanel that automatically loads records into the form on row selection."
                 },
                 {
                     "text": "Field Types",
                     "url": "form/field-types.html",
                     "icon": "form-field-types.gif",
-                    "desc": "This example shows off all of the field types available in Ext JS in lots of different configurations.",
-                    "status": "updated"
+                    "desc": "This example shows off all of the field types available in Ext JS in lots of different configurations."
                 },
                 {
                      "text": "Advanced Validation",
@@ -819,36 +798,31 @@ Ext.samples = {
                     "text": "File Upload Field",
                     "url": "form/file-upload.html",
                     "icon": "form-file-upload.gif",
-                    "desc": "A demo of how to give standard file upload fields a bit of Ext style using a custom class.",
-                    "status": "updated"
+                    "desc": "A demo of how to give standard file upload fields a bit of Ext style using a custom class."
                 },
                 {
                     "text": "Number Field",
                     "url": "form/number.html",
                     "icon": "form-spinner.gif",
-                    "desc": "An example of the Number field, with and without a spinner.",
-                    "status": "updated"
+                    "desc": "An example of the Number field, with and without a spinner."
                 },
                 {
                     "text": "MultiSelect and ItemSelector",
                     "url": "multiselect/multiselect-demo.html",
                     "icon": "form-multiselect.gif",
-                    "desc": "Example controls for selecting a list of items in forms.",
-                    "status": "updated"
+                    "desc": "Example controls for selecting a list of items in forms."
                 },
                 {
                     "text": "Registration Form",
                     "url": "form/registration.html",
                     "icon": "form-registration.gif",
-                    "desc": "An account registration form, with custom global error message display.",
-                    "status" : "new"
+                    "desc": "An account registration form, with custom global error message display."
                 },
                 {
                     "text": "Shopping Cart Checkout",
                     "url": "form/checkout.html",
                     "icon": "form-checkout.gif",
-                    "desc": "An example of a common shopping cart checkout form.",
-                    "status" : "new"
+                    "desc": "An example of a common shopping cart checkout form."
                 },
                 {
                     "text": "Slider Field",
@@ -860,36 +834,31 @@ Ext.samples = {
                     "text": "Forms with vBox layout",
                     "url": "form/vbox-form.html",
                     "icon": "form-vbox.gif",
-                    "desc": "Example usage of the vBox layout with forms. An added bonus is the FieldReplicator plugin.",
-                    "status": "new"
+                    "desc": "Example usage of the vBox layout with forms. An added bonus is the FieldReplicator plugin."
                 },
                 {
                     "text": "Forms with hBox layout",
                     "url": "form/hbox-form.html",
                     "icon": "form-hbox.gif",
-                    "desc": "Example usage of the hBox layout with a form. Includes automatically adjusting validation messages.",
-                    "status": "new"
+                    "desc": "Example usage of the hBox layout with a form. Includes automatically adjusting validation messages."
                 },
                 {
                      "text": "Field Containers",
                      "url": "form/fieldcontainer.html",
                      "icon": "form-fieldcontainer.png",
-                     "desc": "Example usage of the FieldContainer to place several fields on a single form row.",
-                     "status": "new"
+                     "desc": "Example usage of the FieldContainer to place several fields on a single form row."
                 },
                 {
                     "text": "Form with absolute layout",
                     "url": "form/absform.html",
                     "icon": "form-absolute.gif",
-                    "desc": "A simple example of form fields utilizing an absolute layout in a window for flexible form resizing.",
-                    "status": "new"
+                    "desc": "A simple example of form fields utilizing an absolute layout in a window for flexible form resizing."
                 },
                 {
                     "text": "Custom form Field",
                     "url": "form/custom-form.html",
                     "icon": "form-custom.gif",
-                    "desc": "A simple example that demonstrate how to create a custom form field.",
-                    "status": "new"
+                    "desc": "A simple example that demonstrate how to create a custom form field."
                 }
             ]
         },
@@ -918,15 +887,13 @@ Ext.samples = {
                     "text": "Direct TreeLoader",
                     "url": "direct/direct-tree.html",
                     "icon": "direct.gif",
-                    "desc": "Ext.Direct Remoting with a Tree",
-                    "status": "new"
+                    "desc": "Ext.Direct Remoting with a Tree"
                 },
                 {
                     "text": "Direct Named Arguments",
                     "url": "direct/named-arguments.html",
                     "icon": "direct.gif",
-                    "desc": "Ext.Direct Named Arguments",
-                    "status": "new"
+                    "desc": "Ext.Direct Named Arguments"
                 }
             ]
         },
@@ -937,15 +904,13 @@ Ext.samples = {
                     "text": "Feed Viewer",
                     "url": "app/feed-viewer/feed-viewer.html",
                     "icon": "feeds.gif",
-                    "desc": "An MVC application version of the Feed Viewer example. This shows best practice for a small app",
-                    "status": "new"
+                    "desc": "An MVC application version of the Feed Viewer example. This shows best practice for a small app"
                 },
                 {
                     "text": "Nested Loading",
                     "url": "app/nested-loading/nested-loading.html",
                     "icon": "nested-loading.gif",
-                    "desc": "An MVC example that shows simple navigation and nested loading with the data package",
-                    "status": "new"
+                    "desc": "An MVC example that shows simple navigation and nested loading with the data package"
                 }
             ]
         },
@@ -974,15 +939,13 @@ Ext.samples = {
                     "text": "Slider",
                     "url": "slider/slider.html",
                     "icon": "slider.gif",
-                    "desc": "A slider component that supports vertical mode, snapping, tooltips, customized styles and multiple thumbs.",
-                    "status": "updated"
+                    "desc": "A slider component that supports vertical mode, snapping, tooltips, customized styles and multiple thumbs."
                 },
                 {
                     "text": "QuickTips",
                     "url": "qtips/qtips.html",
                     "icon": "qtips.gif",
-                    "desc": "Various tooltip and quick tip configuration options including Ajax loading and mouse tracking.",
-                    "status": "updated"
+                    "desc": "Various tooltip and quick tip configuration options including Ajax loading and mouse tracking."
                 },
                 {
                     "text": "Progress Bar",
@@ -994,8 +957,7 @@ Ext.samples = {
                     "text": "Panels",
                     "url": "panel/panel.html",
                     "icon": "panel.gif",
-                    "desc": "A basic collapsible panel example.",
-                    "status": "updated"
+                    "desc": "A basic collapsible panel example."
                 },
                 {
                     "text": "Resizable",
@@ -1019,8 +981,7 @@ Ext.samples = {
                     "text": "Keyboard Navigation",
                     "url": "keynav/keynav.html",
                     "icon": "keyboard.gif",
-                    "desc": "Shows a custom keyboard navigation using the KeyNav class",
-                    "status": "new"
+                    "desc": "Shows a custom keyboard navigation using the KeyNav class"
                 },
                 {
                     "text": "Localization (static)",
@@ -1038,8 +999,7 @@ Ext.samples = {
                     "text": "Browser State Management",
                     "url": "state/state.html",
                     "icon": "state-saving.gif",
-                    "desc": "An example of storing your application's state.",
-                    "status": "new"
+                    "desc": "An example of storing your application's state."
                 },
                 {
                     "text": "Basic Templating",
@@ -1051,8 +1011,7 @@ Ext.samples = {
                     "text": "Bubble Panel",
                     "url": "panel/bubble-panel/bubble-panel.html",
                     "icon": "panel-bubble.gif",
-                    "desc": "This is a custom panel UI to achieve a different look and feel while not changing the default appearance of an Ext.Panel.",
-                    "status": "updated"
+                    "desc": "This is a custom panel UI to achieve a different look and feel while not changing the default appearance of an Ext.Panel."
                 }
             ]
         }

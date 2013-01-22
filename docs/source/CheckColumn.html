@@ -16,9 +16,7 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-ux-CheckColumn'>/**
-</span> * @class Ext.ux.CheckColumn
- * @extends Ext.grid.column.Column
- * A Header subclass which renders a checkbox in each column cell which toggles the truthiness of the associated data field on click.
+</span> * A Header subclass which renders a checkbox in each column cell which toggles the truthiness of the associated data field on click.
  *
  * Example usage:
  * 
@@ -52,10 +50,10 @@ Ext.define('Ext.ux.CheckColumn', {
      */
     stopSelection: true,
 
-    tdCls: Ext.baseCSSPrefix + 'grid-cell-checkcolumn',
-
-    constructor: function() {
-        this.addEvents(
+<span id='Ext-ux-CheckColumn-property-tdCls'>    tdCls: Ext.baseCSSPrefix + 'grid-cell-checkcolumn',
+</span>
+<span id='Ext-ux-CheckColumn-method-constructor'>    constructor: function() {
+</span>        this.addEvents(
 <span id='Ext-ux-CheckColumn-event-beforecheckchange'>            /**
 </span>             * @event beforecheckchange
              * Fires when before checked state of a row changes.
@@ -120,8 +118,8 @@ Ext.define('Ext.ux.CheckColumn', {
         }
     },
 
-    // Note: class names are not placed on the prototype bc renderer scope
-    // is not in the header.
+<span id='Ext-ux-CheckColumn-method-renderer'>    // Note: class names are not placed on the prototype bc renderer scope
+</span>    // is not in the header.
     renderer : function(value){
         var cssPrefix = Ext.baseCSSPrefix,
             cls = [cssPrefix + 'grid-checkheader'];

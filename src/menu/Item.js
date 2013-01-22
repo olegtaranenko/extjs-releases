@@ -300,7 +300,25 @@ Ext.define('Ext.menu.Item', {
              * Fires when this tiem is deactivated
              * @param {Ext.menu.Item} item The deactivated item
              */
-            'deactivate'
+            'deactivate',
+
+            /**
+             * @event textchange
+             * Fired when the item's text is changed by the {@link #setText} method.
+             * @param {Ext.menu.Item} this
+             * @param {String} oldText
+             * @param {String} newText
+             */
+            'textchange',
+
+            /**
+             * @event iconchange
+             * Fired when the item's icon is changed by the {@link #setIcon} or {@link #setIconCls} methods.
+             * @param {Ext.menu.Item} this
+             * @param {String} oldIcon
+             * @param {String} newIcon
+             */
+            'iconchange'
         );
 
         if (me.plain) {
@@ -357,7 +375,7 @@ Ext.define('Ext.menu.Item', {
         delete me.ownerButton;
     },
 
-    // private
+    // @private
     beforeDestroy: function() {
         var me = this;
         if (me.rendered) {
@@ -397,6 +415,8 @@ Ext.define('Ext.menu.Item', {
             hrefTarget: me.hrefTarget,
             icon: me.icon || blank,
             iconCls: iconCls,
+            hasIcon: !!(me.icon || me.iconCls),
+            iconAlign: me.iconAlign,
             plain: me.plain,
             text: me.text,
             arrowCls: arrowCls,
@@ -458,17 +478,19 @@ Ext.define('Ext.menu.Item', {
         this.handler = fn || null;
         this.scope = scope;
     },
-    
+
     /**
      * Sets the {@link #icon} on this item.
      * @param {String} icon The new icon 
      */
     setIcon: function(icon){
-        var iconEl = this.iconEl;
+        var iconEl = this.iconEl,
+            oldIcon = this.icon;
         if (iconEl) {
             iconEl.src = icon || Ext.BLANK_IMAGE_URL;
         }
         this.icon = icon;
+        this.fireEvent('iconchange', this, oldIcon, icon);
     },
 
     /**
@@ -477,7 +499,8 @@ Ext.define('Ext.menu.Item', {
      */
     setIconCls: function(iconCls) {
         var me = this,
-            iconEl = me.iconEl;
+            iconEl = me.iconEl,
+            oldCls = me.iconCls;
 
         if (iconEl) {
             if (me.iconCls) {
@@ -490,6 +513,7 @@ Ext.define('Ext.menu.Item', {
         }
 
         me.iconCls = iconCls;
+        me.fireEvent('iconchange', me, oldCls, iconCls);
     },
 
     /**
@@ -498,7 +522,8 @@ Ext.define('Ext.menu.Item', {
      */
     setText: function(text) {
         var me = this,
-            el = me.textEl || me.el;
+            el = me.textEl || me.el,
+            oldText = me.text;
 
         me.text = text;
 
@@ -507,6 +532,7 @@ Ext.define('Ext.menu.Item', {
             // cannot just call layout on the component due to stretchmax
             me.ownerCt.updateLayout();
         }
+        me.fireEvent('textchange', me, oldText, text);
     },
 
     getTipAttr: function(){
@@ -515,7 +541,7 @@ Ext.define('Ext.menu.Item', {
 
     //private
     clearTip: function() {
-        if (Ext.isObject(this.tooltip)) {
+        if (Ext.quickTipsActive && Ext.isObject(this.tooltip)) {
             Ext.tip.QuickTipManager.unregister(this.itemEl);
         }
     },
@@ -538,7 +564,7 @@ Ext.define('Ext.menu.Item', {
                 me.clearTip();
             }
 
-            if (Ext.isObject(tooltip)) {
+            if (Ext.quickTipsActive && Ext.isObject(tooltip)) {
                 Ext.tip.QuickTipManager.register(Ext.apply({
                     target: me.itemEl.id
                 },

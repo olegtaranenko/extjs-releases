@@ -15,7 +15,13 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js">/*
+  <pre class="prettyprint lang-js">//@tag dom,core
+//@require Helper.js
+//@define Ext.dom.Query
+//@define Ext.core.Query
+//@define Ext.DomQuery
+
+/*
  * This is code is also distributed under MIT license for use
  * with jQuery and prototype JavaScript libraries.
  */
@@ -85,6 +91,9 @@
  *   - **`E{display*=none}`** css value &quot;display&quot; that contains the substring &quot;none&quot;
  *   - **`E{display%=2}`** css value &quot;display&quot; that is evenly divisible by 2
  *   - **`E{display!=none}`** css value &quot;display&quot; that does not equal &quot;none&quot;
+ * 
+ * ## XML Namespaces:
+ *   - **`ns|E`** an element with tag E and namespace prefix ns
  *
  * [1]: http://www.w3.org/TR/2005/WD-css3-selectors-20051215/#selectors
  */
@@ -98,7 +107,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         trimRe = /^\s+|\s+$/g,
         tplRe = /\{(\d+)\}/g,
         modeRe = /^(\s?[\/&gt;+~]\s?|\s|$)/,
-        tagTokenRe = /^(#)?([\w\-\*\\]+)/,
+        tagTokenRe = /^(#)?([\w\-\*\|\\]+)/,
         nthRe = /(\d*)n\+?(\d*)/,
         nthRe2 = /\D/,
         startIdRe = /^\s*\#/,
@@ -111,7 +120,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         shortHex = /\\([0-9a-fA-F]{1,6})\s{0,1}/g,
         nonHex = /\\([^0-9a-fA-F]{1})/g,
         escapes = /\\/g,
-        num, hasEscapes,
+        num, hasEscapes, supportsColonInGetElementsByTagName,
 
         // replaces a long hex regex match group with the appropriate ascii value
         // $args indicate regex match pos
@@ -255,7 +264,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         if(!ns){
             return result;
         }
-        tagName = tagName || &quot;*&quot;;
+        tagName = tagName.replace('|', ':') || &quot;*&quot;;
         // convert to array
         if(typeof ns.getElementsByTagName != &quot;undefined&quot;){
             ns = [ns];
@@ -264,10 +273,29 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         // no mode specified, grab all elements by tagName
         // at any depth
         if(!mode){
-            for(i = 0, ni; ni = ns[i]; i++){
-                cs = ni.getElementsByTagName(tagName);
-                for(j = 0, ci; ci = cs[j]; j++){
-                    result[++ri] = ci;
+            tagName = unescapeCssSelector(tagName);
+            if (!supportsColonNsSeparator() &amp;&amp; Ext.DomQuery.isXml(ns[0]) &amp;&amp;
+                tagName.indexOf(':') !== -1) {
+                // Some browsers (e.g. WebKit and Opera do not support the following syntax
+                // in xml documents: getElementsByTagName('ns:tagName'). To work around
+                // this, we remove the namespace prefix from the tagName, get the elements
+                // by tag name only, and then compare each element's tagName property to
+                // the tagName with namespace prefix attached to ensure that the tag is in
+                // the proper namespace.
+                for(i = 0, ni; ni = ns[i]; i++){
+                    cs = ni.getElementsByTagName(tagName.split(':').pop());
+                    for(j = 0, ci; ci = cs[j]; j++){
+                        if (ci.tagName === tagName) {
+                            result[++ri] = ci;
+                        }
+                    }
+                }
+            } else {
+                for(i = 0, ni; ni = ns[i]; i++){
+                    cs = ni.getElementsByTagName(tagName);
+                    for(j = 0, ci; ci = cs[j]; j++){
+                        result[++ri] = ci;
+                    }
                 }
             }
         // Direct Child mode (/ or &gt;)
@@ -510,6 +538,26 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         ns = getNodes(ns, mode, &quot;*&quot;);
         return byId(ns, id);
     }
+    
+    // Returns true if the browser supports the following syntax:
+    // document.getElementsByTagName('namespacePrefix:tagName')
+    function supportsColonNsSeparator() {
+        var xml, doc;
+
+        if (supportsColonInGetElementsByTagName === undefined) {
+            xml = '&lt;r&gt;&lt;a:b xmlns:a=&quot;n&quot;&gt;&lt;/a:b&gt;&lt;/r&gt;';
+
+            if (window.DOMParser) {
+                doc = (new DOMParser()).parseFromString(xml, &quot;application/xml&quot;);
+            } else {
+                doc = new ActiveXObject(&quot;Microsoft.XMLDOM&quot;);
+                doc.loadXML(xml);
+            }
+
+            supportsColonInGetElementsByTagName = !!doc.getElementsByTagName('a:b').length;
+        }
+        return supportsColonInGetElementsByTagName;
+    }
 
     return {
         getStyle : function(el, name){
@@ -527,7 +575,6 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
 
             // setup fn preamble
             var fn = [&quot;var f = function(root){\n var mode; ++batch; var n = root || document;\n&quot;],
-                mode,
                 lastPath,
                 matchers = Ext.DomQuery.matchers,
                 matchersLn = matchers.length,
@@ -826,7 +873,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 re: /^#([\w\-\\]+)/,
                 select: 'n = byId(n, &quot;{1}&quot;);'
             },{
-                re: /^@([\w\-]+)/,
+                re: /^@([\w\-\.]+)/,
                 select: 'return {firstChild:{nodeValue:attrValue(n, &quot;{1}&quot;)}};'
             }
         ],
@@ -1088,17 +1135,33 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                     }
                 }
                 return r;
+            },
+
+            focusable: function(candidates) {
+                var len = candidates.length,
+                    results = [],
+                    i = 0,
+                    c;
+
+                for (; i &lt; len; i++) {
+                    c = candidates[i];
+                    if (Ext.fly(c).isFocusable()) {
+                        results.push(c);
+                    }
+                }
+
+                return results;
             }
         }
     };
 }());
 
 <span id='Ext-method-query'>/**
-</span> * Shorthand of {@link Ext.dom.Query#select}
- * @member Ext
- * @method query
- * @inheritdoc Ext.dom.Query#select
- */
+</span>* Shorthand of {@link Ext.dom.Query#select}
+* @member Ext
+* @method query
+* @inheritdoc Ext.dom.Query#select
+*/
 Ext.query = Ext.DomQuery.select;
 
 </pre>

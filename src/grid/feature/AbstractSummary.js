@@ -101,10 +101,6 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         var comp     = Ext.getCmp(column.id),
             value    = summaryData[column.id],
             renderer = comp.summaryRenderer;
-            
-        if (!value && value !== 0) {
-            value = '\u00a0';
-        }
 
         if (renderer) {
             value = renderer.call(
@@ -114,6 +110,11 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
                 column.dataIndex
             );
         }
+        
+        if (!value && value !== 0) {
+            value = '\u00a0';
+        }
+        
         return value;
     },
 
@@ -130,7 +131,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     getSummary: function(store, type, field, group){
         if (type) {
             if (Ext.isFunction(type)) {
-                return store.aggregate(type, null, group);
+                return store.aggregate(type, null, group, [field]);
             }
 
             switch (type) {

@@ -79,12 +79,12 @@ Ext.define('Ext.LoadMask', {
 
     renderTpl: '<div id="{id}-msgEl" style="position:relative" class="{[values.$comp.msgCls]}"></div>',
 
-    // Private. Obviously, it's floating.
+    // @private Obviously, it's floating.
     floating: {
         shadow: 'frame'
     },
 
-    // Private. Masks are not focusable
+    // @private Masks are not focusable
     focusOnToFront: false,
 
     // When we put the load mask to the front of it's owner, we generally don't want to also bring the owning
@@ -164,6 +164,8 @@ Ext.define('Ext.LoadMask', {
         if (owner) {
             me.activeOwner = owner;
             me.mon(owner, 'move', me.sizeMask, me);
+        } else {
+            me.preventBringToFront = true;
         }
         owner = me.floatParent.ownerCt;
         if (me.rendered && me.isVisible() && owner) {
@@ -266,10 +268,8 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-    getStoreListeners: function(){
-        return {
-            beforeload: this.onBeforeLoad,
-            load: this.onLoad,
+    getStoreListeners: function(store) {
+        var result = {
             exception: this.onLoad,
 
             // Fired when a range is requested for rendering that is not in the cache
@@ -278,6 +278,13 @@ Ext.define('Ext.LoadMask', {
             // Fired when a range for rendering which was previously missing from the cache is loaded
             cachefilled: this.onLoad
         };
+
+        // Only need to mask on load if the proxy is asynchronous - ie: Ajax/JsonP
+        if (!store.proxy.isSynchronous) {
+            result.beforeLoad = this.onBeforeLoad;
+            result.load = this.onLoad;
+        }
+        return result;
     },
 
     onDisable : function() {
@@ -287,16 +294,16 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-    getOwner: function(){
+    getOwner: function() {
         return this.ownerCt || this.floatParent;
     },
 
-    getMaskTarget: function(){
+    getMaskTarget: function() {
         var owner = this.getOwner();
         return this.useTargetEl ? owner.getTargetEl() : owner.getEl();
     },
 
-    // private
+    // @private
     onBeforeLoad : function() {
         var me = this,
             owner = me.getOwner(),
@@ -402,7 +409,7 @@ Ext.define('Ext.LoadMask', {
         return me.mixins.floating.setZIndex.apply(me, arguments);
     },
 
-    // private
+    // @private
     onLoad : function() {
         this.loading = false;
         this.hide();

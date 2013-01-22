@@ -72,6 +72,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
     alias: 'plugin.cellediting',
     extend: 'Ext.grid.plugin.Editing',
     requires: ['Ext.grid.CellEditor', 'Ext.util.DelayedTask'],
+    lockableScope: 'both',
 
     constructor: function() {
         /**
@@ -184,14 +185,15 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         me.editors.clear();
         me.callParent(arguments);
     },
-    
+
     onBodyScroll: function() {
         var me = this,
             ed = me.getActiveEditor(),
             scroll = me.view.el.getScroll();
 
         // Scroll happened during editing...
-        if (ed && ed.editing) {
+        // If editing is on the other side of a lockable, then ignore it
+        if (ed && ed.editing && ed.editingPlugin === me) {
             // Terminate editing only on vertical scroll. Horiz scroll can be caused by tabbing between cells.
             if (scroll.top !== me.scroll.top) {
                 if (ed.field) {
@@ -210,7 +212,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         me.scroll = scroll;
     },
 
-    // private
+    // @private
     // Template method called from base class's initEvents
     initCancelTriggers: function() {
         var me   = this,
@@ -243,12 +245,13 @@ Ext.define('Ext.grid.plugin.CellEditing', {
      * Starts editing the specified record, using the specified Column definition to define which field is being edited.
      * @param {Ext.data.Model} record The Store data record which backs the row to be edited.
      * @param {Ext.grid.column.Column} columnHeader The Column object defining the column to be edited.
-     * @return `true` if editing was started, `false` otherwise.
+     * @return {Boolean} `true` if editing was started, `false` otherwise.
      */
-    startEdit: function(record, columnHeader) {
+    startEdit: function(record, columnHeader, /* private */ context) {
         var me = this,
-            context = me.getEditingContext(record, columnHeader),
-            value, ed;
+            ed;
+            
+        context = context || me.getEditingContext(record, columnHeader);
 
         // Complete the edit now, before getting the editor's target
         // cell DOM element. Completing the edit causes a row refresh.
@@ -268,8 +271,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             return false;
         }
 
-        value = record.get(columnHeader.dataIndex);
-        context.originalValue = context.value = value;
+        context.originalValue = context.value = record.get(columnHeader.dataIndex);
         if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel) {
             return false;
         }
@@ -283,7 +285,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             column: context.colIdx
         });
         if (ed) {
-            me.editTask.delay(15, me.showEditor, me, [ed, context, value]);
+            me.editTask.delay(15, me.showEditor, me, [ed, context, context.value]);
             return true;
         }
         return false;
@@ -294,9 +296,16 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             record = context.record,
             columnHeader = context.column,
             sm = me.grid.getSelectionModel(),
-            selection = sm.getCurrentPosition();
+            selection = sm.getCurrentPosition(),
+            otherView = selection && selection.view;
 
-        me.context = context;
+        // Selection is for another view.
+        // This can happen in a lockable grid where there are two grids, each with a separate Editing plugin
+        if (otherView && otherView !== me.view) {
+            return me.lockingPartner.showEditor(ed, context, value);
+        }
+
+        me.setEditingContext(context);
         me.setActiveEditor(ed);
         me.setActiveRecord(record);
         me.setActiveColumn(columnHeader);
@@ -305,11 +314,12 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         if (sm.selectByPosition && (!selection || selection.column !== context.colIdx || selection.row !== context.rowIdx)) {
             sm.selectByPosition({
                 row: context.rowIdx,
-                column: context.colIdx
+                column: context.colIdx,
+                view: me.view
             });
         }
 
-        ed.startEdit(me.getCell(record, columnHeader), value);
+        ed.startEdit(me.getCell(record, columnHeader), value, context);
         me.editing = true;
         me.scroll = me.view.el.getScroll();
     },
@@ -323,8 +333,18 @@ Ext.define('Ext.grid.plugin.CellEditing', {
     },
 
     // internal getters/setters
+    setEditingContext: function(context) {
+        this.context = context;
+        if (this.lockingPartner) {
+            this.lockingPartner.context = context;
+        }
+    },
+
     setActiveEditor: function(ed) {
         this.activeEditor = ed;
+        if (this.lockingPartner) {
+            this.lockingPartner.activeEditor = ed;
+        }
     },
 
     getActiveEditor: function() {
@@ -333,6 +353,9 @@ Ext.define('Ext.grid.plugin.CellEditing', {
 
     setActiveColumn: function(column) {
         this.activeColumn = column;
+        if (this.lockingPartner) {
+            this.lockingPartner.activeColumn = column;
+        }
     },
 
     getActiveColumn: function() {
@@ -341,6 +364,9 @@ Ext.define('Ext.grid.plugin.CellEditing', {
 
     setActiveRecord: function(record) {
         this.activeRecord = record;
+        if (this.lockingPartner) {
+            this.lockingPartner.activeRecord = record;
+        }
     },
 
     getActiveRecord: function() {
@@ -349,41 +375,54 @@ Ext.define('Ext.grid.plugin.CellEditing', {
 
     getEditor: function(record, column) {
         var me = this,
+            grid = column.up('tablepanel'),
             editors = me.editors,
             editorId = column.getItemId(),
             editor = editors.getByKey(editorId);
 
-        if (editor) {
-            return editor;
-        } else {
+        // Editors are shared between editing plugins on both sides of a locked grid
+        if (!editor && me.lockingPartner) {
+            editor = me.lockingPartner.editors.getByKey(editorId);
+        }
+
+        if (!editor) {
             editor = column.getEditor(record);
             if (!editor) {
                 return false;
             }
 
             // Allow them to specify a CellEditor in the Column
-            // Either way, the Editor is a floating Component, and must be attached to an ownerCt
-            // which it uses to traverse upwards to find a ZIndexManager at render time.
             if (!(editor instanceof Ext.grid.CellEditor)) {
                 editor = new Ext.grid.CellEditor({
                     editorId: editorId,
                     field: editor,
-                    ownerCt: me.grid
+                    isForTree: me.grid.isTree
                 });
             } else {
                 editor.ownerCt = me.grid;
             }
-            editor.editingPlugin = me;
-            editor.isForTree = me.grid.isTree;
             editor.on({
                 scope: me,
                 specialkey: me.onSpecialKey,
                 complete: me.onEditComplete,
                 canceledit: me.cancelEdit
             });
+            column.on('removed', me.cancelActiveEdit, me);
             editors.add(editor);
-            return editor;
         }
+        editor.editingPlugin = me;
+
+        // The Editor is a floating Component, and must be attached to an ownerCt
+        // which it uses to traverse upwards to find a ZIndexManager at render time.
+        editor.ownerCt = grid;
+        return editor;
+    },
+    
+    cancelActiveEdit: function(column){
+        var context = this.context
+        if (context && context.column === column) {
+            this.cancelEdit();
+        }   
     },
     
     // inherit docs
@@ -406,7 +445,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
 
     onSpecialKey: function(ed, field, e) {
         var me = this,
-            grid = me.grid,
+            grid = field.up('tablepanel'),
             sm;
             
         if (e.getKey() === e.TAB) {
@@ -420,7 +459,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             
             sm = grid.getSelectionModel();
             if (sm.onEditorTab) {
-                sm.onEditorTab(me, e);
+                return sm.onEditorTab(grid === me.grid ? me : me.lockingPartner, e);
             }
         }
     },
@@ -430,15 +469,17 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             grid = me.grid,
             activeColumn = me.getActiveColumn(),
             sm = grid.getSelectionModel(),
+            context = me.context,
             record;
 
         if (activeColumn) {
-            record = me.context.record;
+            record = context.record;
 
             me.setActiveEditor(null);
             me.setActiveColumn(null);
             me.setActiveRecord(null);
     
+            context.value = value;
             if (!me.validateEdit()) {
                 return;
             }
@@ -454,9 +495,8 @@ Ext.define('Ext.grid.plugin.CellEditing', {
                 sm.setCurrentPosition(sm.getCurrentPosition());
             }
             grid.getView().getEl(activeColumn).focus();
-
-            me.context.value = value;
-            me.fireEvent('edit', me, me.context);
+            me.fireEvent('edit', me, context);
+            me.editing = false;
         }
     },
 
@@ -475,7 +515,10 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             activeEd.cancelEdit();
             viewEl.focus();
             me.callParent(arguments);
+            return;
         }
+        // If we aren't editing, return true to allow the event to bubble
+        return true;
     },
 
     /**

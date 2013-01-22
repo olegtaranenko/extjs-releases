@@ -128,6 +128,20 @@ Ext.define('Ext.selection.RowModel', {
             scope: me
         });
     },
+    
+    onUpdate: function(record) {
+        var me = this,
+            view = me.view,
+            index;
+        
+        if (view && me.isSelected(record)) {
+            index = me.store.indexOf(record);
+            view.onRowSelect(index);
+            if (record === me.lastFocused) {
+                view.onRowFocus(index, true);
+            }
+        }
+    },
 
     // Returns the number of rows currently visible on the screen or
     // false if there were no rows. This assumes that all rows are
@@ -443,7 +457,7 @@ Ext.define('Ext.selection.RowModel', {
 
         do {
             position  = view.walkCells(position, direction, e, me.preventWrap);
-        } while(position && !view.headerCt.getHeaderAtIndex(position.column).getEditor());
+        } while(position && !view.headerCt.getHeaderAtIndex(position.column).getEditor(record));
 
         if (position) {
             editingPlugin.startEditByPosition(position);

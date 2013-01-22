@@ -38,7 +38,7 @@ Ext.define('Ext.util.Floating', {
     shadow: 'sides',
 
 <span id='Ext-util-Floating-cfg-shadowOffset'>    /**
-</span>     * @cfg {String/Boolean} shadowOffset
+</span>     * @cfg {Number} shadowOffset
      * Number of pixels to offset the shadow.
      */
 
@@ -54,17 +54,26 @@ Ext.define('Ext.util.Floating', {
             shim         : (me.shim === false) ? false : undefined
         }, me.floating), dom);
 
+        // If modal, and focus navigation not being handled by the FocusManager,
+        // catch tab navigation, and loop back in on tab off first or last item.
+        if (me.modal &amp;&amp; !(Ext.FocusManager &amp;&amp; Ext.FocusManager.enabled)) {
+            me.el.on({
+                keydown: me.onKeyDown,
+                scope: me
+            });
+        }
+
         // release config object (if it was one)
         me.floating = true;
-        
+
         // Register with the configured ownerCt.
         // With this we acquire a floatParent for relative positioning, and a zIndexParent which is an
         // ancestor floater which provides zIndex management.
         me.registerWithOwnerCt();
     },
 
-    registerWithOwnerCt: function() {
-        var me = this;
+<span id='Ext-util-Floating-method-registerWithOwnerCt'>    registerWithOwnerCt: function() {
+</span>        var me = this;
 
         if (me.zIndexParent) {
             me.zIndexParent.unregisterFloatingItem(me);
@@ -82,8 +91,29 @@ Ext.define('Ext.util.Floating', {
         }
     },
 
-    setFloatParent: function(floatParent) {
-        var me = this;
+<span id='Ext-util-Floating-method-onKeyDown'>    // Listen for TAB events and wrap round if tabbing of either end of the Floater
+</span>    onKeyDown: function(e) {
+        var me = this,
+            shift,
+            focusables,
+            first,
+            last;
+
+        // If tabbing off either end, wrap round
+        if (e.getKey() == Ext.EventObject.TAB) {
+            shift = e.shiftKey;
+            focusables = me.el.query(':focusable');
+            first = focusables[0];
+            last = focusables[focusables.length - 1];
+            if (first &amp;&amp; last &amp;&amp; e.target === (shift ? first : last)) {
+                e.stopEvent();
+                (shift ? last : first).focus(false, true);
+            }
+        }
+    },
+
+<span id='Ext-util-Floating-method-setFloatParent'>    setFloatParent: function(floatParent) {
+</span>        var me = this;
 
         // Remove listeners from previous floatParent
         if (me.floatParent) {
@@ -112,12 +142,12 @@ Ext.define('Ext.util.Floating', {
         }
     },
     
-    onAfterFloatLayout: function(){
-        this.syncShadow();   
+<span id='Ext-util-Floating-method-onAfterFloatLayout'>    onAfterFloatLayout: function(){
+</span>        this.syncShadow();   
     },
 
-    onFloatParentHide: function() {
-        var me = this;
+<span id='Ext-util-Floating-method-onFloatParentHide'>    onFloatParentHide: function() {
+</span>        var me = this;
 
         if (me.hideOnParentHide !== false &amp;&amp; me.isVisible()) {
             me.hide();
@@ -125,15 +155,15 @@ Ext.define('Ext.util.Floating', {
         }
     },
 
-    onFloatParentShow: function() {
-        if (this.showOnParentShow) {
+<span id='Ext-util-Floating-method-onFloatParentShow'>    onFloatParentShow: function() {
+</span>        if (this.showOnParentShow) {
             delete this.showOnParentShow;
             this.show();
         }
     },
 
-    // private
-    // z-index is managed by the zIndexManager and may be overwritten at any time.
+<span id='Ext-util-Floating-method-setZIndex'>    // @private
+</span>    // z-index is managed by the zIndexManager and may be overwritten at any time.
     // Returns the next z-index to be used.
     // If this is a Container, then it will have rebased any managed floating Components,
     // and so the next available z-index will be approximately 10000 above that.
@@ -193,7 +223,7 @@ Ext.define('Ext.util.Floating', {
         var me = this;
 
         if (me.constrain || me.constrainHeader) {
-            constrainTo = constrainTo || (me.floatParent &amp;&amp; me.floatParent.getTargetEl()) || me.container || me.el.getScopeParent();
+            constrainTo = constrainTo || me.constrainTo || (me.floatParent &amp;&amp; me.floatParent.getTargetEl()) || me.container || me.el.getScopeParent();
             return (me.constrainHeader ? me.header.el : me.el).getConstrainVector(constrainTo);
         }
     },
@@ -280,7 +310,7 @@ Ext.define('Ext.util.Floating', {
         } else {
             // Only the *Windows* in a zIndex stack share a shadow. All other types of floaters
             // can keep their shadows all the time
-            if (me.isWindow &amp;&amp; (newActive &amp;&amp; newActive.isWindow)) {
+            if (me.isWindow &amp;&amp; (newActive &amp;&amp; newActive.isWindow) &amp;&amp; me.hideShadowOnDeactivate) {
                 me.el.disableShadow();
             }
             me.fireEvent('deactivate', me);
@@ -313,28 +343,32 @@ Ext.define('Ext.util.Floating', {
         return me;
     },
     
-    onFloatShow: function() {
-        if (this.needsCenter) {
+<span id='Ext-util-Floating-method-onFloatShow'>    onFloatShow: function() {
+</span>        if (this.needsCenter) {
             this.center();    
         }
         delete this.needsCenter;
     },
 
-    // private
-    syncShadow : function() {
+<span id='Ext-util-Floating-method-syncShadow'>    // @private
+</span>    syncShadow : function() {
         if (this.floating) {
             this.el.sync(true);
         }
     },
 
-    // private
-    fitContainer: function() {
+<span id='Ext-util-Floating-method-fitContainer'>    // @private
+</span>    fitContainer: function() {
         var me = this,
             parent = me.floatParent,
             container = parent ? parent.getTargetEl() : me.container;
 
         me.setSize(container.getViewSize(false));
-        me.setPosition.apply(me, parent ? [0, 0] : container.getXY());
+        me.setPosition.apply(me, parent || (container.dom !== document.body) ?
+            // If we are a contained floater, or rendered to a div, maximized position is (0,0)
+            [0, 0] :
+            // If no parent and rendered to body, align with origin of container el.
+            container.getXY());
     }
 });
 </pre>

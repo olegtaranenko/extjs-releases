@@ -8,6 +8,11 @@
         z-index: 1;
     }
 
+    // Fast, vertical-only docking uses natural flow
+    .#{$prefix}docked-vertical {
+        position: static;
+    }
+
     .#{$prefix}docked-top {
         border-bottom-width: 0 !important;
     }

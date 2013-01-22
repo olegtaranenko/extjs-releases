@@ -31,6 +31,7 @@ Ext.define('Ext.util.AbstractMixedCollection', {
             /**
              * @event clear
              * Fires when the collection is cleared.
+             * @since Ext 1
              */
 
             /**
@@ -39,6 +40,7 @@ Ext.define('Ext.util.AbstractMixedCollection', {
              * @param {Number} index The index at which the item was added.
              * @param {Object} o The item added.
              * @param {String} key The key associated with the added item.
+             * @since Ext 1
              */
 
             /**
@@ -47,12 +49,14 @@ Ext.define('Ext.util.AbstractMixedCollection', {
              * @param {String} key he key associated with the new added.
              * @param {Object} old The item being replaced.
              * @param {Object} new The new item.
+             * @since Ext 1
              */
             /**
              * @event remove
              * Fires when an item is removed from the collection.
              * @param {Object} o The item being removed.
              * @param {String} key (optional) The key associated with the removed item.
+             * @since Ext 1
              */
 
         me.allowFunctions = allowFunctions === true;
@@ -68,6 +72,7 @@ Ext.define('Ext.util.AbstractMixedCollection', {
      * @cfg {Boolean} allowFunctions Specify <code>true</code> if the {@link #addAll}
      * function should add function references to the collection. Defaults to
      * <code>false</code>.
+     * @since Ext 3
      */
     allowFunctions : false,
 
@@ -84,6 +89,7 @@ Ext.define('Ext.util.AbstractMixedCollection', {
      * @param {Object} [o] The item to add.
      *
      * @return {Object} The item added.
+     * @since Ext 1
      */
     add : function(key, obj){
         var me = this,
@@ -139,6 +145,7 @@ mc.add(otherEl);
      * </code></pre>
      * @param {Object} item The item for which to find the key.
      * @return {Object} The key for the passed item.
+     * @since Ext 1
      */
     getKey : function(o){
          return o.id;
@@ -154,6 +161,7 @@ mc.add(otherEl);
      * @param o {Object} o (optional) If the first parameter passed was a key, the item to associate
      * with that key.
      * @return {Object}  The new item.
+     * @since Ext 1
      */
     replace : function(key, o){
         var me = this,
@@ -184,6 +192,7 @@ mc.add(otherEl);
      * to the collection, or an Array of values, each of which are added to the collection.
      * Functions references will be added to the collection if <code>{@link #allowFunctions}</code>
      * has been set to <code>true</code>.
+     * @since Ext 1
      */
     addAll : function(objs){
         var me = this,
@@ -219,6 +228,8 @@ mc.add(otherEl);
      * @param {Number} fn.len Total length of collection.
      * @param {Object} scope (optional) The scope (<code>this</code> reference)
      * in which the function is executed. Defaults to the current item in the iteration.
+     *
+     * @since Ext 1
      */
     each : function(fn, scope){
         var items = [].concat(this.items), // each safe for removal
@@ -244,6 +255,8 @@ mc.add(otherEl);
      * @param {Number} fn.len Total length of collection.
      * @param {Object} scope (optional) The scope (<code>this</code> reference) in which the
      * function is executed. Defaults to the browser window.
+     *
+     * @since Ext 1
      */
     eachKey : function(fn, scope){
         var keys = this.keys,
@@ -282,6 +295,11 @@ mc.add(otherEl);
     },
 
     //<deprecated since="0.99">
+    /**
+     * Returns the first item in the collection which elicits a true return value from the passed selection function.
+     * @deprecated 4.0 Use {@link #findBy} instead.
+     * @since Ext 1
+     */
     find : function() {
         if (Ext.isDefined(Ext.global.console)) {
             Ext.global.console.warn('Ext.util.MixedCollection: find has been deprecated. Use findBy instead.');
@@ -296,6 +314,7 @@ mc.add(otherEl);
      * @param {String} key The key to associate with the new item, or the item itself.
      * @param {Object} o (optional) If the second parameter was a key, the new item.
      * @return {Object} The item inserted.
+     * @since Ext 1
      */
     insert : function(index, key, obj){
         var me = this,
@@ -331,6 +350,7 @@ mc.add(otherEl);
      * Remove an item from the collection.
      * @param {Object} o The item to remove.
      * @return {Object} The item removed or false if no item was removed.
+     * @since Ext 1
      */
     remove : function(o) {
         this.generation++;
@@ -356,6 +376,7 @@ mc.add(otherEl);
      * Remove an item from a specified index in the collection. Fires the {@link #event-remove} event when complete.
      * @param {Number} index The index within the collection of the item to remove.
      * @return {Object} The item removed or false if no item was removed.
+     * @since Ext 1
      */
     removeAt : function(index) {
         var me = this,
@@ -392,6 +413,7 @@ mc.add(otherEl);
     /**
      * Returns the number of items in the collection.
      * @return {Number} the number of items in the collection.
+     * @since Ext 1
      */
     getCount : function(){
         return this.length;
@@ -401,6 +423,7 @@ mc.add(otherEl);
      * Returns index within the collection of the passed Object.
      * @param {Object} o The item to find the index of.
      * @return {Number} index of the item. Returns -1 if not found.
+     * @since Ext 1
      */
     indexOf : function(o){
         return Ext.Array.indexOf(this.items, o);
@@ -410,6 +433,7 @@ mc.add(otherEl);
      * Returns index within the collection of the passed key.
      * @param {String} key The key to find the index of.
      * @return {Number} index of the key.
+     * @since Ext 1
      */
     indexOfKey : function(key){
         return Ext.Array.indexOf(this.keys, key);
@@ -422,6 +446,7 @@ mc.add(otherEl);
      * @param {String/Number} key The key or index of the item.
      * @return {Object} If the item is found, returns the item.  If the item was not found, returns <code>undefined</code>.
      * If an item was found, but is a Class, returns <code>null</code>.
+     * @since Ext 1
      */
     get : function(key) {
         var me = this,
@@ -452,6 +477,7 @@ mc.add(otherEl);
      * Returns true if the collection contains the passed Object as an item.
      * @param {Object} o  The Object to look for in the collection.
      * @return {Boolean} True if the collection contains the Object as an item.
+     * @since Ext 1
      */
     contains : function(o){
         return typeof this.map[this.getKey(o)] != 'undefined';
@@ -461,6 +487,7 @@ mc.add(otherEl);
      * Returns true if the collection contains the passed Object as a key.
      * @param {String} key The key to look for in the collection.
      * @return {Boolean} True if the collection contains the Object as a key.
+     * @since Ext 1
      */
     containsKey : function(key){
         return typeof this.map[key] != 'undefined';
@@ -468,6 +495,7 @@ mc.add(otherEl);
 
     /**
      * Removes all items from the collection.  Fires the {@link #event-clear} event when complete.
+     * @since Ext 1
      */
     clear : function(){
         var me = this;
@@ -485,6 +513,7 @@ mc.add(otherEl);
     /**
      * Returns the first item in the collection.
      * @return {Object} the first item in the collection..
+     * @since Ext 1
      */
     first : function() {
         return this.items[0];
@@ -493,6 +522,7 @@ mc.add(otherEl);
     /**
      * Returns the last item in the collection.
      * @return {Object} the last item in the collection..
+     * @since Ext 1
      */
     last : function() {
         return this.items[this.length - 1];
@@ -575,6 +605,7 @@ mc.add(otherEl);
      * @param {Number} startIndex (optional) The starting index. Defaults to 0.
      * @param {Number} endIndex (optional) The ending index. Defaults to the last item.
      * @return {Array} An array of items
+     * @since Ext 1
      */
     getRange : function(start, end){
         var me = this,
@@ -626,10 +657,10 @@ var middleAged = people.filter('age', 24);
      * @param {Boolean} [anyMatch=false] True to match any part of the string, not just the beginning
      * @param {Boolean} [caseSensitive=false] True for case sensitive comparison.
      * @return {Ext.util.MixedCollection} The new filtered collection
+     * @since Ext 1
      */
     filter : function(property, value, anyMatch, caseSensitive) {
-        var filters = [],
-            filterFn;
+        var filters = [];
 
         //support for the simple case of filtering by property/value
         if (Ext.isString(property)) {
@@ -643,29 +674,10 @@ var middleAged = people.filter('age', 24);
             filters = filters.concat(property);
         }
 
-        //at this point we have an array of zero or more Ext.util.Filter objects to filter with,
-        //so here we construct a function that combines these filters by ANDing them together
-        filterFn = function(record) {
-            var isMatch = true,
-                length = filters.length,
-                i,
-                filter,
-                fn,
-                scope;
-                
-
-            for (i = 0; i < length; i++) {
-                filter = filters[i];
-                fn     = filter.filterFn;
-                scope  = filter.scope;
-
-                isMatch = isMatch && fn.call(scope, record);
-            }
-
-            return isMatch;
-        };
-
-        return this.filterBy(filterFn);
+        // At this point we have an array of zero or more Ext.util.Filter objects to filter with,
+        // so here we construct a function that combines these filters by ANDing them together
+        // and filter by that.
+        return this.filterBy(Ext.util.Filter.createFilterFn(filters));
     },
 
     /**
@@ -678,6 +690,7 @@ var middleAged = people.filter('age', 24);
      * @param {Object} scope (optional) The scope (<code>this</code> reference) in
      * which the function is executed. Defaults to this MixedCollection.
      * @return {Ext.util.MixedCollection} The new filtered collection
+     * @since Ext 1
      */
     filterBy : function(fn, scope) {
         var me = this,
@@ -707,6 +720,7 @@ var middleAged = people.filter('age', 24);
      * @param {Boolean} [anyMatch=false] True to match any part of the string, not just the beginning.
      * @param {Boolean} [caseSensitive=false] True for case sensitive comparison.
      * @return {Number} The matched index or -1
+     * @since Ext 2
      */
     findIndex : function(property, value, start, anyMatch, caseSensitive){
         if(Ext.isEmpty(value, false)){
@@ -727,6 +741,7 @@ var middleAged = people.filter('age', 24);
      * @param {Object} [scope] The scope (<code>this</code> reference) in which the function is executed. Defaults to this MixedCollection.
      * @param {Number} [start=0] The index to start searching at.
      * @return {Number} The matched index or -1
+     * @since Ext 2
      */
     findIndexBy : function(fn, scope, start){
         var me = this,
@@ -751,6 +766,7 @@ var middleAged = people.filter('age', 24);
      * @param {Boolean} anyMatch True to allow any match - no regex start/end line anchors will be added. Defaults to false
      * @param {Boolean} caseSensitive True to make the regex case sensitive (adds 'i' switch to regex). Defaults to false.
      * @param {Boolean} exactMatch True to force exact match (^ and $ characters added to the regex). Defaults to false. Ignored if anyMatch is true.
+     * @since Ext 3
      */
     createValueMatcher : function(value, anyMatch, caseSensitive, exactMatch) {
         if (!value.exec) { // not a regex
@@ -773,6 +789,7 @@ var middleAged = people.filter('age', 24);
     /**
      * Creates a shallow copy of this collection
      * @return {Ext.util.MixedCollection}
+     * @since Ext 1
      */
     clone : function() {
         var me = this,

@@ -156,6 +156,13 @@ Ext.define('Ext.grid.column.Column', {
     sortable: true,
 
     /**
+     * @cfg {Boolean} lockable
+     * If the grid is configured with {@link Ext.panel.Table#enableLocking enableLocking}, or has columns which are
+     * configured with a {@link #locked} value, this option may be used to disable user-driven locking or unlocking
+     * of this column. This column will remain in the side into which its own {@link #locked} configuration placed it.
+     */
+
+    /**
      * @cfg {Boolean} groupable
      * If the grid uses a {@link Ext.grid.feature.Grouping}, this option may be used to disable the header menu
      * item to group by the column selected. By default, the header menu group option is enabled. Set to false to
@@ -305,8 +312,19 @@ Ext.define('Ext.grid.column.Column', {
      * HeaderContainer base class, but are in fact, the subclass: Header.
      */
     isHeader: true,
+    
+    ascSortCls: Ext.baseCSSPrefix + 'column-header-sort-ASC',
+    descSortCls: Ext.baseCSSPrefix + 'column-header-sort-DESC',
+    nullSortCls: Ext.baseCSSPrefix + 'column-header-sort-null',
 
     componentLayout: 'columncomponent',
+    
+    groupSubHeaderCls: Ext.baseCSSPrefix + 'group-sub-header',
+    
+    groupHeaderCls: Ext.baseCSSPrefix + 'group-header',
+    
+    // So that when removing from group headers which are then empty and then get destroyed, there's no child DOM left
+    detachOnRemove : true,
     
     // We need to override the default component resizable behaviour here
     initResizable: Ext.emptyFn,
@@ -342,7 +360,7 @@ Ext.define('Ext.grid.column.Column', {
             delete me.columns;
             delete me.flex;
             delete me.width;
-            me.cls = (me.cls||'') + ' ' + Ext.baseCSSPrefix + 'group-header';
+            me.cls = (me.cls||'') + ' ' + me.groupHeaderCls;
             me.sortable = false;
             me.resizable = false;
             me.align = 'center';
@@ -392,13 +410,16 @@ Ext.define('Ext.grid.column.Column', {
 
     onAdd: function(childHeader) {
         childHeader.isSubHeader = true;
-        childHeader.addCls(Ext.baseCSSPrefix + 'group-sub-header');
+        if (this.hidden) {
+            childHeader.hide();
+        }
+        childHeader.addCls(this.groupSubHeaderCls);
         this.callParent(arguments);
     },
 
     onRemove: function(childHeader) {
         childHeader.isSubHeader = false;
-        childHeader.removeCls(Ext.baseCSSPrefix + 'group-sub-header');
+        childHeader.removeCls(this.groupSubHeaderCls);
         this.callParent(arguments);
     },
 
@@ -639,15 +660,20 @@ Ext.define('Ext.grid.column.Column', {
 
     /**
      * @private
-     * Double click
-     * @param e
-     * @param t
+     * Double click handler which, if on left or right edges, auto-sizes the column to the left.
+     * @param e The dblclick event
      */
     onElDblClick: function(e, t) {
         var me = this,
             ownerCt = me.ownerCt;
-        if (ownerCt && Ext.Array.indexOf(ownerCt.items, me) !== 0 && me.isOnLeftEdge(e) ) {
-            ownerCt.expandToFit(me.previousSibling('gridcolumn'));
+
+        if (me.isOnLeftEdge(e)) {
+            if (Ext.Array.indexOf(ownerCt.items, me) !== 0) {
+                ownerCt.expandToFit(me.previousSibling('gridcolumn'));
+            }
+        }
+        else if (me.isOnRightEdge(e)) {
+            ownerCt.expandToFit(me);
         }
     },
 
@@ -714,22 +740,25 @@ Ext.define('Ext.grid.column.Column', {
         return this.dataIndex;
     },
 
-    //setSortState: function(state, updateUI) {
-    //setSortState: function(state, doSort) {
     setSortState: function(state, skipClear, initial) {
         var me = this,
-            colSortClsPrefix = Ext.baseCSSPrefix + 'column-header-sort-',
-            ascCls = colSortClsPrefix + 'ASC',
-            descCls = colSortClsPrefix + 'DESC',
-            nullCls = colSortClsPrefix + 'null',
+            ascCls = me.ascSortCls,
+            descCls = me.descSortCls,
+            nullCls = me.nullSortCls,
             ownerHeaderCt = me.getOwnerHeaderCt(),
             oldSortState = me.sortState;
+            
+         state = state || null;
 
-        if (oldSortState !== state && me.getSortParam()) {
-            me.addCls(colSortClsPrefix + state);
+        if (!me.sorting && oldSortState !== state && me.getSortParam()) {
+            me.addCls(Ext.baseCSSPrefix + 'column-header-sort-' + state);
             // don't trigger a sort on the first time, we just want to update the UI
             if (state && !initial) {
+                // when sorting, it will call setSortState on the header again once
+                // refresh is called
+                me.sorting = true;
                 me.doSort(state);
+                me.sorting = false;
             }
             switch (state) {
                 case 'DESC':
@@ -753,17 +782,105 @@ Ext.define('Ext.grid.column.Column', {
         }
     },
 
+    /**
+     * Determines whether the UI should be allowed to offer an option to hide this column.
+     *
+     * A column may *not* be hidden if to do so would leave the grid with no visible columns.
+     *
+     * This is used to determine the enabled/disabled state of header hide menu items.
+     */
+    isHideable: function() {
+        var result = {
+                hideCandidate: this,
+                result: this.hideable
+            };
+
+        if (result.result) {
+            this.ownerCt.bubble(this.hasOtherMenuEnabledChildren, null, [result]);
+        }
+        return result.result;
+    },
+
+    // Private bubble function used in determining whether this column is hideable.
+    // Executes in the scope of each component in the bubble sequence
+    hasOtherMenuEnabledChildren: function(result) {
+        var visibleChildren,
+            count;
+
+        // If we've bubbled out the top of the topmost HeaderContainer without finding a level with at least one visible,
+        // menu-enabled child *which is not the hideCandidate*, no hide!
+        if (!this.isXType('headercontainer')) {
+            result.result = false;
+            return false;
+        }
+        // If we find an ancestor level with at leat one visible, menu-enabled child *which is not the hideCandidate*,
+        // then the hideCandidate is hideable.
+        // Note that we are not using CQ #id matchers - ':not(#' + result.hideCandidate.id + ')' - to exclude
+        // the hideCandidate because CQ queries are cached for the document's lifetime.
+        visibleChildren = this.query('>:not([hidden]):not([menuDisabled])');
+        count = visibleChildren.length;
+        if (Ext.Array.contains(visibleChildren, result.hideCandidate)) {
+            count--;
+        }
+        if (count) {
+            return false;
+        }
+    },
+
+    /**
+     * Determines whether the UI should be allowed to offer an option to lock or unlock this column. Note
+     * that this includes dragging a column into the opposite side of a {@link Ext.panel.Table#enableLocking lockable} grid.
+     *
+     * A column may *not* be moved from one side to the other of a {@link Ext.panel.Table#enableLocking lockable} grid
+     * if to do so would leave one side with no visible columns.
+     *
+     * This is used to determine the enabled/disabled state of the lock/unlock
+     * menu item used in {@link Ext.panel.Table#enableLocking lockable} grids, and to determine dropppabilty when dragging a header.
+     */
+    isLockable: function() {
+        var result = {
+                result: this.lockable !== false
+            };
+
+        if (result.result) {
+            this.ownerCt.bubble(this.hasMultipleVisibleChildren, null, [result]);
+        }
+        return result.result;
+    },
+
+    // Private bubble function used in determining whether this column is lockable.
+    // Executes in the scope of each component in the bubble sequence
+    hasMultipleVisibleChildren: function(result) {
+        // If we've bubbled out the top of the topmost HeaderContainer without finding a level with more than one visible child, no hide!
+        if (!this.isXType('headercontainer')) {
+            result.result = false;
+            return false;
+        }
+        // If we find an ancestor level with more than one visible child, it's fine to hide
+        if (this.query('>:not([hidden])').length > 1) {
+            return false;
+        }
+    },
+
     hide: function(fromOwner) {
         var me = this,
             ownerHeaderCt = me.getOwnerHeaderCt(),
             owner = me.ownerCt,
-            ownerIsGroup = owner.isGroupHeader,
+            ownerIsGroup,
             item, items, len, i;
+            
+        // If we have no ownerHeaderCt, it's during object construction, so
+        // just set the hidden flag and jump out
+        if (!ownerHeaderCt) {
+            me.callParent();
+            return me;
+        }
+        ownerIsGroup = owner.isGroupHeader;
 
         // owner is a group, hide call didn't come from the owner
         if (ownerIsGroup && !fromOwner) {
             items = owner.query('>:not([hidden])');
-            // only have one item that isn't hidden, this is it.
+            // The owner only has one item that isn't hidden and it's me; hide the owner.
             if (items.length === 1 && items[0] == me) {
                 me.ownerCt.hide();
                 return;
@@ -787,6 +904,7 @@ Ext.define('Ext.grid.column.Column', {
         ownerHeaderCt.onHeaderHide(me);
 
         Ext.resumeLayouts(true);
+        return me;
     },
 
     show: function(fromOwner, fromChild) {
@@ -807,7 +925,7 @@ Ext.define('Ext.grid.column.Column', {
 
         // If we've just shown a group with all its sub headers hidden, then show all its sub headers
         if (me.isGroupHeader && fromChild !== true && !me.query(':not([hidden])').length) {
-            items = me.query('>*');
+            items = me.items.items;
             for (i = 0, len = items.length; i < len; i++) {
                 item = items[i];
                 if (item.hidden) {
@@ -847,11 +965,11 @@ Ext.define('Ext.grid.column.Column', {
             return me.width;
         }
     },
-
+    
     getCellSelector: function() {
         return '.' + Ext.baseCSSPrefix + 'grid-cell-' + this.getItemId();
     },
-
+    
     getCellInnerSelector: function() {
         return this.getCellSelector() + ' .' + Ext.baseCSSPrefix + 'grid-cell-inner';
     },
@@ -862,6 +980,12 @@ Ext.define('Ext.grid.column.Column', {
 
     isOnRightEdge: function(e) {
         return (this.el.getRight() - e.getXY()[0] <= this.handleWidth);
+    },
+
+    // Called when the column menu is activated/deactivated.
+    // Change the UI to indicate active/inactive menu
+    setMenuActive: function(isMenuOpen) {
+        this.titleEl[isMenuOpen ? 'addCls' : 'removeCls'](this.headerOpenCls);
     }
 
     // intentionally omit getEditor and setEditor definitions bc we applyIf into columns
@@ -871,7 +995,7 @@ Ext.define('Ext.grid.column.Column', {
      * @method getEditor
      * Retrieves the editing field for editing associated with this header. Returns false if there is no field
      * associated with the Header the method will return false. If the field has not been instantiated it will be
-     * created. Note: These methods only has an implementation if a Editing plugin has been enabled on the grid.
+     * created. Note: These methods only have an implementation if an Editing plugin has been enabled on the grid.
      * @param {Object} record The {@link Ext.data.Model Model} instance being edited.
      * @param {Object} defaultField An object representing a default field to be created
      * @return {Ext.form.field.Field} field

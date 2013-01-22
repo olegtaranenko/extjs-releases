@@ -88,20 +88,23 @@ Ext.define('Ext.form.action.Submit', {
      * Performs the submit of the form data.
      */
     doSubmit: function() {
-        var formEl,
-            ajaxOptions = Ext.apply(this.createCallback(), {
-                url: this.getUrl(),
-                method: this.getMethod(),
-                headers: this.headers
-            });
+        var me = this,
+            ajaxOptions = Ext.apply(me.createCallback(), {
+                url: me.getUrl(),
+                method: me.getMethod(),
+                headers: me.headers
+            }),
+            form = me.form,
+            paramsProp = form.jsonSubmit ? 'jsonData' : 'params',
+            formEl;
 
         // For uploads we need to create an actual form that contains the file upload fields,
         // and pass that to the ajax call so it can do its iframe-based submit method.
-        if (this.form.hasUpload()) {
-            formEl = ajaxOptions.form = this.buildForm();
+        if (form.hasUpload()) {
+            formEl = ajaxOptions.form = me.buildForm();
             ajaxOptions.isUpload = true;
         } else {
-            ajaxOptions.params = this.getParams();
+            ajaxOptions[paramsProp] = me.getParams();
         }
 
         Ext.Ajax.request(ajaxOptions);

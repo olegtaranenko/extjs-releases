@@ -172,11 +172,20 @@ Ext.define("Ext.form.Labelable", {
     /**
      * @cfg {String/String[]/Ext.XTemplate} activeErrorsTpl
      * The template used to format the Array of error messages passed to {@link #setActiveErrors} into a single HTML
-     * string. By default this renders each message as an item in an unordered list.
+     * string. if the {@link #msgTarget} is title, it defaults to a list separated by new lines. Otherwise, it 
+     * renders each message as an item in an unordered list.
      */
-    activeErrorsTpl: [
+    activeErrorsTpl: undefined,
+    
+    htmlActiveErrorsTpl: [
         '<tpl if="errors && errors.length">',
             '<ul><tpl for="errors"><li>{.}</li></tpl></ul>',
+        '</tpl>'
+    ],
+    
+    plaintextActiveErrorsTpl: [
+        '<tpl if="errors && errors.length">',
+            '<tpl for="errors"><tpl if="xindex &gt; 1">\n</tpl>{.}</tpl>',
         '</tpl>'
     ],
 
@@ -437,6 +446,14 @@ Ext.define("Ext.form.Labelable", {
             me.padding = undefined;
             me.extraMargins = Ext.Element.parseBox(padding);
         }
+        
+        if (!me.activeErrorsTpl) {
+            if (me.msgTarget == 'title') {
+                me.activeErrorsTpl = me.plaintextActiveErrorsTpl;
+            } else {
+                me.activeErrorsTpl = me.htmlActiveErrorsTpl;
+            }
+        }
 
         me.addCls(me.formItemCls);
         
@@ -602,6 +619,18 @@ Ext.define("Ext.form.Labelable", {
     },
     
     /**
+     * Gets the width of the label (if visible)
+     * @return {Number} The label width
+     */
+    getLabelWidth: function(){
+        var me = this;
+        if (!me.hasVisibleLabel()) {
+            return 0;
+        }
+        return me.labelWidth + me.labelPad;
+    },
+    
+    /**
      * @private
      * Calculates the colspan value for the body cell - the cell which contains the input field.
      *
@@ -626,9 +655,6 @@ Ext.define("Ext.form.Labelable", {
         var labelCls = this.labelCls,
             labelClsExtra = this.labelClsExtra;
 
-        if (this.labelAlign === 'top') {
-            labelCls += '-top';
-        }
         return labelClsExtra ? labelCls + ' ' + labelClsExtra : labelCls;
     },
 
@@ -673,7 +699,9 @@ Ext.define("Ext.form.Labelable", {
             if (me.labelWidth) {
                 labelStyle = 'width:' + me.labelWidth + 'px;';
             }
-            labelStyle += 'margin-right:' + labelPad + 'px;';
+            if (labelPad) {
+                labelStyle += 'margin-right:' + labelPad + 'px;';
+            }
         }
         
         return labelStyle + (me.labelStyle || '');

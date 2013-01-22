@@ -94,6 +94,10 @@ Ext.onReady(function() {
             icon: '../simple-tasks/resources/images/edit_task.png',
             handler: function(grid, rowIndex, colIndex, actionItem, event, record, row) {
                 Ext.Msg.alert('Editing' + (record.get('done') ? ' completed task' : '') , record.get('task'));
+            },
+            // Only leaf level tasks may be edited
+            isDisabled: function(view, rowIdx, colIdx, item, record) {
+                return !record.data.leaf;
             }
         }]
     });

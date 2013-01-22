@@ -156,7 +156,8 @@ Ext.Loader = new function() {
         isInHistory = {},
         history = [],
         slashDotSlashRe = /\/\.\//g,
-        dotRe = /\./g;
+        dotRe = /\./g,
+        setPathCount = 0;
 
     Ext.apply(Loader, {
 
@@ -302,13 +303,13 @@ Ext.Loader = new function() {
          *     Ext.Loader.setPath('Ext', '.');
          *
          * @param {String/Object} name See {@link Ext.Function#flexSetter flexSetter}
-         * @param {String} path See {@link Ext.Function#flexSetter flexSetter}
+         * @param {String} [path] See {@link Ext.Function#flexSetter flexSetter}
          * @return {Ext.Loader} this
          * @method
          */
         setPath: flexSetter(function(name, path) {
             Loader.config.paths[name] = path;
-
+            setPathCount++;
             return Loader;
         }),
 
@@ -321,9 +322,14 @@ Ext.Loader = new function() {
         addClassPathMappings: function(paths) {
             var name;
 
-            for(name in paths){
-                Loader.config.paths[name] = paths[name];
+            if(setPathCount == 0){
+                Loader.config.paths = paths;
+            } else {
+                for(name in paths){
+                    Loader.config.paths[name] = paths[name];
+                }
             }
+            setPathCount++;
             return Loader;
         },
 
@@ -410,8 +416,11 @@ Ext.Loader = new function() {
         },
 
         /**
-         * Loads all classes by the given names and all their direct dependencies; optionally executes the given callback function when
-         * finishes, within the optional scope. This method is aliased by {@link Ext#require Ext.require} for convenience
+         * Loads all classes by the given names and all their direct dependencies; optionally executes
+         * the given callback function when finishes, within the optional scope.
+         *
+         * {@link Ext#require} is alias for {@link Ext.Loader#require}.
+         *
          * @param {String/Array} expressions Can either be a string or an array of string
          * @param {Function} fn (Optional) The callback function
          * @param {Object} scope (Optional) The execution scope (`this`) of the callback function
@@ -424,7 +433,11 @@ Ext.Loader = new function() {
         },
 
         /**
-         * Synchronously loads all classes by the given names and all their direct dependencies; optionally executes the given callback function when finishes, within the optional scope. This method is aliased by {@link Ext#syncRequire} for convenience
+         * Synchronously loads all classes by the given names and all their direct dependencies; optionally
+         * executes the given callback function when finishes, within the optional scope.
+         *
+         * {@link Ext#syncRequire} is alias for {@link Ext.Loader#syncRequire}.
+         *
          * @param {String/Array} expressions Can either be a string or an array of string
          * @param {Function} fn (Optional) The callback function
          * @param {Object} scope (Optional) The execution scope (`this`) of the callback function
@@ -439,6 +452,8 @@ Ext.Loader = new function() {
          *     Ext.exclude('Ext.data.*').require('*');
          *
          *     Ext.exclude('widget.button*').require('widget.*');
+         *
+         * {@link Ext#exclude} is alias for {@link Ext.Loader#exclude}.
          *
          * @param {Array} excludes
          * @return {Object} object contains `require` method for chaining
@@ -703,7 +718,11 @@ Ext.Loader = new function() {
                 if (collect) {
                     for (prop in script) {
                         try {
-                            script[prop] = null;
+                            if (prop != 'src') {
+                                // If we set the src property to null IE 
+                                // will try and request a script at './null'
+                                script[prop] = null;
+                            }
                             delete script[prop];      // and prepare for GC
                         } catch (cleanEx) {
                             //ignore
@@ -1221,18 +1240,16 @@ Ext.Loader = new function() {
     //</feature>
 
     /**
-     * Convenient alias of {@link Ext.Loader#require}. Please see the introduction documentation of
-     * {@link Ext.Loader} for examples.
      * @member Ext
      * @method require
+     * @inheritdoc Ext.Loader#require
      */
     Ext.require = alias(Loader, 'require');
 
     /**
-     * Synchronous version of {@link Ext#require}, convenient alias of {@link Ext.Loader#syncRequire}.
-     *
      * @member Ext
      * @method syncRequire
+     * @inheritdoc Ext.Loader#syncRequire
      */
     Ext.syncRequire = alias(Loader, 'syncRequire');
 
@@ -1240,6 +1257,7 @@ Ext.Loader = new function() {
      * Convenient shortcut to {@link Ext.Loader#exclude}
      * @member Ext
      * @method exclude
+     * @inheritdoc Ext.Loader#exclude
      */
     Ext.exclude = alias(Loader, 'exclude');
 

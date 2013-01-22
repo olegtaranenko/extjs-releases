@@ -35,11 +35,11 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     */
     showSummaryRow: true,
 
-    // @private
-    nestedIdRe: /\{\{id\}([\w\-]*)\}/g,
+<span id='Ext-grid-feature-AbstractSummary-property-nestedIdRe'>    // @private
+</span>    nestedIdRe: /\{\{id\}([\w\-]*)\}/g,
 
-    // Listen for store updates. Eg, from an Editor.
-    init: function() {
+<span id='Ext-grid-feature-AbstractSummary-method-init'>    // Listen for store updates. Eg, from an Editor.
+</span>    init: function() {
         var me = this;
 
         // Summary rows must be kept in column order, so view must be refreshed on column move
@@ -51,8 +51,8 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         });
     },
 
-    // Refresh the whole view on edit so that the Summary gets updated
-    onStoreUpdate: function() {
+<span id='Ext-grid-feature-AbstractSummary-method-onStoreUpdate'>    // Refresh the whole view on edit so that the Summary gets updated
+</span>    onStoreUpdate: function() {
         var v = this.view;
         if (this.showSummaryRow) {
             v.saveScrollState();
@@ -118,10 +118,6 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         var comp     = Ext.getCmp(column.id),
             value    = summaryData[column.id],
             renderer = comp.summaryRenderer;
-            
-        if (!value &amp;&amp; value !== 0) {
-            value = '\u00a0';
-        }
 
         if (renderer) {
             value = renderer.call(
@@ -131,6 +127,11 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
                 column.dataIndex
             );
         }
+        
+        if (!value &amp;&amp; value !== 0) {
+            value = '\u00a0';
+        }
+        
         return value;
     },
 
@@ -147,7 +148,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     getSummary: function(store, type, field, group){
         if (type) {
             if (Ext.isFunction(type)) {
-                return store.aggregate(type, null, group);
+                return store.aggregate(type, null, group, [field]);
             }
 
             switch (type) {

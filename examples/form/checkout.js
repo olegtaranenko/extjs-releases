@@ -8,12 +8,6 @@ Ext.onReady(function() {
 
     var formPanel,
 
-        // The data store for the State comboboxes
-        statesStore = Ext.create('Ext.data.ArrayStore', {
-            fields: ['abbr'],
-            data : Ext.example.states // from states.js
-        }),
-
         // The data store for the Month combobox 
         monthsStore = Ext.create('Ext.data.Store', {
             fields: ['name', 'num'],
@@ -31,9 +25,13 @@ Ext.onReady(function() {
      * values for Billing Address is checked, this copies the values over as they change.
      */
     function onMailingAddrFieldChange(field) {
-        var copyToBilling = formPanel.down('[name=billingSameAsMailing]').getValue();
+        var copyToBilling = formPanel.down('[name=billingSameAsMailing]').getValue(),
+            copyField = formPanel.down('[name=' + field.billingFieldName + ']');
+             
         if (copyToBilling) {
-            formPanel.down('[name=' + field.billingFieldName + ']').setValue(field.getValue());
+            copyField.setValue(field.getValue());
+        } else {
+            copyField.clearInvalid();
         }
     }
 
@@ -87,6 +85,7 @@ Ext.onReady(function() {
                     xtype: 'container',
                     layout: 'hbox',
                     defaultType: 'textfield',
+                    margin: '0 0 5 0',
                     items: [{
                         fieldLabel: 'Email Address',
                         name: 'email',
@@ -124,6 +123,7 @@ Ext.onReady(function() {
                 }, {
                     xtype: 'container',
                     layout: 'hbox',
+                    margin: '0 0 5 0',
                     items: [{
                         xtype: 'textfield',
                         fieldLabel: 'City',
@@ -140,7 +140,10 @@ Ext.onReady(function() {
                         fieldLabel: 'State',
                         labelWidth: 50,
                         width: 100,
-                        store: statesStore,
+                        store: Ext.create('Ext.data.ArrayStore', {
+                            fields: ['abbr'],
+                            data : Ext.example.states // from states.js
+                        }),
                         valueField: 'abbr',
                         displayField: 'abbr',
                         typeAhead: true,
@@ -197,7 +200,7 @@ Ext.onReady(function() {
                             // This must only be applied when it is not IE6, as it has issues with opacity when cleartype
                             // is enabled
                             if (!Ext.isIE6) {
-                                field.el.animate({opacity: checked ? .3 : 1});
+                                field.el.animate({opacity: checked ? 0.3 : 1});
                             }
                         });
                     }
@@ -211,6 +214,7 @@ Ext.onReady(function() {
                 }, {
                     xtype: 'container',
                     layout: 'hbox',
+                    margin: '0 0 5 0',
                     items: [{
                         xtype: 'textfield',
                         fieldLabel: 'City',
@@ -226,7 +230,10 @@ Ext.onReady(function() {
                         fieldLabel: 'State',
                         labelWidth: 50,
                         width: 100,
-                        store: statesStore,
+                        store: Ext.create('Ext.data.ArrayStore', {
+                            fields: ['abbr'],
+                            data : Ext.example.states // from states.js
+                        }),
                         valueField: 'abbr',
                         displayField: 'abbr',
                         typeAhead: true,
@@ -292,6 +299,7 @@ Ext.onReady(function() {
                 }, {
                     xtype: 'container',
                     layout: 'hbox',
+                    margin: '0 0 5 0',
                     items: [{
                         xtype: 'textfield',
                         name: 'ccNumber',

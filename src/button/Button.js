@@ -263,6 +263,13 @@ Ext.define('Ext.button.Button', {
      * The position to align the menu to (see {@link Ext.Element#alignTo} for more details).
      */
     menuAlign: 'tl-bl?',
+    
+    /**
+     * @cfg {Boolean} showEmptyMenu
+     * True to force an attached {@link #cfg-menu} with no items to be shown when clicking 
+     * this button. By default, the menu will not show if it is empty.
+     */
+    showEmptyMenu: false,
 
     /**
      * @cfg {String} textAlign
@@ -413,7 +420,7 @@ Ext.define('Ext.button.Button', {
     ],
 
     /**
-     * @cfg {String} scale
+     * @cfg {"small"/"medium"/"large"} scale
      * The size of the Button. Three values are allowed:
      *
      * - 'small' - Results in the button element being 16px high.
@@ -565,7 +572,25 @@ Ext.define('Ext.button.Button', {
              * @param {Ext.menu.Menu} menu
              * @param {Event} e
              */
-            'menutriggerout'
+            'menutriggerout',
+
+            /**
+             * @event textchange
+             * Fired when the button's text is changed by the {@link #setText} method.
+             * @param {Ext.button.Button} this
+             * @param {String} oldText
+             * @param {String} newText
+             */
+            'textchange',
+
+            /**
+             * @event iconchange
+             * Fired when the button's icon is changed by the {@link #setIcon} or {@link #setIconCls} methods.
+             * @param {Ext.button.Button} this
+             * @param {String} oldIcon
+             * @param {String} newIcon
+             */
+            'iconchange'
         );
 
         if (me.menu) {
@@ -633,7 +658,7 @@ Ext.define('Ext.button.Button', {
         this.useElForFocus = false;
     },
 
-    // private
+    // @private
     setComponentCls: function() {
         var me = this,
             cls = me.getComponentCls();
@@ -685,7 +710,7 @@ Ext.define('Ext.button.Button', {
         }
     },
 
-    // private
+    // @private
     onRender: function() {
         var me = this,
             addOnclick,
@@ -812,7 +837,7 @@ Ext.define('Ext.button.Button', {
     /**
      * @private
      * If there is a configured href for this Button, returns the href with parameters appended.
-     * @returns The href string with parameters appended.
+     * @return {String/Boolean}The href string with parameters appended.
      */
     getHref: function() {
         var me = this,
@@ -845,25 +870,55 @@ Ext.define('Ext.button.Button', {
     },
 
     /**
+     * Sets the background image (inline style) of the button. This method also changes the value of the {@link #icon}
+     * config internally.
+     * @param {String} icon The path to an image to display in the button
+     * @return {Ext.button.Button} this
+     */
+    setIcon: function(icon) {
+        icon = icon || '';
+        var me = this,
+            btnIconEl = me.btnIconEl,
+            oldIcon = me.icon || '';
+            
+        me.icon = icon;
+        if (icon != oldIcon) {
+            if (btnIconEl) {
+                btnIconEl.setStyle('background-image', icon ? 'url(' + icon + ')': '');
+                me.setComponentCls();
+                if (me.didIconStateChange(oldIcon, icon)) {
+                    me.updateLayout();
+                }
+            }
+            me.fireEvent('iconchange', me, oldIcon, icon);
+        }
+        return me;
+    },
+    
+    /**
      * Sets the CSS class that provides a background image to use as the button's icon. This method also changes the
      * value of the {@link #iconCls} config internally.
      * @param {String} cls The CSS class providing the icon image
      * @return {Ext.button.Button} this
      */
     setIconCls: function(cls) {
+        cls = cls || '';
         var me = this,
             btnIconEl = me.btnIconEl,
-            oldCls = me.iconCls;
+            oldCls = me.iconCls || '';
             
         me.iconCls = cls;
-        if (btnIconEl) {
-            // Remove the previous iconCls from the button
-            btnIconEl.removeCls(oldCls);
-            btnIconEl.addCls(cls || '');
-            me.setComponentCls();
-            if (me.didIconStateChange(oldCls, cls)) {
-                me.updateLayout();
+        if (oldCls != cls) {
+            if (btnIconEl) {
+                // Remove the previous iconCls from the button
+                btnIconEl.removeCls(oldCls);
+                btnIconEl.addCls(cls || '');
+                me.setComponentCls();
+                if (me.didIconStateChange(oldCls, cls)) {
+                    me.updateLayout();
+                }
             }
+            me.fireEvent('iconchange', me, oldCls, cls);
         }
         return me;
     },
@@ -885,7 +940,7 @@ Ext.define('Ext.button.Button', {
             if (!initial) {
                 me.clearTip();
             }
-            if (Ext.isObject(tooltip)) {
+            if (Ext.quickTipsActive && Ext.isObject(tooltip)) {
                 Ext.tip.QuickTipManager.register(Ext.apply({
                     target: me.btnEl.id
                 },
@@ -920,7 +975,7 @@ Ext.define('Ext.button.Button', {
         return this.tooltipType == 'qtip' ? 'data-qtip' : 'title';
     },
 
-    // private
+    // @private
     getRefItems: function(deep){
         var menu = this.menu,
             items;
@@ -932,14 +987,14 @@ Ext.define('Ext.button.Button', {
         return items || [];
     },
 
-    // private
+    // @private
     clearTip: function() {
-        if (Ext.isObject(this.tooltip)) {
+        if (Ext.quickTipsActive && Ext.isObject(this.tooltip)) {
             Ext.tip.QuickTipManager.unregister(this.btnEl);
         }
     },
 
-    // private
+    // @private
     beforeDestroy: function() {
         var me = this;
         if (me.rendered) {
@@ -952,7 +1007,7 @@ Ext.define('Ext.button.Button', {
         me.callParent();
     },
 
-    // private
+    // @private
     onDestroy: function() {
         var me = this;
         if (me.rendered) {
@@ -986,42 +1041,26 @@ Ext.define('Ext.button.Button', {
      * @return {Ext.button.Button} this
      */
     setText: function(text) {
-        var me = this;
-        me.text = text;
-        if (me.rendered) {
-            me.btnInnerEl.update(text || '&#160;');
-            me.setComponentCls();
-            if (Ext.isStrict && Ext.isIE8) {
-                // weird repaint issue causes it to not resize
-                me.el.repaint();
+        text = text || '';
+        var me = this,
+            oldText = me.text || '';
+
+        if (text != oldText) {
+            me.text = text;
+            if (me.rendered) {
+                me.btnInnerEl.update(text || '&#160;');
+                me.setComponentCls();
+                if (Ext.isStrict && Ext.isIE8) {
+                    // weird repaint issue causes it to not resize
+                    me.el.repaint();
+                }
+                me.updateLayout();
             }
-            me.updateLayout();
+            me.fireEvent('textchange', me, oldText, text);
         }
         return me;
     },
 
-    /**
-     * Sets the background image (inline style) of the button. This method also changes the value of the {@link #icon}
-     * config internally.
-     * @param {String} icon The path to an image to display in the button
-     * @return {Ext.button.Button} this
-     */
-    setIcon: function(icon) {
-        var me = this,
-            btnIconEl = me.btnIconEl,
-            oldIcon = me.icon;
-            
-        me.icon = icon;
-        if (btnIconEl) {
-            btnIconEl.setStyle('background-image', icon ? 'url(' + icon + ')': '');
-            me.setComponentCls();
-            if (me.didIconStateChange(oldIcon, icon)) {
-                me.updateLayout();
-            }
-        }
-        return me;
-    },
-    
     /**
      * Checks if the icon/iconCls changed from being empty to having a value, or having a value to being empty.
      * @private
@@ -1067,24 +1106,28 @@ Ext.define('Ext.button.Button', {
     maybeShowMenu: function(){
         var me = this;
         if (me.menu && !me.hasVisibleMenu() && !me.ignoreNextClick) {
-            me.showMenu();
+            me.showMenu(true);
         }
     },
 
     /**
      * Shows this button's menu (if it has one)
      */
-    showMenu: function() {
-        var me = this;
-        if (me.rendered && me.menu) {
-            if (me.tooltip && me.getTipAttr() != 'title') {
+    showMenu: function(/* private */ fromEvent) {
+        var me = this,
+            menu = me.menu;
+            
+        if (me.rendered) {
+            if (me.tooltip && Ext.quickTipsActive && me.getTipAttr() != 'title') {
                 Ext.tip.QuickTipManager.getQuickTip().cancelShow(me.btnEl);
             }
-            if (me.menu.isVisible()) {
-                me.menu.hide();
+            if (menu.isVisible()) {
+                menu.hide();
             }
 
-            me.menu.showBy(me.el, me.menuAlign, ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) ? [-2, -2] : undefined);
+            if (!fromEvent || me.showEmptyMenu || menu.items.getCount() > 0) {
+                menu.showBy(me.el, me.menuAlign, ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) ? [-2, -2] : undefined);
+            }
         }
         return me;
     },
@@ -1108,12 +1151,12 @@ Ext.define('Ext.button.Button', {
         return menu && menu.rendered && menu.isVisible();
     },
 
-    // private
+    // @private
     onRepeatClick: function(repeat, e) {
         this.onClick(e);
     },
 
-    // private
+    // @private
     onClick: function(e) {
         var me = this;
         if (me.preventDefault || (me.disabled && me.getHref()) && e) {
@@ -1346,7 +1389,7 @@ Ext.define('Ext.button.Button', {
         // me.disabledCls += ' ' + me.baseCls + '-' + me.ui + '-disabled';
     },
 
-    // private
+    // @private
     onMouseDown: function(e) {
         var me = this;
         if (!me.disabled && e.button === 0) {
@@ -1354,7 +1397,7 @@ Ext.define('Ext.button.Button', {
             me.doc.on('mouseup', me.onMouseUp, me);
         }
     },
-    // private
+    // @private
     onMouseUp: function(e) {
         var me = this;
         if (e.button === 0) {
@@ -1364,7 +1407,7 @@ Ext.define('Ext.button.Button', {
             me.doc.un('mouseup', me.onMouseUp, me);
         }
     },
-    // private
+    // @private
     onMenuShow: function(e) {
         var me = this;
         me.ignoreNextClick = 0;
@@ -1372,7 +1415,7 @@ Ext.define('Ext.button.Button', {
         me.fireEvent('menushow', me, me.menu);
     },
 
-    // private
+    // @private
     onMenuHide: function(e) {
         var me = this;
         me.removeClsWithUI(me.menuActiveCls);
@@ -1380,12 +1423,12 @@ Ext.define('Ext.button.Button', {
         me.fireEvent('menuhide', me, me.menu);
     },
 
-    // private
+    // @private
     restoreClick: function() {
         this.ignoreNextClick = 0;
     },
 
-    // private
+    // @private
     onDownKey: function() {
         var me = this;
 

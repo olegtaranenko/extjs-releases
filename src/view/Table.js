@@ -116,7 +116,7 @@ Ext.define('Ext.view.Table', {
 
         /**
          * @private
-         * @property {Ext.dom.AbstractElement.Fly} table
+         * @property {Ext.dom.Element.Fly} table
          * A flyweight Ext.Element which encapsulates a reference to the transient `<table>` element within this View.
          * *Note that the `dom` reference will not be present until the first data refresh*
          */
@@ -308,8 +308,6 @@ Ext.define('Ext.view.Table', {
      * @private
      * Converts the features array as configured, into an array of instantiated Feature objects.
      * 
-     * This is borrowed by Lockable which clones and distributes Features to both child grids of a locking grid.
-     * 
      * Must have no side effects other than Feature instantiation.
      * 
      * MUST NOT update the this.features property, and MUST NOT update the instantiated Features.
@@ -420,7 +418,7 @@ Ext.define('Ext.view.Table', {
                 rowParams = {};
                 rec = preppedRecords[j];
                 cls = rec.rowCls || '';
-                rec.rowCls = this.getRowClass(records[j], j, rowParams, me.store) + ' ' + cls;
+                rec.rowCls = me.getRowClass(records[j], j, rowParams, me.store) + ' ' + cls;
                 //<debug>
                 if (rowParams.alt) {
                     Ext.Error.raise("The getRowClass alt property is no longer supported.");
@@ -633,6 +631,7 @@ Ext.define('Ext.view.Table', {
             if (adjustment) {
                 panel.scrollByDeltaY(adjustment);
             }
+            el.focus();
             me.fireEvent('rowfocus', record, row, rowIdx);
         }
     },
@@ -698,9 +697,10 @@ Ext.define('Ext.view.Table', {
     onUpdate : function(store, record, operation, changedFieldNames) {
         var me = this,
             index,
-            newRow, newAttrs, attLen, i, attName, oldRow, oldRowDom,
+            newRow, newAttrs, attLen, attName, oldRow, oldRowDom,
             oldCells, newCells, len, i,
             columns, overItemCls,
+            isAlt, altCls,
             isHovered, row,
             // See if an editing plugin is active.
             isEditing = me.editingPlugin && me.editingPlugin.editing;
@@ -710,6 +710,7 @@ Ext.define('Ext.view.Table', {
             index = me.store.indexOf(record);
             columns = me.headerCt.getGridColumns();
             overItemCls = me.overItemCls;
+            altCls = me.altRowCls;
 
             // If we have columns which may *need* updating (think lockable grid child with all columns either locked or unlocked)
             // and the changed record is within our view, then update the view
@@ -719,6 +720,8 @@ Ext.define('Ext.view.Table', {
                 if (oldRow) {
                     oldRowDom = oldRow.dom;
                     isHovered = oldRow.hasCls(overItemCls);
+                    
+                    isAlt = oldRow.hasCls(altCls);
 
                     // Copy new row attributes across. Use IE-specific method if possible.
                     if (oldRowDom.mergeAttributes) {
@@ -736,6 +739,10 @@ Ext.define('Ext.view.Table', {
 
                     if (isHovered) {
                         oldRow.addCls(overItemCls);
+                    }
+                    
+                    if (isAlt) {
+                        oldRow.addCls(altCls);
                     }
 
                     // Replace changed cells in the existing row structure with the new version from the rendered row.
@@ -759,8 +766,11 @@ Ext.define('Ext.view.Table', {
                             }
                         }
                     }
+                    me.selModel.onUpdate(record);
                 }
-                me.fireEvent('itemupdate', record, index, newRow);
+                // Since we don't actually replace the row, we need to fire the event with the old row
+                // because it's the thing that is still in the DOM
+                me.fireEvent('itemupdate', record, index, oldRow);
             }
         }
     },
@@ -837,7 +847,6 @@ Ext.define('Ext.view.Table', {
 
     processSpecialEvent: function(e) {
         var me = this,
-            map = me.statics().EventMap,
             features = me.features,
             ln = features.length,
             type = e.type,
@@ -1158,9 +1167,9 @@ Ext.define('Ext.view.Table', {
     },
     
     // after removing a row stripe rows from then on
-    onRemove: function(ds, records, index) {
+    onRemove: function(ds, records, indexes) {
         this.callParent(arguments);
-        this.doStripeRows(index);
+        this.doStripeRows(indexes[0]);
     },
     
     /**

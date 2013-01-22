@@ -45,6 +45,7 @@ Ext.util.DelayedTask = function(fn, scope, args) {
             clearInterval(id);
             id = null;
             fn.apply(scope, args || []);
+            Ext.EventManager.idleEvent.fire();
         };
 
     /**

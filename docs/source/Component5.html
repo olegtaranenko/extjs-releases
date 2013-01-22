@@ -140,11 +140,11 @@ Ext.define('Ext.flash.Component', {
      * populated after the component is rendered and the SWF has been successfully embedded.
      */
 
-    // Have to create a placeholder div with the swfId, which SWFObject will replace with the object/embed element.
-    renderTpl: ['&lt;div id=&quot;{swfId}&quot;&gt;&lt;/div&gt;'],
+<span id='Ext-flash-Component-property-renderTpl'>    // Have to create a placeholder div with the swfId, which SWFObject will replace with the object/embed element.
+</span>    renderTpl: ['&lt;div id=&quot;{swfId}&quot;&gt;&lt;/div&gt;'],
 
-    initComponent: function() {
-        // &lt;debug&gt;
+<span id='Ext-flash-Component-method-initComponent'>    initComponent: function() {
+</span>        // &lt;debug&gt;
         if (!('swfobject' in window)) {
             Ext.Error.raise('The SWFObject library is not loaded. Ext.flash.Component requires SWFObject version 2.2 or later: http://code.google.com/p/swfobject/');
         }
@@ -171,16 +171,16 @@ Ext.define('Ext.flash.Component', {
         );
     },
     
-    beforeRender: function(){
-        this.callParent();
+<span id='Ext-flash-Component-method-beforeRender'>    beforeRender: function(){
+</span>        this.callParent();
         
         Ext.applyIf(this.renderData, {
             swfId: this.getSwfId()
         });
     },
 
-    afterRender: function() {
-        var me = this,
+<span id='Ext-flash-Component-method-afterRender'>    afterRender: function() {
+</span>        var me = this,
             flashParams = Ext.apply({}, me.flashParams), 
             flashVars = Ext.apply({}, me.flashVars);
 
@@ -234,16 +234,16 @@ Ext.define('Ext.flash.Component', {
         return this.swfId || (this.swfId = &quot;extswf&quot; + this.getAutoId());
     },
 
-    onSuccess: function() {
-        // swfobject forces visiblity:visible on the swf element, which prevents it 
+<span id='Ext-flash-Component-method-onSuccess'>    onSuccess: function() {
+</span>        // swfobject forces visiblity:visible on the swf element, which prevents it 
         // from getting hidden when an ancestor is given visibility:hidden.
         this.swf.setStyle('visibility', 'inherit');
     },
 
-    onFailure: Ext.emptyFn,
-
-    beforeDestroy: function() {
-        var me = this,
+<span id='Ext-flash-Component-method-onFailure'>    onFailure: Ext.emptyFn,
+</span>
+<span id='Ext-flash-Component-method-beforeDestroy'>    beforeDestroy: function() {
+</span>        var me = this,
             swf = me.swf;
         if (swf) {
             swfobject.removeSWF(me.getSwfId());

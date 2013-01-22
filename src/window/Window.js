@@ -60,6 +60,12 @@ Ext.define('Ext.window.Window', {
      */
 
     /**
+     * @cfg {Boolean/Function} ghost
+     * Set to false to disable the ghost panel during dragging the window.
+     * Do note that you should not set this to true, by default it is a function.
+     */
+
+    /**
      * @cfg {String/Number/Ext.Component} defaultFocus
      * Specifies a Component to receive focus when this Window is focused.
      *
@@ -87,6 +93,11 @@ Ext.define('Ext.window.Window', {
     /**
      * @cfg {Boolean} [maximized=false]
      * True to initially display the window in a maximized state.
+     */
+    
+    /**
+     * @cfg {Boolean} [hideShadowOnDeactivate=false]
+     * True to hide this Window's shadow when another floating item in the same z-index stack is activated.
      */
 
     /**
@@ -127,12 +138,6 @@ Ext.define('Ext.window.Window', {
      * Optionally the entire window can be constrained using {@link #constrain}.
      */
     constrainHeader: false,
-
-    /**
-     * @cfg {Ext.util.Region/Ext.Element} constrainTo
-     * A {@link Ext.util.Region Region} (or an element from which a Region measurement will be read) which is used
-     * to constrain the window.
-     */
 
     /**
      * @cfg {Boolean} plain
@@ -234,7 +239,7 @@ Ext.define('Ext.window.Window', {
      */
     isWindow: true,
 
-    // private
+    // @private
     initComponent: function() {
         var me = this;
         // Explicitly set frame to false, since alwaysFramed is
@@ -315,17 +320,29 @@ Ext.define('Ext.window.Window', {
     },
 
     // State Management
-    // private
-
+    
+    // @private
     getState: function() {
         var me = this,
             state = me.callParent() || {},
-            maximized = !!me.maximized;
+            maximized = !!me.maximized,
+            ghostBox = me.ghostBox,
+            pos;
 
+        
         state.maximized = maximized;
+        if (maximized) {
+            pos = me.restorePos;
+        } else if (ghostBox) {
+            // If we're animating a show, it will be from offscreen, so
+            // grab the position from the final box
+            pos = [ghostBox.x, ghostBox.y];
+        } else {
+            pos = me.getPosition();
+        }
         Ext.apply(state, {
             size: maximized ? me.restoreSize : me.getSize(),
-            pos: maximized ? me.restorePos : me.getPosition()
+            pos: pos
         });
         return state;
     },
@@ -350,7 +367,7 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
+    // @private
     onMouseDown: function (e) {
         var preventFocus;
             
@@ -362,7 +379,7 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
+    // @private
     onRender: function(ct, position) {
         var me = this;
         me.callParent(arguments);
@@ -377,9 +394,10 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
+    // @private
     afterRender: function() {
         var me = this,
+            header = me.header,
             keyMap;
 
         me.callParent();
@@ -388,6 +406,9 @@ Ext.define('Ext.window.Window', {
         if (me.maximized) {
             me.maximized = false;
             me.maximize();
+            if (header) {
+                header.removeCls(header.indicateDragCls)
+            }
         }
 
         if (me.closable) {
@@ -408,7 +429,7 @@ Ext.define('Ext.window.Window', {
      */
     initDraggable: function() {
         var me = this,
-            ddConfig;
+            ddConfig, dd;
 
         if (!me.header) {
             me.updateHeader(true);
@@ -442,12 +463,22 @@ Ext.define('Ext.window.Window', {
              * extra logic is needed at these points, use {@link Ext.Function#createInterceptor createInterceptor} or
              * {@link Ext.Function#createSequence createSequence} to augment the existing implementations.
              */
-            me.dd = new Ext.util.ComponentDragger(this, ddConfig);
-            me.relayEvents(me.dd, ['dragstart', 'drag', 'dragend']);
+            dd = me.dd = new Ext.util.ComponentDragger(this, ddConfig);
+            me.relayEvents(dd, ['dragstart', 'drag', 'dragend']);
+            if (me.maximized) {
+                dd.disable();
+            }
+        }
+    },
+    
+    initResizable: function(){
+        this.callParent(arguments);
+        if (this.maximized) {
+            this.resizer.disable();
         }
     },
 
-    // private
+    // @private
     onEsc: function(k, e) {
         // Only process ESC if the FocusManager is not doing it
         if (!Ext.FocusManager || !Ext.FocusManager.enabled || Ext.FocusManager.focusedCmp === this) {
@@ -456,7 +487,7 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
+    // @private
     beforeDestroy: function() {
         var me = this;
         if (me.rendered) {
@@ -586,7 +617,7 @@ Ext.define('Ext.window.Window', {
         }
    },
 
-    // private
+    // @private
     doClose: function() {
         var me = this;
 
@@ -602,7 +633,7 @@ Ext.define('Ext.window.Window', {
         }
     },
 
-    // private
+    // @private
     afterHide: function() {
         var me = this;
 
@@ -618,7 +649,7 @@ Ext.define('Ext.window.Window', {
         me.callParent(arguments);
     },
 
-    // private
+    // @private
     onWindowResize: function() {
         var me = this,
             sizeModel;
@@ -630,9 +661,9 @@ Ext.define('Ext.window.Window', {
             if (sizeModel.width.natural || sizeModel.height.natural) {
                 me.updateLayout();
             }
+            me.doConstrain();
         }
 
-        me.doConstrain();
     },
 
     /**
@@ -679,7 +710,8 @@ Ext.define('Ext.window.Window', {
      * @return {Ext.window.Window} this
      */
     maximize: function() {
-        var me = this;
+        var me = this,
+            header = me.header;
 
         if (!me.maximized) {
             me.expand(false);
@@ -696,6 +728,9 @@ Ext.define('Ext.window.Window', {
 
             if (me.dd) {
                 me.dd.disable();
+                if (header) {
+                   header.removeCls(header.indicateDragCls)
+                }
             }
             if (me.resizer) {
                 me.resizer.disable();
@@ -720,7 +755,8 @@ Ext.define('Ext.window.Window', {
      */
     restore: function() {
         var me = this,
-            tools = me.tools;
+            tools = me.tools,
+            header = me.header;
 
         if (me.maximized) {
             delete me.hasSavedRestore;
@@ -752,6 +788,9 @@ Ext.define('Ext.window.Window', {
             // Allow users to drag and drop again
             if (me.dd) {
                 me.dd.enable();
+                if (header) {
+                    header.addCls(header.indicateDragCls)
+                }
             }
             
             if (me.resizer) {
@@ -783,8 +822,9 @@ Ext.define('Ext.window.Window', {
         if (yes && !veto) {
             // we should be listening...
             if (!currentlyMonitoring) {
-                // but we aren't, so set it up
-                Ext.EventManager.onWindowResize(me.onWindowResize, me);
+                // but we aren't, so set it up.
+                // Delay so that we jump over any Viewport resize activity
+                Ext.EventManager.onWindowResize(me.onWindowResize, me, {delay: 1});
                 me._monitoringResize = true;
             }
         } else if (currentlyMonitoring) {

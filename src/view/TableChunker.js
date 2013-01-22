@@ -32,11 +32,10 @@ Ext.define('Ext.view.TableChunker', {
     },
 
     embedFeature: function(values, parent, x, xcount) {
-        var tpl = '';
         if (!values.disabled) {
-            tpl = values.getFeatureTpl(values, parent, x, xcount);
+            return values.getFeatureTpl(values, parent, x, xcount);
         }
-        return tpl;
+        return '';
     },
 
     embedFullWidth: function(values) {
@@ -67,13 +66,18 @@ Ext.define('Ext.view.TableChunker', {
             '</tpl>',
         '</tr>'
     ],
-
+    
     firstOrLastCls: function(xindex, xcount) {
+        var result = '';
+        
         if (xindex === 1) {
-            return Ext.view.Table.prototype.firstCls;
-        } else if (xindex === xcount) {
-            return Ext.view.Table.prototype.lastCls;
+            result = Ext.view.Table.prototype.firstCls;
         }
+        
+        if (xindex === xcount) {
+            result += ' ' + Ext.view.Table.prototype.lastCls;
+        }
+        return result;
     },
     
     embedRowCls: function() {
@@ -89,31 +93,31 @@ Ext.define('Ext.view.TableChunker', {
     closeTableWrap: undefined,
 
     getTableTpl: function(cfg, textOnly) {
-        var tpl,
+        var me = this,
+            tpl,
             tableTplMemberFns = {
-                openRows: this.openRows,
-                closeRows: this.closeRows,
-                embedFeature: this.embedFeature,
-                embedFullWidth: this.embedFullWidth,
-                openTableWrap: this.openTableWrap,
-                closeTableWrap: this.closeTableWrap
+                openRows: me.openRows,
+                closeRows: me.closeRows,
+                embedFeature: me.embedFeature,
+                embedFullWidth: me.embedFullWidth,
+                openTableWrap: me.openTableWrap,
+                closeTableWrap: me.closeTableWrap
             },
             tplMemberFns = {},
-            features = cfg.features || [],
-            ln = features.length,
+            features = cfg.features,
+            featureCount = features ? features.length : 0,
             i  = 0,
             memberFns = {
-                embedRowCls: this.embedRowCls,
-                embedRowAttr: this.embedRowAttr,
-                firstOrLastCls: this.firstOrLastCls,
+                embedRowCls: me.embedRowCls,
+                embedRowAttr: me.embedRowAttr,
+                firstOrLastCls: me.firstOrLastCls,
                 unselectableAttr: cfg.enableTextSelection ? '' : 'unselectable="on"',
                 unselectableCls: cfg.enableTextSelection ? '' : Ext.baseCSSPrefix + 'unselectable'
             },
-            // copy the default
-            metaRowTpl = Array.prototype.slice.call(this.metaRowTpl, 0),
-            metaTableTpl;
-            
-        for (; i < ln; i++) {
+            // copy the template spec array if there are Features which might mutate it 
+            metaRowTpl = featureCount ? Array.prototype.slice.call(me.metaRowTpl, 0) : me.metaRowTpl;
+
+        for (; i < featureCount; i++) {
             if (!features[i].disabled) {
                 features[i].mutateMetaRowTpl(metaRowTpl);
                 Ext.apply(memberFns, features[i].getMetaRowTplFragments());
@@ -121,19 +125,15 @@ Ext.define('Ext.view.TableChunker', {
                 Ext.apply(tableTplMemberFns, features[i].getTableFragments());
             }
         }
-        
-        metaRowTpl = new Ext.XTemplate(metaRowTpl.join(''), memberFns);
-        cfg.row = metaRowTpl.applyTemplate(cfg);
-        
-        metaTableTpl = new Ext.XTemplate(this.metaTableTpl.join(''), tableTplMemberFns);
-        
-        tpl = metaTableTpl.applyTemplate(cfg);
+
+        cfg.row = new Ext.XTemplate(metaRowTpl.join(''), memberFns).applyTemplate(cfg);
+
+        tpl = new Ext.XTemplate(me.metaTableTpl.join(''), tableTplMemberFns).applyTemplate(cfg);
         
         // TODO: Investigate eliminating.
         if (!textOnly) {
             tpl = new Ext.XTemplate(tpl, tplMemberFns);
         }
         return tpl;
-        
     }
 });

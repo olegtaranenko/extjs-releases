@@ -85,13 +85,6 @@ Ext.define('Ext.menu.Menu', {
      */
 
     /**
-     * @cfg {String} [defaultAlign="tl-bl?"]
-     * The default {@link Ext.Element#getAlignToXY Ext.Element#getAlignToXY} anchor position value for this menu
-     * relative to its element of origin.
-     */
-    defaultAlign: 'tl-bl?',
-
-    /**
      * @cfg {Boolean} [floating=true]
      * A Menu configured as `floating: true` (the default) will be rendered as an absolutely positioned,
      * {@link Ext.Component#floating floating} {@link Ext.Component Component}. If configured as `floating: false`, the Menu may be
@@ -130,7 +123,7 @@ Ext.define('Ext.menu.Menu', {
     isMenu: true,
 
     /**
-     * @cfg {String/Object} layout
+     * @cfg {Ext.enums.Layout/Object} layout
      * @private
      */
 
@@ -231,17 +224,6 @@ Ext.define('Ext.menu.Menu', {
         }
 
         me.callParent(arguments);
-
-        me.on('beforeshow', function() {
-            var hasItems = !!me.items.length;
-            // FIXME: When a menu has its show cancelled because of no items, it
-            // gets a visibility: hidden applied to it (instead of the default display: none)
-            // Not sure why, but we remove this style when we want to show again.
-            if (hasItems && me.rendered) {
-                me.el.setStyle('visibility', null);
-            }
-            return hasItems;
-        });
     },
 
     beforeRender: function() {
@@ -322,18 +304,18 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    // inherit docs
+    // @inheritdoc
     getFocusEl: function() {
         return this.focusedItem || this.el;
     },
 
-    // inherit docs
+    // @inheritdocs
     hide: function() {
         this.deactivateActiveItem(true);
         this.callParent(arguments);
     },
 
-    // private
+    // @private
     getItemFromEvent: function(e) {
         return this.getChildByElement(e.getTarget());
     },
@@ -354,7 +336,7 @@ Ext.define('Ext.menu.Menu', {
         return cmp;
     },
 
-    // private
+    // @private
     lookupItemFromObject: function(cmp) {
         var me = this,
             prefix = Ext.baseCSSPrefix,
@@ -388,7 +370,7 @@ Ext.define('Ext.menu.Menu', {
         return cmp;
     },
 
-    // private
+    // @private
     lookupItemFromString: function(cmp) {
         return (cmp == 'separator' || cmp == '-') ?
             new Ext.menu.Separator()
@@ -503,24 +485,11 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    /**
-     * Shows the floating menu by the specified {@link Ext.Component Component} or {@link Ext.Element Element}.
-     * @param {Ext.Component/Ext.Element} component The {@link Ext.Component} or {@link Ext.Element} to show the menu by.
-     * @param {String} [position] Alignment position as used by {@link Ext.Element#getAlignToXY}.
-     * Defaults to `{@link #defaultAlign}`.
-     * @param {Number[]} [offsets] Alignment offsets as used by {@link Ext.Element#getAlignToXY}.
-     * @return {Ext.menu.Menu} This Menu.
-     */
     showBy: function(cmp, pos, off) {
         var me = this;
-
-        if (me.floating && cmp) {
-            me.show();
-
-            // Align to Component or Element using setPagePosition because normal show
-            // methods are container-relative, and we must align to the requested element
-            // or Component:
-            me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
+        me.callParent(arguments);
+        if (!me.hidden) {
+            // show may have been vetoed
             me.setVerticalPosition();
         }
         return me;
@@ -528,7 +497,7 @@ Ext.define('Ext.menu.Menu', {
 
     show: function() {
         var me = this,
-            parentEl, viewHeight, result,
+            parentEl, viewHeight,
             maxWas = me.maxHeight;
 
         // we need to get scope parent for height constraint
@@ -544,9 +513,9 @@ Ext.define('Ext.menu.Menu', {
             me.maxHeight  =  Math.min(maxWas || viewHeight, viewHeight);
         }
 
-        result = me.callParent(arguments);
+        me.callParent(arguments);
         me.maxHeight = maxWas;
-        return result;
+        return me;
     },
 
     afterComponentLayout: function(width, height, oldWidth, oldHeight){
@@ -558,7 +527,7 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    // private
+    // @private
     // adjust the vertical position of the menu if the height of the
     // menu is equal (or greater than) the viewport size
     setVerticalPosition: function(){

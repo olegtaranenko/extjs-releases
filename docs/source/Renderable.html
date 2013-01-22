@@ -78,12 +78,12 @@ Ext.define('Ext.util.Renderable', {
         'Ext.dom.Element'
     ],
 
-    frameCls: Ext.baseCSSPrefix + 'frame',
-
-    frameIdRegex: /[\-]frame\d+[TMB][LCR]$/,
-
-    frameElementCls: {
-        tl: [],
+<span id='Ext-util-Renderable-property-frameCls'>    frameCls: Ext.baseCSSPrefix + 'frame',
+</span>
+<span id='Ext-util-Renderable-property-frameIdRegex'>    frameIdRegex: /[\-]frame\d+[TMB][LCR]$/,
+</span>
+<span id='Ext-util-Renderable-property-frameElementCls'>    frameElementCls: {
+</span>        tl: [],
         tc: [],
         tr: [],
         ml: [],
@@ -94,10 +94,10 @@ Ext.define('Ext.util.Renderable', {
         br: []
     },
 
-    frameElNames: ['TL','TC','TR','ML','MC','MR','BL','BC','BR'],
-
-    frameTpl: [
-        '{%this.renderDockedItems(out,values,0);%}',
+<span id='Ext-util-Renderable-property-frameElNames'>    frameElNames: ['TL','TC','TR','ML','MC','MR','BL','BC','BR'],
+</span>
+<span id='Ext-util-Renderable-property-frameTpl'>    frameTpl: [
+</span>        '{%this.renderDockedItems(out,values,0);%}',
         '&lt;tpl if=&quot;top&quot;&gt;',
             '&lt;tpl if=&quot;left&quot;&gt;&lt;div id=&quot;{fgid}TL&quot; class=&quot;{frameCls}-tl {baseCls}-tl {baseCls}-{ui}-tl&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-{parent.ui}-{.}-tl&lt;/tpl&gt;&quot; style=&quot;background-position: {tl}; padding-left: {frameWidth}px&quot; role=&quot;presentation&quot;&gt;&lt;/tpl&gt;',
                 '&lt;tpl if=&quot;right&quot;&gt;&lt;div id=&quot;{fgid}TR&quot; class=&quot;{frameCls}-tr {baseCls}-tr {baseCls}-{ui}-tr&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-{parent.ui}-{.}-tr&lt;/tpl&gt;&quot; style=&quot;background-position: {tr}; padding-right: {frameWidth}px&quot; role=&quot;presentation&quot;&gt;&lt;/tpl&gt;',
@@ -122,8 +122,8 @@ Ext.define('Ext.util.Renderable', {
         '{%this.renderDockedItems(out,values,1);%}'
     ],
 
-    frameTableTpl: [
-        '{%this.renderDockedItems(out,values,0);%}',
+<span id='Ext-util-Renderable-property-frameTableTpl'>    frameTableTpl: [
+</span>        '{%this.renderDockedItems(out,values,0);%}',
         '&lt;table&gt;&lt;tbody&gt;',
             '&lt;tpl if=&quot;top&quot;&gt;',
                 '&lt;tr&gt;',
@@ -162,13 +162,13 @@ Ext.define('Ext.util.Renderable', {
         var me = this,
             data = {},
             protoEl = me.protoEl,
-            target = me.getTargetEl(),
+            target = me.el,
             item;
 
         me.finishRenderChildren();
 
         if (me.styleHtmlContent) {
-            target.addCls(me.styleHtmlCls);
+            me.getTargetEl().addCls(me.styleHtmlCls);
         }
         
         protoEl.writeTo(data);
@@ -199,8 +199,8 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    afterFirstLayout : function(width, height) {
-        var me = this,
+<span id='Ext-util-Renderable-method-afterFirstLayout'>    afterFirstLayout : function(width, height) {
+</span>        var me = this,
             hasX = Ext.isDefined(me.x),
             hasY = Ext.isDefined(me.y),
             pos, xy;
@@ -231,8 +231,8 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    onBoxReady: Ext.emptyFn,
-
+<span id='Ext-util-Renderable-method-onBoxReady'>    onBoxReady: Ext.emptyFn,
+</span>
 <span id='Ext-util-Renderable-method-applyRenderSelectors'>    /**
 </span>     * Sets references to elements inside the component. This applies {@link Ext.AbstractComponent#cfg-renderSelectors renderSelectors}
      * as well as {@link Ext.AbstractComponent#cfg-childEls childEls}.
@@ -259,8 +259,8 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    beforeRender: function () {
-        var me = this,
+<span id='Ext-util-Renderable-method-beforeRender'>    beforeRender: function () {
+</span>        var me = this,
             target = me.getTargetEl(),
             layout = me.getComponentLayout();
 
@@ -323,8 +323,8 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    doRenderContent: function (out, renderData) {
-        // Careful! This method is bolted on to the renderTpl so all we get for context is
+<span id='Ext-util-Renderable-method-doRenderContent'>    doRenderContent: function (out, renderData) {
+</span>        // Careful! This method is bolted on to the renderTpl so all we get for context is
         // the renderData! The &quot;this&quot; pointer is the renderTpl instance!
 
         var me = renderData.$comp;
@@ -348,8 +348,8 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    doRenderFramingDockedItems: function (out, renderData, after) {
-        // Careful! This method is bolted on to the frameTpl so all we get for context is
+<span id='Ext-util-Renderable-method-doRenderFramingDockedItems'>    doRenderFramingDockedItems: function (out, renderData, after) {
+</span>        // Careful! This method is bolted on to the frameTpl so all we get for context is
         // the renderData! The &quot;this&quot; pointer is the frameTpl instance!
 
         var me = renderData.$comp;
@@ -473,14 +473,14 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    finishRenderChildren: function () {
-        var layout = this.getComponentLayout();
+<span id='Ext-util-Renderable-method-finishRenderChildren'>    finishRenderChildren: function () {
+</span>        var layout = this.getComponentLayout();
 
         layout.finishRender();
     },
 
-    getElConfig : function() {
-        var me = this,
+<span id='Ext-util-Renderable-method-getElConfig'>    getElConfig : function() {
+</span>        var me = this,
             autoEl = me.autoEl,
             frameInfo = me.getFrameInfo(),
             config = {
@@ -545,8 +545,8 @@ Ext.define('Ext.util.Renderable', {
     },
 
     // Create the framingTpl from the string.
-    // Poke in a reference to applyRenderTpl(frameInfo, out)
-    initFramingTpl: function(table) {
+<span id='Ext-util-Renderable-method-initFramingTpl'>    // Poke in a reference to applyRenderTpl(frameInfo, out)
+</span>    initFramingTpl: function(table) {
         var tpl = table ? this.getTpl('frameTableTpl') : this.getTpl('frameTpl');
 
         if (tpl &amp;&amp; !tpl.applyRenderTpl) {
@@ -587,8 +587,8 @@ Ext.define('Ext.util.Renderable', {
         return position;
     },
 
-    getRenderTree: function() {
-        var me = this;
+<span id='Ext-util-Renderable-method-getRenderTree'>    getRenderTree: function() {
+</span>        var me = this;
 
         if (!me.hasListeners.beforerender || me.fireEvent('beforerender', me) !== false) {
             me.beforeRender();
@@ -613,8 +613,8 @@ Ext.define('Ext.util.Renderable', {
         return null;
     },
 
-    initContainer: function(container) {
-        var me = this;
+<span id='Ext-util-Renderable-method-initContainer'>    initContainer: function(container) {
+</span>        var me = this;
 
         // If you render a component specifying the el, we get the container
         // of the el, and make sure we dont move the el around in the dom
@@ -631,7 +631,7 @@ Ext.define('Ext.util.Renderable', {
 <span id='Ext-util-Renderable-method-initRenderData'>    /**
 </span>     * Initialized the renderData to be used when rendering the renderTpl.
      * @return {Object} Object with keys and values that are going to be applied to the renderTpl
-     * @private
+     * @protected
      */
     initRenderData: function() {
         var me = this;
@@ -852,12 +852,12 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    setupRenderTpl: function (renderTpl) {
-        renderTpl.renderBody = renderTpl.renderContent = this.doRenderContent;
+<span id='Ext-util-Renderable-method-setupRenderTpl'>    setupRenderTpl: function (renderTpl) {
+</span>        renderTpl.renderBody = renderTpl.renderContent = this.doRenderContent;
     },
 
-    wrapPrimaryEl: function (dom) {
-        this.el = Ext.get(dom, true);
+<span id='Ext-util-Renderable-method-wrapPrimaryEl'>    wrapPrimaryEl: function (dom) {
+</span>        this.el = Ext.get(dom, true);
     },
 
 <span id='Ext-util-Renderable-method-initFrame'>    /**
@@ -916,8 +916,8 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    updateFrame: function() {
-        if (Ext.supports.CSS3BorderRadius || !this.frame) {
+<span id='Ext-util-Renderable-method-updateFrame'>    updateFrame: function() {
+</span>        if (Ext.supports.CSS3BorderRadius || !this.frame) {
             return;
         }
 
@@ -1030,8 +1030,8 @@ Ext.define('Ext.util.Renderable', {
         return frameInfo;
     },
     
-    calculateFrame: function(left, top){
-        // We actually pass a string in the form of '[type][tl][tr]px [direction][br][bl]px' as
+<span id='Ext-util-Renderable-method-calculateFrame'>    calculateFrame: function(left, top){
+</span>        // We actually pass a string in the form of '[type][tl][tr]px [direction][br][bl]px' as
         // the background position of this.el from the CSS to indicate to IE that this component needs
         // framing. We parse it here.
         if (!(parseInt(left, 10) &gt;= 1000000 &amp;&amp; parseInt(top, 10) &gt;= 1000000)) {
@@ -1079,8 +1079,8 @@ Ext.define('Ext.util.Renderable', {
         return result;
     },
 
-    getFramePositions: function(frameInfo) {
-        var me = this,
+<span id='Ext-util-Renderable-method-getFramePositions'>    getFramePositions: function(frameInfo) {
+</span>        var me = this,
             frameWidth = frameInfo.maxWidth,
             dock = me.dock,
             positions, tc, bc, ml, mr;
@@ -1139,8 +1139,8 @@ Ext.define('Ext.util.Renderable', {
         return this.getTpl(table ? 'frameTableTpl' : 'frameTpl');
     },
 
-    // Cache the frame information object so as not to cause style recalculations
-    frameInfoCache: {}
+<span id='Ext-util-Renderable-property-frameInfoCache'>    // Cache the frame information object so as not to cause style recalculations
+</span>    frameInfoCache: {}
 });
 </pre>
 </body>

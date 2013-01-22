@@ -87,19 +87,27 @@ Ext.onReady(function(){
             {text: "% Change", dataIndex: 'pctChange'},
             {text: "Last Updated", renderer: Ext.util.Format.dateRenderer('m/d/Y'), dataIndex: 'lastChange'}
         ],
+        enableLocking: true,
         width: 600,
         height: 300,
         plugins: [{
             ptype: 'rowexpander',
-            rowBodyTpl : [
-                '<p><b>Company:</b> {company}</p><br>',
-                '<p><b>Summary:</b> {desc}</p>'
-            ]
+            rowBodyTpl : new Ext.XTemplate(
+                '<p><b>Company:</b> {company}</p>',
+                '<p><b>Change:</b> {change:this.formatChange}</p><br>',
+                '<p><b>Summary:</b> {desc}</p>',
+            {
+                formatChange: function(v){
+                    var color = v >= 0 ? 'green' : 'red';
+                    return '<span style="color: ' + color + ';">' + Ext.util.Format.usMoney(v) + '</span>';
+                }
+            })
         }],
         collapsible: true,
         animCollapse: false,
-        title: 'Expander Rows in a Collapsible Grid',
+        title: 'Expander Rows in a Collapsible Grid with lockable columns',
         iconCls: 'icon-grid',
+        margin: '0 0 20 0',
         renderTo: Ext.getBody()
     });
 
@@ -123,6 +131,7 @@ Ext.onReady(function(){
         frame: true,
         title: 'Framed with Checkbox Selection and Horizontal Scrolling',
         iconCls: 'icon-grid',
+        margin: '0 0 20 0',
         renderTo: Ext.getBody()
     });
 
@@ -144,6 +153,7 @@ Ext.onReady(function(){
         height:300,
         title:'Grid with Numbered Rows',
         iconCls:'icon-grid',
+        margin: '0 0 20 0',
         renderTo: Ext.getBody()
     });
 
@@ -153,7 +163,7 @@ Ext.onReady(function(){
     var selModel = Ext.create('Ext.selection.CheckboxModel', {
         listeners: {
             selectionchange: function(sm, selections) {
-                grid4.down('#removeButton').setDisabled(selections.length == 0);
+                grid4.down('#removeButton').setDisabled(selections.length === 0);
             }
         }
     });

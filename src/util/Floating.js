@@ -21,7 +21,7 @@ Ext.define('Ext.util.Floating', {
     shadow: 'sides',
 
     /**
-     * @cfg {String/Boolean} shadowOffset
+     * @cfg {Number} shadowOffset
      * Number of pixels to offset the shadow.
      */
 
@@ -37,9 +37,18 @@ Ext.define('Ext.util.Floating', {
             shim         : (me.shim === false) ? false : undefined
         }, me.floating), dom);
 
+        // If modal, and focus navigation not being handled by the FocusManager,
+        // catch tab navigation, and loop back in on tab off first or last item.
+        if (me.modal && !(Ext.FocusManager && Ext.FocusManager.enabled)) {
+            me.el.on({
+                keydown: me.onKeyDown,
+                scope: me
+            });
+        }
+
         // release config object (if it was one)
         me.floating = true;
-        
+
         // Register with the configured ownerCt.
         // With this we acquire a floatParent for relative positioning, and a zIndexParent which is an
         // ancestor floater which provides zIndex management.
@@ -62,6 +71,27 @@ Ext.define('Ext.util.Floating', {
             me.zIndexParent.registerFloatingItem(me);
         } else {
             Ext.WindowManager.register(me);
+        }
+    },
+
+    // Listen for TAB events and wrap round if tabbing of either end of the Floater
+    onKeyDown: function(e) {
+        var me = this,
+            shift,
+            focusables,
+            first,
+            last;
+
+        // If tabbing off either end, wrap round
+        if (e.getKey() == Ext.EventObject.TAB) {
+            shift = e.shiftKey;
+            focusables = me.el.query(':focusable');
+            first = focusables[0];
+            last = focusables[focusables.length - 1];
+            if (first && last && e.target === (shift ? first : last)) {
+                e.stopEvent();
+                (shift ? last : first).focus(false, true);
+            }
         }
     },
 
@@ -115,7 +145,7 @@ Ext.define('Ext.util.Floating', {
         }
     },
 
-    // private
+    // @private
     // z-index is managed by the zIndexManager and may be overwritten at any time.
     // Returns the next z-index to be used.
     // If this is a Container, then it will have rebased any managed floating Components,
@@ -176,7 +206,7 @@ Ext.define('Ext.util.Floating', {
         var me = this;
 
         if (me.constrain || me.constrainHeader) {
-            constrainTo = constrainTo || (me.floatParent && me.floatParent.getTargetEl()) || me.container || me.el.getScopeParent();
+            constrainTo = constrainTo || me.constrainTo || (me.floatParent && me.floatParent.getTargetEl()) || me.container || me.el.getScopeParent();
             return (me.constrainHeader ? me.header.el : me.el).getConstrainVector(constrainTo);
         }
     },
@@ -263,7 +293,7 @@ Ext.define('Ext.util.Floating', {
         } else {
             // Only the *Windows* in a zIndex stack share a shadow. All other types of floaters
             // can keep their shadows all the time
-            if (me.isWindow && (newActive && newActive.isWindow)) {
+            if (me.isWindow && (newActive && newActive.isWindow) && me.hideShadowOnDeactivate) {
                 me.el.disableShadow();
             }
             me.fireEvent('deactivate', me);
@@ -303,20 +333,24 @@ Ext.define('Ext.util.Floating', {
         delete this.needsCenter;
     },
 
-    // private
+    // @private
     syncShadow : function() {
         if (this.floating) {
             this.el.sync(true);
         }
     },
 
-    // private
+    // @private
     fitContainer: function() {
         var me = this,
             parent = me.floatParent,
             container = parent ? parent.getTargetEl() : me.container;
 
         me.setSize(container.getViewSize(false));
-        me.setPosition.apply(me, parent ? [0, 0] : container.getXY());
+        me.setPosition.apply(me, parent || (container.dom !== document.body) ?
+            // If we are a contained floater, or rendered to a div, maximized position is (0,0)
+            [0, 0] :
+            // If no parent and rendered to body, align with origin of container el.
+            container.getXY());
     }
 });

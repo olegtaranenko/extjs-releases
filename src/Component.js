@@ -68,11 +68,8 @@ Ext.define('Ext.Component', {
 
     extend: 'Ext.AbstractComponent',
 
-    requires: [
-        'Ext.util.DelayedTask'
-    ],
-
     uses: [
+        'Ext.util.DelayedTask',
         'Ext.Layer',
         'Ext.resizer.Resizer',
         'Ext.util.ComponentDragger'
@@ -170,6 +167,13 @@ Ext.define('Ext.Component', {
      * not be set.
      */
     floating: false,
+    
+    /**
+     * @cfg {String} [defaultAlign="tl-bl?"]
+     * The default {@link Ext.Element#getAlignToXY Ext.Element#getAlignToXY} anchor position value for this menu
+     * relative to its element of origin. Used in conjunction with {@link #showBy}.
+     */
+    defaultAlign: 'tl-bl?',
 
     /**
      * @cfg {Boolean} toFrontOnShow
@@ -177,6 +181,12 @@ Ext.define('Ext.Component', {
      * floating component.
      */
     toFrontOnShow: true,
+    
+    /**
+     * @cfg {Ext.util.Region/Ext.Element} constrainTo
+     * A {@link Ext.util.Region Region} (or an element from which a Region measurement will be read) which is used
+     * to constrain the component. Only applies when the component is floating.
+     */
 
     /**
      * @property {Ext.ZIndexManager} zIndexManager
@@ -203,15 +213,16 @@ Ext.define('Ext.Component', {
 
     /**
      * @property {Ext.Container} floatParent
-     * Only present for {@link #floating} Components which were inserted as child items of Containers.
+     * **Only present for {@link #floating} Components which were inserted as child items of Containers.**
+     *
+     * There are other similar relationships such as the {@link Ext.button.Button button} which activates a {@link Ext.button.Button#cfg-menu menu}, or the
+     * {@link Ext.menu.Item menu item} which activated a {@link Ext.menu.Item#cfg-menu submenu}, or the
+     * {@link Ext.grid.column.Column column header} which activated the column menu.
+     *
+     * These differences are abstracted away by the {@link #up} method.
      *
      * Floating Components that are programatically {@link Ext.Component#method-render rendered} will not have a `floatParent`
      * property.
-     *
-     * For {@link #floating} Components which are child items of a Container, the floatParent will be the owning Container.
-     *
-     * For example, the dropdown {@link Ext.view.BoundList BoundList} of a ComboBox which is in a Window will have the
-     * Window as its `floatParent`
      *
      * See {@link #floating} and {@link #zIndexManager}
      * @readonly
@@ -277,23 +288,24 @@ Ext.define('Ext.Component', {
      */
 
     /**
-     * @cfg {String} [region=undefined]
+     * @cfg {"north"/"south"/"east"/"west"/"center"} [region=undefined]
      * Defines the region inside {@link Ext.layout.container.Border border layout}.
      *
      * Possible values:
      *
-     * - center
-     * - north
-     * - south
-     * - east
-     * - west
+     * - north - Positions component at top.
+     * - south - Positions component at bottom.
+     * - east - Positions component at right.
+     * - west - Positions component at left.
+     * - center - Positions component at the remaining space.
+     *   There **must** be a component with `region: "center"` in every border layout.
      */
 
     hideMode: 'display',
+    
+    offsetsCls: Ext.baseCSSPrefix + 'hide-offsets',
 
     bubbleEvents: [],
-
-    monPropRe: /^(?:scope|delay|buffer|single|stopEvent|preventDefault|stopPropagation|normalized|args|delegate)$/,
 
     defaultComponentLayoutType: 'autocomponent',
 
@@ -374,6 +386,7 @@ Ext.define('Ext.Component', {
      *
      * @template
      * @protected
+     * @since Ext 1
      */
     initComponent: function() {
         var me = this;
@@ -389,7 +402,7 @@ Ext.define('Ext.Component', {
     },
 
 
-    // private
+    // @private
     afterRender: function() {
         var me = this;
 
@@ -475,7 +488,7 @@ Ext.define('Ext.Component', {
         }
     },
 
-    // private
+    // @private
     makeFloating : function (dom) {
         this.mixins.floating.constructor.call(this, dom);
     },
@@ -629,10 +642,11 @@ Ext.define('Ext.Component', {
      *         }
      *     }
      *
-     * @param {Number} x The new x position
-     * @param {Number} y The new y position
+     * @param {Number/Number[]} x The new x position or array of `[x,y]`.
+     * @param {Number} [y] The new y position
      * @param {Boolean/Object} [animate] True to animate the Component into its new position. You may also pass an
      * animation configuration.
+     * @return {Ext.Component} this
      */
     showAt: function(x, y, animate) {
         var me = this;
@@ -649,12 +663,45 @@ Ext.define('Ext.Component', {
         }
         me.show();
     },
+    
+    /**
+     * Shows this component by the specified {@link Ext.Component Component} or {@link Ext.Element Element}.
+     * Used when this component is {@link #floating}.
+     * @param {Ext.Component/Ext.Element} component The {@link Ext.Component} or {@link Ext.Element} to show the component by.
+     * @param {String} [position] Alignment position as used by {@link Ext.Element#getAlignToXY}.
+     * Defaults to `{@link #defaultAlign}`.
+     * @param {Number[]} [offsets] Alignment offsets as used by {@link Ext.Element#getAlignToXY}.
+     * @return {Ext.Component} this
+     */
+    showBy: function(cmp, pos, off) {
+        var me = this;
+        
+        //<debug>
+        if (!me.floating) {
+            Ext.log.warn('Using showBy on a non-floating component');
+            return me;
+        }
+        //</debug>
+
+        if (me.floating && cmp) {
+            me.show();
+
+            // Show may have been vetoed
+            if (me.rendered && !me.hidden) {
+                // Align to Component or Element using setPagePosition because normal show
+                // methods are container-relative, and we must align to the requested element
+                // or Component:
+                me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
+            }
+        }
+        return me;
+    },
 
     /**
      * Sets the page XY position of the component. To set the left and top instead, use {@link #setPosition}.
      * This method fires the {@link #event-move} event.
-     * @param {Number} x The new x position
-     * @param {Number} y The new y position
+     * @param {Number/Number[]} x The new x position or an array of `[x,y]`.
+     * @param {Number} [y] The new y position.
      * @param {Boolean/Object} [animate] True to animate the Component into its new position. You may also pass an
      * animation configuration.
      * @return {Ext.Component} this
@@ -737,7 +784,7 @@ Ext.define('Ext.Component', {
         };
     },
 
-    // private
+    // @private
     adjustPosition: function(x, y) {
         var me = this,
             floatParentBox;
@@ -885,6 +932,14 @@ Ext.define('Ext.Component', {
             }
         }
     },
+    
+    getAnimateTarget: function(target){
+        target = target || this.animateTarget;
+        if (target) {
+            target = target.isComponent ? target.getEl() : Ext.get(target);
+        }
+        return target || null;
+    },
 
     /**
      * Invoked after the Component is shown (after #onShow is called).
@@ -905,7 +960,7 @@ Ext.define('Ext.Component', {
             ghostPanel;
 
         // Default to configured animate target if none passed
-        animateTarget = animateTarget || me.animateTarget;
+        animateTarget = me.getAnimateTarget(animateTarget);
 
         // Need to be able to ghost the Component
         if (!me.ghost) {
@@ -913,16 +968,16 @@ Ext.define('Ext.Component', {
         }
         // If we're animating, kick of an animation of the ghost from the target to the *Element* current box
         if (animateTarget) {
-            animateTarget = animateTarget.el ? animateTarget.el : Ext.get(animateTarget);
             toBox = me.el.getBox();
             fromBox = animateTarget.getBox();
-            me.el.addCls(Ext.baseCSSPrefix + 'hide-offsets');
+            me.el.addCls(me.offsetsCls);
             ghostPanel = me.ghost();
             ghostPanel.el.stopAnimation();
 
             // Shunting it offscreen immediately, *before* the Animation class grabs it ensure no flicker.
             ghostPanel.el.setX(-10000);
 
+            me.ghostBox = toBox;
             ghostPanel.el.animate({
                 from: fromBox,
                 to: toBox,
@@ -930,7 +985,8 @@ Ext.define('Ext.Component', {
                     afteranimate: function() {
                         delete ghostPanel.componentLayout.lastComponentSize;
                         me.unghost();
-                        me.el.removeCls(Ext.baseCSSPrefix + 'hide-offsets');
+                        delete me.ghostBox;
+                        me.el.removeCls(me.offsetsCls);
                         me.onShowComplete(cb, scope);
                     }
                 }
@@ -1007,10 +1063,16 @@ Ext.define('Ext.Component', {
     onHide: function(animateTarget, cb, scope) {
         var me = this,
             ghostPanel,
-            toBox;
+            toBox,
+            activeEl = Ext.Element.getActiveElement();
+
+        // If hiding a Component which is focused, or contains focus: blur the focused el. 
+        if (activeEl === me.el || me.el.contains(activeEl)) {
+            activeEl.blur();
+        }
 
         // Default to configured animate target if none passed
-        animateTarget = animateTarget || me.animateTarget;
+        animateTarget = me.getAnimateTarget(animateTarget);
 
         // Need to be able to ghost the Component
         if (!me.ghost) {
@@ -1018,12 +1080,9 @@ Ext.define('Ext.Component', {
         }
         // If we're animating, kick off an animation of the ghost down to the target
         if (animateTarget) {
-            animateTarget = animateTarget.el ? animateTarget.el : Ext.get(animateTarget);
             ghostPanel = me.ghost();
             ghostPanel.el.stopAnimation();
             toBox = animateTarget.getBox();
-            toBox.width += 'px';
-            toBox.height += 'px';
             ghostPanel.el.animate({
                 to: toBox,
                 listeners: {
@@ -1171,7 +1230,7 @@ Ext.define('Ext.Component', {
         }
     },
 
-    // private
+    // @private
     blur: function() {
         var focusEl;
         if (this.rendered && (focusEl = this.getFocusEl())) {
@@ -1207,7 +1266,7 @@ Ext.define('Ext.Component', {
     // Deprecate 5.0
     onResize: Ext.emptyFn,
 
-    // private
+    // @private
     // Implements an upward event bubbilng policy. By default a Component bubbles events up to its ownerCt
     // Floating Components target the floatParent.
     // Some Component subclasses (such as Menu) might implement a different ownership hierarchy.
@@ -1216,7 +1275,7 @@ Ext.define('Ext.Component', {
         return this.ownerCt || this.floatParent;
     },
 
-    // private
+    // @private
     getContentTarget: function() {
         return this.el;
     },

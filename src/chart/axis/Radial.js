@@ -13,11 +13,22 @@ Ext.define('Ext.chart.axis.Radial', {
 
     alias: 'axis.radial',
 
+    /**
+     * @cfg {Number} maximum
+     * The maximum value drawn by the axis. If not set explicitly, the axis
+     * maximum will be calculated automatically.
+     */
+
+    /**
+     * @cfg {Number} [steps=10]
+     * The number of circles to draw outward from the center.
+     */
+
     drawAxis: function(init) {
         var chart = this.chart,
             surface = chart.surface,
             bbox = chart.chartBBox,
-            store = chart.store,
+            store = chart.getChartStore(),
             l = store.getCount(),
             centerX = bbox.x + (bbox.width / 2),
             centerY = bbox.y + (bbox.height / 2),
@@ -89,7 +100,7 @@ Ext.define('Ext.chart.axis.Radial', {
             series,
             surface = chart.surface,
             bbox = chart.chartBBox,
-            store = chart.store,
+            store = chart.getChartStore(),
             data = store.data.items,
             ln, record,
             centerX = bbox.x + (bbox.width / 2),

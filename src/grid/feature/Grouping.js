@@ -79,7 +79,20 @@ Ext.define('Ext.grid.feature.Grouping', {
         me.collapsedState = {};
         me.callParent(arguments);
     },
-    
+
+    init: function() {
+        var me = this,
+            headerCt;
+
+        me.callParent(arguments);
+        headerCt = me.view.headerCt;
+        headerCt.mon(headerCt, {
+            columnhide: me.onColumnHideShow,
+            columnshow: me.onColumnHideShow,
+            scope: me
+        });
+    },
+
     /**
      * @event groupclick
      * @param {Ext.view.Table} view
@@ -233,7 +246,9 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
         me.callParent();
         groupToggleMenuItem = me.view.headerCt.getMenu().down('#groupToggleMenuItem');
-        groupToggleMenuItem.setChecked(true, true);
+        if (groupToggleMenuItem) {
+            groupToggleMenuItem.setChecked(true, true);
+        }
         me.refreshIf();
     },
 
@@ -241,7 +256,6 @@ Ext.define('Ext.grid.feature.Grouping', {
         var me    = this,
             view  = me.view,
             store = view.store,
-            remote = store.remoteGroup,
             groupToggleMenuItem,
             lastGroup;
 
@@ -255,8 +269,9 @@ Ext.define('Ext.grid.feature.Grouping', {
 
         me.callParent();
         groupToggleMenuItem = me.view.headerCt.getMenu().down('#groupToggleMenuItem');
-        groupToggleMenuItem.setChecked(true, true);
-        groupToggleMenuItem.setChecked(false, true);
+        if (groupToggleMenuItem) {
+            groupToggleMenuItem.setChecked(false, true);
+        }
         me.refreshIf();
     },
 
@@ -411,12 +426,28 @@ Ext.define('Ext.grid.feature.Grouping', {
         headerCt.getMenuItems = me.getMenuItems();
     },
 
+    onColumnHideShow: function() {
+        var menu = this.grid.headerCt.getMenu(),
+            groupToggleMenuItem  = menu.down('#groupMenuItem');
+
+        // "Group by this field" must be disabled if there's only one column left visible.
+        if (this.view.headerCt.getVisibleGridColumns(true).length > 1) {
+            groupToggleMenuItem.enable();
+        } else {
+            groupToggleMenuItem.disable();
+        }
+    },
+
     showMenuBy: function(t, header) {
         var menu = this.getMenu(),
             groupMenuItem  = menu.down('#groupMenuItem'),
-            groupableMth = header.groupable === false ?  'disable' : 'enable';
-            
-        groupMenuItem[groupableMth]();
+            groupMenuMeth = header.groupable === false ?  'disable' : 'enable',
+            groupToggleMenuItem  = menu.down('#groupToggleMenuItem');
+
+        groupMenuItem[groupMenuMeth]();
+        if (groupToggleMenuItem) {
+            groupToggleMenuItem[this.view.store.isGrouped() ?  'enable' : 'disable']();
+        }
         Ext.grid.header.Container.prototype.showMenuBy.apply(this, arguments);
     },
 
@@ -809,7 +840,7 @@ Ext.define('Ext.grid.feature.Grouping', {
             }
         }
 
-        group.groupField = groupField,
+        group.groupField = groupField;
         group.groupHeaderId = me.getGroupHeaderId(group.name);
         group.groupBodyId = me.getGroupBodyId(group.name);
         group.fullWidth = fullWidth;

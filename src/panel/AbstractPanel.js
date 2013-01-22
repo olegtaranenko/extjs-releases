@@ -23,6 +23,7 @@ Ext.define('Ext.panel.AbstractPanel', {
     /**
      * @cfg {String} [baseCls=x-panel]
      * The base CSS class to apply to this panel's element.
+     * @since Ext 2
      */
     baseCls : Ext.baseCSSPrefix + 'panel',
 
@@ -37,6 +38,7 @@ Ext.define('Ext.panel.AbstractPanel', {
      * @cfg {Boolean} bodyBorder
      * A shortcut to add or remove the border on the body of a panel. This only applies to a panel which has the {@link #frame} configuration set to `true`.
      * Defaults to <code>undefined</code>.
+     * @since Ext 2
      */
 
     /**
@@ -51,6 +53,8 @@ bodyStyle: {
     padding: '10px'
 }
      * </code></pre>
+     *
+     * @since Ext 2
      */
 
     /**
@@ -68,6 +72,19 @@ bodyCls: ['foo', 'bar']
      * `true` in this class to identify an object as an instantiated Panel, or subclass thereof.
      */
     isPanel: true,
+    
+    /**
+     * The Panel's body {@link Ext.dom.Element Element} which may be used to contain HTML content.
+     * The content may be specified in the {@link #html} config, or it may be loaded using the
+     * {@link loader} config. Read-only.
+     * <p>If this is used to load visible HTML elements in either way, then
+     * the Panel may not be used as a Layout for hosting nested Panels.</p>
+     * <p>If this Panel is intended to be used as the host of a Layout (See {@link #layout}
+     * then the body Element must not be loaded or changed - it is under the control
+     * of the Panel's Layout.
+     * <br><p><b>Note</b>: see the Note for <code>{@link Ext.Component#el el}</code> also.</p>
+     * @property {Ext.dom.Element} body
+     */
 
     componentLayout: 'dock',
 
@@ -119,6 +136,7 @@ var panel = new Ext.panel.Panel({
 });</code></pre>
      */
 
+    // @since Ext 2
     border: true,
 
     /**
@@ -175,6 +193,7 @@ var panel = new Ext.panel.Panel({
      * items will only be matched by component id or itemId -- if you pass a numeric index only non-docked child components will be searched.
      * @param {String/Number} comp The component id, itemId or position to find
      * @return {Ext.Component} The component (if found)
+     * @since Ext 2
      */
     getComponent: function(comp) {
         var component = this.callParent(arguments);
@@ -226,7 +245,7 @@ var panel = new Ext.panel.Panel({
 
     getCollapsedDockedItems: function () {
         var me = this;
-        return me.collapseMode == 'placeholder' ? me.emptyArray : [ me.getReExpander() ];
+        return me.header === false || me.collapseMode == 'placeholder' ? me.emptyArray : [ me.getReExpander() ];
     },
 
     /**

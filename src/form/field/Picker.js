@@ -115,16 +115,6 @@ Ext.define('Ext.form.field.Picker', {
         if (me.isExpanded) {
             me.collapse();
             e.stopEvent();
-        } else {
-            // If there's an ancestor Window which will see the ESC event and hide, ensure this Field blurs
-            // so that a down arrow will not pop up a disembodied dropdown list.
-            if (me.up('window')) {
-                me.blur();
-            }
-            // Otherwise, only stop the ESC key event if it's not going to bubble up to the FocusManager
-            else if ((!Ext.FocusManager || !Ext.FocusManager.enabled)) {
-                e.stopEvent();
-            }
         }
     },
 
@@ -280,6 +270,15 @@ Ext.define('Ext.form.field.Picker', {
                 me.expand();
             }
             me.inputEl.focus();
+        }
+    },
+    
+    triggerBlur: function() {
+        var picker = this.picker;
+            
+        this.callParent(arguments);
+        if (picker && picker.isVisible()) {
+            picker.hide();
         }
     },
 

@@ -58,10 +58,12 @@ Ext.define('Ext.view.TableLayout', {
 
     flush: function() {
         var me = this,
+            owner = me.owner,
             context = me.ownerContext.context,
             columns = me.headerCt.getGridColumns(),
+            column,
             i = 0, len = columns.length,
-            el = me.owner.el,
+            el = owner.el,
             tableWidth = 0,
             colWidth;
 
@@ -70,13 +72,14 @@ Ext.define('Ext.view.TableLayout', {
 
         // Set column width corresponding to each header
         for (i = 0; i < len; i++) {
-            colWidth = columns[i].hidden ? 0 : context.getCmp(columns[i]).props.width;
+            column = columns[i];
+            colWidth = column.hidden ? 0 : context.getCmp(column).props.width;
             tableWidth += colWidth;
 
             // Grab the col and set the width.
             // CSS class is generated in TableChunker.
             // Select composites because there may be several chunks.
-            el.select(me.getColumnSelector(columns[i])).setWidth(colWidth);
+            el.select(me.getColumnSelector(column)).setWidth(colWidth);
         }
         el.select('table.' + Ext.baseCSSPrefix + 'grid-table-resizer').setWidth(tableWidth);
 
@@ -104,7 +107,7 @@ Ext.define('Ext.view.TableLayout', {
             }
         } 
     },
-
+    
     getColumnSelector: function(column) {
         return 'th.' + Ext.baseCSSPrefix + 'grid-col-resizer-' + column.id;
     }

@@ -117,16 +117,16 @@ Ext.define('Ext.picker.Color', {
 
     colorRe: /(?:^|\s)color-(.{6})(?:\s|$)/,
     
-    renderTpl: [
-        '&lt;tpl for=&quot;colors&quot;&gt;',
+<span id='Ext-picker-Color-property-renderTpl'>    renderTpl: [
+</span>        '&lt;tpl for=&quot;colors&quot;&gt;',
             '&lt;a href=&quot;#&quot; class=&quot;color-{.}&quot; hidefocus=&quot;on&quot;&gt;',
                 '&lt;em&gt;&lt;span style=&quot;background:#{.}&quot; unselectable=&quot;on&quot;&gt;&amp;#160;&lt;/span&gt;&lt;/em&gt;',
             '&lt;/a&gt;',
         '&lt;/tpl&gt;'
     ],
 
-    // private
-    initComponent : function(){
+<span id='Ext-picker-Color-method-initComponent'>    // @private
+</span>    initComponent : function(){
         var me = this;
 
         me.callParent(arguments);
@@ -146,8 +146,8 @@ Ext.define('Ext.picker.Color', {
     },
 
 
-    // private
-    initRenderData : function(){
+<span id='Ext-picker-Color-method-initRenderData'>    // @private
+</span>    initRenderData : function(){
         var me = this;
         return Ext.apply(me.callParent(), {
             itemCls: me.itemCls,
@@ -155,8 +155,8 @@ Ext.define('Ext.picker.Color', {
         });
     },
 
-    onRender : function(){
-        var me = this,
+<span id='Ext-picker-Color-method-onRender'>    onRender : function(){
+</span>        var me = this,
             clickEvent = me.clickEvent;
 
         me.callParent(arguments);
@@ -168,8 +168,8 @@ Ext.define('Ext.picker.Color', {
         }
     },
 
-    // private
-    afterRender : function(){
+<span id='Ext-picker-Color-method-afterRender'>    // @private
+</span>    afterRender : function(){
         var me = this,
             value;
 
@@ -181,8 +181,8 @@ Ext.define('Ext.picker.Color', {
         }
     },
 
-    // private
-    handleClick : function(event, target){
+<span id='Ext-picker-Color-method-handleClick'>    // @private
+</span>    handleClick : function(event, target){
         var me = this,
             color;
 

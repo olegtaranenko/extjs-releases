@@ -307,9 +307,7 @@ Ext.define('Ext.util.KeyMap', {
      * the first parameter. Extra information from the event arguments may be injected into the event for use by the handler
      * functions before returning it.
      */
-    processEvent: function(event){
-        return event;
-    },
+    processEvent: Ext.identityFn,
 
     /**
      * Process a particular binding and fire the handler if necessary.

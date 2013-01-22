@@ -38,17 +38,17 @@ Ext.define('Ext.view.Table', {
         'Ext.util.MixedCollection'
     ],
 
-    componentLayout: 'tableview',
+<span id='Ext-view-Table-property-componentLayout'>    componentLayout: 'tableview',
+</span>
+<span id='Ext-view-Table-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'grid-view',
+</span>
+<span id='Ext-view-Table-property-itemSelector'>    // row
+</span>    itemSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
+<span id='Ext-view-Table-property-cellSelector'>    // cell
+</span>    cellSelector: 'td.' + Ext.baseCSSPrefix + 'grid-cell',
 
-    baseCls: Ext.baseCSSPrefix + 'grid-view',
-
-    // row
-    itemSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
-    // cell
-    cellSelector: 'td.' + Ext.baseCSSPrefix + 'grid-cell',
-
-    // keep a separate rowSelector, since we may need to select the actual row elements
-    rowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
+<span id='Ext-view-Table-property-rowSelector'>    // keep a separate rowSelector, since we may need to select the actual row elements
+</span>    rowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
 
 <span id='Ext-view-Table-cfg-firstCls'>    /**
 </span>     * @cfg {String} [firstCls='x-grid-cell-first']
@@ -64,18 +64,18 @@ Ext.define('Ext.view.Table', {
      */
     lastCls: Ext.baseCSSPrefix + 'grid-cell-last',
 
-    headerRowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-header-row',
-
-    selectedItemCls: Ext.baseCSSPrefix + 'grid-row-selected',
-    selectedCellCls: Ext.baseCSSPrefix + 'grid-cell-selected',
-    focusedItemCls: Ext.baseCSSPrefix + 'grid-row-focused',
-    overItemCls: Ext.baseCSSPrefix + 'grid-row-over',
-    altRowCls:   Ext.baseCSSPrefix + 'grid-row-alt',
-    rowClsRe: new RegExp('(?:^|\\s*)' + Ext.baseCSSPrefix + 'grid-row-(first|last|alt)(?:\\s+|$)', 'g'),
-    cellRe: new RegExp(Ext.baseCSSPrefix + 'grid-cell-([^\\s]+) ', ''),
-
-    // cfg docs inherited
-    trackOver: true,
+<span id='Ext-view-Table-property-headerRowSelector'>    headerRowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-header-row',
+</span>
+<span id='Ext-view-Table-property-selectedItemCls'>    selectedItemCls: Ext.baseCSSPrefix + 'grid-row-selected',
+</span><span id='Ext-view-Table-property-selectedCellCls'>    selectedCellCls: Ext.baseCSSPrefix + 'grid-cell-selected',
+</span><span id='Ext-view-Table-property-focusedItemCls'>    focusedItemCls: Ext.baseCSSPrefix + 'grid-row-focused',
+</span><span id='Ext-view-Table-property-overItemCls'>    overItemCls: Ext.baseCSSPrefix + 'grid-row-over',
+</span><span id='Ext-view-Table-property-altRowCls'>    altRowCls:   Ext.baseCSSPrefix + 'grid-row-alt',
+</span><span id='Ext-view-Table-property-rowClsRe'>    rowClsRe: new RegExp('(?:^|\\s*)' + Ext.baseCSSPrefix + 'grid-row-(first|last|alt)(?:\\s+|$)', 'g'),
+</span><span id='Ext-view-Table-property-cellRe'>    cellRe: new RegExp(Ext.baseCSSPrefix + 'grid-cell-([^\\s]+) ', ''),
+</span>
+<span id='Ext-view-Table-property-trackOver'>    // cfg docs inherited
+</span>    trackOver: true,
 
 <span id='Ext-view-Table-method-getRowClass'>    /**
 </span>     * Override this function to apply custom CSS classes to rows during rendering. This function should return the
@@ -127,13 +127,13 @@ Ext.define('Ext.view.Table', {
      */
     initialTpl: '&lt;div&gt;&lt;/div&gt;',
 
-    initComponent: function() {
-        var me = this,
+<span id='Ext-view-Table-method-initComponent'>    initComponent: function() {
+</span>        var me = this,
             scroll = me.scroll;
 
 <span id='Ext-view-Table-property-table'>        /**
 </span>         * @private
-         * @property {Ext.dom.AbstractElement.Fly} table
+         * @property {Ext.dom.Element.Fly} table
          * A flyweight Ext.Element which encapsulates a reference to the transient `&lt;table&gt;` element within this View.
          * *Note that the `dom` reference will not be present until the first data refresh*
          */
@@ -241,8 +241,8 @@ Ext.define('Ext.view.Table', {
         }
     },
 
-    // scroll the view to the top
-    scrollToTop: Ext.emptyFn,
+<span id='Ext-view-Table-method-scrollToTop'>    // scroll the view to the top
+</span>    scrollToTop: Ext.emptyFn,
 
 <span id='Ext-view-Table-method-addElListener'>    /**
 </span>     * Add a listener to the main view element. It will be destroyed with the view.
@@ -325,8 +325,6 @@ Ext.define('Ext.view.Table', {
 </span>     * @private
      * Converts the features array as configured, into an array of instantiated Feature objects.
      * 
-     * This is borrowed by Lockable which clones and distributes Features to both child grids of a locking grid.
-     * 
      * Must have no side effects other than Feature instantiation.
      * 
      * MUST NOT update the this.features property, and MUST NOT update the instantiated Features.
@@ -369,8 +367,8 @@ Ext.define('Ext.view.Table', {
         }
     },
 
-    afterRender: function() {
-        var me = this;
+<span id='Ext-view-Table-method-afterRender'>    afterRender: function() {
+</span>        var me = this;
         me.callParent();
 
         if (!me.enableTextSelection) {
@@ -379,8 +377,8 @@ Ext.define('Ext.view.Table', {
         me.attachEventsForFeatures();
     },
 
-    // Private template method implemented starting at the AbstractView class.
-    onViewScroll: function(e, t) {
+<span id='Ext-view-Table-method-onViewScroll'>    // Private template method implemented starting at the AbstractView class.
+</span>    onViewScroll: function(e, t) {
         this.callParent(arguments);
         this.fireEvent('bodyscroll', e, t);
     },
@@ -409,8 +407,8 @@ Ext.define('Ext.view.Table', {
         return result;
     },
 
-    // TODO: Refactor headerCt dependency here to colModel
-    collectData: function(records, startIndex) {
+<span id='Ext-view-Table-method-collectData'>    // TODO: Refactor headerCt dependency here to colModel
+</span>    collectData: function(records, startIndex) {
         var me = this,
             preppedRecords = me.callParent(arguments),
             headerCt  = me.headerCt,
@@ -437,7 +435,7 @@ Ext.define('Ext.view.Table', {
                 rowParams = {};
                 rec = preppedRecords[j];
                 cls = rec.rowCls || '';
-                rec.rowCls = this.getRowClass(records[j], j, rowParams, me.store) + ' ' + cls;
+                rec.rowCls = me.getRowClass(records[j], j, rowParams, me.store) + ' ' + cls;
                 //&lt;debug&gt;
                 if (rowParams.alt) {
                     Ext.Error.raise(&quot;The getRowClass alt property is no longer supported.&quot;);
@@ -472,8 +470,8 @@ Ext.define('Ext.view.Table', {
         return o;
     },
 
-    // Private. Called when the table changes height.
-    // For example, see examples/grid/group-summary-grid.html
+<span id='Ext-view-Table-method-refreshSize'>    // Private. Called when the table changes height.
+</span>    // For example, see examples/grid/group-summary-grid.html
     // If we have flexed column headers, we need to update the header layout
     // because it may have to accommodate (or cease to accommodate) a vertical scrollbar.
     // Only do this on platforms which have a space-consuming scrollbar.
@@ -554,40 +552,40 @@ Ext.define('Ext.view.Table', {
         }
     },
 
-    // GridSelectionModel invokes onRowSelect as selection changes
-    onRowSelect : function(rowIdx) {
+<span id='Ext-view-Table-method-onRowSelect'>    // GridSelectionModel invokes onRowSelect as selection changes
+</span>    onRowSelect : function(rowIdx) {
         this.addRowCls(rowIdx, this.selectedItemCls);
     },
 
-    // GridSelectionModel invokes onRowDeselect as selection changes
-    onRowDeselect : function(rowIdx) {
+<span id='Ext-view-Table-method-onRowDeselect'>    // GridSelectionModel invokes onRowDeselect as selection changes
+</span>    onRowDeselect : function(rowIdx) {
         var me = this;
 
         me.removeRowCls(rowIdx, me.selectedItemCls);
         me.removeRowCls(rowIdx, me.focusedItemCls);
     },
 
-    onCellSelect: function(position) {
-        var cell = this.getCellByPosition(position, true);
+<span id='Ext-view-Table-method-onCellSelect'>    onCellSelect: function(position) {
+</span>        var cell = this.getCellByPosition(position, true);
         if (cell) {
             Ext.fly(cell).addCls(this.selectedCellCls);
         }
     },
 
-    onCellDeselect: function(position) {
-        var cell = this.getCellByPosition(position, true);
+<span id='Ext-view-Table-method-onCellDeselect'>    onCellDeselect: function(position) {
+</span>        var cell = this.getCellByPosition(position, true);
         if (cell) {
             Ext.fly(cell).removeCls(this.selectedCellCls);
         }
 
     },
 
-    onCellFocus: function(position) {
-        this.focusCell(position);
+<span id='Ext-view-Table-method-onCellFocus'>    onCellFocus: function(position) {
+</span>        this.focusCell(position);
     },
 
-    getCellByPosition: function(position, returnDom) {
-        if (position) {
+<span id='Ext-view-Table-method-getCellByPosition'>    getCellByPosition: function(position, returnDom) {
+</span>        if (position) {
             var node   = this.getNode(position.row),
                 header = this.headerCt.getHeaderAtIndex(position.column);
 
@@ -598,8 +596,8 @@ Ext.define('Ext.view.Table', {
         return false;
     },
 
-    // GridSelectionModel invokes onRowFocus to 'highlight'
-    // the last row focused
+<span id='Ext-view-Table-method-onRowFocus'>    // GridSelectionModel invokes onRowFocus to 'highlight'
+</span>    // the last row focused
     onRowFocus: function(rowIdx, highlight, supressFocus) {
         var me = this;
 
@@ -650,12 +648,13 @@ Ext.define('Ext.view.Table', {
             if (adjustment) {
                 panel.scrollByDeltaY(adjustment);
             }
+            el.focus();
             me.fireEvent('rowfocus', record, row, rowIdx);
         }
     },
 
-    focusCell: function(position) {
-        var me          = this,
+<span id='Ext-view-Table-method-focusCell'>    focusCell: function(position) {
+</span>        var me          = this,
             cell        = me.getCellByPosition(position),
             el          = me.el,
             adjustmentY = 0,
@@ -711,13 +710,14 @@ Ext.define('Ext.view.Table', {
         elDom[dir] = (elDom[dir] += delta);
     },
 
-    // private
-    onUpdate : function(store, record, operation, changedFieldNames) {
+<span id='Ext-view-Table-method-onUpdate'>    // private
+</span>    onUpdate : function(store, record, operation, changedFieldNames) {
         var me = this,
             index,
-            newRow, newAttrs, attLen, i, attName, oldRow, oldRowDom,
+            newRow, newAttrs, attLen, attName, oldRow, oldRowDom,
             oldCells, newCells, len, i,
             columns, overItemCls,
+            isAlt, altCls,
             isHovered, row,
             // See if an editing plugin is active.
             isEditing = me.editingPlugin &amp;&amp; me.editingPlugin.editing;
@@ -727,6 +727,7 @@ Ext.define('Ext.view.Table', {
             index = me.store.indexOf(record);
             columns = me.headerCt.getGridColumns();
             overItemCls = me.overItemCls;
+            altCls = me.altRowCls;
 
             // If we have columns which may *need* updating (think lockable grid child with all columns either locked or unlocked)
             // and the changed record is within our view, then update the view
@@ -736,6 +737,8 @@ Ext.define('Ext.view.Table', {
                 if (oldRow) {
                     oldRowDom = oldRow.dom;
                     isHovered = oldRow.hasCls(overItemCls);
+                    
+                    isAlt = oldRow.hasCls(altCls);
 
                     // Copy new row attributes across. Use IE-specific method if possible.
                     if (oldRowDom.mergeAttributes) {
@@ -753,6 +756,10 @@ Ext.define('Ext.view.Table', {
 
                     if (isHovered) {
                         oldRow.addCls(overItemCls);
+                    }
+                    
+                    if (isAlt) {
+                        oldRow.addCls(altCls);
                     }
 
                     // Replace changed cells in the existing row structure with the new version from the rendered row.
@@ -776,14 +783,17 @@ Ext.define('Ext.view.Table', {
                             }
                         }
                     }
+                    me.selModel.onUpdate(record);
                 }
-                me.fireEvent('itemupdate', record, index, newRow);
+                // Since we don't actually replace the row, we need to fire the event with the old row
+                // because it's the thing that is still in the DOM
+                me.fireEvent('itemupdate', record, index, oldRow);
             }
         }
     },
     
-    shouldUpdateCell: function(column, changedFieldNames){
-        // Though this may not be the most efficient, a renderer could be dependent on any field in the
+<span id='Ext-view-Table-method-shouldUpdateCell'>    shouldUpdateCell: function(column, changedFieldNames){
+</span>        // Though this may not be the most efficient, a renderer could be dependent on any field in the
         // store, so we must always update the cell
         if (column.hasCustomRenderer) {
             return true;
@@ -803,13 +813,13 @@ Ext.define('Ext.view.Table', {
         me.headerCt.setSortState();
     },
 
-    clearViewEl: function() {
-        this.callParent();
+<span id='Ext-view-Table-method-clearViewEl'>    clearViewEl: function() {
+</span>        this.callParent();
         delete this.table.dom;
     },
 
-    processItemEvent: function(record, row, rowIndex, e) {
-        var me = this,
+<span id='Ext-view-Table-method-processItemEvent'>    processItemEvent: function(record, row, rowIndex, e) {
+</span>        var me = this,
             cell = e.getTarget(me.cellSelector, row),
             cellIndex = cell ? cell.cellIndex : -1,
             map = me.statics().EventMap,
@@ -852,9 +862,8 @@ Ext.define('Ext.view.Table', {
         );
     },
 
-    processSpecialEvent: function(e) {
-        var me = this,
-            map = me.statics().EventMap,
+<span id='Ext-view-Table-method-processSpecialEvent'>    processSpecialEvent: function(e) {
+</span>        var me = this,
             features = me.features,
             ln = features.length,
             type = e.type,
@@ -897,19 +906,19 @@ Ext.define('Ext.view.Table', {
         return true;
     },
 
-    onCellMouseDown: Ext.emptyFn,
-    onCellMouseUp: Ext.emptyFn,
-    onCellClick: Ext.emptyFn,
-    onCellDblClick: Ext.emptyFn,
-    onCellContextMenu: Ext.emptyFn,
-    onCellKeyDown: Ext.emptyFn,
-    onBeforeCellMouseDown: Ext.emptyFn,
-    onBeforeCellMouseUp: Ext.emptyFn,
-    onBeforeCellClick: Ext.emptyFn,
-    onBeforeCellDblClick: Ext.emptyFn,
-    onBeforeCellContextMenu: Ext.emptyFn,
-    onBeforeCellKeyDown: Ext.emptyFn,
-
+<span id='Ext-view-Table-method-onCellMouseDown'>    onCellMouseDown: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onCellMouseUp'>    onCellMouseUp: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onCellClick'>    onCellClick: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onCellDblClick'>    onCellDblClick: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onCellContextMenu'>    onCellContextMenu: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onCellKeyDown'>    onCellKeyDown: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onBeforeCellMouseDown'>    onBeforeCellMouseDown: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onBeforeCellMouseUp'>    onBeforeCellMouseUp: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onBeforeCellClick'>    onBeforeCellClick: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onBeforeCellDblClick'>    onBeforeCellDblClick: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onBeforeCellContextMenu'>    onBeforeCellContextMenu: Ext.emptyFn,
+</span><span id='Ext-view-Table-method-onBeforeCellKeyDown'>    onBeforeCellKeyDown: Ext.emptyFn,
+</span>
 <span id='Ext-view-Table-method-expandToFit'>    /**
 </span>     * Expands a particular header to fit the max content width.
      * This will ONLY expand, not contract.
@@ -945,8 +954,8 @@ Ext.define('Ext.view.Table', {
         return maxWidth;
     },
 
-    getPositionByEvent: function(e) {
-        var me       = this,
+<span id='Ext-view-Table-method-getPositionByEvent'>    getPositionByEvent: function(e) {
+</span>        var me       = this,
             cellNode = e.getTarget(me.cellSelector),
             rowNode  = e.getTarget(me.itemSelector),
             record   = me.getRecord(rowNode),
@@ -955,8 +964,8 @@ Ext.define('Ext.view.Table', {
         return me.getPosition(record, header);
     },
 
-    getHeaderByCell: function(cell) {
-        if (cell) {
+<span id='Ext-view-Table-method-getHeaderByCell'>    getHeaderByCell: function(cell) {
+</span>        if (cell) {
             var m = cell.className.match(this.cellRe);
             if (m &amp;&amp; m[1]) {
                 return Ext.getCmp(m[1]);
@@ -1088,25 +1097,25 @@ Ext.define('Ext.view.Table', {
             return newPos;
         }
     },
-    getFirstVisibleColumnIndex: function() {
-        var firstVisibleHeader = this.getHeaderCt().getVisibleGridColumns()[0];
+<span id='Ext-view-Table-method-getFirstVisibleColumnIndex'>    getFirstVisibleColumnIndex: function() {
+</span>        var firstVisibleHeader = this.getHeaderCt().getVisibleGridColumns()[0];
 
         return firstVisibleHeader ? firstVisibleHeader.getIndex() : -1;
     },
 
-    getLastVisibleColumnIndex: function() {
-        var visHeaders = this.getHeaderCt().getVisibleGridColumns(),
+<span id='Ext-view-Table-method-getLastVisibleColumnIndex'>    getLastVisibleColumnIndex: function() {
+</span>        var visHeaders = this.getHeaderCt().getVisibleGridColumns(),
             lastHeader = visHeaders[visHeaders.length - 1];
 
         return lastHeader.getIndex();
     },
 
-    getHeaderCt: function() {
-        return this.headerCt;
+<span id='Ext-view-Table-method-getHeaderCt'>    getHeaderCt: function() {
+</span>        return this.headerCt;
     },
 
-    // TODO: have this use the new Ext.grid.CellContext class
-    getPosition: function(record, header) {
+<span id='Ext-view-Table-method-getPosition'>    // TODO: have this use the new Ext.grid.CellContext class
+</span>    getPosition: function(record, header) {
         var me = this,
             store = me.store,
             gridCols = me.headerCt.getGridColumns();
@@ -1139,8 +1148,8 @@ Ext.define('Ext.view.Table', {
         return nextIdx - activeHeaderIdx;
     },
 
-    beforeDestroy: function() {
-        if (this.rendered) {
+<span id='Ext-view-Table-method-beforeDestroy'>    beforeDestroy: function() {
+</span>        if (this.rendered) {
             this.el.removeAllListeners();
         }
         this.callParent(arguments);
@@ -1168,16 +1177,16 @@ Ext.define('Ext.view.Table', {
         return prevIdx - activeHeaderIdx;
     },
 
-    // after adding a row stripe rows from then on
-    onAdd: function(ds, records, index) {
+<span id='Ext-view-Table-method-onAdd'>    // after adding a row stripe rows from then on
+</span>    onAdd: function(ds, records, index) {
         this.callParent(arguments);
         this.doStripeRows(index);
     },
     
-    // after removing a row stripe rows from then on
-    onRemove: function(ds, records, index) {
+<span id='Ext-view-Table-method-onRemove'>    // after removing a row stripe rows from then on
+</span>    onRemove: function(ds, records, indexes) {
         this.callParent(arguments);
-        this.doStripeRows(index);
+        this.doStripeRows(indexes[0]);
     },
     
 <span id='Ext-view-Table-method-doStripeRows'>    /**
@@ -1211,7 +1220,6 @@ Ext.define('Ext.view.Table', {
         }
     }
  
-});
-</pre>
+});</pre>
 </body>
 </html>

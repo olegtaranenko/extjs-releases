@@ -43,25 +43,25 @@ Ext.define('Ext.view.BoundList', {
      * than zero and the BoundList has been rendered.
      */
 
-    // private overrides
-    baseCls: Ext.baseCSSPrefix + 'boundlist',
-    itemCls: Ext.baseCSSPrefix + 'boundlist-item',
-    listItemCls: '',
-    shadow: false,
-    trackOver: true,
-    refreshed: 0,
-    
-    // This Component is used as a popup, not part of a complex layout. Display data immediately.
-    deferInitialRefresh: false,
+<span id='Ext-view-BoundList-property-baseCls'>    // private overrides
+</span>    baseCls: Ext.baseCSSPrefix + 'boundlist',
+<span id='Ext-view-BoundList-property-itemCls'>    itemCls: Ext.baseCSSPrefix + 'boundlist-item',
+</span><span id='Ext-view-BoundList-property-listItemCls'>    listItemCls: '',
+</span><span id='Ext-view-BoundList-property-shadow'>    shadow: false,
+</span><span id='Ext-view-BoundList-property-trackOver'>    trackOver: true,
+</span><span id='Ext-view-BoundList-property-refreshed'>    refreshed: 0,
+</span>    
+<span id='Ext-view-BoundList-property-deferInitialRefresh'>    // This Component is used as a popup, not part of a complex layout. Display data immediately.
+</span>    deferInitialRefresh: false,
 
-    componentLayout: 'boundlist',
-
-    childEls: [
-        'listEl'
+<span id='Ext-view-BoundList-property-componentLayout'>    componentLayout: 'boundlist',
+</span>
+<span id='Ext-view-BoundList-property-childEls'>    childEls: [
+</span>        'listEl'
     ],
 
-    renderTpl: [
-        '&lt;div id=&quot;{id}-listEl&quot; class=&quot;{baseCls}-list-ct&quot; style=&quot;overflow:auto&quot;&gt;&lt;/div&gt;',
+<span id='Ext-view-BoundList-property-renderTpl'>    renderTpl: [
+</span>        '&lt;div id=&quot;{id}-listEl&quot; class=&quot;{baseCls}-list-ct&quot; style=&quot;overflow:auto&quot;&gt;&lt;/div&gt;',
         '{%',
             'var me=values.$comp, pagingToolbar=me.pagingToolbar;',
             'if (pagingToolbar) {',
@@ -142,8 +142,8 @@ Ext.define('Ext.view.BoundList', {
         me.callParent();
     },
 
-    beforeRender: function() {
-        var me = this;
+<span id='Ext-view-BoundList-method-beforeRender'>    beforeRender: function() {
+</span>        var me = this;
 
         me.callParent(arguments);
 
@@ -164,12 +164,12 @@ Ext.define('Ext.view.BoundList', {
         return this.pickerField;
     },
 
-    getRefItems: function() {
-        return this.pagingToolbar ? [ this.pagingToolbar ] : [];
+<span id='Ext-view-BoundList-method-getRefItems'>    getRefItems: function() {
+</span>        return this.pagingToolbar ? [ this.pagingToolbar ] : [];
     },
 
-    createPagingToolbar: function() {
-        return Ext.widget('pagingtoolbar', {
+<span id='Ext-view-BoundList-method-createPagingToolbar'>    createPagingToolbar: function() {
+</span>        return Ext.widget('pagingtoolbar', {
             id: this.id + '-paging-toolbar',
             pageSize: this.pageSize,
             store: this.store,
@@ -179,8 +179,8 @@ Ext.define('Ext.view.BoundList', {
         });
     },
 
-    // Do the job of a container layout at this point even though we are not a Container.
-    // TODO: Refactor as a Container.
+<span id='Ext-view-BoundList-method-finishRenderChildren'>    // Do the job of a container layout at this point even though we are not a Container.
+</span>    // TODO: Refactor as a Container.
     finishRenderChildren: function () {
         var toolbar = this.pagingToolbar;
 
@@ -191,8 +191,8 @@ Ext.define('Ext.view.BoundList', {
         }
     },
     
-    refresh: function(){
-        var me = this,
+<span id='Ext-view-BoundList-method-refresh'>    refresh: function(){
+</span>        var me = this,
             toolbar = me.pagingToolbar;
         
         me.callParent();
@@ -203,8 +203,8 @@ Ext.define('Ext.view.BoundList', {
         }  
     },
 
-    bindStore : function(store, initial) {
-        var toolbar = this.pagingToolbar;
+<span id='Ext-view-BoundList-method-bindStore'>    bindStore : function(store, initial) {
+</span>        var toolbar = this.pagingToolbar;
             
         this.callParent(arguments);
         if (toolbar) {
@@ -212,8 +212,8 @@ Ext.define('Ext.view.BoundList', {
         }
     },
 
-    getTargetEl: function() {
-        return this.listEl || this.el;
+<span id='Ext-view-BoundList-method-getTargetEl'>    getTargetEl: function() {
+</span>        return this.listEl || this.el;
     },
 
 <span id='Ext-view-BoundList-method-getInnerTpl'>    /**
@@ -227,8 +227,8 @@ Ext.define('Ext.view.BoundList', {
         return '{' + displayField + '}';
     },
 
-    onDestroy: function() {
-        Ext.destroyMembers(this, 'pagingToolbar', 'listEl');
+<span id='Ext-view-BoundList-method-onDestroy'>    onDestroy: function() {
+</span>        Ext.destroyMembers(this, 'pagingToolbar', 'listEl');
         this.callParent();
     }
 });

@@ -41,6 +41,7 @@ Ext.onReady(function(){
                 name        = Ext.String.format("{0} {1}", firstNames[firstNameId], lastNames[lastNameId]);
 
             data.push({
+                id: 'rec-' + i,
                 rating: rating,
                 salary: salary,
                 name: name
@@ -64,6 +65,13 @@ Ext.onReady(function(){
             type: 'memory'
         }
     });
+    
+    var jumpToRow = function(){
+        var fld = grid.down('#gotoLine');
+        if (fld.isValid()) {
+            grid.verticalScroller.scrollTo(fld.getValue() - 1, true);
+        }    
+    };
 
     var grid = Ext.create('Ext.grid.Panel', {
         width: 700,
@@ -99,6 +107,26 @@ Ext.onReady(function(){
             dataIndex: 'salary',
             align: 'right',
             renderer: Ext.util.Format.usMoney
+        }],
+        bbar: [{
+            labelWidth: 70,
+            fieldLabel: 'Jump to row',
+            xtype: 'numberfield',
+            minValue: 1,
+            maxValue: store.getTotalCount(),
+            allowDecimals: false,
+            itemId: 'gotoLine',
+            enableKeyEvents: true,
+            listeners: {
+                specialkey: function(field, e){
+                    if (e.getKey() === e.ENTER) {
+                        jumpToRow();
+                    }
+                }
+            }
+        }, {
+            text: 'Go',
+            handler: jumpToRow
         }],
         renderTo: Ext.getBody()
     });

@@ -1,7 +1,7 @@
 //@tag dom,core
 //@define Ext.DomHelper
+
 //@define Ext.core.DomHelper
-//@require Ext.dom.AbstractElement-traversal
 
 /**
  * @class Ext.DomHelper
@@ -137,7 +137,7 @@
  *     Ext.DomHelper.useDom = true; // force it to use DOM; reduces performance
  *
  */
-(function() {
+Ext.define('Ext.dom.Helper', (function() {
 
 // kill repeat to save bytes
 var afterbegin = 'afterbegin',
@@ -165,19 +165,23 @@ var afterbegin = 'afterbegin',
     };
 
 /**
+ * @class Ext.dom.Helper
+ * @extends Ext.dom.AbstractHelper
+ * @requires Ext.dom.AbstractElement
+ * 
  * The actual class of which {@link Ext.DomHelper} is instance of.
  * 
  * Use singleton {@link Ext.DomHelper} instead.
  * 
  * @private
  */
-Ext.define('Ext.dom.Helper', {
+return {
     extend: 'Ext.dom.AbstractHelper',
     requires:['Ext.dom.AbstractElement'],
 
-    tableRe: /^table|tbody|tr|td$/i,
+    tableRe: /^(?:table|thead|tbody|tr|td)$/i,
 
-    tableElRe: /td|tr|tbody/i,
+    tableElRe: /td|tr|tbody|thead/i,
 
     /**
      * @property {Boolean} useDom
@@ -251,10 +255,13 @@ Ext.define('Ext.dom.Helper', {
         ns = el.nextSibling;
 
         if (ns) {
+            ns = el;
             el = document.createDocumentFragment();
+            
             while (ns) {
-                el.appendChild(ns);
-                ns = ns.nextSibling;
+                 nx = ns.nextSibling;
+                 el.appendChild(ns);
+                 ns = nx;
             }
         }
         return el;
@@ -285,7 +292,7 @@ Ext.define('Ext.dom.Helper', {
 
         if (tag == 'td' || (tag == 'tr' && (be || ab))) {
             node = this.ieTable(4, trs, html, tre);
-        } else if ((tag == 'tbody' && (be || ab)) ||
+        } else if (((tag == 'tbody' || tag == 'thead') && (be || ab)) ||
                 (tag == 'tr' && (bb || ae))) {
             node = this.ieTable(3, tbs, html, tbe);
         } else {
@@ -469,10 +476,8 @@ Ext.define('Ext.dom.Helper', {
         return new Ext.Template(html);
     }
 
-}, function() {
+};
+})(), function() {
     Ext.ns('Ext.core');
     Ext.DomHelper = Ext.core.DomHelper = new this;
 });
-
-
-}());

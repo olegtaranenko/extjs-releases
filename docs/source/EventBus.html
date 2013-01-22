@@ -28,8 +28,8 @@ Ext.define('Ext.app.EventBus', {
         observable: 'Ext.util.Observable'
     },
 
-    constructor: function() {
-        this.mixins.observable.constructor.call(this);
+<span id='Ext-app-EventBus-method-constructor'>    constructor: function() {
+</span>        this.mixins.observable.constructor.call(this);
 
         this.bus = {};
 
@@ -44,8 +44,8 @@ Ext.define('Ext.app.EventBus', {
         });
     },
 
-    dispatch: function(ev, target, args) {
-        var bus = this.bus,
+<span id='Ext-app-EventBus-method-dispatch'>    dispatch: function(ev, target, args) {
+</span>        var bus = this.bus,
             selectors = bus[ev],
             selector, controllers, id, events, event, i, ln;
 
@@ -75,8 +75,8 @@ Ext.define('Ext.app.EventBus', {
         return true;
     },
 
-    control: function(selectors, listeners, controller) {
-        var bus = this.bus,
+<span id='Ext-app-EventBus-method-control'>    control: function(selectors, listeners, controller) {
+</span>        var bus = this.bus,
             hasListeners, tree, list,
             selector, options, listener, scope, event, listenerList, ev;
 

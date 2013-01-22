@@ -70,33 +70,35 @@ Ext.define('Ext.layout.container.Form', {
     extend: 'Ext.layout.container.Auto',
     alternateClassName: 'Ext.layout.FormLayout',
 
-    /* End Definitions */
-   
+<span id='Ext-layout-container-Form-property-tableCls'>    /* End Definitions */
+</span>   
     tableCls: Ext.baseCSSPrefix + 'form-layout-table',
 
-    type: 'form',
-
-    manageOverflow: 2,
-
-    childEls: ['formTable'],
-    
-    padRow: '&lt;tr&gt;&lt;td class=&quot;' + Ext.baseCSSPrefix + 'form-item-pad&quot; colspan=&quot;3&quot;&gt;&lt;/td&gt;&lt;/tr&gt;',
-
-    renderTpl: [
-        '&lt;table id=&quot;{ownerId}-formTable&quot; class=&quot;{tableCls}&quot; style=&quot;width:100%&quot; cellpadding=&quot;0&quot;&gt;',
+<span id='Ext-layout-container-Form-property-type'>    type: 'form',
+</span>    
+<span id='Ext-layout-container-Form-property-createsInnerCt'>    createsInnerCt: true,
+</span>
+<span id='Ext-layout-container-Form-property-manageOverflow'>    manageOverflow: 2,
+</span>
+<span id='Ext-layout-container-Form-property-childEls'>    childEls: ['formTable'],
+</span>    
+<span id='Ext-layout-container-Form-property-padRow'>    padRow: '&lt;tr&gt;&lt;td class=&quot;' + Ext.baseCSSPrefix + 'form-item-pad&quot; colspan=&quot;3&quot;&gt;&lt;/td&gt;&lt;/tr&gt;',
+</span>
+<span id='Ext-layout-container-Form-property-renderTpl'>    renderTpl: [
+</span>        '&lt;table id=&quot;{ownerId}-formTable&quot; class=&quot;{tableCls}&quot; style=&quot;width:100%&quot; cellpadding=&quot;0&quot;&gt;',
             '{%this.renderBody(out,values)%}',
         '&lt;/table&gt;',
         '{%this.renderPadder(out,values)%}'
     ],
     
-    getRenderData: function(){
-        var data = this.callParent();
+<span id='Ext-layout-container-Form-method-getRenderData'>    getRenderData: function(){
+</span>        var data = this.callParent();
         data.tableCls = this.tableCls;
         return data;    
     },
 
-    calculate : function (ownerContext) {
-        var me = this,
+<span id='Ext-layout-container-Form-method-calculate'>    calculate : function (ownerContext) {
+</span>        var me = this,
             containerSize = me.getContainerSize(ownerContext, true),
             tableWidth,
             childItems,
@@ -116,12 +118,12 @@ Ext.define('Ext.layout.container.Form', {
         }
     },
 
-    getRenderTarget: function() {
-        return this.formTable;
+<span id='Ext-layout-container-Form-method-getRenderTarget'>    getRenderTarget: function() {
+</span>        return this.formTable;
     },
 
-    getRenderTree: function() {
-        var me = this,
+<span id='Ext-layout-container-Form-method-getRenderTree'>    getRenderTree: function() {
+</span>        var me = this,
             result = me.callParent(arguments),
             i, len;
 
@@ -131,8 +133,8 @@ Ext.define('Ext.layout.container.Form', {
         return result;
     },
 
-    transformItemRenderTree: function(item) {
-
+<span id='Ext-layout-container-Form-method-transformItemRenderTree'>    transformItemRenderTree: function(item) {
+</span>
         if (item.tag &amp;&amp; item.tag == 'table') {
             item.tag = 'tbody';
             delete item.cellspacing;
@@ -164,16 +166,16 @@ Ext.define('Ext.layout.container.Form', {
 
     },
 
-    isValidParent: function(item, target, position) {
-        return true;
+<span id='Ext-layout-container-Form-method-isValidParent'>    isValidParent: function(item, target, position) {
+</span>        return true;
     },
 
-    isItemShrinkWrap: function(item) {
-        return ((item.shrinkWrap === true) ? 3 : item.shrinkWrap||0) &amp; 2;
+<span id='Ext-layout-container-Form-method-isItemShrinkWrap'>    isItemShrinkWrap: function(item) {
+</span>        return ((item.shrinkWrap === true) ? 3 : item.shrinkWrap||0) &amp; 2;
     },
 
-    getItemSizePolicy: function(item) {
-        return {
+<span id='Ext-layout-container-Form-method-getItemSizePolicy'>    getItemSizePolicy: function(item) {
+</span>        return {
             setsWidth: 1,
             setsHeight: 0
         };

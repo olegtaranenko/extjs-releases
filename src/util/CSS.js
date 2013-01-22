@@ -87,7 +87,7 @@ Ext.define('Ext.util.CSS', (function() {
             return this.getRules(true);
         },
 
-        // private
+        // @private
         cacheStyleSheet : function(ss) {
             if(!rules){
                 rules = {};

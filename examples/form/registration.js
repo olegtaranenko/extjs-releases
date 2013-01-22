@@ -177,6 +177,7 @@ Ext.onReady(function() {
                         tip = this.tip = Ext.widget('tooltip', {
                             target: this.el,
                             title: 'Error Details:',
+                            minWidth: 200,
                             autoHide: false,
                             anchor: 'top',
                             mouseOffset: [-11, -2],

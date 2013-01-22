@@ -85,11 +85,11 @@ Ext.define('Ext.Layer', {
 
     // shims are shared among layer to keep from having 100 iframes
     statics: {
-        shims: []
-    },
+<span id='Ext-Layer-property-shims'>        shims: []
+</span>    },
     
-    isLayer: true,
-
+<span id='Ext-Layer-property-isLayer'>    isLayer: true,
+</span>
 <span id='Ext-Layer-method-constructor'>    /**
 </span>     * Creates new Layer.
      * @param {Object} [config] An object with config options.
@@ -164,12 +164,12 @@ Ext.define('Ext.Layer', {
         }
     },
 
-    getZIndex: function() {
-        return parseInt((this.getShim() || this).getStyle('z-index'), 10);
+<span id='Ext-Layer-method-getZIndex'>    getZIndex: function() {
+</span>        return parseInt((this.getShim() || this).getStyle('z-index'), 10);
     },
 
-    getShim: function() {
-        var me = this,
+<span id='Ext-Layer-method-getShim'>    getShim: function() {
+</span>        var me = this,
             shim, pn;
 
         if (!me.useShim) {
@@ -191,8 +191,8 @@ Ext.define('Ext.Layer', {
         return me.shim;
     },
 
-    hideShim: function() {
-        var me = this;
+<span id='Ext-Layer-method-hideShim'>    hideShim: function() {
+</span>        var me = this;
         
         if (me.shim) {
             me.shim.setDisplayed(false);
@@ -201,8 +201,8 @@ Ext.define('Ext.Layer', {
         }
     },
 
-    disableShadow: function() {
-        var me = this;
+<span id='Ext-Layer-method-disableShadow'>    disableShadow: function() {
+</span>        var me = this;
         
         if (me.shadow &amp;&amp; !me.shadowDisabled) {
             me.shadowDisabled = true;
@@ -212,8 +212,8 @@ Ext.define('Ext.Layer', {
         }
     },
 
-    enableShadow: function(show) {
-        var me = this;
+<span id='Ext-Layer-method-enableShadow'>    enableShadow: function(show) {
+</span>        var me = this;
         
         if (me.shadow &amp;&amp; me.shadowDisabled) {
             me.shadowDisabled = false;
@@ -295,32 +295,32 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    remove: function() {
-        this.hideUnders();
+<span id='Ext-Layer-method-remove'>    remove: function() {
+</span>        this.hideUnders();
         this.callParent();
     },
 
-    // private
-    beginUpdate: function() {
+<span id='Ext-Layer-method-beginUpdate'>    // @private
+</span>    beginUpdate: function() {
         this.updating = true;
     },
 
-    // private
-    endUpdate: function() {
+<span id='Ext-Layer-method-endUpdate'>    // @private
+</span>    endUpdate: function() {
         this.updating = false;
         this.sync(true);
     },
 
-    // private
-    hideUnders: function() {
+<span id='Ext-Layer-method-hideUnders'>    // @private
+</span>    hideUnders: function() {
         if (this.shadow) {
             this.shadow.hide();
         }
         this.hideShim();
     },
 
-    // private
-    constrainXY: function() {
+<span id='Ext-Layer-method-constrainXY'>    // @private
+</span>    constrainXY: function() {
         if (this.constrain) {
             var vw = Ext.Element.getViewWidth(),
                 vh = Ext.Element.getViewHeight(),
@@ -358,12 +358,12 @@ Ext.define('Ext.Layer', {
         return this;
     },
 
-    getConstrainOffset: function() {
-        return this.shadowOffset;
+<span id='Ext-Layer-method-getConstrainOffset'>    getConstrainOffset: function() {
+</span>        return this.shadowOffset;
     },
 
-    // overridden Element method
-    setVisible: function(visible, animate, duration, callback, easing) {
+<span id='Ext-Layer-method-setVisible'>    // overridden Element method
+</span>    setVisible: function(visible, animate, duration, callback, easing) {
         var me = this,
             cb;
 
@@ -388,43 +388,43 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    // private
-    beforeFx: function() {
+<span id='Ext-Layer-method-beforeFx'>    // @private
+</span>    beforeFx: function() {
         this.beforeAction();
         return this.callParent(arguments);
     },
 
-    // private
-    afterFx: function() {
+<span id='Ext-Layer-method-afterFx'>    // @private
+</span>    afterFx: function() {
         this.callParent(arguments);
         this.sync(this.isVisible());
     },
 
-    // private
-    beforeAction: function() {
+<span id='Ext-Layer-method-beforeAction'>    // @private
+</span>    beforeAction: function() {
         if (!this.updating &amp;&amp; this.shadow) {
             this.shadow.hide();
         }
     },
 
-    // overridden Element method
-    setLeft: function(left) {
+<span id='Ext-Layer-method-setLeft'>    // overridden Element method
+</span>    setLeft: function(left) {
         this.callParent(arguments);
         return this.sync();
     },
 
-    setTop: function(top) {
-        this.callParent(arguments);
+<span id='Ext-Layer-method-setTop'>    setTop: function(top) {
+</span>        this.callParent(arguments);
         return this.sync();
     },
 
-    setLeftTop: function(left, top) {
-        this.callParent(arguments);
+<span id='Ext-Layer-method-setLeftTop'>    setLeftTop: function(left, top) {
+</span>        this.callParent(arguments);
         return this.sync();
     },
 
-    setXY: function(xy, animate, duration, callback, easing) {
-        var me = this;
+<span id='Ext-Layer-method-setXY'>    setXY: function(xy, animate, duration, callback, easing) {
+</span>        var me = this;
         
         // Callback will restore shadow state and call the passed callback
         callback = me.createCB(callback);
@@ -438,8 +438,8 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    // private
-    createCB: function(callback) {
+<span id='Ext-Layer-method-createCB'>    // @private
+</span>    createCB: function(callback) {
         var me = this,
             showShadow = me.shadow &amp;&amp; me.shadow.isVisible();
 
@@ -452,20 +452,20 @@ Ext.define('Ext.Layer', {
         };
     },
 
-    // overridden Element method
-    setX: function(x, animate, duration, callback, easing) {
+<span id='Ext-Layer-method-setX'>    // overridden Element method
+</span>    setX: function(x, animate, duration, callback, easing) {
         this.setXY([x, this.getY()], animate, duration, callback, easing);
         return this;
     },
 
-    // overridden Element method
-    setY: function(y, animate, duration, callback, easing) {
+<span id='Ext-Layer-method-setY'>    // overridden Element method
+</span>    setY: function(y, animate, duration, callback, easing) {
         this.setXY([this.getX(), y], animate, duration, callback, easing);
         return this;
     },
 
-    // overridden Element method
-    setSize: function(w, h, animate, duration, callback, easing) {
+<span id='Ext-Layer-method-setSize'>    // overridden Element method
+</span>    setSize: function(w, h, animate, duration, callback, easing) {
         var me = this;
         
         // Callback will restore shadow state and call the passed callback
@@ -479,8 +479,8 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    // overridden Element method
-    setWidth: function(w, animate, duration, callback, easing) {
+<span id='Ext-Layer-method-setWidth'>    // overridden Element method
+</span>    setWidth: function(w, animate, duration, callback, easing) {
         var me = this;
         
         // Callback will restore shadow state and call the passed callback
@@ -494,8 +494,8 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    // overridden Element method
-    setHeight: function(h, animate, duration, callback, easing) {
+<span id='Ext-Layer-method-setHeight'>    // overridden Element method
+</span>    setHeight: function(h, animate, duration, callback, easing) {
         var me = this;
         
         // Callback will restore shadow state and call the passed callback
@@ -509,8 +509,8 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    // overridden Element method
-    setBounds: function(x, y, width, height, animate, duration, callback, easing) {
+<span id='Ext-Layer-method-setBounds'>    // overridden Element method
+</span>    setBounds: function(x, y, width, height, animate, duration, callback, easing) {
         var me = this;
         
         // Callback will restore shadow state and call the passed callback
@@ -551,8 +551,8 @@ Ext.define('Ext.Layer', {
         return me.setStyle('z-index', zindex);
     },
     
-    onOpacitySet: function(opacity){
-        var shadow = this.shadow;
+<span id='Ext-Layer-method-onOpacitySet'>    onOpacitySet: function(opacity){
+</span>        var shadow = this.shadow;
         if (shadow) {
             shadow.setOpacity(opacity);
         }

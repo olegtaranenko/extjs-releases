@@ -72,7 +72,7 @@
     }
 
     .#{$prefix}accordion-item .#{$prefix}grid-header-ct {
-        border-width: 0 0 1px 0!important;
+        border-width: 0 01px 1px 1px !important;
     }
 
     .#{$prefix}column-header {
@@ -275,7 +275,7 @@
         .#{$prefix}grid-cell-inner {
             border-width: 0;
 
-            background: transparent;
+            background-color: transparent;
         }
     }
 

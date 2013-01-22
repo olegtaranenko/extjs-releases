@@ -29,13 +29,13 @@ Ext.define('Ext.menu.Manager', {
 
     uses: ['Ext.menu.Menu'],
 
-    menus: {},
-    groups: {},
-    attached: false,
-    lastShow: new Date(),
-
-    init: function() {
-        var me = this;
+<span id='Ext-menu-Manager-property-menus'>    menus: {},
+</span><span id='Ext-menu-Manager-property-groups'>    groups: {},
+</span><span id='Ext-menu-Manager-property-attached'>    attached: false,
+</span><span id='Ext-menu-Manager-property-lastShow'>    lastShow: new Date(),
+</span>
+<span id='Ext-menu-Manager-method-init'>    init: function() {
+</span>        var me = this;
         
         me.active = new Ext.util.MixedCollection();
         Ext.getDoc().addKeyListener(27, function() {
@@ -67,8 +67,8 @@ Ext.define('Ext.menu.Manager', {
         return false;
     },
 
-    onHide: function(m) {
-        var me = this,
+<span id='Ext-menu-Manager-method-onHide'>    onHide: function(m) {
+</span>        var me = this,
             active = me.active;
         active.remove(m);
         if (active.length &lt; 1) {
@@ -77,8 +77,8 @@ Ext.define('Ext.menu.Manager', {
         }
     },
 
-    onShow: function(m) {
-        var me = this,
+<span id='Ext-menu-Manager-method-onShow'>    onShow: function(m) {
+</span>        var me = this,
             active   = me.active,
             last     = active.last(),
             attached = me.attached,
@@ -98,8 +98,8 @@ Ext.define('Ext.menu.Manager', {
         m.toFront();
     },
 
-    onBeforeHide: function(m) {
-        if (m.activeChild) {
+<span id='Ext-menu-Manager-method-onBeforeHide'>    onBeforeHide: function(m) {
+</span>        if (m.activeChild) {
             m.activeChild.hide();
         }
         if (m.autoHideTimer) {
@@ -108,8 +108,8 @@ Ext.define('Ext.menu.Manager', {
         }
     },
 
-    onBeforeShow: function(m) {
-        var active = this.active,
+<span id='Ext-menu-Manager-method-onBeforeShow'>    onBeforeShow: function(m) {
+</span>        var active = this.active,
             parentMenu = m.parentMenu;
             
         active.remove(m);
@@ -121,8 +121,8 @@ Ext.define('Ext.menu.Manager', {
         }
     },
 
-    // private
-    onMouseDown: function(e) {
+<span id='Ext-menu-Manager-method-onMouseDown'>    // @private
+</span>    onMouseDown: function(e) {
         var me = this,
             active = me.active,
             lastShow = me.lastShow;
@@ -132,8 +132,8 @@ Ext.define('Ext.menu.Manager', {
         }
     },
 
-    // private
-    register: function(menu) {
+<span id='Ext-menu-Manager-method-register'>    // @private
+</span>    register: function(menu) {
         var me = this;
 
         if (!me.active) {
@@ -175,8 +175,8 @@ Ext.define('Ext.menu.Manager', {
         }
     },
 
-    // private
-    unregister: function(menu) {
+<span id='Ext-menu-Manager-method-unregister'>    // @private
+</span>    unregister: function(menu) {
         var me = this,
             menus = me.menus,
             active = me.active;
@@ -192,8 +192,8 @@ Ext.define('Ext.menu.Manager', {
         });
     },
 
-    // private
-    registerCheckable: function(menuItem) {
+<span id='Ext-menu-Manager-method-registerCheckable'>    // @private
+</span>    registerCheckable: function(menuItem) {
         var groups  = this.groups,
             groupId = menuItem.group;
 
@@ -206,8 +206,8 @@ Ext.define('Ext.menu.Manager', {
         }
     },
 
-    // private
-    unregisterCheckable: function(menuItem) {
+<span id='Ext-menu-Manager-method-unregisterCheckable'>    // @private
+</span>    unregisterCheckable: function(menuItem) {
         var groups  = this.groups,
             groupId = menuItem.group;
 
@@ -216,8 +216,8 @@ Ext.define('Ext.menu.Manager', {
         }
     },
 
-    onCheckChange: function(menuItem, state) {
-        var groups  = this.groups,
+<span id='Ext-menu-Manager-method-onCheckChange'>    onCheckChange: function(menuItem, state) {
+</span>        var groups  = this.groups,
             groupId = menuItem.group,
             i       = 0,
             group, ln, curr;

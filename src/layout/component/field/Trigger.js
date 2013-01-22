@@ -31,6 +31,15 @@ Ext.define('Ext.layout.component.field.Trigger', {
             me.updateEditState();
         }
     },
+    
+    beginLayoutCycle: function(ownerContext){
+        this.callParent(arguments);
+        
+        // Clear width, in case a previous layout cycle set an explicit width.
+        if (ownerContext.widthModel.shrinkWrap && !this.owner.inputWidth) {
+            ownerContext.inputContext.el.setStyle('width', '');
+        }    
+    },
 
     beginLayoutFixed: function (ownerContext, width, suffix) {
         var me = this,
@@ -97,6 +106,18 @@ Ext.define('Ext.layout.component.field.Trigger', {
         value = (inputEl.dom.value || (owner.hasFocus ? '' : owner.emptyText) || '') + owner.growAppend;
         return inputEl.getTextWidth(value);
     },
+    
+    publishOwnerWidth: function(ownerContext, width) {
+        var owner = this.owner;
+        this.callParent(arguments);
+        if (!owner.grow && !owner.inputWidth) {
+            width -= owner.getTriggerWidth();
+            if (owner.labelAlign != 'top') {
+                width -= owner.getLabelWidth();
+            }
+            ownerContext.inputContext.setWidth(width);
+        }    
+    },
 
     measureContentWidth: function (ownerContext) {
         var me = this,
@@ -120,6 +141,8 @@ Ext.define('Ext.layout.component.field.Trigger', {
             // Now that we've set the inputContext, we need to recalculate the width
             inputContext.domBlock(me, 'width');
             width = NaN;
+        } else if (!owner.inputWidth) {
+            width -= owner.getTriggerWidth();
         }
         return width;
     },

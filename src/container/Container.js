@@ -150,9 +150,9 @@ Ext.define('Ext.container.Container', {
     alternateClassName: 'Ext.Container',
 
     /*
-     * For more information on the following methods, see the note for the
-     * hierarchyEventSource observer defined in the class' callback
-     */
+    * For more information on the following methods, see the note for the
+    * hierarchyEventSource observer defined in the class' callback
+    */
     fireHierarchyEvent: function (ename) {
         this.hierarchyEventSource.fireEvent(ename, this);
     },

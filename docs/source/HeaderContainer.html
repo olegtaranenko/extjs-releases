@@ -25,27 +25,27 @@ Ext.define('Ext.grid.property.HeaderContainer', {
 
     alternateClassName: 'Ext.grid.PropertyColumnModel',
     
-    nameWidth: 115,
-
-    // private - strings used for locale support
-    //&lt;locale&gt;
+<span id='Ext-grid-property-HeaderContainer-property-nameWidth'>    nameWidth: 115,
+</span>
+<span id='Ext-grid-property-HeaderContainer-property-nameText'>    // @private strings used for locale support
+</span>    //&lt;locale&gt;
     nameText : 'Name',
-    //&lt;/locale&gt;
-    //&lt;locale&gt;
+<span id='Ext-grid-property-HeaderContainer-property-valueText'>    //&lt;/locale&gt;
+</span>    //&lt;locale&gt;
     valueText : 'Value',
-    //&lt;/locale&gt;
-    //&lt;locale&gt;
+<span id='Ext-grid-property-HeaderContainer-property-dateFormat'>    //&lt;/locale&gt;
+</span>    //&lt;locale&gt;
     dateFormat : 'm/j/Y',
-    //&lt;/locale&gt;
-    //&lt;locale&gt;
+<span id='Ext-grid-property-HeaderContainer-property-trueText'>    //&lt;/locale&gt;
+</span>    //&lt;locale&gt;
     trueText: 'true',
-    //&lt;/locale&gt;
-    //&lt;locale&gt;
+<span id='Ext-grid-property-HeaderContainer-property-falseText'>    //&lt;/locale&gt;
+</span>    //&lt;locale&gt;
     falseText: 'false',
     //&lt;/locale&gt;
 
-    // private
-    nameColumnCls: Ext.baseCSSPrefix + 'grid-property-name',
+<span id='Ext-grid-property-HeaderContainer-property-nameColumnCls'>    // @private
+</span>    nameColumnCls: Ext.baseCSSPrefix + 'grid-property-name',
 
 <span id='Ext-grid-property-HeaderContainer-method-constructor'>    /**
 </span>     * Creates new HeaderContainer.
@@ -58,6 +58,8 @@ Ext.define('Ext.grid.property.HeaderContainer', {
         me.grid = grid;
         me.store = store;
         me.callParent([{
+            enableColumnResize: Ext.isDefined(grid.enableColumnResize) ? grid.enableColumnResize : me.enableColumnResize,
+            enableColumnMove: Ext.isDefined(grid.enableColumnMove) ? grid.enableColumnMove : me.enableColumnMove,
             items: [{
                 header: me.nameText,
                 width: grid.nameColumnWidth || me.nameWidth,
@@ -81,21 +83,22 @@ Ext.define('Ext.grid.property.HeaderContainer', {
         }]);
     },
     
-    getCellEditor: function(record){
-        return this.grid.getCellEditor(record, this);
+<span id='Ext-grid-property-HeaderContainer-method-getCellEditor'>    getCellEditor: function(record){
+</span>        return this.grid.getCellEditor(record, this);
     },
 
-    // private
-    // Render a property name cell
+<span id='Ext-grid-property-HeaderContainer-method-renderProp'>    // @private
+</span>    // Render a property name cell
     renderProp : function(v) {
         return this.getPropertyName(v);
     },
 
-    // private
-    // Render a property value cell
+<span id='Ext-grid-property-HeaderContainer-method-renderCell'>    // @private
+</span>    // Render a property value cell
     renderCell : function(val, meta, rec) {
         var me = this,
-            renderer = me.grid.customRenderers[rec.get(me.grid.nameField)],
+            grid = me.grid,
+            renderer = grid.getConfig(rec.get(grid.nameField), 'renderer'),
             result = val;
 
         if (renderer) {
@@ -109,20 +112,20 @@ Ext.define('Ext.grid.property.HeaderContainer', {
         return Ext.util.Format.htmlEncode(result);
     },
 
-    // private
-    renderDate : Ext.util.Format.date,
+<span id='Ext-grid-property-HeaderContainer-property-renderDate'>    // @private
+</span>    renderDate : Ext.util.Format.date,
 
-    // private
-    renderBool : function(bVal) {
+<span id='Ext-grid-property-HeaderContainer-method-renderBool'>    // @private
+</span>    renderBool : function(bVal) {
         return this[bVal ? 'trueText' : 'falseText'];
     },
 
-    // private
-    // Renders custom property names instead of raw names if defined in the Grid
+<span id='Ext-grid-property-HeaderContainer-method-getPropertyName'>    // @private
+</span>    // Renders custom property names instead of raw names if defined in the Grid
     getPropertyName : function(name) {
-        var pn = this.grid.propertyNames;
-        return pn &amp;&amp; pn[name] ? pn[name] : name;
+        return this.grid.getConfig(name, 'displayName', name);
     }
-});</pre>
+});
+</pre>
 </body>
 </html>

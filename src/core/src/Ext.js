@@ -88,9 +88,17 @@ Ext._startTime = new Date().getTime();
         name: Ext.sandboxName || 'Ext',
 
         /**
+         * @property {Function}
          * A reusable empty function
          */
         emptyFn: emptyFn,
+        
+        /**
+         * A reusable identity function. The function will always return the first argument, unchanged.
+         */
+        identityFn: function(o) {
+            return o;
+        },
 
         /**
          * A zero length string which will pass a truth test. Useful for passing to methods
@@ -732,6 +740,10 @@ Ext.globalEval = Ext.global.execScript
         // IMPORTANT: because we use eval we cannot place this in the above function or it
         // will break the compressor's ability to rename local variables...
         (function(){
+            // This var should not be replaced by the compressor. We need to do this so
+            // that Ext refers to the global Ext, if we're sandboxing it may
+            // refer to the local instance inside the closure
+            var Ext = this.Ext;
             eval($$code);
         }());
     };

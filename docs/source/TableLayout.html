@@ -24,10 +24,10 @@ Ext.define('Ext.view.TableLayout', {
     extend: 'Ext.layout.component.Auto',
 
     alias: ['layout.tableview'],
-    type: 'tableview',
-
-    beginLayout: function(ownerContext) {
-        var me = this;
+<span id='Ext-view-TableLayout-property-type'>    type: 'tableview',
+</span>
+<span id='Ext-view-TableLayout-method-beginLayout'>    beginLayout: function(ownerContext) {
+</span>        var me = this;
 
         me.callParent(arguments);
 
@@ -40,8 +40,8 @@ Ext.define('Ext.view.TableLayout', {
         }
     },
 
-    calculate: function(ownerContext) {
-        var me = this;
+<span id='Ext-view-TableLayout-method-calculate'>    calculate: function(ownerContext) {
+</span>        var me = this;
 
         me.callParent(arguments);
 
@@ -66,19 +66,21 @@ Ext.define('Ext.view.TableLayout', {
         }
     },
 
-    measureContentHeight: function(ownerContext) {
-        // Only able to produce a valid contentHeight if we have flushed all column widths to the table (or there's no table at all).
+<span id='Ext-view-TableLayout-method-measureContentHeight'>    measureContentHeight: function(ownerContext) {
+</span>        // Only able to produce a valid contentHeight if we have flushed all column widths to the table (or there's no table at all).
         if (!ownerContext.headerContext || ownerContext.hasProp('columnWidthsFlushed')) {
             return this.callParent(arguments);
         }
     },
 
-    flush: function() {
-        var me = this,
+<span id='Ext-view-TableLayout-method-flush'>    flush: function() {
+</span>        var me = this,
+            owner = me.owner,
             context = me.ownerContext.context,
             columns = me.headerCt.getGridColumns(),
+            column,
             i = 0, len = columns.length,
-            el = me.owner.el,
+            el = owner.el,
             tableWidth = 0,
             colWidth;
 
@@ -87,13 +89,14 @@ Ext.define('Ext.view.TableLayout', {
 
         // Set column width corresponding to each header
         for (i = 0; i &lt; len; i++) {
-            colWidth = columns[i].hidden ? 0 : context.getCmp(columns[i]).props.width;
+            column = columns[i];
+            colWidth = column.hidden ? 0 : context.getCmp(column).props.width;
             tableWidth += colWidth;
 
             // Grab the col and set the width.
             // CSS class is generated in TableChunker.
             // Select composites because there may be several chunks.
-            el.select(me.getColumnSelector(columns[i])).setWidth(colWidth);
+            el.select(me.getColumnSelector(column)).setWidth(colWidth);
         }
         el.select('table.' + Ext.baseCSSPrefix + 'grid-table-resizer').setWidth(tableWidth);
 
@@ -101,8 +104,8 @@ Ext.define('Ext.view.TableLayout', {
         me.ownerContext.setProp('columnWidthsFlushed', true);
     },
     
-    finishedLayout: function(){
-        var me = this,
+<span id='Ext-view-TableLayout-method-finishedLayout'>    finishedLayout: function(){
+</span>        var me = this,
             first;
             
         me.callParent(arguments);   
@@ -121,9 +124,9 @@ Ext.define('Ext.view.TableLayout', {
             }
         } 
     },
-
-    getColumnSelector: function(column) {
-        return 'th.' + Ext.baseCSSPrefix + 'grid-col-resizer-' + column.id;
+    
+<span id='Ext-view-TableLayout-method-getColumnSelector'>    getColumnSelector: function(column) {
+</span>        return 'th.' + Ext.baseCSSPrefix + 'grid-col-resizer-' + column.id;
     }
 });</pre>
 </body>

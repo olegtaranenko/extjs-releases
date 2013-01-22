@@ -76,8 +76,8 @@ Ext.define('Ext.direct.PollingProvider', {
      * an imported Ext.Direct method which will accept the baseParams as its only argument.
      */
 
-    // private
-    constructor : function(config){
+<span id='Ext-direct-PollingProvider-method-constructor'>    // private
+</span>    constructor : function(config){
         this.callParent(arguments);
         this.addEvents(
 <span id='Ext-direct-PollingProvider-event-beforepoll'>            /**
@@ -96,8 +96,8 @@ Ext.define('Ext.direct.PollingProvider', {
         );
     },
 
-    // inherited
-    isConnected: function(){
+<span id='Ext-direct-PollingProvider-method-isConnected'>    // inherited
+</span>    isConnected: function(){
         return !!this.pollTask;
     },
 
@@ -149,8 +149,8 @@ Ext.define('Ext.direct.PollingProvider', {
         }
     },
 
-    // private
-    onData: function(opt, success, response){
+<span id='Ext-direct-PollingProvider-method-onData'>    // private
+</span>    onData: function(opt, success, response){
         var me = this, 
             i = 0, 
             len,

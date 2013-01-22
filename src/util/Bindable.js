@@ -5,7 +5,7 @@
  * classes. In general it will not be used directly.
  */
 Ext.define('Ext.util.Bindable', {
-    
+
     /**
      * Binds a store to this instance.
      * @param {Ext.data.AbstractStore/String} [store] The store to bind or ID of the store.
@@ -15,7 +15,7 @@ Ext.define('Ext.util.Bindable', {
     bindStore: function(store, initial){
         var me = this,
             oldStore = me.store;
-        
+
         if (!initial && me.store) {
             // Perform implementation-specific unbinding operations *before* possible Store destruction.
             me.onUnbindStore(oldStore, initial);
@@ -34,7 +34,7 @@ Ext.define('Ext.util.Bindable', {
         me.store = store || null;
         return me;
     },
-    
+
     /**
      * Gets the current store instance.
      * @return {Ext.data.AbstractStore} The store, null if one does not exist.
@@ -42,7 +42,7 @@ Ext.define('Ext.util.Bindable', {
     getStore: function(){
         return this.store;
     },
-    
+
     /**
      * Unbinds listeners from this component to the store. By default it will remove
      * anything bound by the bindStoreListeners method, however it can be overridden
@@ -57,7 +57,7 @@ Ext.define('Ext.util.Bindable', {
             store.un(listeners);
         }
     },
-    
+
     /**
      * Binds listeners for this component to the store. By default it will add
      * anything bound by the getStoreListeners method, however it can be overridden
@@ -68,23 +68,24 @@ Ext.define('Ext.util.Bindable', {
     bindStoreListeners: function(store) {
         // Can be overridden in the subclass for more complex binding
         var me = this,
-            listeners = Ext.apply({}, me.getStoreListeners());
-            
+            listeners = Ext.apply({}, me.getStoreListeners(store));
+
         if (!listeners.scope) {
             listeners.scope = me;
         }
         me.storeListeners = listeners;
         store.on(listeners);
     },
-    
+
     /**
      * Gets the listeners to bind to a new store.
      * @protected
+     * @param {Ext.data.Store} store The Store which is being bound to for which a listeners object should be returned.
      * @return {Object} The listeners to be bound to the store in object literal form. The scope
      * may be omitted, it is assumed to be the current instance.
      */
     getStoreListeners: Ext.emptyFn,
-    
+
     /**
      * Template method, it is called when an existing store is unbound
      * from the current instance.
@@ -93,7 +94,7 @@ Ext.define('Ext.util.Bindable', {
      * @param {Boolean} initial True if this store is being bound as initialization of the instance.
      */
     onUnbindStore: Ext.emptyFn,
-    
+
     /**
      * Template method, it is called when a new store is bound
      * to the current instance.

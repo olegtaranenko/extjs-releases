@@ -205,6 +205,12 @@ Ext.define('Ext.data.reader.Json', {
      * @cfg {String} record The optional location within the JSON response that the record data itself can be found at.
      * See the JsonReader intro docs for more details. This is not often needed.
      */
+    
+    /**
+     * @cfg {String} [metaProperty="metaData"]
+     * Name of the property from which to retrieve the `metaData` attribute. See {@link #metaData}.
+     */
+    metaProperty: 'metaData',
 
     /**
      * @cfg {Boolean} useSimpleAccessors True to ensure that field names/mappings are treated as literals when
@@ -223,9 +229,17 @@ Ext.define('Ext.data.reader.Json', {
      * @return {Ext.data.ResultSet} A ResultSet containing model instances and meta data about the results
      */
     readRecords: function(data) {
+        var me = this,
+            meta;
+            
         //this has to be before the call to super because we use the meta data in the superclass readRecords
-        if (data.metaData) {
-            this.onMetaChange(data.metaData);
+        if (me.getMeta) {
+            meta = me.getMeta(data);
+            if (meta) {
+                me.onMetaChange(meta);
+            }
+        } else if (data.metaData) {
+            me.onMetaChange(data.metaData);
         }
 
         /**
@@ -233,8 +247,8 @@ Ext.define('Ext.data.reader.Json', {
          * A copy of this.rawData.
          * @deprecated Will be removed in Ext JS 5.0. This is just a copy of this.rawData - use that instead.
          */
-        this.jsonData = data;
-        return this.callParent([data]);
+        me.jsonData = data;
+        return me.callParent([data]);
     },
 
     //inherit docs
@@ -263,16 +277,19 @@ Ext.define('Ext.data.reader.Json', {
 
     //inherit docs
     buildExtractors : function() {
-        var me = this;
+        var me = this,
+            metaProp = me.metaProperty;
 
         me.callParent(arguments);
 
         if (me.root) {
             me.getRoot = me.createAccessor(me.root);
         } else {
-            me.getRoot = function(root) {
-                return root;
-            };
+            me.getRoot = Ext.identityFn;
+        }
+        
+        if (metaProp) {
+            me.getMeta = me.createAccessor(metaProp);
         }
     },
 
@@ -354,8 +371,9 @@ Ext.define('Ext.data.reader.Json', {
 
         return function(field, fieldVarName, dataName) {
             var me     = this,
-                hasMap = (field.mapping !== null),
-                map    = hasMap ? field.mapping : field.name,
+                mapping = field.mapping,
+                hasMap = mapping || mapping === 0,
+                map    = hasMap ? mapping : field.name,
                 result,
                 operatorSearch;
 

@@ -236,8 +236,8 @@ Ext.define('Ext.data.Model', {
         'Ext.util.MixedCollection'
     ],
 
-    compareConvertFields: function(f1, f2) {
-        var f1SpecialConvert = f1.convert &amp;&amp; f1.type &amp;&amp; f1.convert !== f1.type.convert,
+<span id='Ext-data-Model-method-compareConvertFields'>    compareConvertFields: function(f1, f2) {
+</span>        var f1SpecialConvert = f1.convert &amp;&amp; f1.type &amp;&amp; f1.convert !== f1.type.convert,
             f2SpecialConvert = f2.convert &amp;&amp; f2.type &amp;&amp; f2.convert !== f2.type.convert;
 
         if (f1SpecialConvert &amp;&amp; !f2SpecialConvert) {
@@ -250,12 +250,12 @@ Ext.define('Ext.data.Model', {
         return 0;
     },
 
-    itemNameFn: function(item) {
-        return item.name;
+<span id='Ext-data-Model-method-itemNameFn'>    itemNameFn: function(item) {
+</span>        return item.name;
     },
 
-    onClassExtended: function(cls, data, hooks) {
-        var onBeforeClassCreated = hooks.onBeforeCreated;
+<span id='Ext-data-Model-method-onClassExtended'>    onClassExtended: function(cls, data, hooks) {
+</span>        var onBeforeClassCreated = hooks.onBeforeCreated;
 
         hooks.onBeforeCreated = function(cls, data) {
             var me = this,
@@ -611,19 +611,19 @@ Ext.define('Ext.data.Model', {
 <span id='Ext-data-Model-static-property-EDIT'>        /**
 </span>         * @property
          * @static
-         * The update operation of type 'edit'. Used by {@link Ext.data.Store#update Store.update} event.
+         * The update operation of type 'edit'. Used by {@link Ext.data.Store#event-update Store.update} event.
          */
         EDIT   : 'edit',
 <span id='Ext-data-Model-static-property-REJECT'>        /**
 </span>         * @property
          * @static
-         * The update operation of type 'reject'. Used by {@link Ext.data.Store#update Store.update} event.
+         * The update operation of type 'reject'. Used by {@link Ext.data.Store#event-update Store.update} event.
          */
         REJECT : 'reject',
 <span id='Ext-data-Model-static-property-COMMIT'>        /**
 </span>         * @property
          * @static
-         * The update operation of type 'commit'. Used by {@link Ext.data.Store#update Store.update} event.
+         * The update operation of type 'commit'. Used by {@link Ext.data.Store#event-update Store.update} event.
          */
         COMMIT : 'commit',
 
@@ -743,8 +743,8 @@ Ext.define('Ext.data.Model', {
      */
     persistenceProperty: 'data',
 
-    evented: false,
-
+<span id='Ext-data-Model-property-evented'>    evented: false,
+</span>
 <span id='Ext-data-Model-property-isModel'>    /**
 </span>     * @property {Boolean} isModel
      * `true` in this class to identify an object as an instantiated Model, or subclass thereof.
@@ -842,6 +842,7 @@ Ext.define('Ext.data.Model', {
         data = data || {};
 
         var me = this,
+            hasId = (id || id === 0),
             fields,
             length,
             field,
@@ -857,7 +858,7 @@ Ext.define('Ext.data.Model', {
          * An internal unique ID for each Model instance, used to identify Models that don't have an ID yet
          * @private
          */
-        me.internalId = (id || id === 0) ? id : Ext.data.Model.id(me);
+        me.internalId = hasId ? id : Ext.data.Model.id(me);
 
 <span id='Ext-data-Model-property-raw'>        /**
 </span>         * @property {Object} raw The raw data used to create this model if created via a reader.
@@ -881,7 +882,7 @@ Ext.define('Ext.data.Model', {
             me.persistenceProperty = me.persistanceProperty;
         }
 
-        me[me.persistenceProperty] = convertedData || {};
+        persistenceProperty = me[me.persistenceProperty] = convertedData || {};
 
         me.mixins.observable.constructor.call(me);
 
@@ -890,7 +891,6 @@ Ext.define('Ext.data.Model', {
             fields = me.fields.items;
             length = fields.length;
             i = 0;
-            persistenceProperty = me[me.persistenceProperty];
 
             if (Ext.isArray(data)) {
                 for (; i &lt; length; i++) {
@@ -933,6 +933,11 @@ Ext.define('Ext.data.Model', {
                }
             }
         }
+        
+        // If we explicitly pass an id, it should always take precedence
+        if (hasId) {
+            persistenceProperty[me.idProperty] = id;
+        }
 
 <span id='Ext-data-Model-property-stores'>        /**
 </span>         * @property {Ext.data.Store[]} stores
@@ -969,8 +974,8 @@ Ext.define('Ext.data.Model', {
         return this[this.persistenceProperty][field];
     },
 
-    // This object is used whenever the set() method is called and given a string as the
-    // first argument. This approach saves memory (and GC costs) since we could be called
+<span id='Ext-data-Model-property-_singleProp'>    // This object is used whenever the set() method is called and given a string as the
+</span>    // first argument. This approach saves memory (and GC costs) since we could be called
     // a lot.
     _singleProp: {},
 
@@ -1079,25 +1084,36 @@ Ext.define('Ext.data.Model', {
                 field, i = 0,
                 myData = me[me.persistenceProperty],
                 sourceData = sourceRecord[sourceRecord.persistenceProperty],
+                idProperty = me.idProperty,
+                name,
                 value;
 
             for (; i &lt; fieldCount; i++) {
                 field = fields[i];
-
+                name = field.name;
+                
                 // Do not use setters.
                 // Copy returned values in directly from the data object.
                 // Converters have already been called because new Records
                 // have been created to copy from.
                 // This is a direct record-to-record value copy operation.
-                value = sourceData[field.name];
-                if (value !== undefined) {
-                    myData[field.name] = value;
+                if (name != idProperty) {
+                    // don't copy the id, we'll do it at the end
+                    value = sourceData[name];
+                    if (value !== undefined) {
+                        myData[name] = value;
+                    }
                 }
             }
 
             // If this is a phantom record being updated from a concrete record, copy the ID in.
             if (me.phantom &amp;&amp; !sourceRecord.phantom) {
+                // beginEdit to prevent events firing
+                // commit at the end to prevent dirty being set
+                me.beginEdit();
                 me.setId(sourceRecord.getId());
+                me.endEdit(true);
+                me.commit(true);
             }
         }
     },
@@ -1122,12 +1138,30 @@ Ext.define('Ext.data.Model', {
      * When an edit has begun, it must be followed by either {@link #endEdit} or {@link #cancelEdit}.
      */
     beginEdit : function(){
-        var me = this;
+        var me = this,
+            key,
+            data,
+            o;
+            
         if (!me.editing) {
             me.editing = true;
             me.dirtySave = me.dirty;
-            me.dataSave = Ext.apply({}, me[me.persistenceProperty]);
-            me.modifiedSave = Ext.apply({}, me.modified);
+            
+            o = me[me.persistenceProperty];
+            data = me.dataSave = {};
+            for (key in o) {
+                if (o.hasOwnProperty(key)) {
+                    data[key] = o[key];
+                }
+            }
+            
+            o = me.modified;
+            data = me.modifiedSave = {}; 
+            for (key in o) {
+                if (o.hasOwnProperty(key)) {
+                    data[key] = o[key];
+                }
+            }
         }
     },
 
@@ -1156,34 +1190,42 @@ Ext.define('Ext.data.Model', {
      */
     endEdit : function(silent, modifiedFieldNames){
         var me = this,
+            dataSave,
             changed;
+            
+        silent = silent === true;
         if (me.editing) {
             me.editing = false;
-            if(!modifiedFieldNames) {
-                modifiedFieldNames = me.getModifiedFieldNames();
-            }
-            changed = me.dirty || modifiedFieldNames.length &gt; 0;
+            dataSave = me.dataSave;
             delete me.modifiedSave;
             delete me.dataSave;
             delete me.dirtySave;
-            if (changed &amp;&amp; silent !== true) {
-                me.afterEdit(modifiedFieldNames);
+            if (!silent) {
+                if (!modifiedFieldNames) {
+                    modifiedFieldNames = me.getModifiedFieldNames(dataSave);
+                }
+                changed = me.dirty || modifiedFieldNames.length &gt; 0;
+                if (changed) {
+                    me.afterEdit(modifiedFieldNames);
+                }
             }
         }
     },
 
 <span id='Ext-data-Model-method-getModifiedFieldNames'>    /**
 </span>     * Gets the names of all the fields that were modified during an edit
+     * @param {Object} [saved] The currently saved data. Defaults to
+     * the dataSave property on the object.
      * @private
      * @return {String[]} An array of modified field names
      */
-    getModifiedFieldNames: function(){
+    getModifiedFieldNames: function(saved){
         var me = this,
-            saved = me.dataSave,
             data = me[me.persistenceProperty],
             modified = [],
             key;
 
+        saved = saved || me.dataSave;
         for (key in data) {
             if (data.hasOwnProperty(key)) {
                 if (!me.isEqual(data[key], saved[key])) {
@@ -1246,8 +1288,8 @@ Ext.define('Ext.data.Model', {
         }
     },
 
-    //&lt;debug&gt;
-    markDirty : function() {
+<span id='Ext-data-Model-method-markDirty'>    //&lt;debug&gt;
+</span>    markDirty : function() {
         Ext.log.warn('Ext.data.Model: markDirty has been deprecated. Use setDirty instead.');
 
         return this.setDirty.apply(this, arguments);
@@ -1450,10 +1492,14 @@ Ext.define('Ext.data.Model', {
      * @param {Object} options Options to pass to the proxy. Config object for {@link Ext.data.Operation}.
      * @return {Ext.data.Model} The Model instance
      */
-    destroy: function(options){
-        options = Ext.apply({}, options);
+    destroy: function(options) {
+        options = Ext.apply({
+            records: [this],
+            action : 'destroy'
+        }, options);
 
-        var me     = this,
+        var me = this,
+            isNotPhantom = me.phantom !== true,
             scope  = options.scope || me,
             stores = me.stores,
             i = 0,
@@ -1463,20 +1509,19 @@ Ext.define('Ext.data.Model', {
             operation,
             callback;
 
-        Ext.apply(options, {
-            records: [me],
-            action : 'destroy'
-        });
-
         operation = new Ext.data.Operation(options);
+
         callback = function(operation) {
             args = [me, operation];
             if (operation.wasSuccessful()) {
                 for(storeCount = stores.length; i &lt; storeCount; i++) {
                     store = stores[i];
-                    store.fireEvent('write', store, operation);
-                    store.fireEvent('datachanged', store);
-                    // Not firing refresh here, since it's a single record
+                    
+                    // Remove this record from Store. Avoid Store handling anything by passing the &quot;isMove&quot; flag
+                    store.remove(me, true);
+                    if (isNotPhantom) {
+                        store.fireEvent('write', store, operation);
+                    }
                 }
                 me.clearListeners();
                 Ext.callback(options.success, scope, args);
@@ -1486,7 +1531,17 @@ Ext.define('Ext.data.Model', {
             Ext.callback(options.callback, scope, args);
         };
 
-        me.getProxy().destroy(operation, callback, me);
+        // Not a phantom, then we must perform this operation on the remote datasource.
+        // Record will be removed from the store in the callback upon a success response
+        if (isNotPhantom) {
+            me.getProxy().destroy(operation, callback, me);
+        }
+        // If it's a phantom, then call the callback directly with a dummy successful ResultSet
+        else {
+            operation.complete = operation.success = true;
+            operation.resultSet = me.getProxy().reader.nullResultSet;
+            callback(operation);
+        }
         return me;
     },
 

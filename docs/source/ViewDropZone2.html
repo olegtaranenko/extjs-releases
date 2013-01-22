@@ -21,8 +21,8 @@
 Ext.define('Ext.tree.ViewDropZone', {
     extend: 'Ext.view.DropZone',
 
-<span id='Ext-tree-ViewDropZone-cfg-allowParentInsert'>    /**
-</span>     * @cfg {Boolean} allowParentInsert
+<span id='Ext-tree-ViewDropZone-cfg-allowParentInserts'>    /**
+</span>     * @cfg {Boolean} allowParentInserts
      * Allow inserting a dragged node between an expanded parent node and its first child that will become a
      * sibling of the parent when dropped.
      */
@@ -47,10 +47,10 @@ Ext.define('Ext.tree.ViewDropZone', {
      */
     expandDelay : 500,
 
-    indicatorCls: Ext.baseCSSPrefix + 'tree-ddindicator',
-
-    // private
-    expandNode : function(node) {
+<span id='Ext-tree-ViewDropZone-property-indicatorCls'>    indicatorCls: Ext.baseCSSPrefix + 'tree-ddindicator',
+</span>
+<span id='Ext-tree-ViewDropZone-method-expandNode'>    // @private
+</span>    expandNode : function(node) {
         var view = this.view;
         if (!node.isLeaf() &amp;&amp; !node.isExpanded()) {
             view.expand(node);
@@ -58,21 +58,21 @@ Ext.define('Ext.tree.ViewDropZone', {
         }
     },
 
-    // private
-    queueExpand : function(node) {
+<span id='Ext-tree-ViewDropZone-method-queueExpand'>    // @private
+</span>    queueExpand : function(node) {
         this.expandProcId = Ext.Function.defer(this.expandNode, this.expandDelay, this, [node]);
     },
 
-    // private
-    cancelExpand : function() {
+<span id='Ext-tree-ViewDropZone-method-cancelExpand'>    // @private
+</span>    cancelExpand : function() {
         if (this.expandProcId) {
             clearTimeout(this.expandProcId);
             this.expandProcId = false;
         }
     },
 
-    getPosition: function(e, node) {
-        var view = this.view,
+<span id='Ext-tree-ViewDropZone-method-getPosition'>    getPosition: function(e, node) {
+</span>        var view = this.view,
             record = view.getRecord(node),
             y = e.getPageY(),
             noAppend = record.isLeaf(),
@@ -90,7 +90,7 @@ Ext.define('Ext.tree.ViewDropZone', {
             return noAppend ? false : 'append';
         }
 
-        if (!this.allowParentInsert) {
+        if (!this.allowParentInserts) {
             noBelow = record.hasChildNodes() &amp;&amp; record.isExpanded();
         }
 
@@ -106,8 +106,8 @@ Ext.define('Ext.tree.ViewDropZone', {
         }
     },
 
-    isValidDropPoint : function(node, position, dragZone, e, data) {
-        if (!node || !data.item) {
+<span id='Ext-tree-ViewDropZone-method-isValidDropPoint'>    isValidDropPoint : function(node, position, dragZone, e, data) {
+</span>        if (!node || !data.item) {
             return false;
         }
 
@@ -143,14 +143,11 @@ Ext.define('Ext.tree.ViewDropZone', {
         if (Ext.Array.contains(draggedRecords, targetNode)) {
              return false;
         }
-
-        // @TODO: fire some event to notify that there is a valid drop possible for the node you're dragging
-        // Yes: this.fireViewEvent(blah....) fires an event through the owning View.
-        return true;
+        return view.fireEvent('nodedragover', targetNode, position, data, e) !== false;
     },
 
-    onNodeOver : function(node, dragZone, e, data) {
-        var position = this.getPosition(e, node),
+<span id='Ext-tree-ViewDropZone-method-onNodeOver'>    onNodeOver : function(node, dragZone, e, data) {
+</span>        var position = this.getPosition(e, node),
             returnCls = this.dropNotAllowed,
             view = this.view,
             targetNode = view.getRecord(node),
@@ -200,33 +197,40 @@ Ext.define('Ext.tree.ViewDropZone', {
         return returnCls;
     },
 
-    onContainerOver : function(dd, e, data) {
-        return e.getTarget('.' + this.indicatorCls) ? this.currentCls : this.dropNotAllowed;
+<span id='Ext-tree-ViewDropZone-method-onContainerOver'>    onContainerOver : function(dd, e, data) {
+</span>        return e.getTarget('.' + this.indicatorCls) ? this.currentCls : this.dropNotAllowed;
     },
     
-    notifyOut: function() {
-        this.callParent(arguments);
+<span id='Ext-tree-ViewDropZone-method-notifyOut'>    notifyOut: function() {
+</span>        this.callParent(arguments);
         this.cancelExpand();
     },
 
-    handleNodeDrop : function(data, targetNode, position) {
-        var me = this,
+<span id='Ext-tree-ViewDropZone-method-handleNodeDrop'>    handleNodeDrop : function(data, targetNode, position) {
+</span>        var me = this,
             view = me.view,
             parentNode = targetNode.parentNode,
             store = view.getStore(),
+            Model = view.getStore().treeStore.model,
             recordDomNodes = [],
-            records, i, len,
+            records, i, len, record,
             insertionMethod, argList,
             needTargetExpand,
             transferData,
             processDrop;
 
-        // If the copy flag is set, create a copy of the Models with the same IDs
+        // If the copy flag is set, create a copy of the models
         if (data.copy) {
             records = data.records;
             data.records = [];
             for (i = 0, len = records.length; i &lt; len; i++) {
-                data.records.push(Ext.apply({}, records[i].data));
+                record = records[i];
+                if (record.isNode) {
+                    data.records.push(record.copy(undefined, true));
+                } else {
+                    // If it's not a node, make a node copy
+                    data.records.push(new Model(record[record.persistenceProperty], record.getId()));
+                }
             }
         }
 

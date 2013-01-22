@@ -138,7 +138,130 @@ Ext.define('Ext.app.Controller', {
     /**
      * @cfg {String} id The id of this controller. You can use this id when dispatching.
      */
-    
+
+    statics: {
+        strings: {
+            model: {
+                getter: 'getModel',
+                upper: 'Model'
+            },
+            view: {
+                getter: 'getView',
+                upper: 'View'
+            },
+            controller: {
+                getter: 'getController',
+                upper: 'Controller'
+            },
+            store: {
+                getter: 'getStore',
+                upper: 'Store'
+            }
+        },
+
+        createGetter: function (baseGetter, name) {
+            return function () {
+                return this[baseGetter](name);
+            };
+        },
+
+        getGetterName: function (name, kindUpper) {
+            var fn       = 'get',
+                parts    = name.split('.'),
+                numParts = parts.length,
+                index;
+
+            // Handle namespaced class names. E.g. feed.Add becomes getFeedAddView etc.
+            for (index = 0 ; index < numParts; index++) {
+                fn += Ext.String.capitalize(parts[index]);
+            }
+
+            fn += kindUpper;
+            return fn;
+        },
+
+        /**
+         * This method is called like so:
+         *
+         *      Ext.app.Controller.processDependencies(proto, requiresArray, 'MyApp', 'model', [
+         *          'User',
+         *          'Item',
+         *          'Foo@Common.models',
+         *          'models.Bar@Common'
+         *      ]);
+         *
+         * Required dependencies are added to requiresArray.
+         *
+         * @private
+         */
+        processDependencies: function (cls, requires, namespace, kind, names) {
+            if (!names) {
+                return;
+            }
+
+            var me = this,
+                namespaceAndModule = namespace + '.' + kind + '.',
+                strings = me.strings[kind],
+                o, absoluteName, shortName, name, j, subLn, getterName;
+
+            for (j = 0, subLn = names.length; j < subLn; j++) {
+                name = names[j];
+                o = me.getFullName(name, namespaceAndModule);
+                absoluteName = o.absoluteName;
+                shortName = o.shortName;
+
+                requires.push(absoluteName);
+                getterName = me.getGetterName(shortName, strings.upper);
+                cls[getterName] = me.createGetter(strings.getter, name);
+
+                // Application class will init the controllers
+                if (kind !== 'controller') {
+                    cls[getterName].$ext_getter = true;
+                }
+            }
+        },
+        
+        getFullName: function(name, namespaceAndModule){
+            var shortName = name,
+                sep, absoluteName;
+                
+            if ((sep = name.indexOf('@')) > 0) {
+                // The unambiguous syntax is Model@Name.space (or "space.Model@Name")
+                // which contains both the short name ("Model" or "space.Model") and
+                // the full name (Name.space.Model).
+                //
+                shortName = name.substring(0, sep); // "Model"
+                absoluteName = name.substring(sep + 1) + '.' + shortName; //  ex: "Name.space.Model"
+            }
+            // Deciding if a class name must be qualified:
+            // 
+            // 1 - if the name doesn't contain a dot, we must qualify it
+            // 
+            // 2 - the name may be a qualified name of a known class, but:
+            // 
+            // 2.1 - in runtime, the loader may not know the class - specially in
+            //       production - so we must check the class manager
+            //       
+            // 2.2 - in build time, the class manager may not know the class, but
+            //       the loader does, so we check the second one (the loader check
+            //       assures it's really a class, and not a namespace, so we can
+            //       have 'Books.controller.Books', and requesting a controller
+            //       called Books will not be underqualified)
+            //
+            else if (name.indexOf('.') > 0 && (Ext.ClassManager.isCreated(name) || 
+                                Ext.Loader.isAClassNameWithAKnownPrefix(name))) {
+                absoluteName = name;
+            } else {
+                absoluteName = namespaceAndModule + name;
+            }
+            
+            return {
+                absoluteName: absoluteName,
+                shortName: shortName    
+            };
+        }
+    },
+
     /**
      * @cfg {String[]} models
      * Array of models to require from AppName.model namespace. For example:
@@ -240,46 +363,24 @@ Ext.define('Ext.app.Controller', {
      */
 
     onClassExtended: function(cls, data, hooks) {
-        var className = Ext.getClassName(cls),
-            match = className.match(/^(.*)\.controller\./),
-            namespace,
-            onBeforeClassCreated,
-            requires,
-            modules,
-            namespaceAndModule;
-        
-        if (match !== null) {
-            namespace = Ext.Loader.getPrefix(className) || match[1];
+        var Controller = Ext.app.Controller,
+            className, namespace, onBeforeClassCreated, requires, proto, match;
+
+        className  = Ext.getClassName(cls);
+        namespace  = Ext.Loader.getPrefix(className) ||
+                     ((match = className.match(/^(.*)\.controller\./)) && match[1]);
+
+        if (namespace && namespace !== className) {
             onBeforeClassCreated = hooks.onBeforeCreated;
             requires = [];
-            modules = ['model', 'view', 'store'];
 
             hooks.onBeforeCreated = function(cls, data) {
-                var i, ln, module,
-                    items, j, subLn, item;
+                proto = cls.prototype;
 
-                for (i = 0,ln = modules.length; i < ln; i++) {
-                    module = modules[i];
-                    namespaceAndModule = namespace + '.' + module + '.';
-
-                    items = Ext.Array.from(data[module + 's']);
-
-                    for (j = 0,subLn = items.length; j < subLn; j++) {
-                        item = items[j];
-                        // Deciding if a class name must be qualified:
-                        // 1 - if the name doesn't contains at least one dot, we must definitely qualify it
-                        // 2 - the name may be a qualified name of a known class, but:
-                        // 2.1 - in runtime, the loader may not know the class - specially in production - so we must check the class manager
-                        // 2.2 - in build time, the class manager may not know the class, but the loader does, so we check the second one
-                        //       (the loader check assures it's really a class, and not a namespace, so we can have 'Books.controller.Books',
-                        //       and requesting a controller called Books will not be underqualified)
-                        if (item.indexOf('.') !== -1 && (Ext.ClassManager.isCreated(item) || Ext.Loader.isAClassNameWithAKnownPrefix(item))) {
-                            requires.push(item);
-                        } else {
-                            requires.push(namespaceAndModule + item);
-                        }
-                    }
-                }
+                Controller.processDependencies(proto, requires, namespace, 'model', data.models);
+                Controller.processDependencies(proto, requires, namespace, 'view', data.views);
+                Controller.processDependencies(proto, requires, namespace, 'store', data.stores);
+                Controller.processDependencies(proto, requires, namespace, 'controller', data.controllers);
 
                 Ext.require(requires, Ext.Function.pass(onBeforeClassCreated, arguments, this));
             };
@@ -291,16 +392,38 @@ Ext.define('Ext.app.Controller', {
      * @param {Object} config (optional) Config object.
      */
     constructor: function(config) {
-        this.mixins.observable.constructor.call(this, config);
+        var me = this,
+            prop, fn;
 
-        Ext.apply(this, config || {});
-        this.createGetters('model', this.models);
-        this.createGetters('store', this.stores);
-        this.createGetters('view', this.views);
+        me.mixins.observable.constructor.call(me, config);
 
-        if (this.refs) {
-            this.ref(this.refs);
+        Ext.apply(me, config);
+
+        if (me.refs) {
+            me.ref(me.refs);
         }
+
+        me.initAutoGetters();
+    },
+
+    initAutoGetters: function() {
+        var proto = this.self.prototype,
+            prop, fn;
+
+        for (prop in proto) {
+            fn = proto[prop];
+
+            if (Ext.isFunction(fn) && fn.$ext_getter) {
+                fn.call(this);
+            }
+        }
+    },
+    
+    doInit: function(app) {
+        if (!this._initialized) {
+            this.init(app);
+            this._initialized = true;
+        }    
     },
 
     /**
@@ -321,34 +444,6 @@ Ext.define('Ext.app.Controller', {
      * @template
      */
     onLaunch: Ext.emptyFn,
-
-    createGetters: function(type, refs) {
-        type = Ext.String.capitalize(type);
-
-        var i      = 0,
-            length = (refs) ? refs.length : 0,
-            fn, ref, parts, x, numParts;
-
-        for (; i < length; i++) {
-            fn    = 'get';
-            ref   = refs[i];
-            parts = ref.split('.');
-            numParts = parts.length;
-
-            // Handle namespaced class names. E.g. feed.Add becomes getFeedAddView etc.
-            for (x = 0 ; x < numParts; x++) {
-                fn += Ext.String.capitalize(parts[x]);
-            }
-
-            fn += type;
-
-            if (!this[fn]) {
-                this[fn] = Ext.Function.pass(this['get' + type], [ref], this);
-            }
-            // Execute it right away
-            this[fn](ref);
-        }
-    },
 
     ref: function(refs) {
         refs = Ext.Array.from(refs);
@@ -414,7 +509,8 @@ Ext.define('Ext.app.Controller', {
      * @return {Boolean}
      */
     hasRef: function(ref) {
-        return this.references && this.references.indexOf(ref.toLowerCase()) !== -1;
+        var references = this.references;
+        return references && Ext.Array.indexOf(references, ref.toLowerCase()) !== -1;
     },
 
     /**
@@ -437,12 +533,18 @@ Ext.define('Ext.app.Controller', {
      *             console.log('clicked the Save button');
      *         }
      *     });
+     * 
+     * Or alternatively one call `control` with two arguments:
+     * 
+     *     this.control('useredit button[action=save]', {
+     *         click: this.updateUser
+     *     });
      *
      * See {@link Ext.ComponentQuery} for more information on component selectors.
      *
      * @param {String/Object} selectors If a String, the second argument is used as the
      * listeners, otherwise an object of selectors -> listeners is assumed
-     * @param {Object} listeners
+     * @param {Object} [listeners] Config for listeners.
      */
     control: function(selectors, listeners) {
         this.application.control(selectors, listeners, this);
@@ -489,5 +591,13 @@ Ext.define('Ext.app.Controller', {
      */
     getView: function(view) {
         return this.application.getView(view);
+    },
+    
+    /**
+     * Returns the base {@link Ext.app.Application} for this controller.
+     * @return {Ext.app.Application} the application
+     */
+    getApplication: function(){
+        return this.application;
     }
 });

@@ -148,11 +148,16 @@ Ext.onReady(function() {
                 }, {
                     getClass: function(v, meta, rec) {          // Or return a class from a function
                         if (rec.get('change') < 0) {
-                            this.items[1].tooltip = 'Hold stock';
                             return 'alert-col';
                         } else {
-                            this.items[1].tooltip = 'Buy stock';
                             return 'buy-col';
+                        }
+                    },
+                    getTip: function(v, meta, rec) {
+                        if (rec.get('change') < 0) {
+                            return 'Hold stock';
+                        } else {
+                            return 'Buy stock';
                         }
                     },
                     handler: function(grid, rowIndex, colIndex) {

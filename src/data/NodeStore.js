@@ -36,6 +36,8 @@ Ext.define('Ext.data.NodeStore', {
      * @cfg {Ext.data.TreeStore} treeStore
      * The TreeStore that is used by this NodeStore's Ext.tree.View.
      */
+    
+    collapseCount: 0,
 
     constructor: function(config) {
         var me = this,
@@ -156,6 +158,7 @@ Ext.define('Ext.data.NodeStore', {
         var me = this,
             ln = records.length,
             collapseIndex = me.indexOf(parent) + 1,
+            isTopLevel = me.collapseCount === 0,
             i, record;
 
         if (!me.recursive && parent !== me.node) {
@@ -166,6 +169,11 @@ Ext.define('Ext.data.NodeStore', {
             return;
         }
 
+        ++me.collapseCount;
+        if (isTopLevel) {
+            // internal event
+            me.fireEvent('collapsestart', me, parent);
+        }
         for (i = 0; i < ln; i++) {
             record = records[i];
             me.remove(record);
@@ -173,6 +181,11 @@ Ext.define('Ext.data.NodeStore', {
                 me.onNodeCollapse(record, record.childNodes, true);
             }
         }
+        if (isTopLevel) {
+            // internal event
+            me.fireEvent('collapsecomplete', me, parent)
+        }
+        --me.collapseCount;
 
         if (!suppressEvent) {
             me.fireEvent('collapse', parent, records, collapseIndex);

@@ -7,6 +7,8 @@ Ext.define('Ext.layout.component.FieldSet', {
     alias: ['layout.fieldset'],
 
     type: 'fieldset',
+    
+    defaultCollapsedWidth: 100,
 
     beforeLayoutCycle: function (ownerContext) {
         if (ownerContext.target.collapsed) {
@@ -25,14 +27,28 @@ Ext.define('Ext.layout.component.FieldSet', {
         //
         if (target.collapsed) {
             ownerContext.setContentHeight(0);
+            // if we're collapsed, ignore a minHeight because it's likely going to
+            // be greater than the collapsed height
+            ownerContext.restoreMinHeight = target.minHeight;
+            delete target.minHeight;
 
             // If we are also shrinkWrap width, we must provide a contentWidth (since the
             // container layout is not going to run).
             //
             if (ownerContext.widthModel.shrinkWrap) {
                 lastSize = target.lastComponentSize;
-                ownerContext.setContentWidth((lastSize && lastSize.contentWidth) || 100);
+                ownerContext.setContentWidth((lastSize && lastSize.contentWidth) || this.defaultCollapsedWidth);
             }
+        }
+    },
+    
+    finishedLayout: function(ownerContext) {
+        var owner = this.owner,
+            restore = ownerContext.restoreMinHeight;
+             
+        this.callParent(arguments);
+        if (restore) {
+            owner.minHeight = restore;
         }
     },
 
@@ -57,9 +73,6 @@ Ext.define('Ext.layout.component.FieldSet', {
 
     getLayoutItems : function() {
         var legend = this.owner.legend;
-        if (legend) {
-            return [legend];
-        }
-        return [];
+        return legend ? [legend] : [];
     }
 });

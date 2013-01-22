@@ -79,16 +79,75 @@
 Ext.define('Ext.grid.feature.RowBody', {
     extend: 'Ext.grid.feature.Feature',
     alias: 'feature.rowbody',
-    rowBodyHiddenCls: Ext.baseCSSPrefix + 'grid-row-body-hidden',
-    rowBodyTrCls: Ext.baseCSSPrefix + 'grid-rowbody-tr',
-    rowBodyTdCls: Ext.baseCSSPrefix + 'grid-cell-rowbody',
-    rowBodyDivCls: Ext.baseCSSPrefix + 'grid-rowbody',
+<span id='Ext-grid-feature-RowBody-property-rowBodyHiddenCls'>    rowBodyHiddenCls: Ext.baseCSSPrefix + 'grid-row-body-hidden',
+</span><span id='Ext-grid-feature-RowBody-property-rowBodyTrCls'>    rowBodyTrCls: Ext.baseCSSPrefix + 'grid-rowbody-tr',
+</span><span id='Ext-grid-feature-RowBody-property-rowBodyTdCls'>    rowBodyTdCls: Ext.baseCSSPrefix + 'grid-cell-rowbody',
+</span><span id='Ext-grid-feature-RowBody-property-rowBodyDivCls'>    rowBodyDivCls: Ext.baseCSSPrefix + 'grid-rowbody',
+</span>
+<span id='Ext-grid-feature-RowBody-property-eventPrefix'>    eventPrefix: 'rowbody',
+</span><span id='Ext-grid-feature-RowBody-property-eventSelector'>    eventSelector: '.' + Ext.baseCSSPrefix + 'grid-rowbody-tr',
+</span>
+<span id='Ext-grid-feature-RowBody-method-init'>    init: function() {
+</span>        var me = this,
+            selModel = me.view.getSelectionModel();
 
-    eventPrefix: 'rowbody',
-    eventSelector: '.' + Ext.baseCSSPrefix + 'grid-rowbody-tr',
-    
-    getRowBody: function(values) {
-        return [
+        me.grid.mon(me.view, {
+            element: 'el',
+            mousedown: me.onMouseDown,
+            scope: me
+        });
+
+        if (!selModel.isCellModel) {
+            me.grid.mon(selModel, {
+                select: me.onSelect,
+                deselect: me.onDeselect,
+                scope: me
+            });
+        }
+        me.callParent(arguments);
+    },
+
+<span id='Ext-grid-feature-RowBody-method-onMouseDown'>    onMouseDown: function(e) {
+</span>        var me = this,
+            tableRow = e.getTarget('tr.' + me.rowBodyTrCls);
+
+        // If we have mousedowned on a row body TR and its previous sibling is a grid row, pass that onto the view for processing
+        if (tableRow &amp;&amp; Ext.fly(tableRow = tableRow.previousSibling).is(me.view.rowSelector)) {
+            e.target = tableRow;
+            me.view.handleEvent(e);
+        }
+    },
+
+<span id='Ext-grid-feature-RowBody-method-onSelect'>    onSelect: function(selModel, record, rowIndex) {
+</span>        var me = this,
+            view = me.view,
+            selectedRow = view.getNode(rowIndex);
+
+        // If the selected row is followed by a row body row, add the selected class to that
+        if (selectedRow) {
+            selectedRow = Ext.fly(selectedRow.nextSibling);
+            if (selectedRow &amp;&amp; selectedRow.is(me.rowBodySelector)) {
+                selectedRow.addCls(view.selectedItemCls);
+            }
+        }
+    },
+
+<span id='Ext-grid-feature-RowBody-method-onDeselect'>    onDeselect: function(selModel, record, rowIndex) {
+</span>        var me = this,
+            view = me.view,
+            selectedRow = view.getNode(rowIndex);
+
+        // If the selected row is followed by a row body row, remove the selected class from that
+        if (selectedRow) {
+            selectedRow = Ext.fly(selectedRow.nextSibling);
+            if (selectedRow &amp;&amp; selectedRow.is(me.rowBodySelector)) {
+                selectedRow.removeCls(view.selectedItemCls);
+            }
+        }
+    },
+
+<span id='Ext-grid-feature-RowBody-method-getRowBody'>    getRowBody: function(values) {
+</span>        return [
             '&lt;tr class=&quot;' + this.rowBodyTrCls + ' {rowBodyCls}&quot;&gt;',
                 '&lt;td class=&quot;' + this.rowBodyTdCls + '&quot; colspan=&quot;{rowBodyColspan}&quot;&gt;',
                     '&lt;div class=&quot;' + this.rowBodyDivCls + '&quot;&gt;{rowBody}&lt;/div&gt;',
@@ -97,8 +156,8 @@ Ext.define('Ext.grid.feature.RowBody', {
         ].join('');
     },
     
-    // injects getRowBody into the metaRowTpl.
-    getMetaRowTplFragments: function() {
+<span id='Ext-grid-feature-RowBody-method-getMetaRowTplFragments'>    // injects getRowBody into the metaRowTpl.
+</span>    getMetaRowTplFragments: function() {
         return {
             getRowBody: this.getRowBody,
             rowBodyTrCls: this.rowBodyTrCls,
@@ -107,8 +166,8 @@ Ext.define('Ext.grid.feature.RowBody', {
         };
     },
 
-    mutateMetaRowTpl: function(metaRowTpl) {
-        metaRowTpl.push('{[this.getRowBody(values)]}');
+<span id='Ext-grid-feature-RowBody-method-mutateMetaRowTpl'>    mutateMetaRowTpl: function(metaRowTpl) {
+</span>        metaRowTpl.push('{[this.getRowBody(values)]}');
     },
 
 <span id='Ext-grid-feature-RowBody-method-getAdditionalData'>    /**
@@ -130,6 +189,8 @@ Ext.define('Ext.grid.feature.RowBody', {
             rowBodyColspan: colspan
         };
     }
+}, function() {
+    this.prototype.rowBodySelector = 'tr.' + this.prototype.rowBodyTrCls
 });</pre>
 </body>
 </html>

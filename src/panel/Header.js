@@ -3,7 +3,7 @@
  */
 Ext.define('Ext.panel.Header', {
     extend: 'Ext.container.Container',
-    uses: ['Ext.panel.Tool', 'Ext.draw.Component', 'Ext.util.CSS', 'Ext.layout.component.Body', 'Ext.Img'],
+    uses: ['Ext.panel.Tool', 'Ext.util.CSS', 'Ext.layout.component.Body', 'Ext.Img'],
     alias: 'widget.header',
 
     /**
@@ -56,12 +56,7 @@ Ext.define('Ext.panel.Header', {
      */
 
     initComponent: function() {
-        var me = this,
-            ruleStyle,
-            rule,
-            style,
-            ui,
-            tempEl;
+        var me = this;
             
         me.addEvents(
             /**
@@ -105,92 +100,39 @@ Ext.define('Ext.panel.Header', {
         }
 
         // Add Title
-        if (me.orientation == 'vertical') {
-            me.layout = {
-                type : 'vbox',
-                align: 'center'
-            };
-            me.textConfig = {
-                width: 16,
-                cls: me.baseCls + '-text',
-                type: 'text',
-                text: me.title,
-                rotate: {
-                    degrees: 90
-                }
-            };
-            ui = me.ui;
-            if (Ext.isArray(ui)) {
-                ui = ui[0];
+        me.titleCmp = new Ext.Component({
+            ariaRole  : 'heading',
+            focusable : false,
+            noWrap    : true,
+            flex      : 1,
+            id        : me.id + '_hd',
+            style     : 'text-align:' + me.titleAlign,
+            cls       : me.baseCls + '-text-container',
+            renderTpl : me.getTpl('headingTpl'),
+            renderData: {
+                title: me.title,
+                cls  : me.baseCls,
+                ui   : me.ui
+            },
+            childEls  : ['textEl'],
+            listeners: {
+                render: me.onTitleRender,
+                scope: me
             }
-            ruleStyle = '.' + me.baseCls + '-text-' + ui;
-            if (Ext.scopeResetCSS) {
-                ruleStyle = '.' + Ext.baseCSSPrefix + 'reset ' + ruleStyle;
-            }
-            rule = Ext.util.CSS.getRule(ruleStyle);
-
-            // We might have been disallowed access to the stylesheet: https://sencha.jira.com/browse/EXTJSIV-5084
-            if (rule) {
-                style = rule.style;
-            } else {
-                style = (tempEl = Ext.resetElement.createChild({style: 'position:absolute', cls: me.baseCls + '-text-' + ui})).getStyles('fontFamily', 'fontWeight', 'fontSize', 'color');
-                tempEl.remove();
-            }
-            if (style) {
-                Ext.apply(me.textConfig, {
-                    'font-family': style.fontFamily,
-                    'font-weight': style.fontWeight,
-                    'font-size': style.fontSize,
-                    fill: style.color
-                });
-            }
-            me.titleCmp = new Ext.draw.Component({
-                width     : 16,
-                ariaRole  : 'heading',
-                focusable : false,
-                viewBox   : false,
-                flex      : 1,
-                id        : me.id + '_hd',
-                autoSize  : true,
-                items     : me.textConfig,
-                xhooks: {
-                    setSize: function (width) {
-                        // don't pass 2nd arg (height) on to setSize or we break 'flex:1'
-                        this.callParent([width]);
-                    }
-                },
-                // this is a bit of a cheat: we are not selecting an element of titleCmp
-                // but rather of titleCmp.items[0]
-                childEls  : [
-                    { name: 'textEl', select: '.' + me.baseCls + '-text' }
-                ]
-            });
-        } else {
-            me.layout = {
-                type : 'hbox',
-                align: 'middle'
-            };
-            me.titleCmp = new Ext.Component({
-                ariaRole  : 'heading',
-                focusable : false,
-                noWrap    : true,
-                flex      : 1,
-                id        : me.id + '_hd',
-                style     : 'text-align:' + me.titleAlign,
-                cls       : me.baseCls + '-text-container',
-                renderTpl : me.getTpl('headingTpl'),
-                renderData: {
-                    title: me.title,
-                    cls  : me.baseCls,
-                    ui   : me.ui
-                },
-                childEls  : ['textEl']
-            });
-        }
+        });
+        me.layout = (me.orientation == 'vertical') ? { 
+            type : 'vbox',
+            align: 'center'
+        } : {
+            type : 'hbox',
+            align: 'middle'
+        };
         me.items.push(me.titleCmp);
 
         // Add Tools
         me.items = me.items.concat(me.tools);
+        // clear the tools so we can have only the instances
+        me.tools = [];
         me.callParent();
         
         me.on({
@@ -217,6 +159,43 @@ Ext.define('Ext.panel.Header', {
         }
         
         me.iconCmp = new Ext.Img(cfg);
+    },
+
+    afterLayout: function() {
+        var me = this,
+            titleEl;
+
+        if (me.orientation === 'vertical') {
+            if (!Ext.isIE9m) {
+                // In IE9 and below we use a BasicImage filter to rotate the title
+                // element 90 degrees.  The result is that what was the bottom left
+                // corner is positioned exactly where the top left corner was
+                // originally.  Since this is the desired result, no additional
+                // positioning is needed in IE9 and below.  In modern browsers,
+                // however, we use transform: rotate(90deg) to rotate the element.
+                // CSS3 also provides a way to specify the position the rotated element
+                // by changing the axis on which it is rotated using the transform-origin
+                // property, but the required transform origin varies based on the
+                // elements size, and would require some complex math to calculate.
+                // To achieve the desired rotated position in modern browsers we use
+                // a transform-origin of "0, 0" which means the top left corner of
+                // the element is the rotation axis. After rotating 90 degrees we
+                // simply move the element to the right by the same number of pixels
+                // as its width.
+                titleEl = me.titleCmp.el;
+                titleEl.setStyle('left', titleEl.getWidth() + 'px');
+            } else if (Ext.isIE7 && Ext.isStrict && me.frame) {
+                // EXTJSIV-7283: framed header background is initally off in IE7 strict
+                // unless we repaint
+                me.el.repaint();
+            }
+        }
+    },
+
+    onTitleRender: function() {
+        if (this.orientation === 'vertical') {
+            this.titleCmp.el.setVertical();
+        }
     },
 
     afterRender: function() {
@@ -359,40 +338,19 @@ Ext.define('Ext.panel.Header', {
      */
     setTitle: function(title) {
         var me = this,
-            sprite,
-            surface;
-        if (me.rendered) {
-            if (me.titleCmp.rendered) {
-                if (me.titleCmp.surface) {
-                    me.title = title || '';
-                    sprite = me.titleCmp.surface.items.items[0];
-                    surface = me.titleCmp.surface;
-
-                    surface.remove(sprite);
-                    me.textConfig.type = 'text';
-                    me.textConfig.text = title;
-                    sprite = surface.add(me.textConfig);
-                    sprite.setAttributes({
-                        rotate: {
-                            degrees: 90
-                        }
-                    }, true);
-                    me.titleCmp.autoSizeSurface();
-                } else {
-                    me.title = title;
-                    me.titleCmp.textEl.update(me.title || '&#160;');
-                }
-                me.titleCmp.updateLayout();
-            } else {
-                me.titleCmp.on({
-                    render: function() {
-                        me.setTitle(title);
-                    },
-                    single: true
-                });
-            }
+            titleCmp = me.titleCmp;
+            
+        me.title = title;
+        if (titleCmp.rendered) {
+            titleCmp.textEl.update(me.title || '&#160;');
+            titleCmp.updateLayout();
         } else {
-            me.title = title;
+            me.titleCmp.on({
+                render: function() {
+                    me.setTitle(title);
+                },
+                single: true
+            });
         }
     },
 
@@ -481,13 +439,23 @@ Ext.define('Ext.panel.Header', {
             }
         }
     },
+    
+    /**
+     * Gets the tools for this header.
+     * @return {Ext.panel.Tool[]} The tools
+     */
+    getTools: function(){
+        return this.tools.slice();    
+    },
 
     /**
      * Add a tool to the header
      * @param {Object} tool
      */
     addTool: function(tool) {
-        this.tools.push(this.add(tool));
+        // Even though the defaultType is tool, it may be changed,
+        // so let's be safe and forcibly specify tool
+        this.add(Ext.ComponentManager.create(tool, 'tool'));
     },
 
     /**
@@ -498,10 +466,12 @@ Ext.define('Ext.panel.Header', {
      * @param index
      */
     onAdd: function(component, index) {
+        var tools = this.tools;
         this.callParent(arguments);
         if (component instanceof Ext.panel.Tool) {
             component.bindTo(this.ownerCt);
-            this.tools[component.type] = component;
+            tools.push(component);
+            tools[component.type] = component;
         }
     },
 

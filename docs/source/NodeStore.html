@@ -53,9 +53,11 @@ Ext.define('Ext.data.NodeStore', {
 </span>     * @cfg {Ext.data.TreeStore} treeStore
      * The TreeStore that is used by this NodeStore's Ext.tree.View.
      */
+    
+    collapseCount: 0,
 
-    constructor: function(config) {
-        var me = this,
+<span id='Ext-data-NodeStore-method-constructor'>    constructor: function(config) {
+</span>        var me = this,
             node;
 
         config = config || {};
@@ -79,8 +81,8 @@ Ext.define('Ext.data.NodeStore', {
         }
     },
 
-    setNode: function(node) {
-        var me = this;
+<span id='Ext-data-NodeStore-method-setNode'>    setNode: function(node) {
+</span>        var me = this;
         if (me.node &amp;&amp; me.node != node) {
             // We want to unbind our listeners on the old node
             me.mun(me.node, {
@@ -120,8 +122,8 @@ Ext.define('Ext.data.NodeStore', {
         }
     },
 
-    onNodeSort: function(node, childNodes) {
-        var me = this;
+<span id='Ext-data-NodeStore-method-onNodeSort'>    onNodeSort: function(node, childNodes) {
+</span>        var me = this;
 
         if ((me.indexOf(node) !== -1 || (node === me.node &amp;&amp; !me.rootVisible) &amp;&amp; node.isExpanded())) {
             me.onNodeCollapse(node, childNodes, true);
@@ -129,8 +131,8 @@ Ext.define('Ext.data.NodeStore', {
         }
     },
 
-    onNodeExpand: function(parent, records, suppressEvent) {
-        var me = this,
+<span id='Ext-data-NodeStore-method-onNodeExpand'>    onNodeExpand: function(parent, records, suppressEvent) {
+</span>        var me = this,
             insertIndex = me.indexOf(parent) + 1,
             ln = records ? records.length : 0,
             i, record;
@@ -169,10 +171,11 @@ Ext.define('Ext.data.NodeStore', {
         }
     },
 
-    onNodeCollapse: function(parent, records, suppressEvent) {
-        var me = this,
+<span id='Ext-data-NodeStore-method-onNodeCollapse'>    onNodeCollapse: function(parent, records, suppressEvent) {
+</span>        var me = this,
             ln = records.length,
             collapseIndex = me.indexOf(parent) + 1,
+            isTopLevel = me.collapseCount === 0,
             i, record;
 
         if (!me.recursive &amp;&amp; parent !== me.node) {
@@ -183,6 +186,11 @@ Ext.define('Ext.data.NodeStore', {
             return;
         }
 
+        ++me.collapseCount;
+        if (isTopLevel) {
+            // internal event
+            me.fireEvent('collapsestart', me, parent);
+        }
         for (i = 0; i &lt; ln; i++) {
             record = records[i];
             me.remove(record);
@@ -190,14 +198,19 @@ Ext.define('Ext.data.NodeStore', {
                 me.onNodeCollapse(record, record.childNodes, true);
             }
         }
+        if (isTopLevel) {
+            // internal event
+            me.fireEvent('collapsecomplete', me, parent)
+        }
+        --me.collapseCount;
 
         if (!suppressEvent) {
             me.fireEvent('collapse', parent, records, collapseIndex);
         }
     },
 
-    onNodeAppend: function(parent, node, index) {
-        var me = this,
+<span id='Ext-data-NodeStore-method-onNodeAppend'>    onNodeAppend: function(parent, node, index) {
+</span>        var me = this,
             refNode, sibling;
 
         if (me.isVisible(node)) {
@@ -224,8 +237,8 @@ Ext.define('Ext.data.NodeStore', {
         }
     },
 
-    onNodeInsert: function(parent, node, refNode) {
-        var me = this,
+<span id='Ext-data-NodeStore-method-onNodeInsert'>    onNodeInsert: function(parent, node, refNode) {
+</span>        var me = this,
             index = this.indexOf(refNode);
 
         if (index != -1 &amp;&amp; me.isVisible(node)) {
@@ -243,8 +256,8 @@ Ext.define('Ext.data.NodeStore', {
         }
     },
 
-    onNodeRemove: function(parent, node, index) {
-        var me = this;
+<span id='Ext-data-NodeStore-method-onNodeRemove'>    onNodeRemove: function(parent, node, index) {
+</span>        var me = this;
         if (me.indexOf(node) != -1) {
             if (!node.isLeaf() &amp;&amp; node.isExpanded()) {
                 me.onNodeCollapse(node, node.childNodes, true);
@@ -253,8 +266,8 @@ Ext.define('Ext.data.NodeStore', {
         }
     },
 
-    isVisible: function(node) {
-        var parent = node.parentNode;
+<span id='Ext-data-NodeStore-method-isVisible'>    isVisible: function(node) {
+</span>        var parent = node.parentNode;
         while (parent) {
             if (parent === this.node &amp;&amp; !this.rootVisible &amp;&amp; parent.isExpanded()) {
                 return true;

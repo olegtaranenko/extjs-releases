@@ -13,16 +13,15 @@ Ext.define('Ext.data.writer.Json', {
     alias: 'writer.json',
     
     /**
-     * @cfg {String} root The key under which the records in this Writer will be placed. Defaults to <tt>undefined</tt>.
-     * Example generated request, using root: 'records':
-<pre><code>
-{'records': [{name: 'my record'}, {name: 'another record'}]}
-</code></pre>
+     * @cfg {String} root The HTTP parameter name by which JSON encoded records will be passed to the server if the
+     * {@link #encode} option is `true`.
      */
     root: undefined,
     
     /**
-     * @cfg {Boolean} encode True to use Ext.encode() on the data before sending. Defaults to <tt>false</tt>.
+     * @cfg {Boolean} [encode=false] Configure `true` to send record data (all record fields if {@link #writeAllFields} is `true`)
+     * as a JSON encoded HTTP parameter named by the {@link #root} configuration.
+     * 
      * The encode option should only be set to true when a {@link #root} is defined, because the values will be
      * sent as part of the request parameters as opposed to a raw post. The root will be the name of the parameter
      * sent to the server.
@@ -30,22 +29,8 @@ Ext.define('Ext.data.writer.Json', {
     encode: false,
     
     /**
-     * @cfg {Boolean} allowSingle False to ensure that records are always wrapped in an array, even if there is only
+     * @cfg {Boolean} [allowSingle=true] Configure with `false` to ensure that records are always wrapped in an array, even if there is only
      * one record being sent. When there is more than one record, they will always be encoded into an array.
-     * Defaults to <tt>true</tt>. Example:
-     * <pre><code>
-// with allowSingle: true
-"root": {
-    "first": "Mark",
-    "last": "Corrigan"
-}
-
-// with allowSingle: false
-"root": [{
-    "first": "Mark",
-    "last": "Corrigan"
-}]
-     * </code></pre>
      */
     allowSingle: true,
     

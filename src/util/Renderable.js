@@ -145,13 +145,13 @@ Ext.define('Ext.util.Renderable', {
         var me = this,
             data = {},
             protoEl = me.protoEl,
-            target = me.getTargetEl(),
+            target = me.el,
             item;
 
         me.finishRenderChildren();
 
         if (me.styleHtmlContent) {
-            target.addCls(me.styleHtmlCls);
+            me.getTargetEl().addCls(me.styleHtmlCls);
         }
         
         protoEl.writeTo(data);
@@ -614,7 +614,7 @@ Ext.define('Ext.util.Renderable', {
     /**
      * Initialized the renderData to be used when rendering the renderTpl.
      * @return {Object} Object with keys and values that are going to be applied to the renderTpl
-     * @private
+     * @protected
      */
     initRenderData: function() {
         var me = this;

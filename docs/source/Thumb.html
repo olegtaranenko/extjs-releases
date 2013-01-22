@@ -66,15 +66,15 @@ Ext.define('Ext.slider.Thumb', {
         me.onRender();
     },
     
-    onRender: function() {
-        if (this.disabled) {
+<span id='Ext-slider-Thumb-method-onRender'>    onRender: function() {
+</span>        if (this.disabled) {
             this.disable();
         }
         this.initEvents();
     },
 
-    getElConfig: function() {
-        var me = this,
+<span id='Ext-slider-Thumb-method-getElConfig'>    getElConfig: function() {
+</span>        var me = this,
             slider = me.slider,
             style = {};
 
@@ -240,8 +240,8 @@ Ext.define('Ext.slider.Thumb', {
         }
     },
 
-    getValueFromTracker: function() {
-        var slider = this.slider,
+<span id='Ext-slider-Thumb-method-getValueFromTracker'>    getValueFromTracker: function() {
+</span>        var slider = this.slider,
             trackPoint = slider.getTrackpoint(this.tracker.getXY());
 
         // If dragged out of range, value will be undefined
@@ -270,8 +270,8 @@ Ext.define('Ext.slider.Thumb', {
         }
     },
 
-    destroy: function() {
-        Ext.destroy(this.tracker);
+<span id='Ext-slider-Thumb-method-destroy'>    destroy: function() {
+</span>        Ext.destroy(this.tracker);
     }
 });
 </pre>

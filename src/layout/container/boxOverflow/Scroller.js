@@ -151,6 +151,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
     completeLayout: function (ownerContext) {
         // capture this before callParent since it calls handle/clearOverflow:
         this.scrollSize = ownerContext.props['content'+this.layout.getNames().widthCap];
+        this.updateScrollButtons();
 
         this.callParent(arguments);
     },
@@ -170,7 +171,6 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
             names = layout.getNames(),
             methodName = 'get' + names.widthCap;
 
-        me.captureChildElements();
         me.showScrollers();
 
         return {
@@ -251,7 +251,6 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         me.captureChildElements();
         me.beforeScroller.show();
         me.afterScroller.show();
-        me.updateScrollButtons();
         me.layout.owner.addClsWithUI('scroller');
         // TODO - this may invalidates data in the ContextItem's styleCache
     },

@@ -72,11 +72,11 @@ Ext.define('Ext.layout.container.Absolute', {
     extend: 'Ext.layout.container.Anchor',
     alternateClassName: 'Ext.layout.AbsoluteLayout',
 
-    /* End Definitions */
-
+<span id='Ext-layout-container-Absolute-property-targetCls'>    /* End Definitions */
+</span>
     targetCls: Ext.baseCSSPrefix + 'abs-layout-ct',
-    itemCls: Ext.baseCSSPrefix + 'abs-layout-item',
-
+<span id='Ext-layout-container-Absolute-property-itemCls'>    itemCls: Ext.baseCSSPrefix + 'abs-layout-item',
+</span>
 <span id='Ext-layout-container-Absolute-cfg-ignoreOnContentChange'>    /**
 </span>     * @cfg {Boolean} ignoreOnContentChange
      * True indicates that changes to one item in this layout do not effect the layout in
@@ -85,34 +85,34 @@ Ext.define('Ext.layout.container.Absolute', {
      */
     ignoreOnContentChange: true,
 
-    type: 'absolute',
-
-    // private
-    adjustWidthAnchor: function(value, childContext) {
+<span id='Ext-layout-container-Absolute-property-type'>    type: 'absolute',
+</span>
+<span id='Ext-layout-container-Absolute-method-adjustWidthAnchor'>    // private
+</span>    adjustWidthAnchor: function(value, childContext) {
         var padding = this.targetPadding,
             x = childContext.getStyle('left');
 
         return value - x + padding.left;
     },
 
-    // private
-    adjustHeightAnchor: function(value, childContext) {
+<span id='Ext-layout-container-Absolute-method-adjustHeightAnchor'>    // private
+</span>    adjustHeightAnchor: function(value, childContext) {
         var padding = this.targetPadding,
             y = childContext.getStyle('top');
 
         return value - y + padding.top;
     },
 
-    isItemLayoutRoot: function (item) {
-        return this.ignoreOnContentChange || this.callParent(arguments);
+<span id='Ext-layout-container-Absolute-method-isItemLayoutRoot'>    isItemLayoutRoot: function (item) {
+</span>        return this.ignoreOnContentChange || this.callParent(arguments);
     },
 
-    isItemShrinkWrap: function (item) {
-        return true;
+<span id='Ext-layout-container-Absolute-method-isItemShrinkWrap'>    isItemShrinkWrap: function (item) {
+</span>        return true;
     },
 
-    beginLayout: function (ownerContext) {
-        var me = this,
+<span id='Ext-layout-container-Absolute-method-beginLayout'>    beginLayout: function (ownerContext) {
+</span>        var me = this,
             target = me.getTarget();
 
         me.callParent(arguments);
@@ -125,12 +125,12 @@ Ext.define('Ext.layout.container.Absolute', {
         me.targetPadding = ownerContext.targetContext.getPaddingInfo();
     },
 
-    isItemBoxParent: function (itemContext) {
-        return true;
+<span id='Ext-layout-container-Absolute-method-isItemBoxParent'>    isItemBoxParent: function (itemContext) {
+</span>        return true;
     },
 
-    onContentChange: function () {
-        if (this.ignoreOnContentChange) {
+<span id='Ext-layout-container-Absolute-method-onContentChange'>    onContentChange: function () {
+</span>        if (this.ignoreOnContentChange) {
             return false;
         }
         return this.callParent(arguments);

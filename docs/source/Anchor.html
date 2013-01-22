@@ -65,14 +65,14 @@ Ext.define('Ext.layout.container.Anchor', {
     extend: 'Ext.layout.container.Container',
     alternateClassName: 'Ext.layout.AnchorLayout',
 
-    /* End Definitions */
-
+<span id='Ext-layout-container-Anchor-property-type'>    /* End Definitions */
+</span>
     type: 'anchor',
 
-    manageOverflow: 2,
-
-    renderTpl: [
-        '{%this.renderBody(out,values);this.renderPadder(out,values)%}'
+<span id='Ext-layout-container-Anchor-property-manageOverflow'>    manageOverflow: 2,
+</span>
+<span id='Ext-layout-container-Anchor-property-renderTpl'>    renderTpl: [
+</span>        '{%this.renderBody(out,values);this.renderPadder(out,values)%}'
     ],
 
 <span id='Ext-layout-container-Anchor-cfg-anchor'>    /**
@@ -129,10 +129,10 @@ Ext.define('Ext.layout.container.Anchor', {
      */
     defaultAnchor: '100%',
 
-    parseAnchorRE: /^(r|right|b|bottom)$/i,
-
-    beginLayout: function (ownerContext) {
-        var me = this,
+<span id='Ext-layout-container-Anchor-property-parseAnchorRE'>    parseAnchorRE: /^(r|right|b|bottom)$/i,
+</span>
+<span id='Ext-layout-container-Anchor-method-beginLayout'>    beginLayout: function (ownerContext) {
+</span>        var me = this,
             dimensions = 0,
             anchorSpec, childContext, childItems, i, length, target;
 
@@ -175,8 +175,8 @@ Ext.define('Ext.layout.container.Anchor', {
         //&lt;/debug&gt;
     },
 
-    calculate: function (ownerContext) {
-        var me = this,
+<span id='Ext-layout-container-Anchor-method-calculate'>    calculate: function (ownerContext) {
+</span>        var me = this,
             containerSize = me.getContainerSize(ownerContext);
 
         if (ownerContext.anchorDimensions !== ownerContext.state.calculatedAnchors) {
@@ -201,8 +201,8 @@ Ext.define('Ext.layout.container.Anchor', {
         me.done = false;
     },
 
-    calculateAnchors: function (ownerContext, containerSize) {
-        var me = this,
+<span id='Ext-layout-container-Anchor-method-calculateAnchors'>    calculateAnchors: function (ownerContext, containerSize) {
+</span>        var me = this,
             childItems = ownerContext.childItems,
             length = childItems.length,
             gotHeight = containerSize.gotHeight,
@@ -241,8 +241,8 @@ Ext.define('Ext.layout.container.Anchor', {
         }
     },
 
-    finishedLayout: function (ownerContext) {
-        var cleanerFn = this.rightMarginCleanerFn;
+<span id='Ext-layout-container-Anchor-method-finishedLayout'>    finishedLayout: function (ownerContext) {
+</span>        var cleanerFn = this.rightMarginCleanerFn;
 
         if (cleanerFn) {
             delete this.rightMarginCleanerFn;
@@ -251,8 +251,8 @@ Ext.define('Ext.layout.container.Anchor', {
         }
     },
 
-    //&lt;debug&gt;
-    sanityCheck: function (ownerContext) {
+<span id='Ext-layout-container-Anchor-method-sanityCheck'>    //&lt;debug&gt;
+</span>    sanityCheck: function (ownerContext) {
         var shrinkWrapWidth = ownerContext.widthModel.shrinkWrap,
             shrinkWrapHeight = ownerContext.heightModel.shrinkWrap,
             children = ownerContext.childItems,
@@ -287,8 +287,8 @@ Ext.define('Ext.layout.container.Anchor', {
     },
     //&lt;/debug&gt;
 
-    // private
-    anchorFactory: {
+<span id='Ext-layout-container-Anchor-property-anchorFactory'>    // private
+</span>    anchorFactory: {
         offset: function (delta) {
             return function(v) {
                 return v + delta;
@@ -306,8 +306,8 @@ Ext.define('Ext.layout.container.Anchor', {
         }
     },
 
-    parseAnchor: function(a, start, cstart) {
-        if (a &amp;&amp; a != 'none') {
+<span id='Ext-layout-container-Anchor-method-parseAnchor'>    parseAnchor: function(a, start, cstart) {
+</span>        if (a &amp;&amp; a != 'none') {
             var factory = this.anchorFactory,
                 delta;
 
@@ -325,18 +325,18 @@ Ext.define('Ext.layout.container.Anchor', {
         return null;
     },
 
-    // private
-    adjustWidthAnchor: function(value, childContext) {
+<span id='Ext-layout-container-Anchor-method-adjustWidthAnchor'>    // private
+</span>    adjustWidthAnchor: function(value, childContext) {
         return value;
     },
 
-    // private
-    adjustHeightAnchor: function(value, childContext) {
+<span id='Ext-layout-container-Anchor-method-adjustHeightAnchor'>    // private
+</span>    adjustHeightAnchor: function(value, childContext) {
         return value;
     },
 
-    configureItem: function(item) {
-        var me = this,
+<span id='Ext-layout-container-Anchor-method-configureItem'>    configureItem: function(item) {
+</span>        var me = this,
             owner = me.owner,
             anchor= item.anchor,
             anchorsArray,
@@ -377,8 +377,8 @@ Ext.define('Ext.layout.container.Anchor', {
         }
     },
 
-    sizePolicy: {
-        '': {
+<span id='Ext-layout-container-Anchor-property-sizePolicy'>    sizePolicy: {
+</span>        '': {
             setsWidth: 0,
             setsHeight: 0
         },
@@ -399,8 +399,8 @@ Ext.define('Ext.layout.container.Anchor', {
         }
     },
 
-    getItemSizePolicy: function (item) {
-        var anchorSpec = item.anchorSpec,
+<span id='Ext-layout-container-Anchor-method-getItemSizePolicy'>    getItemSizePolicy: function (item) {
+</span>        var anchorSpec = item.anchorSpec,
             key = '',
             policy = this.sizePolicy,
             sizeModel;

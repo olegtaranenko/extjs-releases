@@ -101,13 +101,6 @@ Ext.define('Ext.menu.Menu', {
      * @private
      */
 
-<span id='Ext-menu-Menu-cfg-defaultAlign'>    /**
-</span>     * @cfg {String} [defaultAlign=&quot;tl-bl?&quot;]
-     * The default {@link Ext.Element#getAlignToXY Ext.Element#getAlignToXY} anchor position value for this menu
-     * relative to its element of origin.
-     */
-    defaultAlign: 'tl-bl?',
-
 <span id='Ext-menu-Menu-cfg-floating'>    /**
 </span>     * @cfg {Boolean} [floating=true]
      * A Menu configured as `floating: true` (the default) will be rendered as an absolutely positioned,
@@ -131,8 +124,8 @@ Ext.define('Ext.menu.Menu', {
      */
     hidden: true,
 
-    hideMode: 'visibility',
-
+<span id='Ext-menu-Menu-property-hideMode'>    hideMode: 'visibility',
+</span>
 <span id='Ext-menu-Menu-cfg-ignoreParentClicks'>    /**
 </span>     * @cfg {Boolean} [ignoreParentClicks=false]
      * True to ignore clicks on any item in this menu that is a parent item (displays a submenu)
@@ -147,7 +140,7 @@ Ext.define('Ext.menu.Menu', {
     isMenu: true,
 
 <span id='Ext-menu-Menu-cfg-layout'>    /**
-</span>     * @cfg {String/Object} layout
+</span>     * @cfg {Ext.enums.Layout/Object} layout
      * @private
      */
 
@@ -163,8 +156,8 @@ Ext.define('Ext.menu.Menu', {
      */
     minWidth: undefined,
     
-    defaultMinWidth: 120,
-
+<span id='Ext-menu-Menu-property-defaultMinWidth'>    defaultMinWidth: 120,
+</span>
 <span id='Ext-menu-Menu-cfg-plain'>    /**
 </span>     * @cfg {Boolean} [plain=false]
      * True to remove the incised line down the left side of the menu and to not indent general Component items.
@@ -248,21 +241,10 @@ Ext.define('Ext.menu.Menu', {
         }
 
         me.callParent(arguments);
-
-        me.on('beforeshow', function() {
-            var hasItems = !!me.items.length;
-            // FIXME: When a menu has its show cancelled because of no items, it
-            // gets a visibility: hidden applied to it (instead of the default display: none)
-            // Not sure why, but we remove this style when we want to show again.
-            if (hasItems &amp;&amp; me.rendered) {
-                me.el.setStyle('visibility', null);
-            }
-            return hasItems;
-        });
     },
 
-    beforeRender: function() {
-        this.callParent(arguments);
+<span id='Ext-menu-Menu-method-beforeRender'>    beforeRender: function() {
+</span>        this.callParent(arguments);
 
         // Menus are usually floating: true, which means they shrink wrap their items.
         // However, when they are contained, and not auto sized, we must stretch the items.
@@ -271,8 +253,8 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    onBoxReady: function() {
-        var me = this,
+<span id='Ext-menu-Menu-method-onBoxReady'>    onBoxReady: function() {
+</span>        var me = this,
             separatorSpec;
 
         me.callParent(arguments);
@@ -301,8 +283,8 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    getBubbleTarget: function() {
-        // If a submenu, this will have a parentMenu property
+<span id='Ext-menu-Menu-method-getBubbleTarget'>    getBubbleTarget: function() {
+</span>        // If a submenu, this will have a parentMenu property
         // If a menu of a Button, it will have an ownerButton property
         // Else use the default method.
         return this.parentMenu || this.ownerButton || this.callParent(arguments);
@@ -339,24 +321,24 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    // inherit docs
-    getFocusEl: function() {
+<span id='Ext-menu-Menu-method-getFocusEl'>    // @inheritdoc
+</span>    getFocusEl: function() {
         return this.focusedItem || this.el;
     },
 
-    // inherit docs
-    hide: function() {
+<span id='Ext-menu-Menu-method-hide'>    // @inheritdocs
+</span>    hide: function() {
         this.deactivateActiveItem(true);
         this.callParent(arguments);
     },
 
-    // private
-    getItemFromEvent: function(e) {
+<span id='Ext-menu-Menu-method-getItemFromEvent'>    // @private
+</span>    getItemFromEvent: function(e) {
         return this.getChildByElement(e.getTarget());
     },
 
-    lookupComponent: function(cmp) {
-        var me = this;
+<span id='Ext-menu-Menu-method-lookupComponent'>    lookupComponent: function(cmp) {
+</span>        var me = this;
 
         if (typeof cmp == 'string') {
             cmp = me.lookupItemFromString(cmp);
@@ -371,8 +353,8 @@ Ext.define('Ext.menu.Menu', {
         return cmp;
     },
 
-    // private
-    lookupItemFromObject: function(cmp) {
+<span id='Ext-menu-Menu-method-lookupItemFromObject'>    // @private
+</span>    lookupItemFromObject: function(cmp) {
         var me = this,
             prefix = Ext.baseCSSPrefix,
             cls;
@@ -405,8 +387,8 @@ Ext.define('Ext.menu.Menu', {
         return cmp;
     },
 
-    // private
-    lookupItemFromString: function(cmp) {
+<span id='Ext-menu-Menu-method-lookupItemFromString'>    // @private
+</span>    lookupItemFromString: function(cmp) {
         return (cmp == 'separator' || cmp == '-') ?
             new Ext.menu.Separator()
             : new Ext.menu.Item({
@@ -417,8 +399,8 @@ Ext.define('Ext.menu.Menu', {
             });
     },
 
-    onClick: function(e) {
-        var me = this,
+<span id='Ext-menu-Menu-method-onClick'>    onClick: function(e) {
+</span>        var me = this,
             item;
 
         if (me.disabled) {
@@ -441,8 +423,8 @@ Ext.define('Ext.menu.Menu', {
         me.fireEvent('click', me, item, e);
     },
 
-    onDestroy: function() {
-        var me = this;
+<span id='Ext-menu-Menu-method-onDestroy'>    onDestroy: function() {
+</span>        var me = this;
 
         Ext.menu.Manager.unregister(me);
         delete me.parentMenu;
@@ -455,8 +437,8 @@ Ext.define('Ext.menu.Menu', {
         me.callParent(arguments);
     },
 
-    onMouseLeave: function(e) {
-        var me = this;
+<span id='Ext-menu-Menu-method-onMouseLeave'>    onMouseLeave: function(e) {
+</span>        var me = this;
 
         me.deactivateActiveItem();
 
@@ -467,8 +449,8 @@ Ext.define('Ext.menu.Menu', {
         me.fireEvent('mouseleave', me, e);
     },
 
-    onMouseOver: function(e) {
-        var me = this,
+<span id='Ext-menu-Menu-method-onMouseOver'>    onMouseOver: function(e) {
+</span>        var me = this,
             fromEl = e.getRelatedTarget(),
             mouseEnter = !me.el.contains(fromEl),
             item = me.getItemFromEvent(e),
@@ -498,8 +480,8 @@ Ext.define('Ext.menu.Menu', {
         me.fireEvent('mouseover', me, item, e);
     },
 
-    setActiveItem: function(item) {
-        var me = this;
+<span id='Ext-menu-Menu-method-setActiveItem'>    setActiveItem: function(item) {
+</span>        var me = this;
 
         if (item &amp;&amp; (item != me.activeItem)) {
             me.deactivateActiveItem();
@@ -520,32 +502,19 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-<span id='Ext-menu-Menu-method-showBy'>    /**
-</span>     * Shows the floating menu by the specified {@link Ext.Component Component} or {@link Ext.Element Element}.
-     * @param {Ext.Component/Ext.Element} component The {@link Ext.Component} or {@link Ext.Element} to show the menu by.
-     * @param {String} [position] Alignment position as used by {@link Ext.Element#getAlignToXY}.
-     * Defaults to `{@link #defaultAlign}`.
-     * @param {Number[]} [offsets] Alignment offsets as used by {@link Ext.Element#getAlignToXY}.
-     * @return {Ext.menu.Menu} This Menu.
-     */
-    showBy: function(cmp, pos, off) {
-        var me = this;
-
-        if (me.floating &amp;&amp; cmp) {
-            me.show();
-
-            // Align to Component or Element using setPagePosition because normal show
-            // methods are container-relative, and we must align to the requested element
-            // or Component:
-            me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
+<span id='Ext-menu-Menu-method-showBy'>    showBy: function(cmp, pos, off) {
+</span>        var me = this;
+        me.callParent(arguments);
+        if (!me.hidden) {
+            // show may have been vetoed
             me.setVerticalPosition();
         }
         return me;
     },
 
-    show: function() {
-        var me = this,
-            parentEl, viewHeight, result,
+<span id='Ext-menu-Menu-method-show'>    show: function() {
+</span>        var me = this,
+            parentEl, viewHeight,
             maxWas = me.maxHeight;
 
         // we need to get scope parent for height constraint
@@ -561,13 +530,13 @@ Ext.define('Ext.menu.Menu', {
             me.maxHeight  =  Math.min(maxWas || viewHeight, viewHeight);
         }
 
-        result = me.callParent(arguments);
+        me.callParent(arguments);
         me.maxHeight = maxWas;
-        return result;
+        return me;
     },
 
-    afterComponentLayout: function(width, height, oldWidth, oldHeight){
-        var me = this;
+<span id='Ext-menu-Menu-method-afterComponentLayout'>    afterComponentLayout: function(width, height, oldWidth, oldHeight){
+</span>        var me = this;
         me.callParent(arguments);
         // fixup the separator
         if (me.showSeparator){
@@ -575,8 +544,8 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    // private
-    // adjust the vertical position of the menu if the height of the
+<span id='Ext-menu-Menu-method-setVerticalPosition'>    // @private
+</span>    // adjust the vertical position of the menu if the height of the
     // menu is equal (or greater than) the viewport size
     setVerticalPosition: function(){
         var me = this,

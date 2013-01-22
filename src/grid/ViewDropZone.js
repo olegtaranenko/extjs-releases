@@ -12,12 +12,12 @@ Ext.define('Ext.grid.ViewDropZone', {
             store = view.getStore(),
             index, records, i, len;
 
-        // If the copy flag is set, create a copy of the Models with the same IDs
+        // If the copy flag is set, create a copy of the models
         if (data.copy) {
             records = data.records;
             data.records = [];
             for (i = 0, len = records.length; i < len; i++) {
-                data.records.push(records[i].copy(records[i].getId()));
+                data.records.push(records[i].copy());
             }
         } else {
             /*

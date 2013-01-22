@@ -90,6 +90,16 @@ Ext.define('Ext.chart.series.Column', {
 
     column: true,
 
+    // private: true if the columns are bound to a numerical x-axis; otherwise they are evenly distributed along the axis
+    boundColumn: false,
+
+    /**
+     * @cfg {String} axis
+     * The position of the axis to bind the values to. Possible values are 'left', 'bottom', 'top' and 'right'.
+     * You must explicitly set this value to bind the values of the column series to the ones in the axis, otherwise a
+     * relative scale will be used.
+     */
+
     /**
      * @cfg {Number} xPadding
      * Padding between the left/right axes and the bars

@@ -51,6 +51,7 @@ Ext.define('Ext.ux.desktop.Video', {
                 }
             }
         }
+        this.fallbackHTML = fallback;
 
         // match the video size to the panel dimensions
         var size = this.getSize();
@@ -84,9 +85,7 @@ Ext.define('Ext.ux.desktop.Video', {
                 );
             }
 
-            cfg.children.push({
-                html: fallback
-            });
+            cfg.children.push(this.getFallback());
 
         } else {
             cfg.src  = this.src;
@@ -95,7 +94,15 @@ Ext.define('Ext.ux.desktop.Video', {
 
         this.video = this.body.createChild(cfg);
         var el = this.video.dom;
+        this.video.on('error', this.onVideoError, this);
         this.supported = (el && el.tagName.toLowerCase() == 'video');
+    },
+    
+    getFallback: function(){
+        return {
+            html: this.fallbackHTML,
+            style: 'padding: 10px;'
+        };
     },
 
     afterComponentLayout : function() {
@@ -106,6 +113,11 @@ Ext.define('Ext.ux.desktop.Video', {
         if (me.video) {
             me.video.setSize(me.body.getSize());
         }
+    },
+    
+    onVideoError: function(){
+        this.video.remove();
+        this.body.createChild(this.getFallback());
     },
 
     onDestroy: function () {

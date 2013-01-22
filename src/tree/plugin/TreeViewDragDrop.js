@@ -153,6 +153,13 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
      * DropZone used by this plugin will only interact with other drag drop objects in the same group.
      */
     ddGroup : "TreeDD",
+    
+    /**
+     * True to register this container with the Scrollmanager for auto scrolling during drag operations.
+     * A {@link Ext.dd.ScrollManager} configuration may also be passed.
+     * @cfg {Object/Boolean} containerScroll
+     */
+    containerScroll: false,
 
     /**
      * @cfg {String} dragGroup
@@ -226,15 +233,21 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
     },
 
     onViewRender : function(view) {
-        var me = this;
+        var me = this,
+            scrollEl;
 
         if (me.enableDrag) {
+            if (me.containerScroll) {
+                scrollEl = view.getEl();
+            }
             me.dragZone = new Ext.tree.ViewDragZone({
                 view: view,
                 ddGroup: me.dragGroup || me.ddGroup,
                 dragText: me.dragText,
                 repairHighlightColor: me.nodeHighlightColor,
-                repairHighlight: me.nodeHighlightOnRepair
+                repairHighlight: me.nodeHighlightOnRepair,
+                containerScroll: me.containerScroll,
+                scrollEl: scrollEl
             });
         }
 
@@ -251,4 +264,7 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
             });
         }
     }
+}, function(){
+    var proto = this.prototype;
+    proto.nodeHighlightOnDrop = proto.nodeHighlightOnRepair = Ext.enableFx;
 });

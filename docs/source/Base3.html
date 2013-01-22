@@ -127,8 +127,8 @@ Ext.define('Ext.form.field.Base', {
         }
     ],
 
-    subTplInsertions: [
-<span id='Ext-form-field-Base-cfg-inputAttrTpl'>        /**
+<span id='Ext-form-field-Base-property-subTplInsertions'>    subTplInsertions: [
+</span><span id='Ext-form-field-Base-cfg-inputAttrTpl'>        /**
 </span>         * @cfg {String/Array/Ext.XTemplate} inputAttrTpl
          * An optional string or `XTemplate` configuration to insert in the field markup
          * inside the input element (as attributes). If an `XTemplate` is used, the component's
@@ -201,7 +201,7 @@ Ext.define('Ext.form.field.Base', {
      * the field's value to be checked for changes. If a change is detected, the {@link #change change event} will be
      * fired, followed by validation if the {@link #validateOnChange} option is enabled.
      *
-     * Defaults to ['change', 'propertychange'] in Internet Explorer, and ['change', 'input', 'textInput', 'keyup',
+     * Defaults to ['change', 'propertychange', 'keyup'] in Internet Explorer, and ['change', 'input', 'textInput', 'keyup',
      * 'dragdrop'] in other browsers. This catches all the ways that field values can be changed in most supported
      * browsers; the only known exceptions at the time of writing are:
      *
@@ -216,7 +216,7 @@ Ext.define('Ext.form.field.Base', {
      * such a task automatically.
      */
     checkChangeEvents: Ext.isIE &amp;&amp; (!document.documentMode || document.documentMode &lt; 9) ?
-                        ['change', 'propertychange'] :
+                        ['change', 'propertychange', 'keyup'] :
                         ['change', 'input', 'textInput', 'keyup', 'dragdrop'],
 
 <span id='Ext-form-field-Base-cfg-checkChangeBuffer'>    /**
@@ -226,8 +226,8 @@ Ext.define('Ext.form.field.Base', {
      */
     checkChangeBuffer: 50,
 
-    componentLayout: 'field',
-
+<span id='Ext-form-field-Base-property-componentLayout'>    componentLayout: 'field',
+</span>
 <span id='Ext-form-field-Base-cfg-readOnly'>    /**
 </span>     * @cfg {Boolean} readOnly
      * true to mark the field as readOnly in HTML.
@@ -258,15 +258,20 @@ Ext.define('Ext.form.field.Base', {
      */
     validateOnBlur: true,
 
-    // private
-    hasFocus : false,
+<span id='Ext-form-field-Base-property-hasFocus'>    // private
+</span>    hasFocus : false,
 
-    baseCls: Ext.baseCSSPrefix + 'field',
+<span id='Ext-form-field-Base-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'field',
+</span>
+<span id='Ext-form-field-Base-property-maskOnDisable'>    maskOnDisable: false,
+</span>    
+<span id='Ext-form-field-Base-property-stretchInputElFixed'>    // Instructs the layout to stretch the inputEl to 100% width when laying
+</span>    // out under fixed conditions. Defaults to true for all fields except check/radio
+    // Doesn't seem worth it to introduce a whole new layout class just for this flag
+    stretchInputElFixed: true,
 
-    maskOnDisable: false,
-
-    // private
-    initComponent : function() {
+<span id='Ext-form-field-Base-method-initComponent'>    // private
+</span>    initComponent : function() {
         var me = this;
 
         me.callParent();
@@ -328,11 +333,11 @@ Ext.define('Ext.form.field.Base', {
         }
     },
     
-    beforeRender: function(){
-        var me = this;
+<span id='Ext-form-field-Base-method-beforeRender'>    beforeRender: function(){
+</span>        var me = this;
             
         me.callParent(arguments);
-        me.beforeLabelableRender(arguments);
+        me.beforeLabelableRender();
         if (me.readOnly) {
             me.addCls(me.readOnlyCls);
         }
@@ -376,16 +381,16 @@ Ext.define('Ext.form.field.Base', {
         return data;
     },
 
-    afterFirstLayout: function() {
-        this.callParent();
+<span id='Ext-form-field-Base-method-afterFirstLayout'>    afterFirstLayout: function() {
+</span>        this.callParent();
         var el = this.inputEl;
         if (el) {
             el.selectable();
         }
     },
 
-    applyRenderSelectors: function() {
-        var me = this;
+<span id='Ext-form-field-Base-method-applyRenderSelectors'>    applyRenderSelectors: function() {
+</span>        var me = this;
 
         me.callParent();
 
@@ -403,16 +408,16 @@ Ext.define('Ext.form.field.Base', {
         return this.getTpl('fieldSubTpl').apply(this.getSubTplData());
     },
 
-    initRenderTpl: function() {
-        var me = this;
+<span id='Ext-form-field-Base-method-initRenderTpl'>    initRenderTpl: function() {
+</span>        var me = this;
         if (!me.hasOwnProperty('renderTpl')) {
             me.renderTpl = me.getTpl('labelableRenderTpl');
         }
         return me.callParent();
     },
 
-    initRenderData: function() {
-        return Ext.applyIf(this.callParent(), this.getLabelableRenderData());
+<span id='Ext-form-field-Base-method-initRenderData'>    initRenderData: function() {
+</span>        return Ext.applyIf(this.callParent(), this.getLabelableRenderData());
     },
 
 <span id='Ext-form-field-Base-method-setFieldStyle'>    /**
@@ -429,28 +434,28 @@ Ext.define('Ext.form.field.Base', {
         me.fieldStyle = style;
     },
 
-    getFieldStyle: function() {
-        return 'width:100%;' + (Ext.isObject(this.fieldStyle) ? Ext.DomHelper.generateStyles(this.fieldStyle) : this.fieldStyle ||'');
+<span id='Ext-form-field-Base-method-getFieldStyle'>    getFieldStyle: function() {
+</span>        return Ext.isObject(this.fieldStyle) ? Ext.DomHelper.generateStyles(this.fieldStyle) : this.fieldStyle ||'';
     },
 
-    // private
-    onRender : function() {
+<span id='Ext-form-field-Base-method-onRender'>    // private
+</span>    onRender : function() {
         var me = this;
         me.callParent(arguments);
         me.onLabelableRender();
         me.renderActiveError();
     },
 
-    getFocusEl: function() {
-        return this.inputEl;
+<span id='Ext-form-field-Base-method-getFocusEl'>    getFocusEl: function() {
+</span>        return this.inputEl;
     },
 
-    isFileUpload: function() {
-        return this.inputType === 'file';
+<span id='Ext-form-field-Base-method-isFileUpload'>    isFileUpload: function() {
+</span>        return this.inputType === 'file';
     },
 
-    extractFileInput: function() {
-        var me = this,
+<span id='Ext-form-field-Base-method-extractFileInput'>    extractFileInput: function() {
+</span>        var me = this,
             fileInput = me.isFileUpload() ? me.inputEl.dom : null,
             clone;
         if (fileInput) {
@@ -461,8 +466,8 @@ Ext.define('Ext.form.field.Base', {
         return fileInput;
     },
 
-    // private override to use getSubmitValue() as a convenience
-    getSubmitData: function() {
+<span id='Ext-form-field-Base-method-getSubmitData'>    // private override to use getSubmitValue() as a convenience
+</span>    getSubmitData: function() {
         var me = this,
             data = null,
             val;
@@ -526,9 +531,7 @@ Ext.define('Ext.form.field.Base', {
      * @param {Object} value The value
      * @return {Object} The value to set
      */
-    transformRawValue: function(value) {
-        return value;
-    },
+    transformRawValue: Ext.identityFn,
 
 <span id='Ext-form-field-Base-method-valueToRaw'>    /**
 </span>     * Converts a mixed-type value to a raw representation suitable for displaying in the field. This allows controlling
@@ -562,10 +565,9 @@ Ext.define('Ext.form.field.Base', {
      *
      * @param {Object} rawValue
      * @return {Object} The converted value.
+     * @method
      */
-    rawToValue: function(rawValue) {
-        return rawValue;
-    },
+    rawToValue: Ext.identityFn,
 
 <span id='Ext-form-field-Base-method-processRawValue'>    /**
 </span>     * Performs any necessary manipulation of a raw field value to prepare it for {@link #rawToValue conversion} and/or
@@ -574,10 +576,9 @@ Ext.define('Ext.form.field.Base', {
      *
      * @param {Object} value The unprocessed string value
      * @return {Object} The processed string value
+     * @method
      */
-    processRawValue: function(value) {
-        return value;
-    },
+    processRawValue: Ext.identityFn,
 
 <span id='Ext-form-field-Base-method-getValue'>    /**
 </span>     * Returns the current data value of the field. The type of value returned is particular to the type of the
@@ -604,8 +605,8 @@ Ext.define('Ext.form.field.Base', {
         return me.mixins.field.setValue.call(me, value);
     },
 
-    onBoxReady: function() {
-        var me = this;
+<span id='Ext-form-field-Base-method-onBoxReady'>    onBoxReady: function() {
+</span>        var me = this;
         me.callParent();
         
         if (me.setReadOnlyOnBoxReady) {
@@ -614,8 +615,8 @@ Ext.define('Ext.form.field.Base', {
             
     },
 
-    //private
-    onDisable: function() {
+<span id='Ext-form-field-Base-method-onDisable'>    //private
+</span>    onDisable: function() {
         var me = this,
             inputEl = me.inputEl;
             
@@ -630,8 +631,8 @@ Ext.define('Ext.form.field.Base', {
         }
     },
 
-    //private
-    onEnable: function() {
+<span id='Ext-form-field-Base-method-onEnable'>    //private
+</span>    onEnable: function() {
         var me = this,
             inputEl = me.inputEl;
             
@@ -666,15 +667,15 @@ Ext.define('Ext.form.field.Base', {
         me.fireEvent('writeablechange', me, readOnly);
     },
 
-    // private
-    fireKey: function(e){
+<span id='Ext-form-field-Base-method-fireKey'>    // private
+</span>    fireKey: function(e){
         if(e.isSpecialKey()){
             this.fireEvent('specialkey', this, new Ext.EventObjectImpl(e));
         }
     },
 
-    // private
-    initEvents : function(){
+<span id='Ext-form-field-Base-method-initEvents'>    // private
+</span>    initEvents : function(){
         var me = this,
             inputEl = me.inputEl,
             onChangeTask,
@@ -711,8 +712,8 @@ Ext.define('Ext.form.field.Base', {
         me.callParent();
     },
 
-    doComponentLayout: function() {
-        var me = this,
+<span id='Ext-form-field-Base-method-doComponentLayout'>    doComponentLayout: function() {
+</span>        var me = this,
             inputEl = me.inputEl,
             usesPropertychange = me.usesPropertychange,
             ename = 'propertychange',
@@ -794,10 +795,13 @@ Ext.define('Ext.form.field.Base', {
     markInvalid : function(errors) {
         // Save the message and fire the 'invalid' event
         var me = this,
-            oldMsg = me.getActiveError();
+            oldMsg = me.getActiveError(),
+            active;
+            
         me.setActiveErrors(Ext.Array.from(errors));
-        if (oldMsg !== me.getActiveError()) {
-            me.updateLayout();
+        active = me.getActiveError();
+        if (oldMsg !== active) {
+            me.setError(active);
         }
     },
 
@@ -812,9 +816,33 @@ Ext.define('Ext.form.field.Base', {
         // Clear the message and fire the 'valid' event
         var me = this,
             hadError = me.hasActiveError();
+            
+        delete me.needsValidateOnEnable;
         me.unsetActiveError();
         if (hadError) {
-            me.updateLayout();
+            me.setError('');
+        }
+    },
+    
+<span id='Ext-form-field-Base-method-setError'>    /**
+</span>     * Set the current error state
+     * @private
+     * @param {String} error The error message to set
+     */
+    setError: function(active){
+        var me = this,
+            msgTarget = me.msgTarget,
+            prop;
+            
+        if (me.rendered) {
+            if (msgTarget == 'title' || msgTarget == 'qtip') {
+                if (me.rendered) {
+                    prop = msgTarget == 'qtip' ? 'data-errorqtip' : 'title';
+                }
+                me.getActionEl().dom.setAttribute(prop, active || '');
+            } else {
+                me.updateLayout();
+            }
         }
     },
 
@@ -833,8 +861,8 @@ Ext.define('Ext.form.field.Base', {
     },
 
 
-    getActionEl: function() {
-        return this.inputEl || this.el;
+<span id='Ext-form-field-Base-method-getActionEl'>    getActionEl: function() {
+</span>        return this.inputEl || this.el;
     }
 
 });

@@ -142,8 +142,8 @@ Ext.define('Ext.util.KeyMap', {
      */
     eventName: 'keydown',
 
-    constructor: function(config) {
-        var me = this;
+<span id='Ext-util-KeyMap-method-constructor'>    constructor: function(config) {
+</span>        var me = this;
 
         // Handle legacy arg list in which the first argument is the target.
         // TODO: Deprecate in V5
@@ -324,9 +324,7 @@ Ext.define('Ext.util.KeyMap', {
      * the first parameter. Extra information from the event arguments may be injected into the event for use by the handler
      * functions before returning it.
      */
-    processEvent: function(event){
-        return event;
-    },
+    processEvent: Ext.identityFn,
 
 <span id='Ext-util-KeyMap-method-processBinding'>    /**
 </span>     * Process a particular binding and fire the handler if necessary.

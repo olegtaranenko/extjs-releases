@@ -111,8 +111,8 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         me.scrollSize = 0;
     },
 
-    getPrefixConfig: function() {
-        var me = this;
+<span id='Ext-layout-container-boxOverflow-Scroller-method-getPrefixConfig'>    getPrefixConfig: function() {
+</span>        var me = this;
         me.initCSSClasses();
         return {
             cls: Ext.layout.container.Box.prototype.innerCls + ' ' + me.beforeCtCls,
@@ -124,8 +124,8 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         };
     },
 
-    getSuffixConfig: function() {
-        var me = this;
+<span id='Ext-layout-container-boxOverflow-Scroller-method-getSuffixConfig'>    getSuffixConfig: function() {
+</span>        var me = this;
         return {
             cls: Ext.layout.container.Box.prototype.innerCls + ' ' + me.afterCtCls,
             cn : {
@@ -136,12 +136,12 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         };
     },
 
-    getOverflowCls: function() {
-        return Ext.baseCSSPrefix + this.layout.direction + '-box-overflow-body';
+<span id='Ext-layout-container-boxOverflow-Scroller-method-getOverflowCls'>    getOverflowCls: function() {
+</span>        return Ext.baseCSSPrefix + this.layout.direction + '-box-overflow-body';
     },
 
-    initCSSClasses: function() {
-        var me = this,
+<span id='Ext-layout-container-boxOverflow-Scroller-method-initCSSClasses'>    initCSSClasses: function() {
+</span>        var me = this,
             prefix = Ext.baseCSSPrefix,
             layout = me.layout,
             names = layout.getNames(),
@@ -156,8 +156,8 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         me.afterScrollerCls  = me.afterScrollerCls  || prefix + type + '-scroll-' + rightName;
     },
 
-    beginLayout: function (ownerContext) {
-        var layout = this.layout,
+<span id='Ext-layout-container-boxOverflow-Scroller-method-beginLayout'>    beginLayout: function (ownerContext) {
+</span>        var layout = this.layout,
             names = layout.getNames();
 
         ownerContext.innerCtScrollPos = layout.innerCt.dom['scroll' + names.leftCap];
@@ -165,15 +165,16 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         this.callParent(arguments);
     },
 
-    completeLayout: function (ownerContext) {
-        // capture this before callParent since it calls handle/clearOverflow:
+<span id='Ext-layout-container-boxOverflow-Scroller-method-completeLayout'>    completeLayout: function (ownerContext) {
+</span>        // capture this before callParent since it calls handle/clearOverflow:
         this.scrollSize = ownerContext.props['content'+this.layout.getNames().widthCap];
+        this.updateScrollButtons();
 
         this.callParent(arguments);
     },
     
-    finishedLayout: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-container-boxOverflow-Scroller-method-finishedLayout'>    finishedLayout: function(ownerContext) {
+</span>        var me = this,
             layout = me.layout,
             names = layout.getNames(),
             scrollPos = Math.min(me.getMaxScrollPosition(), ownerContext.innerCtScrollPos);
@@ -181,13 +182,12 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         layout.innerCt.dom['scroll' + names.leftCap] = scrollPos;
     },
 
-    handleOverflow: function(ownerContext) {
-        var me = this,
+<span id='Ext-layout-container-boxOverflow-Scroller-method-handleOverflow'>    handleOverflow: function(ownerContext) {
+</span>        var me = this,
             layout = me.layout,
             names = layout.getNames(),
             methodName = 'get' + names.widthCap;
 
-        me.captureChildElements();
         me.showScrollers();
 
         return {
@@ -268,7 +268,6 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         me.captureChildElements();
         me.beforeScroller.show();
         me.afterScroller.show();
-        me.updateScrollButtons();
         me.layout.owner.addClsWithUI('scroller');
         // TODO - this may invalidates data in the ContextItem's styleCache
     },

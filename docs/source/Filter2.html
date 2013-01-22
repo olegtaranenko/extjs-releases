@@ -16,9 +16,7 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='Ext-ux-grid-filter-Filter'>/**
-</span> * @class Ext.ux.grid.filter.Filter
- * @extends Ext.util.Observable
- * Abstract base class for filter implementations.
+</span> * Abstract base class for filter implementations.
  */
 Ext.define('Ext.ux.grid.filter.Filter', {
     extend: 'Ext.util.Observable',
@@ -52,8 +50,8 @@ Ext.define('Ext.ux.grid.filter.Filter', {
      */
     updateBuffer : 500,
 
-    constructor : function (config) {
-        Ext.apply(this, config);
+<span id='Ext-ux-grid-filter-Filter-method-constructor'>    constructor : function (config) {
+</span>        Ext.apply(this, config);
 
         this.addEvents(
 <span id='Ext-ux-grid-filter-Filter-event-activate'>            /**

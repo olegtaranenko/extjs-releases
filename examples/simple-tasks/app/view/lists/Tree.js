@@ -68,10 +68,7 @@ Ext.define('SimpleTasks.view.lists.Tree', {
                 editor: {
                     xtype: 'textfield',
                     selectOnFocus: true,
-                    validator: function(value){
-                        value = Ext.String.trim(value);
-                        return value.length < 1 ? this.blankText : true;
-                    }
+                    allowOnlyWhitespace: false
                 },
                 renderer: Ext.bind(me.renderName, me)
             },

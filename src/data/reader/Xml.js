@@ -132,6 +132,25 @@ Ext.define('Ext.data.reader.Xml', {
      */
 
     /**
+     * @cfg {String} namespace
+     * A namespace prefix that will be prepended to the field name when reading a
+     * field from an XML node.  Take, for example, the following Model:
+     * 
+     *     Ext.define('Foo', {
+     *         extend: 'Ext.data.Model',
+     *         fields: ['bar', 'baz']
+     *     });
+     *     
+     * The reader would need to be configured with a namespace of 'n' in order to read XML
+     * data in the following format:
+     * 
+     *     <foo>
+     *         <n:bar>bar</n:bar>
+     *         <n:baz>baz</n:baz>
+     *     </foo>
+     */
+
+    /**
      * @private
      * Creates a function to return some particular key of data from a response. The totalProperty and
      * successProperty are treated as special cases for type casting, everything else is just a simple selector.
@@ -279,8 +298,10 @@ Ext.define('Ext.data.reader.Xml', {
      * This is used by buildExtractors to create optimized on extractor function which converts raw data into model instances.
      */
     createFieldAccessExpression: function(field, fieldVarName, dataName) {
-        var selector = field.mapping || field.name,
-            result;
+        var namespace = this.namespace,
+            selector, result;
+
+        selector = field.mapping || ((namespace ? namespace + '|' : '') + field.name); 
 
         if (typeof selector === 'function') {
             result = fieldVarName + '.mapping(' + dataName + ', this)';

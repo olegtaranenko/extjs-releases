@@ -27,10 +27,10 @@ Ext.define('Ext.grid.LockingView', {
         observable: 'Ext.util.Observable'
     },
 
-    eventRelayRe: /^(beforeitem|beforecontainer|item|container|cell)/,
-
-    constructor: function(config){
-        var me = this,
+<span id='Ext-grid-LockingView-property-eventRelayRe'>    eventRelayRe: /^(beforeitem|beforecontainer|item|container|cell)/,
+</span>
+<span id='Ext-grid-LockingView-method-constructor'>    constructor: function(config){
+</span>        var me = this,
             eventNames = [],
             eventRe = me.eventRelayRe,
             locked = config.locked.getView(),
@@ -70,17 +70,17 @@ Ext.define('Ext.grid.LockingView', {
         });
     },
 
-    getGridColumns: function() {
-        var cols = this.lockedGrid.headerCt.getGridColumns();
+<span id='Ext-grid-LockingView-method-getGridColumns'>    getGridColumns: function() {
+</span>        var cols = this.lockedGrid.headerCt.getGridColumns();
         return cols.concat(this.normalGrid.headerCt.getGridColumns());
     },
 
-    getEl: function(column){
-        return this.getViewForColumn(column).getEl();
+<span id='Ext-grid-LockingView-method-getEl'>    getEl: function(column){
+</span>        return this.getViewForColumn(column).getEl();
     },
 
-    getViewForColumn: function(column) {
-        var view = this.lockedView,
+<span id='Ext-grid-LockingView-method-getViewForColumn'>    getViewForColumn: function(column) {
+</span>        var view = this.lockedView,
             inLocked;
 
         view.headerCt.cascade(function(col){
@@ -93,8 +93,8 @@ Ext.define('Ext.grid.LockingView', {
         return inLocked ? view : this.normalView;
     },
 
-    onItemMouseEnter: function(view, record){
-        var me = this,
+<span id='Ext-grid-LockingView-method-onItemMouseEnter'>    onItemMouseEnter: function(view, record){
+</span>        var me = this,
             locked = me.lockedView,
             other = me.normalView,
             item;
@@ -108,8 +108,8 @@ Ext.define('Ext.grid.LockingView', {
         }
     },
 
-    onItemMouseLeave: function(view, record){
-        var me = this,
+<span id='Ext-grid-LockingView-method-onItemMouseLeave'>    onItemMouseLeave: function(view, record){
+</span>        var me = this,
             locked = me.lockedView,
             other = me.normalView;
 
@@ -121,8 +121,8 @@ Ext.define('Ext.grid.LockingView', {
         }
     },
 
-    relayFn: function(name, args){
-        args = args || [];
+<span id='Ext-grid-LockingView-method-relayFn'>    relayFn: function(name, args){
+</span>        args = args || [];
 
         var view = this.lockedView;
         view[name].apply(view, args || []);
@@ -130,57 +130,61 @@ Ext.define('Ext.grid.LockingView', {
         view[name].apply(view, args || []);
     },
 
-    getSelectionModel: function(){
-        return this.panel.getSelectionModel();
+<span id='Ext-grid-LockingView-method-getSelectionModel'>    getSelectionModel: function(){
+</span>        return this.panel.getSelectionModel();
     },
 
-    getStore: function(){
-        return this.panel.store;
+<span id='Ext-grid-LockingView-method-getStore'>    getStore: function(){
+</span>        return this.panel.store;
     },
 
-    getNode: function(nodeInfo){
-        // default to the normal view
+<span id='Ext-grid-LockingView-method-getNode'>    getNode: function(nodeInfo){
+</span>        // default to the normal view
         return this.normalView.getNode(nodeInfo);
     },
 
-    getCell: function(record, column){
-        var view = this.getViewForColumn(column),
-            row;
-
-        row = view.getNode(record);
+<span id='Ext-grid-LockingView-method-getCell'>    getCell: function(record, column){
+</span>        var view = this.getViewForColumn(column),
+            row = view.getNode(record);
+            
         return Ext.fly(row).down(column.getCellSelector());
     },
 
-    getRecord: function(node){
-        var result = this.lockedView.getRecord(node);
+<span id='Ext-grid-LockingView-method-getRecord'>    getRecord: function(node){
+</span>        var result = this.lockedView.getRecord(node);
         if (!node) {
             result = this.normalView.getRecord(node);
         }
         return result;
     },
-
-    addElListener: function(eventName, fn, scope){
-        this.relayFn('addElListener', arguments);
+    
+<span id='Ext-grid-LockingView-method-scrollBy'>    scrollBy: function(){
+</span>        var normal = this.normalView;
+        normal.scrollBy.apply(normal, arguments);
     },
 
-    refreshNode: function(){
-        this.relayFn('refreshNode', arguments);
+<span id='Ext-grid-LockingView-method-addElListener'>    addElListener: function(eventName, fn, scope){
+</span>        this.relayFn('addElListener', arguments);
     },
 
-    refresh: function(){
-        this.relayFn('refresh', arguments);
+<span id='Ext-grid-LockingView-method-refreshNode'>    refreshNode: function(){
+</span>        this.relayFn('refreshNode', arguments);
     },
 
-    bindStore: function(){
-        this.relayFn('bindStore', arguments);
+<span id='Ext-grid-LockingView-method-refresh'>    refresh: function(){
+</span>        this.relayFn('refresh', arguments);
     },
 
-    addRowCls: function(){
-        this.relayFn('addRowCls', arguments);
+<span id='Ext-grid-LockingView-method-bindStore'>    bindStore: function(){
+</span>        this.relayFn('bindStore', arguments);
     },
 
-    removeRowCls: function(){
-        this.relayFn('removeRowCls', arguments);
+<span id='Ext-grid-LockingView-method-addRowCls'>    addRowCls: function(){
+</span>        this.relayFn('addRowCls', arguments);
+    },
+
+<span id='Ext-grid-LockingView-method-removeRowCls'>    removeRowCls: function(){
+</span>        this.relayFn('removeRowCls', arguments);
     }
 
 });</pre>

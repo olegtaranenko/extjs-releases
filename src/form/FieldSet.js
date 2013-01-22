@@ -125,7 +125,7 @@ Ext.define('Ext.form.FieldSet', {
     baseCls: Ext.baseCSSPrefix + 'fieldset',
 
     /**
-     * @cfg {String} layout
+     * @cfg {Ext.enums.Layout/Object} layout
      * The {@link Ext.container.Container#layout} for the fieldset's immediate child items.
      */
     layout: 'anchor',
@@ -277,7 +277,7 @@ Ext.define('Ext.form.FieldSet', {
      * Creates the legend title component. This is only called internally, but could be overridden in subclasses to
      * customize the title component. If {@link #toggleOnTitleClick} is set to true, a listener for the click event
      * will toggle the collapsed state of the FieldSet.
-     * @return Ext.Component
+     * @return {Ext.Component}
      * @protected
      */
     createTitleCmp: function() {
@@ -291,9 +291,10 @@ Ext.define('Ext.form.FieldSet', {
 
         if (me.collapsible && me.toggleOnTitleClick) {
             cfg.listeners = {
-                el : {
+                click : {
+                    element: 'el',
                     scope : me,
-                    click : me.toggle
+                    fn : me.toggle
                 }
             };
             cfg.cls += ' ' + me.baseCls + '-header-text-collapsible';
@@ -311,7 +312,7 @@ Ext.define('Ext.form.FieldSet', {
     /**
      * Creates the checkbox component. This is only called internally, but could be overridden in subclasses to
      * customize the checkbox's configuration or even return an entirely different component type.
-     * @return Ext.Component
+     * @return {Ext.Component}
      * @protected
      */
     createCheckboxCmp: function() {
@@ -342,13 +343,15 @@ Ext.define('Ext.form.FieldSet', {
     /**
      * Creates the toggle button component. This is only called internally, but could be overridden in subclasses to
      * customize the toggle component.
-     * @return Ext.Component
+     * @return {Ext.Component}
      * @protected
      */
     createToggleCmp: function() {
         var me = this;
         me.toggleCmp = Ext.widget({
             xtype: 'tool',
+            height: 15,
+            width: 15,
             type: 'toggle',
             handler: me.toggle,
             id: me.id + '-legendToggle',
@@ -394,8 +397,8 @@ Ext.define('Ext.form.FieldSet', {
     },
 
     /**
-     * Sets the title of this fieldset
-     * @param {String} title The new title
+     * Sets the title of this fieldset.
+     * @param {String} title The new title.
      * @return {Ext.form.FieldSet} this
      */
     setTitle: function(title) {
@@ -439,7 +442,8 @@ Ext.define('Ext.form.FieldSet', {
     },
 
     /**
-     * @private Collapse or expand the fieldset
+     * @private
+     * Collapse or expand the fieldset.
      */
     setExpanded: function(expanded) {
         var me = this,
@@ -485,7 +489,7 @@ Ext.define('Ext.form.FieldSet', {
     },
 
     /**
-     * Toggle the fieldset's collapsed state to the opposite of what it is currently
+     * Toggle the fieldset's collapsed state to the opposite of what it is currently.
      */
     toggle: function() {
         this.setExpanded(!!this.collapsed);
@@ -493,7 +497,7 @@ Ext.define('Ext.form.FieldSet', {
 
     /**
      * @private
-     * Handle changes in the checkbox checked state
+     * Handle changes in the checkbox checked state.
      */
     onCheckChange: function(cmp, checked) {
         this.setExpanded(checked);

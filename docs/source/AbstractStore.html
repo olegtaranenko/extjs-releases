@@ -78,6 +78,24 @@ Ext.define('Ext.data.AbstractStore', {
         }
     },
 
+<span id='Ext-data-AbstractStore-method-onClassExtended'>    onClassExtended: function(cls, data, hooks) {
+</span>        var model = data.model,
+            onBeforeClassCreated;
+
+        if (typeof model == 'string') {
+            onBeforeClassCreated = hooks.onBeforeCreated;
+
+            hooks.onBeforeCreated = function() {
+                var me = this,
+                    args = arguments;
+
+                Ext.require(model, function() {
+                    onBeforeClassCreated.apply(me, args);
+                });
+            };
+        }
+    },
+
 <span id='Ext-data-AbstractStore-cfg-remoteSort'>    /**
 </span>     * @cfg {Boolean} remoteSort
      * True to defer any sorting operation to the server. If false, sorting is done locally on the client.
@@ -94,13 +112,14 @@ Ext.define('Ext.data.AbstractStore', {
 </span>     * @cfg {String/Ext.data.proxy.Proxy/Object} proxy
      * The Proxy to use for this Store. This can be either a string, a config object or a Proxy instance -
      * see {@link #setProxy} for details.
+     * @since Ext 1
      */
 
 <span id='Ext-data-AbstractStore-cfg-autoLoad'>    /**
 </span>     * @cfg {Boolean/Object} autoLoad
      * If data is not specified, and if autoLoad is true or an Object, this store's load method is automatically called
      * after creation. If the value of autoLoad is an Object, this Object will be passed to the store's load method.
-     * Defaults to false.
+     * @since Ext 2
      */
     autoLoad: undefined,
 
@@ -152,6 +171,7 @@ Ext.define('Ext.data.AbstractStore', {
 </span>     * @property {Boolean} isDestroyed
      * True if the Store has already been destroyed. If this is true, the reference to Store should be deleted
      * as it will not function correctly any more.
+     * @since Ext 3
      */
     isDestroyed: false,
 
@@ -177,6 +197,7 @@ Ext.define('Ext.data.AbstractStore', {
      * a two-field store of ComboBox. For anything more complicated, such as specifying a particular id property or
      * associations, a {@link Ext.data.Model} should be defined and specified for the {@link #model}
      * config.
+     * @since Ext 2
      */
 
 <span id='Ext-data-AbstractStore-cfg-model'>    /**
@@ -202,30 +223,46 @@ Ext.define('Ext.data.AbstractStore', {
 
     sortRoot: 'data',
 
-    //documented above
-    constructor: function(config) {
+<span id='Ext-data-AbstractStore-method-constructor'>    //documented above
+</span>    constructor: function(config) {
         var me = this,
             filters;
 
 <span id='Ext-data-AbstractStore-event-add'>        /**
 </span>         * @event add
-         * Fired when a Model instance has been added to this Store
+         * Fired when a Model instance has been added to this Store.
          * @param {Ext.data.Store} store The store
          * @param {Ext.data.Model[]} records The Model instances that were added
          * @param {Number} index The index at which the instances were inserted
+         * @since Ext 1
          */
 
 <span id='Ext-data-AbstractStore-event-remove'>        /**
 </span>         * @event remove
-         * Fired when a Model instance has been removed from this Store
+         * Fired when a Model instance has been removed from this Store.
+         *
+         * **If many records may be removed in one go, then it is more efficient to listen for the {@link #event-bulkremove} event
+         * and perform any processing for a bulk remove than to listen for this {@link #event-remove} event.**
          * @param {Ext.data.Store} store The Store object
          * @param {Ext.data.Model} record The record that was removed
          * @param {Number} index The index of the record that was removed
+         * @since Ext 1
+         */
+
+<span id='Ext-data-AbstractStore-event-bulkremove'>        /**
+</span>         * @event bulkremove
+         * Fired at the *end* of the {@link Ext.data.Store#method-remove remove} method when all records in the passed array have been removed.
+         *
+         * If many records may be removed in one go, then it is more efficient to listen for this event
+         * and perform any processing for a bulk remove than to listen for many {@link #event-remove} events.
+         * @param {Ext.data.Store} store The Store object
+         * @param {Ext.data.Model[]} records The array of records that were removed (In the order they appear in the Store)
+         * @param {Number[]} indexes The indexes of the records that were removed
          */
 
 <span id='Ext-data-AbstractStore-event-update'>        /**
 </span>         * @event update
-         * Fires when a Model instance has been updated
+         * Fires when a Model instance has been updated.
          * @param {Ext.data.Store} this
          * @param {Ext.data.Model} record The Model instance that was updated
          * @param {String} operation The update operation being performed. Value may be one of:
@@ -234,6 +271,7 @@ Ext.define('Ext.data.AbstractStore', {
          *     Ext.data.Model.REJECT
          *     Ext.data.Model.COMMIT
          * @param {String[]} modifiedFieldNames Array of field names changed during edit.
+         * @since Ext 1
          */
 
 <span id='Ext-data-AbstractStore-event-datachanged'>        /**
@@ -241,6 +279,7 @@ Ext.define('Ext.data.AbstractStore', {
          * Fires whenever the records in the Store have changed in some way - this could include adding or removing
          * records, or updating the data in existing records
          * @param {Ext.data.Store} this The data store
+         * @since Ext 1
          */
         
 <span id='Ext-data-AbstractStore-event-refresh'>        /**
@@ -257,6 +296,7 @@ Ext.define('Ext.data.AbstractStore', {
          * @param {Ext.data.Store} store This Store
          * @param {Ext.data.Operation} operation The Ext.data.Operation object that will be passed to the Proxy to
          * load the Store
+         * @since Ext 1
          */
 
 <span id='Ext-data-AbstractStore-event-load'>        /**
@@ -265,6 +305,7 @@ Ext.define('Ext.data.AbstractStore', {
          * @param {Ext.data.Store} this
          * @param {Ext.data.Model[]} records An array of records
          * @param {Boolean} successful True if the operation was successful.
+         * @since Ext 1
          */
 
 <span id='Ext-data-AbstractStore-event-write'>        /**
@@ -273,6 +314,7 @@ Ext.define('Ext.data.AbstractStore', {
          * @param {Ext.data.Store} store This Store
          * @param {Ext.data.Operation} operation The {@link Ext.data.Operation Operation} object that was used in
          * the write
+         * @since Ext 3
          */
 
 <span id='Ext-data-AbstractStore-event-beforesync'>        /**
@@ -284,6 +326,7 @@ Ext.define('Ext.data.AbstractStore', {
 </span>         * @event clear
          * Fired after the {@link #removeAll} method is called.
          * @param {Ext.data.Store} this
+         * @since Ext 1
          */
 <span id='Ext-data-AbstractStore-event-metachange'>        /**
 </span>         * @event metachange
@@ -293,6 +336,7 @@ Ext.define('Ext.data.AbstractStore', {
          * This event is currently only fired for JsonReaders.
          * @param {Ext.data.Store} this
          * @param {Object} meta The JSON metadata
+         * @since Ext 1
          */
 
         Ext.apply(me, config);
@@ -416,13 +460,13 @@ Ext.define('Ext.data.AbstractStore', {
         return this.proxy;
     },
 
-    // private
-    onMetaChange: function(proxy, meta) {
+<span id='Ext-data-AbstractStore-method-onMetaChange'>    // private
+</span>    onMetaChange: function(proxy, meta) {
         this.fireEvent('metachange', this, meta);
     },
 
-    //saves any phantom records
-    create: function(data, options) {
+<span id='Ext-data-AbstractStore-method-create'>    //saves any phantom records
+</span>    create: function(data, options) {
         var me = this,
             instance = Ext.ModelManager.create(Ext.applyIf(data, me.modelDefaults), me.model.modelName),
             operation;
@@ -441,12 +485,12 @@ Ext.define('Ext.data.AbstractStore', {
         return instance;
     },
 
-    read: function() {
-        return this.load.apply(this, arguments);
+<span id='Ext-data-AbstractStore-method-read'>    read: function() {
+</span>        return this.load.apply(this, arguments);
     },
 
-    update: function(options) {
-        var me = this,
+<span id='Ext-data-AbstractStore-method-update'>    update: function(options) {
+</span>        var me = this,
             operation;
         options = options || {};
 
@@ -491,11 +535,11 @@ Ext.define('Ext.data.AbstractStore', {
         Ext.callback(operation.callback, operation.scope || me, [records, operation, success]);
     },
     
-    // may be implemented by store subclasses
-    onCreateRecords: Ext.emptyFn,
+<span id='Ext-data-AbstractStore-method-onCreateRecords'>    // may be implemented by store subclasses
+</span>    onCreateRecords: Ext.emptyFn,
     
-    // may be implemented by store subclasses
-    onUpdateRecords: Ext.emptyFn,
+<span id='Ext-data-AbstractStore-method-onUpdateRecords'>    // may be implemented by store subclasses
+</span>    onUpdateRecords: Ext.emptyFn,
     
 <span id='Ext-data-AbstractStore-method-onDestroyRecords'>    /**
 </span>     * Removes any records when a write is returned from the server.
@@ -510,7 +554,8 @@ Ext.define('Ext.data.AbstractStore', {
         }
     },
 
-    //tells the attached proxy to destroy the given records
+<span id='Ext-data-AbstractStore-method-destroy'>    // tells the attached proxy to destroy the given records
+</span>    // @since Ext 3
     destroy: function(options) {
         var me = this,
             operation;
@@ -623,8 +668,8 @@ Ext.define('Ext.data.AbstractStore', {
         return this.removed;
     },
 
-    filter: function(filters, value) {
-
+<span id='Ext-data-AbstractStore-method-filter'>    filter: function(filters, value) {
+</span>
     },
 
 <span id='Ext-data-AbstractStore-method-decodeFilters'>    /**
@@ -673,16 +718,16 @@ Ext.define('Ext.data.AbstractStore', {
         return filters;
     },
 
-    clearFilter: function(supressEvent) {
-
+<span id='Ext-data-AbstractStore-method-clearFilter'>    clearFilter: function(supressEvent) {
+</span>
     },
 
-    isFiltered: function() {
-
+<span id='Ext-data-AbstractStore-method-isFiltered'>    isFiltered: function() {
+</span>
     },
 
-    filterBy: function(fn, scope) {
-
+<span id='Ext-data-AbstractStore-method-filterBy'>    filterBy: function(fn, scope) {
+</span>
     },
 
 <span id='Ext-data-AbstractStore-method-sync'>    /**
@@ -795,6 +840,7 @@ Ext.define('Ext.data.AbstractStore', {
      * object that is created and then sent to the proxy's {@link Ext.data.proxy.Proxy#read} function
      * 
      * @return {Ext.data.Store} this
+     * @since Ext 1
      */
     load: function(options) {
         var me = this,
@@ -830,6 +876,7 @@ Ext.define('Ext.data.AbstractStore', {
      * A model instance should call this method on the Store it has been {@link Ext.data.Model#join joined} to.
      * @param {Ext.data.Model} record The model instance that was edited
      * @param {String[]} modifiedFieldNames Array of field names changed during edit.
+     * @since Ext 3
      */
     afterEdit : function(record, modifiedFieldNames) {
         var me = this,
@@ -855,6 +902,7 @@ Ext.define('Ext.data.AbstractStore', {
 </span>     * @private
      * A model instance should call this method on the Store it has been {@link Ext.data.Model#join joined} to..
      * @param {Ext.data.Model} record The model instance that was edited
+     * @since Ext 3
      */
     afterReject : function(record) {
         // Must pass the 5th param (modifiedFieldNames) as null, otherwise the
@@ -869,6 +917,7 @@ Ext.define('Ext.data.AbstractStore', {
 </span>     * @private
      * A model instance should call this method on the Store it has been {@link Ext.data.Model#join joined} to.
      * @param {Ext.data.Model} record The model instance that was edited
+     * @since Ext 3
      */
     afterCommit : function(record) {
         // Must pass the 5th param (modifiedFieldNames) as null, otherwise the
@@ -879,8 +928,8 @@ Ext.define('Ext.data.AbstractStore', {
         this.fireEvent('update', this, record, Ext.data.Model.COMMIT, null);
     },
 
-    // private
-    destroyStore: function() {
+<span id='Ext-data-AbstractStore-method-destroyStore'>    // private
+</span>    destroyStore: function() {
         var me = this;
 
         if (!me.isDestroyed) {
@@ -904,8 +953,8 @@ Ext.define('Ext.data.AbstractStore', {
         }
     },
 
-    // private
-    doSort: function(sorterFn) {
+<span id='Ext-data-AbstractStore-method-doSort'>    // private
+</span>    doSort: function(sorterFn) {
         var me = this;
         if (me.remoteSort) {
             //the load function will pick up the new sorters and request the sorted data from the proxy
@@ -915,22 +964,24 @@ Ext.define('Ext.data.AbstractStore', {
             me.fireEvent('datachanged', me);
             me.fireEvent('refresh', me);
         }
+        me.fireEvent('sort', me, me.sorters.getRange());
     },
 
-    // to be implemented by subclasses
-    clearData: Ext.emptyFn,
+<span id='Ext-data-AbstractStore-method-clearData'>    // to be implemented by subclasses
+</span>    clearData: Ext.emptyFn,
     
-    // to be implemented by subclasses
-    getCount: Ext.emptyFn,
+<span id='Ext-data-AbstractStore-method-getCount'>    // to be implemented by subclasses
+</span>    getCount: Ext.emptyFn,
 
-    // to be implemented by subclasses
-    getById: Ext.emptyFn,
+<span id='Ext-data-AbstractStore-method-getById'>    // to be implemented by subclasses
+</span>    getById: Ext.emptyFn,
 
 <span id='Ext-data-AbstractStore-method-removeAll'>    /**
 </span>     * Removes all records from the store. This method does a &quot;fast remove&quot;,
      * individual remove events are not called. The {@link #clear} event is
      * fired upon completion.
      * @method
+     * @since Ext 1
      */
     removeAll: Ext.emptyFn,
     // individual store subclasses should implement a &quot;fast&quot; remove

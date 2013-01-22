@@ -207,7 +207,9 @@ Ext.define('Ext.dd.DD', {
      * it to where the mouse location less the click offset would place us.
      * @param {Number} iPageX the X coordinate of the click
      * @param {Number} iPageY the Y coordinate of the click
-     * @return an object that contains the coordinates (Object.x and Object.y)
+     * @return {Object} An object that contains the coordinates (Object.x and Object.y)
+     * @return {Number} return.x
+     * @return {Number} return.y
      * @private
      */
     getTargetCoord: function(iPageX, iPageY) {

@@ -80,16 +80,16 @@ Ext.define('Ext.form.action.Submit', {
     alternateClassName: 'Ext.form.Action.Submit',
     alias: 'formaction.submit',
 
-    type: 'submit',
-
+<span id='Ext-form-action-Submit-property-type'>    type: 'submit',
+</span>
 <span id='Ext-form-action-Submit-cfg-clientValidation'>    /**
 </span>     * @cfg {Boolean} [clientValidation=true]
      * Determines whether a Form's fields are validated in a final call to {@link Ext.form.Basic#isValid isValid} prior
      * to submission. Pass false in the Form's submit options to prevent this.
      */
 
-    // inherit docs
-    run : function(){
+<span id='Ext-form-action-Submit-method-run'>    // inherit docs
+</span>    run : function(){
         var form = this.form;
         if (this.clientValidation === false || form.isValid()) {
             this.doSubmit();
@@ -105,20 +105,23 @@ Ext.define('Ext.form.action.Submit', {
      * Performs the submit of the form data.
      */
     doSubmit: function() {
-        var formEl,
-            ajaxOptions = Ext.apply(this.createCallback(), {
-                url: this.getUrl(),
-                method: this.getMethod(),
-                headers: this.headers
-            });
+        var me = this,
+            ajaxOptions = Ext.apply(me.createCallback(), {
+                url: me.getUrl(),
+                method: me.getMethod(),
+                headers: me.headers
+            }),
+            form = me.form,
+            paramsProp = form.jsonSubmit ? 'jsonData' : 'params',
+            formEl;
 
         // For uploads we need to create an actual form that contains the file upload fields,
         // and pass that to the ajax call so it can do its iframe-based submit method.
-        if (this.form.hasUpload()) {
-            formEl = ajaxOptions.form = this.buildForm();
+        if (form.hasUpload()) {
+            formEl = ajaxOptions.form = me.buildForm();
             ajaxOptions.isUpload = true;
         } else {
-            ajaxOptions.params = this.getParams();
+            ajaxOptions[paramsProp] = me.getParams();
         }
 
         Ext.Ajax.request(ajaxOptions);

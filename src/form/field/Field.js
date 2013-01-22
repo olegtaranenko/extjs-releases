@@ -131,9 +131,7 @@ Ext.define('Ext.form.field.Field', {
      * @param {Object} value The initial value
      * @return {Object} The modified initial value
      */
-    transformOriginalValue: function(value){
-        return value;
-    },
+    transformOriginalValue: Ext.identityFn,
 
     /**
      * Returns the {@link Ext.form.field.Field#name name} attribute of the field. This is used as the parameter name

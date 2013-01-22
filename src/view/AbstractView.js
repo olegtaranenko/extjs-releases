@@ -30,10 +30,12 @@ Ext.define('Ext.view.AbstractView', {
      * @cfg {String/String[]/Ext.XTemplate} tpl (required)
      * The HTML fragment or an array of fragments that will make up the template used by this DataView.  This should
      * be specified in the same format expected by the constructor of {@link Ext.XTemplate}.
+     * @since Ext 2
      */
     /**
      * @cfg {Ext.data.Store} store (required)
      * The {@link Ext.data.Store} to bind this DataView to.
+     * @since Ext 2
      */
 
     /**
@@ -53,12 +55,14 @@ Ext.define('Ext.view.AbstractView', {
      * <tt>span:first-child</tt>) that will be used to determine what nodes this DataView will be
      * working with. The itemSelector is used to map DOM nodes to records. As such, there should
      * only be one root level element that matches the selector for each record.
+     * @since Ext 2
      */
 
     /**
      * @cfg {String} itemCls
      * Specifies the class to be assigned to each element in the view when used in conjunction with the
      * {@link #itemTpl} configuration.
+     * @since Ext 2
      */
     itemCls: Ext.baseCSSPrefix + 'dataview-item',
 
@@ -80,6 +84,7 @@ Ext.define('Ext.view.AbstractView', {
      * A string to display during data load operations.  If specified, this text will be
      * displayed in a loading div and the view's contents will be cleared while loading, otherwise the view's
      * contents will continue to display normally until the new data is loaded and the contents are replaced.
+     * @since Ext 2
      */
     loadingText: 'Loading...',
     //</locale>
@@ -123,6 +128,7 @@ Ext.define('Ext.view.AbstractView', {
      * The text to display in the view when there is no data to display.
      * Note that when using local data the emptyText will not be displayed unless you set
      * the {@link #deferEmptyText} option to false.
+     * @since Ext 2
      */
     emptyText: "",
     //</locale>
@@ -130,6 +136,7 @@ Ext.define('Ext.view.AbstractView', {
     /**
      * @cfg {Boolean} deferEmptyText
      * True to defer emptyText being applied until the store's first load.
+     * @since Ext 2
      */
     deferEmptyText: true,
 
@@ -140,6 +147,8 @@ Ext.define('Ext.view.AbstractView', {
      * {@link Ext.view.View#unhighlightitem unhighlightitem} events to be fired.
      *
      * Enabled automatically when the {@link #overItemCls} config is set.
+     *
+     * @since Ext 2
      */
     trackOver: false,
 
@@ -147,6 +156,7 @@ Ext.define('Ext.view.AbstractView', {
      * @cfg {Boolean} blockRefresh
      * Set this to true to ignore refresh events on the bound store. This is useful if
      * you wish to provide custom transition animations via a plugin
+     * @since Ext 3
      */
     blockRefresh: false,
 
@@ -157,7 +167,7 @@ Ext.define('Ext.view.AbstractView', {
      */
 
     /**
-     * @cfg {Boolean} preserveScrollOnRefresh=false
+     * @cfg {Boolean} preserveScrollOnRefresh
      * True to preserve scroll position across refresh operations.
      */
     preserveScrollOnRefresh: false,
@@ -209,9 +219,7 @@ Ext.define('Ext.view.AbstractView', {
         //</debug>
 
         me.callParent();
-        if(Ext.isString(me.tpl) || Ext.isArray(me.tpl)){
-            me.tpl = new Ext.XTemplate(me.tpl);
-        }
+        me.tpl = me.getTpl('tpl');
 
         //<debug>
         // backwards compat alias for overClass/selectedClass
@@ -225,10 +233,6 @@ Ext.define('Ext.view.AbstractView', {
             delete me.overClass;
         }
 
-        if (me.overItemCls) {
-            me.trackOver = true;
-        }
-
         if (isDef(me.selectedCls) || isDef(me.selectedClass)) {
             if (Ext.isDefined(Ext.global.console)) {
                 Ext.global.console.warn('Ext.view.View: Using the deprecated selectedCls or selectedClass configuration. Use selectedItemCls instead.');
@@ -238,6 +242,10 @@ Ext.define('Ext.view.AbstractView', {
             delete me.selectedClass;
         }
         //</debug>
+        
+        if (me.overItemCls) {
+            me.trackOver = true;
+        }
 
         me.addEvents(
             /**
@@ -357,16 +365,15 @@ Ext.define('Ext.view.AbstractView', {
             me.doFirstRefresh(me.store);
         }
     },
-    
+
     getMaskStore: function(){
         return this.store;    
     },
-    
+
     onMaskBeforeShow: function(){
         var me = this,
             loadingHeight = me.loadingHeight;
 
-        me.getSelectionModel().deselectAll();
         me.all.clear();
         if (loadingHeight && loadingHeight > me.getHeight()) {
             me.hasLoadingHeight = true;
@@ -408,23 +415,18 @@ Ext.define('Ext.view.AbstractView', {
         var me = this,
             mode = 'SINGLE';
 
-        if (!me.selModel) {
-            me.selModel = {};
-        }
-
         if (me.simpleSelect) {
             mode = 'SIMPLE';
         } else if (me.multiSelect) {
             mode = 'MULTI';
         }
 
-        Ext.applyIf(me.selModel, {
-            allowDeselect: me.allowDeselect,
-            mode: mode
-        });
-
-        if (!me.selModel.events) {
-            me.selModel = new Ext.selection.DataViewModel(me.selModel);
+        // No selModel specified, or it's just a config; Instantiate
+        if (!me.selModel || !me.selModel.events) {
+            me.selModel = new Ext.selection.DataViewModel(Ext.apply({
+                allowDeselect: me.allowDeselect,
+                mode: mode
+            }, me.selModel));
         }
 
         if (!me.selModel.hasRelaySetup) {
@@ -445,6 +447,7 @@ Ext.define('Ext.view.AbstractView', {
 
     /**
      * Refreshes the view by reloading the data from the store and re-rendering the template.
+     * @since Ext 2
      */
     refresh: function() {
         var me = this,
@@ -599,13 +602,22 @@ Ext.define('Ext.view.AbstractView', {
      * @param {Ext.data.Model} record The Record being prepared for rendering.
      * @return {Array/Object} The formatted data in a format expected by the internal {@link #tpl template}'s overwrite() method.
      * (either an array if your params are numeric (i.e. {0}) or an object (i.e. {foo: 'bar'}))
+     * @since Ext 2
      */
     prepareData: function(data, index, record) {
-        var associatedData, attr;
+        var associatedData, attr, hasCopied;
         if (record) {
             associatedData = record.getAssociatedData();
             for (attr in associatedData) {
                 if (associatedData.hasOwnProperty(attr)) {
+                    // This would be better done in collectData, however
+                    // we only need to copy the data object if we have any associations,
+                    // so we optimize it by only copying if we must.
+                    // We do this so we don't mutate the underlying record.data
+                    if (!hasCopied) {
+                        data = Ext.apply({}, data);
+                        hasCopied = true;
+                    }
                     data[attr] = associatedData[attr];
                 }
             }
@@ -624,6 +636,7 @@ Ext.define('Ext.view.AbstractView', {
      * @param {Number} startIndex the index number of the Record being prepared for rendering.
      * @return {Object[]} An Array of data objects to be processed by a repeating XTemplate. May also
      * contain <i>named</i> properties.
+     * @since Ext 2
      */
     collectData : function(records, startIndex){
         var data = [],
@@ -662,8 +675,7 @@ Ext.define('Ext.view.AbstractView', {
                     me.all.replaceElement(index, node, true);
                     me.updateIndexes(index, index);
                     // Maintain selection after update
-                    // TODO: Move to approriate event handler.
-                    me.selModel.refresh();
+                    me.selModel.onUpdate(record);
                     if (me.hasListeners.itemupdate) {
                         me.fireEvent('itemupdate', record, index, node);
                     }
@@ -684,17 +696,17 @@ Ext.define('Ext.view.AbstractView', {
             // which might create boilerplate content *around* the record nodes.
             if (me.all.getCount() === 0) {
                 me.refresh();
-                return;
+                nodes = me.all.elements.slice();
+            } else {
+                nodes = me.bufferRender(records, index);
+                me.doAdd(nodes, records, index);
+
+                me.selModel.refresh();
+                me.updateIndexes(index);
+
+                // Ensure layout system knows about new content size
+                me.refreshSize();
             }
-
-            nodes = me.bufferRender(records, index);
-            me.doAdd(nodes, records, index);
-
-            me.selModel.refresh();
-            me.updateIndexes(index);
-
-            // Ensure layout system knows about new content size
-            me.refreshSize();
 
             if (me.hasListeners.itemadd) {
                 me.fireEvent('itemadd', records, index, nodes);
@@ -724,32 +736,45 @@ Ext.define('Ext.view.AbstractView', {
     },
 
     // private
-    onRemove : function(ds, record, index) {
-        var me = this;
+    onRemove : function(ds, records, indexes) {
+        var me = this,
+            fireItemRemove = me.hasListeners.itemremove,
+            i,
+            record,
+            index;
 
         if (me.all.getCount()) {
             if (me.store.getCount() === 0) {
                 // Refresh so emptyText can be applied if necessary
+                if (fireItemRemove) {
+                    for (i = indexes.length - 1; i >= 0; --i) {
+                        me.fireEvent('itemremove', records[i], indexes[i]);
+                    }
+                }
                 me.refresh();
             } else {
-                // Just remove the element which corresponds to the removed record
+                // Just remove the elements which corresponds to the removed records
                 // The tpl's full HTML will still be in place.
-                me.doRemove(record, index);
+                for (i = indexes.length - 1; i >= 0; --i) {
+                    record = records[i];
+                    index = indexes[i];
+                    me.doRemove(record, index);
+                    if (fireItemRemove) {
+                        me.fireEvent('itemremove', record, index);
+                    }
+                }
                 if (me.selModel.refreshOnRemove) {
                     me.selModel.refresh();
                 }
-                me.updateIndexes(index);
+                me.updateIndexes(indexes[0]);
             }
 
             // Ensure layout system knows about new content height
             this.refreshSize();
-
-            if (me.hasListeners.itemremove) {
-                me.fireEvent('itemremove', record, index);
-            }
         }
     },
 
+    // private
     doRemove: function(record, index) {
         this.all.removeElement(index, true);
     },
@@ -757,6 +782,7 @@ Ext.define('Ext.view.AbstractView', {
     /**
      * Refreshes an individual node's data from the store.
      * @param {Number} index The item's data index in the store
+     * @since Ext 2
      */
     refreshNode : function(index){
         this.onUpdate(this.store, this.store.getAt(index));
@@ -790,6 +816,7 @@ Ext.define('Ext.view.AbstractView', {
     /**
      * Changes the data store bound to this view and refreshes it.
      * @param {Ext.data.Store} store The store to bind to this view
+     * @since Ext 3
      */
     bindStore : function(store, initial) {
         var me = this;
@@ -880,7 +907,7 @@ Ext.define('Ext.view.AbstractView', {
         return {
             refresh: me.onDataRefresh,
             add: me.onAdd,
-            remove: me.onRemove,
+            bulkremove: me.onRemove,
             update: me.onUpdate,
             clear: me.refresh
         };
@@ -889,6 +916,7 @@ Ext.define('Ext.view.AbstractView', {
     /**
      * @private
      * Calls this.refresh if this.blockRefresh is not true
+     * @since Ext 3
      */
     onDataRefresh: function() {
         var me = this,
@@ -930,6 +958,7 @@ Ext.define('Ext.view.AbstractView', {
     /**
      * Gets the currently selected nodes.
      * @return {HTMLElement[]} An array of HTMLElements
+     * @since Ext 2
      */
     getSelectedNodes: function(){
         var nodes   = [],
@@ -948,6 +977,7 @@ Ext.define('Ext.view.AbstractView', {
      * Gets an array of the records from an array of nodes
      * @param {HTMLElement[]} nodes The nodes to evaluate
      * @return {Ext.data.Model[]} records The {@link Ext.data.Model} objects
+     * @since Ext 2
      */
     getRecords: function(nodes) {
         var records = [],
@@ -967,6 +997,7 @@ Ext.define('Ext.view.AbstractView', {
      * @param {Ext.Element/HTMLElement} node The node to evaluate
      *
      * @return {Ext.data.Model} record The {@link Ext.data.Model} object
+     * @since Ext 2
      */
     getRecord: function(node){
         return this.store.data.getByKey(Ext.getDom(node).viewRecordId);
@@ -977,6 +1008,7 @@ Ext.define('Ext.view.AbstractView', {
      * Returns true if the passed node is selected, else false.
      * @param {HTMLElement/Number/Ext.data.Model} node The node, node index or record to check
      * @return {Boolean} True if selected, else false
+     * @since Ext 2
      */
     isSelected : function(node) {
         // TODO: El/Idx/Record
@@ -990,6 +1022,7 @@ Ext.define('Ext.view.AbstractView', {
      * @param {Boolean} keepExisting
      * @param {Boolean} suppressEvent Set to false to not fire a select event
      * @deprecated 4.0 Use {@link Ext.selection.Model#select} instead.
+     * @since Ext 2
      */
     select: function(records, keepExisting, suppressEvent) {
         this.selModel.select(records, keepExisting, suppressEvent);
@@ -999,6 +1032,7 @@ Ext.define('Ext.view.AbstractView', {
      * Deselects a record instance by record instance or index.
      * @param {Ext.data.Model[]/Number} records An array of records or an index
      * @param {Boolean} suppressEvent Set to false to not fire a deselect event
+     * @since Ext 2
      */
     deselect: function(records, suppressEvent) {
         this.selModel.deselect(records, suppressEvent);
@@ -1009,6 +1043,7 @@ Ext.define('Ext.view.AbstractView', {
      * @param {HTMLElement/String/Number/Ext.data.Model} nodeInfo An HTMLElement template node, index of a template node,
      * the id of a template node or the record associated with the node.
      * @return {HTMLElement} The node or null if it wasn't found
+     * @since Ext 2
      */
     getNode : function(nodeInfo) {
         if ((!nodeInfo && nodeInfo !== 0) || !this.rendered) {
@@ -1049,6 +1084,7 @@ Ext.define('Ext.view.AbstractView', {
      * @param {Number} start (optional) The index of the first node in the range
      * @param {Number} end (optional) The index of the last node in the range
      * @return {HTMLElement[]} An array of nodes
+     * @since Ext 2
      */
     getNodes: function(start, end) {
         var ns = this.all.elements;
@@ -1066,6 +1102,7 @@ Ext.define('Ext.view.AbstractView', {
      * @param {HTMLElement/String/Number/Ext.data.Model} nodeInfo An HTMLElement template node, index of a template node, the id of a template node
      * or a record associated with a node.
      * @return {Number} The index of the node or -1
+     * @since Ext 2
      */
     indexOf: function(node) {
         node = this.getNode(node);
@@ -1119,25 +1156,29 @@ Ext.define('Ext.view.AbstractView', {
              * @cfg {Boolean} [multiSelect=false]
              * True to allow selection of more than one item at a time, false to allow selection of only a single item
              * at a time or no selection at all, depending on the value of {@link #singleSelect}.
-             * @deprecated 4.1.1 Use {@link Ext.selection.Model#mode} 'MULTI' instead.
+             * @deprecated 4.0 Use {@link Ext.selection.Model#mode} 'MULTI' instead.
+             * @since Ext 2
              */
             /**
              * @cfg {Boolean} [singleSelect]
              * Allows selection of exactly one item at a time. As this is the default selection mode anyway, this config
              * is completely ignored.
-             * @removed 4.1.1 Use {@link Ext.selection.Model#mode} 'SINGLE' instead.
+             * @removed 4.0 Use {@link Ext.selection.Model#mode} 'SINGLE' instead.
+             * @since Ext 2
              */
             /**
              * @cfg {Boolean} [simpleSelect=false]
              * True to enable multiselection by clicking on multiple items without requiring the user to hold Shift or Ctrl,
              * false to force the user to hold Ctrl or Shift to select more than on item.
-             * @deprecated 4.1.1 Use {@link Ext.selection.Model#mode} 'SIMPLE' instead.
+             * @deprecated 4.0 Use {@link Ext.selection.Model#mode} 'SIMPLE' instead.
+             * @since Ext 2
              */
 
             /**
              * Gets the number of selected nodes.
              * @return {Number} The node count
              * @deprecated 4.0 Use {@link Ext.selection.Model#getCount} instead.
+             * @since Ext 2
              */
             getSelectionCount : function(){
                 if (Ext.global.console) {
@@ -1150,6 +1191,7 @@ Ext.define('Ext.view.AbstractView', {
              * Gets an array of the selected records
              * @return {Ext.data.Model[]} An array of {@link Ext.data.Model} objects
              * @deprecated 4.0 Use {@link Ext.selection.Model#getSelection} instead.
+             * @since Ext 2
              */
             getSelectedRecords : function(){
                 if (Ext.global.console) {
@@ -1158,6 +1200,8 @@ Ext.define('Ext.view.AbstractView', {
                 return this.selModel.getSelection();
             },
 
+            // documented above
+            // @ignore
             select: function(records, keepExisting, supressEvents) {
                 if (Ext.global.console) {
                     Ext.global.console.warn("DataView: select will be removed, please access select through a DataView's SelectionModel, ie: view.getSelectionModel().select()");
@@ -1169,6 +1213,7 @@ Ext.define('Ext.view.AbstractView', {
             /**
              * Deselects all selected records.
              * @deprecated 4.0 Use {@link Ext.selection.Model#deselectAll} instead.
+             * @since Ext 2
              */
             clearSelections: function() {
                 if (Ext.global.console) {

@@ -132,28 +132,23 @@ function getBasicLayouts() {
             defaults: {
                 collapsible: true,
                 split: true,
-                animFloat: false,
-                autoHide: false,
-                useSplitTips: true,
-                bodyStyle: 'padding:15px'
+                bodyPadding: 15
             },
             items: [{
                 title: 'Footer',
                 region: 'south',
                 height: 150,
-                minSize: 75,
-                maxSize: 250,
-                cmargins: '5 0 0 0',
+                minHeight: 75,
+                maxHeight: 250,
                 html: '<p>Footer content</p>'
             },{
                 title: 'Navigation',
                 region:'west',
                 floatable: false,
                 margins: '5 0 0 0',
-                cmargins: '5 5 0 0',
                 width: 175,
-                minSize: 100,
-                maxSize: 250,
+                minWidth: 100,
+                maxWidth: 250,
                 html: '<p>Secondary content like navigation links could go here</p>'
             },{
                 title: 'Main Content',

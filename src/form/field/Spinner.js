@@ -110,8 +110,8 @@ Ext.define('Ext.form.field.Spinner', {
     onSpinDown: Ext.emptyFn,
 
     triggerTpl: '<td style="{triggerStyle}">' +
-                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-0 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-up" role="button"></div>' +
-                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-1 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-down" role="button"></div>' +
+                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-0 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-up {spinnerUpCls}" role="button"></div>' +
+                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-1 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-down {spinnerDownCls}" role="button"></div>' +
                 '</td>' +
             '</tr>',
 
@@ -167,10 +167,6 @@ Ext.define('Ext.form.field.Spinner', {
         
         me.triggerCell = me.spinUpEl.parent(); 
 
-        // Set initial enabled/disabled states
-        me.setSpinUpEnabled(me.spinUpEnabled);
-        me.setSpinDownEnabled(me.spinDownEnabled);
-
         // Init up/down arrow keys
         if (me.keyNavEnabled) {
             me.spinnerKeyNav = new Ext.util.KeyNav(me.inputEl, {
@@ -202,7 +198,9 @@ Ext.define('Ext.form.field.Spinner', {
             hideTrigger = (me.readOnly || me.hideTrigger);
 
         return me.getTpl('triggerTpl').apply({
-            triggerStyle: 'width:' + me.triggerWidth + (hideTrigger ? 'px;display:none' : 'px')
+            triggerStyle: 'width:' + me.triggerWidth + (hideTrigger ? 'px;display:none' : 'px'),
+            spinnerUpCls: !me.spinUpEnabled ? me.trigger1Cls + '-disabled': '',
+            spinnerDownCls: !me.spinDownEnabled ? me.trigger2Cls + '-disabled': ''
         });
     },
 
@@ -307,8 +305,7 @@ Ext.define('Ext.form.field.Spinner', {
             delta = e.getWheelDelta();
             if (delta > 0) {
                 me.spinUp();
-            }
-            else if (delta < 0) {
+            } else if (delta < 0) {
                 me.spinDown();
             }
             e.stopEvent();

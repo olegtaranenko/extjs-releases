@@ -283,18 +283,18 @@ Ext.define('Ext.Layer', {
         this.callParent();
     },
 
-    // private
+    // @private
     beginUpdate: function() {
         this.updating = true;
     },
 
-    // private
+    // @private
     endUpdate: function() {
         this.updating = false;
         this.sync(true);
     },
 
-    // private
+    // @private
     hideUnders: function() {
         if (this.shadow) {
             this.shadow.hide();
@@ -302,7 +302,7 @@ Ext.define('Ext.Layer', {
         this.hideShim();
     },
 
-    // private
+    // @private
     constrainXY: function() {
         if (this.constrain) {
             var vw = Ext.Element.getViewWidth(),
@@ -371,19 +371,19 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    // private
+    // @private
     beforeFx: function() {
         this.beforeAction();
         return this.callParent(arguments);
     },
 
-    // private
+    // @private
     afterFx: function() {
         this.callParent(arguments);
         this.sync(this.isVisible());
     },
 
-    // private
+    // @private
     beforeAction: function() {
         if (!this.updating && this.shadow) {
             this.shadow.hide();
@@ -421,7 +421,7 @@ Ext.define('Ext.Layer', {
         return me;
     },
 
-    // private
+    // @private
     createCB: function(callback) {
         var me = this,
             showShadow = me.shadow && me.shadow.isVisible();

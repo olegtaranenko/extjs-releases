@@ -98,7 +98,5 @@ Ext.define('Ext.tree.Column', {
         return buf.join('');
     },
 
-    defaultRenderer: function(value) {
-        return value;
-    }
+    defaultRenderer: Ext.identityFn
 });

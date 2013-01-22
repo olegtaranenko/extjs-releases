@@ -43,8 +43,8 @@ Ext.define('Ext.ElementLoader', {
     ],
 
     statics: {
-        Renderer: {
-            Html: function(loader, response, active){
+<span id='Ext-ElementLoader-property-Renderer'>        Renderer: {
+</span>            Html: function(loader, response, active){
                 loader.getTarget().update(response.responseText, active.scripts === true);
                 return true;
             }
@@ -153,8 +153,8 @@ Ext.define('Ext.ElementLoader', {
      */
     isLoader: true,
 
-    constructor: function(config) {
-        var me = this,
+<span id='Ext-ElementLoader-method-constructor'>    constructor: function(config) {
+</span>        var me = this,
             autoLoad;
 
         config = config || {};

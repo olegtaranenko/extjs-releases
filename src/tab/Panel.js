@@ -284,7 +284,7 @@ Ext.define('Ext.tab.Panel', {
     requires: ['Ext.layout.container.Card', 'Ext.tab.Bar'],
 
     /**
-     * @cfg {String} tabPosition
+     * @cfg {"top"/"bottom"} tabPosition
      * The position where the tab strip should be rendered. Can be `top` or `bottom`.
      */
     tabPosition : 'top',
@@ -306,7 +306,7 @@ Ext.define('Ext.tab.Panel', {
      */
 
     /**
-     * @cfg {Object} layout
+     * @cfg {Ext.enums.Layout/Object} layout
      * Optional configuration object for the internal {@link Ext.layout.container.Card card layout}.
      * If present, this is passed straight through to the layout's constructor
      */

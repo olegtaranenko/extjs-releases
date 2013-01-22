@@ -215,7 +215,7 @@
  *     }
  */
 Ext.define('Ext.util.Animate', {
-
+    requires: ['Ext.Element', 'Ext.CompositeElementLite'],
     uses: ['Ext.fx.Manager', 'Ext.fx.Anim'],
 
 <span id='Ext-util-Animate-method-animate'>    /**
@@ -290,8 +290,8 @@ Ext.define('Ext.util.Animate', {
         return this;
     },
 
-    // @private - process the passed fx configuration.
-    anim: function(config) {
+<span id='Ext-util-Animate-method-anim'>    // @private - process the passed fx configuration.
+</span>    anim: function(config) {
         if (!Ext.isObject(config)) {
             return (config) ? {} : false;
         }

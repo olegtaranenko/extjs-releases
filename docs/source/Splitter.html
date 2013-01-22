@@ -33,22 +33,22 @@ Ext.define('Ext.resizer.Splitter', {
     uses: ['Ext.resizer.SplitterTracker'],
     alias: 'widget.splitter',
 
-    childEls: [
-        'collapseEl'
+<span id='Ext-resizer-Splitter-property-childEls'>    childEls: [
+</span>        'collapseEl'
     ],
 
-    renderTpl: [
-        '&lt;tpl if=&quot;collapsible===true&quot;&gt;',
+<span id='Ext-resizer-Splitter-property-renderTpl'>    renderTpl: [
+</span>        '&lt;tpl if=&quot;collapsible===true&quot;&gt;',
             '&lt;div id=&quot;{id}-collapseEl&quot; class=&quot;', Ext.baseCSSPrefix, 'collapse-el ',
                 Ext.baseCSSPrefix, 'layout-split-{collapseDir}&quot;&gt;&amp;#160;&lt;/div&gt;',
         '&lt;/tpl&gt;'
     ],
 
-    baseCls: Ext.baseCSSPrefix + 'splitter',
-    collapsedClsInternal: Ext.baseCSSPrefix + 'splitter-collapsed',
-    
-    // Default to tree, allow internal classes to disable resizing
-    canResize: true,
+<span id='Ext-resizer-Splitter-property-baseCls'>    baseCls: Ext.baseCSSPrefix + 'splitter',
+</span><span id='Ext-resizer-Splitter-property-collapsedClsInternal'>    collapsedClsInternal: Ext.baseCSSPrefix + 'splitter-collapsed',
+</span>    
+<span id='Ext-resizer-Splitter-property-canResize'>    // Default to tree, allow internal classes to disable resizing
+</span>    canResize: true,
 
 <span id='Ext-resizer-Splitter-cfg-collapsible'>    /**
 </span>     * @cfg {Boolean} collapsible
@@ -107,8 +107,8 @@ Ext.define('Ext.resizer.Splitter', {
      */
 
     horizontal: false,
-    vertical: false,
-
+<span id='Ext-resizer-Splitter-property-vertical'>    vertical: false,
+</span>
 <span id='Ext-resizer-Splitter-method-getTrackerConfig'>    /**
 </span>     * Returns the config object (with an `xclass` property) for the splitter tracker. This
      * is overridden by {@link Ext.resizer.BorderSplitter BorderSplitter} to create a
@@ -123,8 +123,8 @@ Ext.define('Ext.resizer.Splitter', {
         };
     },
 
-    beforeRender: function() {
-        var me = this,
+<span id='Ext-resizer-Splitter-method-beforeRender'>    beforeRender: function() {
+</span>        var me = this,
             target = me.getCollapseTarget(),
             collapseDir = me.getCollapseDirection(),
             vertical = me.vertical,
@@ -157,8 +157,8 @@ Ext.define('Ext.resizer.Splitter', {
         });
     },
 
-    onRender: function() {
-        var me = this;
+<span id='Ext-resizer-Splitter-method-onRender'>    onRender: function() {
+</span>        var me = this;
 
         me.callParent(arguments);
 
@@ -187,8 +187,8 @@ Ext.define('Ext.resizer.Splitter', {
         }
     },
 
-    getCollapseDirection: function() {
-        var me = this,
+<span id='Ext-resizer-Splitter-method-getCollapseDirection'>    getCollapseDirection: function() {
+</span>        var me = this,
             dir = me.collapseDirection,
             collapseTarget, idx, items, type;
 
@@ -227,22 +227,22 @@ Ext.define('Ext.resizer.Splitter', {
         return dir;
     },
 
-    getCollapseTarget: function() {
-        var me = this;
+<span id='Ext-resizer-Splitter-method-getCollapseTarget'>    getCollapseTarget: function() {
+</span>        var me = this;
 
         return me.collapseTarget.isComponent ? me.collapseTarget : me.collapseTarget == 'prev' ? me.previousSibling() : me.nextSibling();
     },
 
-    onTargetCollapse: function(target) {
-        this.el.addCls([this.collapsedClsInternal, this.collapsedCls]);
+<span id='Ext-resizer-Splitter-method-onTargetCollapse'>    onTargetCollapse: function(target) {
+</span>        this.el.addCls([this.collapsedClsInternal, this.collapsedCls]);
     },
 
-    onTargetExpand: function(target) {
-        this.el.removeCls([this.collapsedClsInternal, this.collapsedCls]);
+<span id='Ext-resizer-Splitter-method-onTargetExpand'>    onTargetExpand: function(target) {
+</span>        this.el.removeCls([this.collapsedClsInternal, this.collapsedCls]);
     },
 
-    toggleTargetCmp: function(e, t) {
-        var cmp = this.getCollapseTarget(),
+<span id='Ext-resizer-Splitter-method-toggleTargetCmp'>    toggleTargetCmp: function(e, t) {
+</span>        var cmp = this.getCollapseTarget(),
             placeholder = cmp.placeholder,
             toggle;
 
@@ -263,8 +263,8 @@ Ext.define('Ext.resizer.Splitter', {
         }
     },
 
-    /*
-     * Work around IE bug. %age margins do not get recalculated on element resize unless repaint called.
+<span id='Ext-resizer-Splitter-method-setSize'>    /*
+</span>     * Work around IE bug. %age margins do not get recalculated on element resize unless repaint called.
      */
     setSize: function() {
         var me = this;
@@ -274,8 +274,8 @@ Ext.define('Ext.resizer.Splitter', {
         }
     },
     
-    beforeDestroy: function(){
-        Ext.destroy(this.tracker);
+<span id='Ext-resizer-Splitter-method-beforeDestroy'>    beforeDestroy: function(){
+</span>        Ext.destroy(this.tracker);
         this.callParent();
     }
 });

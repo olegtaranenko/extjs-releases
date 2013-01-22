@@ -27,22 +27,22 @@ Ext.define('Ext.tip.QuickTip', {
 
 <span id='Ext-tip-QuickTip-cfg-target'>    /**
 </span>     * @cfg {String/HTMLElement/Ext.Element} target
-     * The target HTMLElement, Ext.Element or id to associate with this Quicktip.
+     * The target HTMLElement, {@link Ext.Element} or id to associate with this Quicktip.
      * 
      * Defaults to the document.
      */
 
 <span id='Ext-tip-QuickTip-cfg-interceptTitles'>    /**
 </span>     * @cfg {Boolean} interceptTitles
-     * True to automatically use the element's DOM title value if available.
+     * `true` to automatically use the element's DOM title value if available.
      */
     interceptTitles : false,
 
-    // Force creation of header Component
-    title: '&amp;#160;',
+<span id='Ext-tip-QuickTip-property-title'>    // Force creation of header Component
+</span>    title: '&amp;#160;',
 
-    // private
-    tagConfig : {
+<span id='Ext-tip-QuickTip-property-tagConfig'>    // @private
+</span>    tagConfig : {
         namespace : &quot;data-&quot;,
         attribute : &quot;qtip&quot;,
         width : &quot;qwidth&quot;,
@@ -54,8 +54,8 @@ Ext.define('Ext.tip.QuickTip', {
         anchor : &quot;anchor&quot;
     },
 
-    // private
-    initComponent : function(){
+<span id='Ext-tip-QuickTip-method-initComponent'>    // @private
+</span>    initComponent : function(){
         var me = this;
 
         me.target = me.target || Ext.getDoc();
@@ -157,8 +157,8 @@ Ext.define('Ext.tip.QuickTip', {
         }
     },
 
-    // private
-    onTargetOver : function(e){
+<span id='Ext-tip-QuickTip-method-onTargetOver'>    // @private
+</span>    onTargetOver : function(e){
         var me = this,
             target = e.getTarget(me.delegate),
             hasShowDelay,
@@ -185,8 +185,17 @@ Ext.define('Ext.tip.QuickTip', {
         }
 
         if (me.activeTarget &amp;&amp; ((target == me.activeTarget.el) || Ext.fly(me.activeTarget.el).contains(target))) {
-            me.clearTimer('hide');
-            me.show();
+            // We may have started a delayed show where we have an active target.
+            // If the timer is yet to be fired, but the mouse moves, it will try to
+            // show it immediately. If the attribute has been removed from the element,
+            // we want to cancel the show.
+            if (me.targetTextEmpty()) {
+                me.onShowVeto();
+                delete me.activeTarget;
+            } else {
+                me.clearTimer('hide');
+                me.show();
+            }
             return;
         }
 
@@ -267,8 +276,8 @@ Ext.define('Ext.tip.QuickTip', {
         }
     },
 
-    // private
-    onTargetOut : function(e){
+<span id='Ext-tip-QuickTip-method-onTargetOut'>    // @private
+</span>    onTargetOut : function(e){
         var me = this,
             active = me.activeTarget,
             hasHideDelay,
@@ -294,9 +303,44 @@ Ext.define('Ext.tip.QuickTip', {
             }
         }
     },
+    
+<span id='Ext-tip-QuickTip-method-targetTextEmpty'>    targetTextEmpty: function(){
+</span>        var me = this,
+            target = me.activeTarget,
+            cfg = me.tagConfig,
+            el, text;
+            
+         if (target) {
+             el = target.el;
+             if (el) {
+                 text = el.getAttribute(cfg.namespace + cfg.attribute);
+                 // Note that the quicktip could also have been registered with the QuickTipManager.
+                 // If this was the case, then we don't want to veto showing it.
+                 // Simply do a lookup in the registered targets collection.
+                 if (!text &amp;&amp; !me.targets[target.target]) {
+                     return true;
+                 }
+             }
+         }
+         return false;
+    },
+    
+<span id='Ext-tip-QuickTip-method-show'>    show: function(){
+</span>        var me = this,
+            fromDelay = me.fromDelayShow;
+            
+        // We're coming from a delayed show, so check whether
+        // the attribute has been removed before we show it 
+        if (fromDelay &amp;&amp; me.targetTextEmpty()) {
+            me.onShowVeto();
+            delete me.activeTarget;
+            return;
+        }
+        me.callParent(arguments);    
+    },
 
-    // inherit docs
-    showAt : function(xy){
+<span id='Ext-tip-QuickTip-method-showAt'>    // @inheritdoc
+</span>    showAt : function(xy){
         var me = this,
             target = me.activeTarget,
             cls;
@@ -348,11 +392,12 @@ Ext.define('Ext.tip.QuickTip', {
         me.callParent([xy]);
     },
 
-    // inherit docs
-    hide: function(){
+<span id='Ext-tip-QuickTip-method-hide'>    // @inheritdoc
+</span>    hide: function(){
         delete this.activeTarget;
         this.callParent();
     }
-});</pre>
+});
+</pre>
 </body>
 </html>

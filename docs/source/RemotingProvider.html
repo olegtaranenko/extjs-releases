@@ -138,8 +138,8 @@ TestAction.multiply(
      */
     timeout: undefined,
     
-    constructor : function(config){
-        var me = this;
+<span id='Ext-direct-RemotingProvider-method-constructor'>    constructor : function(config){
+</span>        var me = this;
         me.callParent(arguments);
         me.addEvents(
 <span id='Ext-direct-RemotingProvider-event-beforecall'>            /**
@@ -224,13 +224,13 @@ TestAction.multiply(
         return handler;
     },
     
-    // inherit docs
-    isConnected: function(){
+<span id='Ext-direct-RemotingProvider-method-isConnected'>    // inherit docs
+</span>    isConnected: function(){
         return !!this.connected;
     },
 
-    // inherit docs
-    connect: function(){
+<span id='Ext-direct-RemotingProvider-method-connect'>    // inherit docs
+</span>    connect: function(){
         var me = this;
         
         if (me.url) {
@@ -244,8 +244,8 @@ TestAction.multiply(
         }
     },
 
-    // inherit docs
-    disconnect: function(){
+<span id='Ext-direct-RemotingProvider-method-disconnect'>    // inherit docs
+</span>    disconnect: function(){
         var me = this;
         
         if (me.connected) {

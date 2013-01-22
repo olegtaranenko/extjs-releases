@@ -256,6 +256,9 @@ Ext.define('Ext.chart.axis.Axis', {
             }
             for (field in allFields) {
                 value = record.get(field);
+                if (me.type == 'Time' && typeof value == "string") {
+                    value = Date.parse(value);
+                }
                 if (isNaN(value)) {
                     continue;
                 }
@@ -293,7 +296,8 @@ Ext.define('Ext.chart.axis.Axis', {
         }
 
         //normalize min max for snapEnds.
-        if (min != max && (max != Math.floor(max))) {
+        if (min != max && (max != Math.floor(max) || min != Math.floor(min))) {
+            min = Math.floor(min);
             max = Math.floor(max) + 1;
         }
 
@@ -307,7 +311,8 @@ Ext.define('Ext.chart.axis.Axis', {
 
         if (min >= max) {
             // snapEnds will return NaN if max >= min;
-            max = min + 1;
+            min = Math.floor(min);
+            max = min + 1;                
         }
 
         return {min: min, max: max};
@@ -352,6 +357,7 @@ Ext.define('Ext.chart.axis.Axis', {
         return out;
     },
 
+
     /**
      * Renders the axis into the screen and updates its position.
      */
@@ -363,121 +369,151 @@ Ext.define('Ext.chart.axis.Axis', {
             gutterX = me.chart.maxGutter[0],
             gutterY = me.chart.maxGutter[1],
             dashSize = me.dashSize,
-            subDashesX = me.minorTickSteps || 0,
-            subDashesY = me.minorTickSteps || 0,
             length = me.length,
             position = me.position,
+            verticalAxis = (position == 'left' || position == 'right'),
             inflections = [],
-            calcLabels = false,
+            calcLabels = (me.isNumericAxis),
             stepCalcs = me.applyData(),
             step = stepCalcs.step,
             steps = stepCalcs.steps,
+            stepsArray = Ext.isArray(steps),
             from = stepCalcs.from,
             to = stepCalcs.to,
+            axisRange = to - from,
             trueLength,
             currentX,
             currentY,
             path,
-            dashesX,
-            dashesY,
-            delta;
+            subDashesX = me.minorTickSteps || 0,
+            subDashesY = me.minorTickSteps || 0,
+            dashesX = Math.max(subDashesX + 1, 0),
+            dashesY = Math.max(subDashesY + 1, 0),
+            dashDirection = (position == 'left' || position == 'top' ? -1 : 1),
+            dashLength = dashSize * dashDirection,
+            subDashes,
+            subDashValue,
+            delta = 0,
+            stepCount = 0,
+            tick,
+            val;
 
-        //If no steps are specified
-        //then don't draw the axis. This generally happens
-        //when an empty store.
-        if (me.hidden || isNaN(step) || (from > to)) {
+        me.from = from;
+        me.to = to;
+        
+        // If there is nothing to show, then leave. 
+        if (me.hidden || (from > to)) {
             return;
         }
 
-        me.from = stepCalcs.from;
-        me.to = stepCalcs.to;
+        // If no steps are specified (for instance if the store is empty), then leave.
+        if ((stepsArray && (steps.length == 0)) || (!stepsArray && isNaN(step))) {
+            return;
+        }
 
-        if (position == 'left' || position == 'right') {
-            currentX = Math.floor(x) + 0.5;
-            path = ["M", currentX, y, "l", 0, -length];
-            trueLength = length - (gutterY * 2);
+        if (stepsArray) {
+            // Clean the array of steps:
+            // First remove the steps that are out of bounds.
+            steps = Ext.Array.filter(steps, function(elem, index, array) {
+                return (+elem > +me.from && +elem < +me.to);
+            }, this);
+
+            // Then add bounds on each side.
+            steps = Ext.Array.union([me.from], steps, [me.to]);
         }
         else {
-            currentY = Math.floor(y) + 0.5;
-            path = ["M", x, currentY, "l", length, 0];
-            trueLength = length - (gutterX * 2);
+            // Build the array of steps out of the fixed-value 'step'.
+            steps = new Array;
+            for (val = +me.from; val < +me.to; val += step) {
+                steps.push(val);
+            }
+            steps.push(+me.to);
         }
+        stepCount = steps.length;
 
-        // Supports the case that we have only 1 record.
-        delta = steps && trueLength / steps;
-        dashesX = Math.max(subDashesX + 1, 0);
-        dashesY = Math.max(subDashesY + 1, 0);
-        if (me.type == 'Numeric' || me.type == 'Time') {
-            calcLabels = true;
-            me.labels = [stepCalcs.from];
-        }
 
-        if (position == 'right' || position == 'left') {
-            currentY = y - gutterY;
-            currentX = x - ((position == 'left') * dashSize * 2);
-            while (currentY >= y - gutterY - trueLength) {
-                path.push("M", currentX, Math.floor(currentY) + 0.5, "l", dashSize * 2 + 1, 0);
-                if (currentY != y - gutterY) {
-                    for (i = 1; i < dashesY; i++) {
-                        path.push("M", currentX + dashSize, Math.floor(currentY + delta * i / dashesY) + 0.5, "l", dashSize + 1, 0);
-                    }
-                }
-                inflections.push([ Math.floor(x), Math.floor(currentY) ]);
-                currentY -= delta;
 
-                if (calcLabels) {
-                    me.labels.push(me.labels[me.labels.length - 1] + step);
-                }
+        // Draw the major ticks
 
-                if (delta === 0) {
-                    break;
-                }
-            }
-            if (Math.round(currentY + delta - (y - gutterY - trueLength))) {
-                path.push("M", currentX, Math.floor(y - length + gutterY) + 0.5, "l", dashSize * 2 + 1, 0);
-                for (i = 1; i < dashesY; i++) {
-                    path.push("M", currentX + dashSize, Math.floor(y - length + gutterY + delta * i / dashesY) + 0.5, "l", dashSize + 1, 0);
-                }
-                inflections.push([ Math.floor(x), Math.floor(currentY) ]);
-                if (calcLabels) {
-                    me.labels.push(me.labels[me.labels.length - 1] + step);
-                }
-            }
-        } else {
-            currentX = x + gutterX;
-            currentY = y - ((position == 'top') * dashSize * 2);
-            while (currentX <= x + gutterX + trueLength) {
-                path.push("M", Math.floor(currentX) + 0.5, currentY, "l", 0, dashSize * 2 + 1);
-                if (currentX != x + gutterX) {
-                    for (i = 1; i < dashesX; i++) {
-                        path.push("M", Math.floor(currentX - delta * i / dashesX) + 0.5, currentY, "l", 0, dashSize + 1);
-                    }
-                }
-                inflections.push([ Math.floor(currentX), Math.floor(y) ]);
-                currentX += delta;
-                if (calcLabels) {
-                    me.labels.push(me.labels[me.labels.length - 1] + step);
-                }
-                if (delta === 0) {
-                    break;
-                }
-            }
-            if (Math.round(currentX - delta - (x + gutterX + trueLength))) {
-                path.push("M", Math.floor(x + length - gutterX) + 0.5, currentY, "l", 0, dashSize * 2 + 1);
-                for (i = 1; i < dashesX; i++) {
-                    path.push("M", Math.floor(x + length - gutterX - delta * i / dashesX) + 0.5, currentY, "l", 0, dashSize + 1);
-                }
-                inflections.push([ Math.floor(currentX), Math.floor(y) ]);
-                if (calcLabels) {
-                    me.labels.push(me.labels[me.labels.length - 1] + step);
-                }
-            }
-        }
-
-        // the label on index "inflections.length-1" is the last label that gets rendered
         if (calcLabels) {
-            me.labels[inflections.length - 1] = +(me.labels[inflections.length - 1]).toFixed(10);
+            me.labels = [];
         }
+
+        if (verticalAxis) {
+            currentX = Math.floor(x);
+            path = ["M", currentX + 0.5, y, "l", 0, -length];
+            trueLength = length - (gutterY * 2);
+
+            for (tick = 0; tick < stepCount; tick++) {
+                currentY = y - gutterY - (steps[tick] - steps[0]) * trueLength / axisRange
+                path.push("M", currentX, Math.floor(currentY) + 0.5, "l", dashLength * 2, 0);
+
+                inflections.push([ currentX, Math.floor(currentY) ]);
+
+                if (calcLabels) {
+                    me.labels.push(steps[tick]);
+                }
+            }
+        }
+        else {
+            currentY = Math.floor(y);
+            path = ["M", x, currentY + 0.5, "l", length, 0];
+            trueLength = length - (gutterX * 2);
+
+            for (tick = 0; tick < stepCount; tick++) {
+                currentX = x + gutterX + (steps[tick] - steps[0]) * trueLength / axisRange
+                path.push("M", Math.floor(currentX) + 0.5, currentY, "l", 0, dashLength * 2 + 1);
+
+                inflections.push([ Math.floor(currentX), currentY ]);
+
+                if (calcLabels) {
+                    me.labels.push(steps[tick]);
+                }
+            }
+        }
+
+
+        // Draw the minor ticks
+
+        // If 'minorTickSteps' is...
+        // - A number: it contains the number of minor ticks between 2 major ticks.
+        // - An array with 2 numbers: it contains a date interval like [Ext.Date.DAY,2].
+        // - An array with a single number: it contains the value of a minor tick.
+        subDashes = (verticalAxis ? subDashesY : subDashesX);
+        if (Ext.isArray(subDashes)) {
+            if (subDashes.length == 2) {
+                subDashValue = +Ext.Date.add(new Date(), subDashes[0], subDashes[1]) - Date.now();
+            } else {
+                subDashValue = subDashes[0];
+            }
+        }
+        else {
+            if (Ext.isNumber(subDashes) && subDashes > 0) {
+                subDashValue = step / (subDashes + 1);
+            }
+        }
+
+        if (subDashValue) {
+            for (tick = 0; tick < stepCount - 1; tick++) {
+                var begin = +steps[tick];
+                var end = +steps[tick+1];
+                if (verticalAxis) {
+                    for (value = begin + subDashValue; value < end; value += subDashValue) {
+                        currentY = y - gutterY - (value - steps[0]) * trueLength / axisRange
+                        path.push("M", currentX, Math.floor(currentY) + 0.5, "l", dashLength, 0);
+                    }
+                }
+                else {
+                    for (value = begin + subDashValue; value < end; value += subDashValue) {
+                        currentX = x + gutterX + (value - steps[0]) * trueLength / axisRange
+                        path.push("M", Math.floor(currentX) + 0.5, currentY, "l", 0, dashLength + 1);
+                    }
+                }
+            }            
+        }
+
+
+        // Render
 
         if (!me.axis) {
             me.axis = me.chart.surface.add(Ext.apply({

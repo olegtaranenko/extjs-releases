@@ -594,19 +594,19 @@ Ext.define('Ext.data.Model', {
         /**
          * @property
          * @static
-         * The update operation of type 'edit'. Used by {@link Ext.data.Store#update Store.update} event.
+         * The update operation of type 'edit'. Used by {@link Ext.data.Store#event-update Store.update} event.
          */
         EDIT   : 'edit',
         /**
          * @property
          * @static
-         * The update operation of type 'reject'. Used by {@link Ext.data.Store#update Store.update} event.
+         * The update operation of type 'reject'. Used by {@link Ext.data.Store#event-update Store.update} event.
          */
         REJECT : 'reject',
         /**
          * @property
          * @static
-         * The update operation of type 'commit'. Used by {@link Ext.data.Store#update Store.update} event.
+         * The update operation of type 'commit'. Used by {@link Ext.data.Store#event-update Store.update} event.
          */
         COMMIT : 'commit',
 
@@ -825,6 +825,7 @@ Ext.define('Ext.data.Model', {
         data = data || {};
 
         var me = this,
+            hasId = (id || id === 0),
             fields,
             length,
             field,
@@ -840,7 +841,7 @@ Ext.define('Ext.data.Model', {
          * An internal unique ID for each Model instance, used to identify Models that don't have an ID yet
          * @private
          */
-        me.internalId = (id || id === 0) ? id : Ext.data.Model.id(me);
+        me.internalId = hasId ? id : Ext.data.Model.id(me);
 
         /**
          * @property {Object} raw The raw data used to create this model if created via a reader.
@@ -864,7 +865,7 @@ Ext.define('Ext.data.Model', {
             me.persistenceProperty = me.persistanceProperty;
         }
 
-        me[me.persistenceProperty] = convertedData || {};
+        persistenceProperty = me[me.persistenceProperty] = convertedData || {};
 
         me.mixins.observable.constructor.call(me);
 
@@ -873,7 +874,6 @@ Ext.define('Ext.data.Model', {
             fields = me.fields.items;
             length = fields.length;
             i = 0;
-            persistenceProperty = me[me.persistenceProperty];
 
             if (Ext.isArray(data)) {
                 for (; i < length; i++) {
@@ -915,6 +915,11 @@ Ext.define('Ext.data.Model', {
                     }
                }
             }
+        }
+        
+        // If we explicitly pass an id, it should always take precedence
+        if (hasId) {
+            persistenceProperty[me.idProperty] = id;
         }
 
         /**
@@ -1062,25 +1067,36 @@ Ext.define('Ext.data.Model', {
                 field, i = 0,
                 myData = me[me.persistenceProperty],
                 sourceData = sourceRecord[sourceRecord.persistenceProperty],
+                idProperty = me.idProperty,
+                name,
                 value;
 
             for (; i < fieldCount; i++) {
                 field = fields[i];
-
+                name = field.name;
+                
                 // Do not use setters.
                 // Copy returned values in directly from the data object.
                 // Converters have already been called because new Records
                 // have been created to copy from.
                 // This is a direct record-to-record value copy operation.
-                value = sourceData[field.name];
-                if (value !== undefined) {
-                    myData[field.name] = value;
+                if (name != idProperty) {
+                    // don't copy the id, we'll do it at the end
+                    value = sourceData[name];
+                    if (value !== undefined) {
+                        myData[name] = value;
+                    }
                 }
             }
 
             // If this is a phantom record being updated from a concrete record, copy the ID in.
             if (me.phantom && !sourceRecord.phantom) {
+                // beginEdit to prevent events firing
+                // commit at the end to prevent dirty being set
+                me.beginEdit();
                 me.setId(sourceRecord.getId());
+                me.endEdit(true);
+                me.commit(true);
             }
         }
     },
@@ -1105,12 +1121,30 @@ Ext.define('Ext.data.Model', {
      * When an edit has begun, it must be followed by either {@link #endEdit} or {@link #cancelEdit}.
      */
     beginEdit : function(){
-        var me = this;
+        var me = this,
+            key,
+            data,
+            o;
+            
         if (!me.editing) {
             me.editing = true;
             me.dirtySave = me.dirty;
-            me.dataSave = Ext.apply({}, me[me.persistenceProperty]);
-            me.modifiedSave = Ext.apply({}, me.modified);
+            
+            o = me[me.persistenceProperty];
+            data = me.dataSave = {};
+            for (key in o) {
+                if (o.hasOwnProperty(key)) {
+                    data[key] = o[key];
+                }
+            }
+            
+            o = me.modified;
+            data = me.modifiedSave = {}; 
+            for (key in o) {
+                if (o.hasOwnProperty(key)) {
+                    data[key] = o[key];
+                }
+            }
         }
     },
 
@@ -1139,34 +1173,42 @@ Ext.define('Ext.data.Model', {
      */
     endEdit : function(silent, modifiedFieldNames){
         var me = this,
+            dataSave,
             changed;
+            
+        silent = silent === true;
         if (me.editing) {
             me.editing = false;
-            if(!modifiedFieldNames) {
-                modifiedFieldNames = me.getModifiedFieldNames();
-            }
-            changed = me.dirty || modifiedFieldNames.length > 0;
+            dataSave = me.dataSave;
             delete me.modifiedSave;
             delete me.dataSave;
             delete me.dirtySave;
-            if (changed && silent !== true) {
-                me.afterEdit(modifiedFieldNames);
+            if (!silent) {
+                if (!modifiedFieldNames) {
+                    modifiedFieldNames = me.getModifiedFieldNames(dataSave);
+                }
+                changed = me.dirty || modifiedFieldNames.length > 0;
+                if (changed) {
+                    me.afterEdit(modifiedFieldNames);
+                }
             }
         }
     },
 
     /**
      * Gets the names of all the fields that were modified during an edit
+     * @param {Object} [saved] The currently saved data. Defaults to
+     * the dataSave property on the object.
      * @private
      * @return {String[]} An array of modified field names
      */
-    getModifiedFieldNames: function(){
+    getModifiedFieldNames: function(saved){
         var me = this,
-            saved = me.dataSave,
             data = me[me.persistenceProperty],
             modified = [],
             key;
 
+        saved = saved || me.dataSave;
         for (key in data) {
             if (data.hasOwnProperty(key)) {
                 if (!me.isEqual(data[key], saved[key])) {
@@ -1433,10 +1475,14 @@ Ext.define('Ext.data.Model', {
      * @param {Object} options Options to pass to the proxy. Config object for {@link Ext.data.Operation}.
      * @return {Ext.data.Model} The Model instance
      */
-    destroy: function(options){
-        options = Ext.apply({}, options);
+    destroy: function(options) {
+        options = Ext.apply({
+            records: [this],
+            action : 'destroy'
+        }, options);
 
-        var me     = this,
+        var me = this,
+            isNotPhantom = me.phantom !== true,
             scope  = options.scope || me,
             stores = me.stores,
             i = 0,
@@ -1446,20 +1492,19 @@ Ext.define('Ext.data.Model', {
             operation,
             callback;
 
-        Ext.apply(options, {
-            records: [me],
-            action : 'destroy'
-        });
-
         operation = new Ext.data.Operation(options);
+
         callback = function(operation) {
             args = [me, operation];
             if (operation.wasSuccessful()) {
                 for(storeCount = stores.length; i < storeCount; i++) {
                     store = stores[i];
-                    store.fireEvent('write', store, operation);
-                    store.fireEvent('datachanged', store);
-                    // Not firing refresh here, since it's a single record
+                    
+                    // Remove this record from Store. Avoid Store handling anything by passing the "isMove" flag
+                    store.remove(me, true);
+                    if (isNotPhantom) {
+                        store.fireEvent('write', store, operation);
+                    }
                 }
                 me.clearListeners();
                 Ext.callback(options.success, scope, args);
@@ -1469,7 +1514,17 @@ Ext.define('Ext.data.Model', {
             Ext.callback(options.callback, scope, args);
         };
 
-        me.getProxy().destroy(operation, callback, me);
+        // Not a phantom, then we must perform this operation on the remote datasource.
+        // Record will be removed from the store in the callback upon a success response
+        if (isNotPhantom) {
+            me.getProxy().destroy(operation, callback, me);
+        }
+        // If it's a phantom, then call the callback directly with a dummy successful ResultSet
+        else {
+            operation.complete = operation.success = true;
+            operation.resultSet = me.getProxy().reader.nullResultSet;
+            callback(operation);
+        }
         return me;
     },
 
