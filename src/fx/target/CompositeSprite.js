@@ -18,11 +18,17 @@ Ext.define('Ext.fx.target.CompositeSprite', {
     /* End Definitions */
 
     getAttr: function(attr, val) {
-        var out = [],
-            target = this.target;
-        target.each(function(sprite) {
+        var out     = [],
+            sprites = [].concat(this.target.items),
+            length  = sprites.length,
+            i,
+            sprite;
+
+        for (i = 0; i < length; i++) {
+            sprite = sprites[i];
             out.push([sprite, val != undefined ? val : this.getFromPrim(sprite, attr)]);
-        }, this);
+        }
+
         return out;
     }
 });

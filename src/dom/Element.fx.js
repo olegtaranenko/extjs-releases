@@ -3,18 +3,20 @@
  */
 (function() {
 
-var Element = Ext.dom.Element,
+var Element         = Ext.dom.Element,
     VISIBILITY      = "visibility",
     DISPLAY         = "display",
     NONE            = "none",
     HIDDEN          = 'hidden',
-    OFFSETS = "offsets",
-    ASCLASS = "asclass",
-    NOSIZE = 'nosize',
+    VISIBLE         = 'visible',
+    OFFSETS         = "offsets",
+    ASCLASS         = "asclass",
+    NOSIZE          = 'nosize',
     ORIGINALDISPLAY = 'originalDisplay',
-    VISMODE = 'visibilityMode',
-    ISVISIBLE = 'isVisible',
-    getDisplay = function(el){
+    VISMODE         = 'visibilityMode',
+    ISVISIBLE       = 'isVisible',
+    OFFSETCLASS     = Ext.baseCSSPrefix + 'hide-offsets',
+    getDisplay = function(el) {
         var data = (el.$cache || el.getCache()).data,
             display = data[ORIGINALDISPLAY];
             
@@ -28,7 +30,7 @@ var Element = Ext.dom.Element,
             visMode = data[VISMODE];
             
         if (visMode === undefined) {
-            data[VISMODE] = visMode = Ext.dom.Element.VISIBILITY;
+            data[VISMODE] = visMode = Element.VISIBILITY;
         }
         return visMode;
     };
@@ -47,27 +49,26 @@ Element.override({
      * @param {Boolean/Object} [animate] True for the default animation, or a standard Element animation config object
      * @return {Ext.dom.Element} this
      */
-    setVisible : function(visible, animate){
-        var me = this, isDisplay, isVisibility, isOffsets, isNosize,
+    setVisible : function(visible, animate) {
+        var me = this,
             dom = me.dom,
             visMode = getVisMode(me);
 
-
         // hideMode string override
-        if (typeof animate == 'string'){
+        if (typeof animate == 'string') {
             switch (animate) {
                 case DISPLAY:
-                    visMode = Ext.dom.Element.DISPLAY;
+                    visMode = Element.DISPLAY;
                     break;
                 case VISIBILITY:
-                    visMode = Ext.dom.Element.VISIBILITY;
+                    visMode = Element.VISIBILITY;
                     break;
                 case OFFSETS:
-                    visMode = Ext.dom.Element.OFFSETS;
+                    visMode = Element.OFFSETS;
                     break;
                 case NOSIZE:
                 case ASCLASS:
-                    visMode = Ext.dom.Element.ASCLASS;
+                    visMode = Element.ASCLASS;
                     break;
             }
             me.setVisibilityMode(visMode);
@@ -75,43 +76,20 @@ Element.override({
         }
 
         if (!animate || !me.anim) {
-            if(visMode == Ext.dom.Element.ASCLASS ){
-
-                me[visible?'removeCls':'addCls'](me.visibilityCls || Ext.dom.Element.visibilityCls);
-
-            } else if (visMode == Ext.dom.Element.DISPLAY){
-
+            if (visMode == Element.DISPLAY) {
                 return me.setDisplayed(visible);
-
-            } else if (visMode == Ext.dom.Element.OFFSETS){
-
-                if (!visible){
-                    // Remember position for restoring, if we are not already hidden by offsets.
-                    if (!me.hideModeStyles) {
-                        me.hideModeStyles = {
-                            position: me.getStyle('position'),
-                            top: me.getStyle('top'),
-                            left: me.getStyle('left')
-                        };
-                    }
-                    me.applyStyles({position: 'absolute', top: '-10000px', left: '-10000px'});
-                }
-
-                // Only "restore" as position if we have actually been hidden using offsets.
-                // Calling setVisible(true) on a positioned element should not reposition it.
-                else if (me.hideModeStyles) {
-                    me.applyStyles(me.hideModeStyles || {position: '', top: '', left: ''});
-                    delete me.hideModeStyles;
-                }
-
-            }else{
+            } else if (visMode == Element.OFFSETS) {
+                me[visible?'removeCls':'addCls'](OFFSETCLASS);
+            } else if (visMode == Element.VISIBILITY) {
                 me.fixDisplay();
-                // Show by clearing visibility style. Explicitly setting to "visible" overrides parent visibility setting.
+                // Show by clearing visibility style. Explicitly setting to "visible" overrides parent visibility setting
                 dom.style.visibility = visible ? '' : HIDDEN;
+            } else if (visMode == Element.ASCLASS) {
+                me[visible?'removeCls':'addCls'](me.visibilityCls || Element.visibilityCls);
             }
-        }else{
+        } else {
             // closure for composites
-            if(visible){
+            if (visible) {
                 me.setOpacity(0.01);
                 me.setVisible(true);
             }
@@ -136,7 +114,6 @@ Element.override({
         return me;
     },
 
-
     /**
      * @private
      * Determine if the Element has a relevant height and width available based
@@ -144,7 +121,7 @@ Element.override({
      */
     hasMetrics  : function(){
         var visMode = getVisMode(this);
-        return this.isVisible() || (visMode == Ext.dom.Element.OFFSETS) || (visMode == Ext.dom.Element.VISIBILITY);
+        return this.isVisible() || (visMode == Element.OFFSETS) || (visMode == Element.VISIBILITY);
     },
 
     /**
@@ -214,5 +191,4 @@ Element.override({
     }
 });
 
-})();
-
+}());

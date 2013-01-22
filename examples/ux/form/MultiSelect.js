@@ -347,22 +347,28 @@ Ext.define('Ext.ux.form.MultiSelect', {
         var delimiter = this.delimiter,
             valueField = this.valueField,
             i = 0,
+            out,
             len,
             item;
             
-        if (delimiter && Ext.isString(value)) {
-            value = value.split(delimiter);
-        } else if (!Ext.isArray(value)) {
-            value = [value];
-        }
-        
-        for (len = value.length; i < len; ++i) {
-            item = value[i];
-            if (item && item.isModel) {
-                value[i] = item.get(valueField);
+        if (Ext.isDefined(value)) {
+            if (delimiter && Ext.isString(value)) {
+                value = value.split(delimiter);
+            } else if (!Ext.isArray(value)) {
+                value = [value];
             }
+        
+            for (len = value.length; i < len; ++i) {
+                item = value[i];
+                if (item && item.isModel) {
+                    value[i] = item.get(valueField);
+                }
+            }
+            out = Ext.Array.unique(value);
+        } else {
+            out = [];
         }
-        return Ext.Array.unique(value);
+        return out;
     },
     
     setValue: function(value){

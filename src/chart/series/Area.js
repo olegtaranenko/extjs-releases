@@ -140,9 +140,9 @@ Ext.define('Ext.chart.series.Area', {
             ySum[j] = 0;
         }
         for (i = 0; i < len; ++i) {
-            xSum += xValues[i];
+            xSum += +xValues[i];
             for (j = 0; j < yCompLen; ++j) {
-                ySum[j] += yValues[i][j];
+                ySum[j] += +yValues[i][j];
             }
             if (i % ratio == 0) {
                 //push averages
@@ -169,6 +169,8 @@ Ext.define('Ext.chart.series.Area', {
         var me = this,
             chart = me.chart,
             store = chart.getChartStore(),
+            data = store.data.items,
+            i, l, record,
             areas = [].concat(me.yField),
             areasLen = areas.length,
             xValues = [],
@@ -181,29 +183,38 @@ Ext.define('Ext.chart.series.Area', {
             math = Math,
             mmin = math.min,
             mmax = math.max,
+            boundAxis = me.getAxesForXAndYFields(),
+            boundXAxis = boundAxis.xAxis,
+            boundYAxis = boundAxis.yAxis,
+            ends,
             bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem, axis, out;
 
         me.setBBox();
         bbox = me.bbox;
 
-        // Run through the axis
-        if (me.axis) {
-            axis = chart.axes.get(me.axis);
-            if (axis) {
-                out = axis.calcEnds();
-                minY = out.from || axis.prevMin;
-                maxY = mmax(out.to || axis.prevMax, 0);
-            }
+        if (axis = chart.axes.get(boundXAxis)) {
+            ends = axis.applyData();
+            minX = ends.from;
+            maxX = ends.to;
+        }
+
+        if (axis = chart.axes.get(boundYAxis)) {
+            ends = axis.applyData();
+            minY = ends.from;
+            maxY = ends.to;
+        }
+
+        // If a field was specified without a corresponding axis, create one to get bounds
+        if (me.xField && !Ext.isNumber(minX)) {
+            axis = me.getMinMaxXValues();
+            minX = axis[0];
+            maxX = axis[1];
         }
 
         if (me.yField && !Ext.isNumber(minY)) {
-            axis = new Ext.chart.axis.Axis({
-                chart: chart,
-                fields: [].concat(me.yField)
-            });
-            out = axis.calcEnds();
-            minY = out.from || axis.prevMin;
-            maxY = mmax(out.to || axis.prevMax, 0);
+            axis = me.getMinMaxYValues();
+            minY = axis[0];
+            maxY = axis[1];
         }
 
         if (!Ext.isNumber(minY)) {
@@ -213,7 +224,8 @@ Ext.define('Ext.chart.series.Area', {
             maxY = 0;
         }
 
-        store.each(function(record, i) {
+        for (i = 0, l = data.length; i < l; i++) {
+            record = data[i];
             xValue = record.get(me.xField);
             yValue = [];
             if (typeof xValue != 'number') {
@@ -237,7 +249,7 @@ Ext.define('Ext.chart.series.Area', {
             maxX = mmax(maxX, xValue);
             maxY = mmax(maxY, acumY);
             yValues.push(yValue);
-        }, me);
+        }
 
         xScale = bbox.width / ((maxX - minX) || 1);
         yScale = bbox.height / ((maxY - minY) || 1);

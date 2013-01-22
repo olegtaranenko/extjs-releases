@@ -85,11 +85,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
     ],
 
     fieldSubTpl: [
-        '{%this.renderToolbar(out, values)%}',
+        '{%Ext.DomHelper.generateMarkup(values.$comp.toolbar.getRenderTree(), out)%}',
         '{beforeTextAreaTpl}',
         '&lt;textarea id=&quot;{cmpId}-textareaEl&quot; name=&quot;{name}&quot; tabIndex=&quot;-1&quot; {inputAttrTpl}',
                  ' class=&quot;{textareaCls}&quot; style=&quot;{size}&quot; autocomplete=&quot;off&quot;&gt;',
-            '{value}',
+            '{[Ext.util.Format.htmlEncode(values.value)]}',
         '&lt;/textarea&gt;',
         '{afterTextAreaTpl}',
         '{beforeIFrameTpl}',
@@ -97,12 +97,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
                ' style=&quot;overflow:auto;{size}&quot; src=&quot;{iframeSrc}&quot;&gt;&lt;/iframe&gt;',
         '{afterIFrameTpl}',
         {
-            disableFormats: true,
-
-            // Insert the markup for the toolbar's render tree into the output buffer
-            renderToolbar: function(out, values) {
-                Ext.DomHelper.generateMarkup(values.$comp.toolbar.getRenderTree(), out);
-            }
+            disableFormats: true
         }
     ],
 
@@ -706,11 +701,18 @@ Ext.define('Ext.form.field.HtmlEditor', {
     },
 
     disableItems: function(disabled) {
-        this.getToolbar().items.each(function(item){
-            if(item.getItemId() !== 'sourceedit'){
+        var items = this.getToolbar().items.items,
+            i,
+            iLen  = items.length,
+            item;
+
+        for (i = 0; i &lt; iLen; i++) {
+            item = items[i];
+
+            if (item.getItemId() !== 'sourceedit') {
                 item.setDisabled(disabled);
             }
-        });
+        }
     },
 
 <span id='Ext-form-field-HtmlEditor-method-toggleSourceEdit'>    /**
@@ -753,7 +755,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
             me.inputEl = iframe;
         }
         me.fireEvent('editmodechange', me, sourceEditMode);
-        me.doComponentLayout();
+        me.updateLayout();
     },
 
     // private used internally
@@ -976,7 +978,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 if (doc) {
                     Ext.EventManager.removeAll(doc);
                     for (prop in doc) {
-                        if (doc.hasOwnProperty(prop)) {
+                        if (doc.hasOwnProperty &amp;&amp; doc.hasOwnProperty(prop)) {
                             delete doc[prop];
                         }
                     }
@@ -1212,31 +1214,37 @@ Ext.define('Ext.form.field.HtmlEditor', {
     },
 
     // private
-    fixKeys: function() { // load time branching for fastest keydown performance
+    fixKeys: (function() { // load time branching for fastest keydown performance
         if (Ext.isIE) {
             return function(e){
                 var me = this,
                     k = e.getKey(),
                     doc = me.getDoc(),
+                    readOnly = me.readOnly,
                     range, target;
+
                 if (k === e.TAB) {
                     e.stopEvent();
-                    range = doc.selection.createRange();
-                    if(range){
-                        range.collapse(true);
-                        range.pasteHTML('&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;');
-                        me.deferFocus();
+                    if (!readOnly) {
+                        range = doc.selection.createRange();
+                        if(range){
+                            range.collapse(true);
+                            range.pasteHTML('&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;');
+                            me.deferFocus();
+                        }
                     }
                 }
                 else if (k === e.ENTER) {
-                    range = doc.selection.createRange();
-                    if (range) {
-                        target = range.parentElement();
-                        if(!target || target.tagName.toLowerCase() !== 'li'){
-                            e.stopEvent();
-                            range.pasteHTML('&lt;br /&gt;');
-                            range.collapse(false);
-                            range.select();
+                    if (!readOnly) {
+                        range = doc.selection.createRange();
+                        if (range) {
+                            target = range.parentElement();
+                            if(!target || target.tagName.toLowerCase() !== 'li'){
+                                e.stopEvent();
+                                range.pasteHTML('&lt;br /&gt;');
+                                range.collapse(false);
+                                range.select();
+                            }
                         }
                     }
                 }
@@ -1248,9 +1256,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 var me = this;
                 if (e.getKey() === e.TAB) {
                     e.stopEvent();
-                    me.win.focus();
-                    me.execCmd('InsertHTML','&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;');
-                    me.deferFocus();
+                    if (!me.readOnly) {
+                        me.win.focus();
+                        me.execCmd('InsertHTML','&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;');
+                        me.deferFocus();
+                    }
                 }
             };
         }
@@ -1258,22 +1268,28 @@ Ext.define('Ext.form.field.HtmlEditor', {
         if (Ext.isWebKit) {
             return function(e){
                 var me = this,
-                    k = e.getKey();
+                    k = e.getKey(),
+                    readOnly = me.readOnly;
+
                 if (k === e.TAB) {
                     e.stopEvent();
-                    me.execCmd('InsertText','\t');
-                    me.deferFocus();
+                    if (!readOnly) {
+                        me.execCmd('InsertText','\t');
+                        me.deferFocus();
+                    }
                 }
                 else if (k === e.ENTER) {
                     e.stopEvent();
-                    me.execCmd('InsertHtml','&lt;br /&gt;&lt;br /&gt;');
-                    me.deferFocus();
+                    if (!readOnly) {
+                        me.execCmd('InsertHtml','&lt;br /&gt;&lt;br /&gt;');
+                        me.deferFocus();
+                    }
                 }
             };
         }
 
         return null; // not needed, so null
-    }(),
+    }()),
 
 <span id='Ext-form-field-HtmlEditor-method-getToolbar'>    /**
 </span>     * Returns the editor's toolbar. **This is only available after the editor has been rendered.**

@@ -74,13 +74,13 @@ Ext.define('Ext.ux.LiveSearchGridPanel', {
                  }
             }, {
                 xtype: 'button',
-                text: '<',
+                text: '&lt;',
                 tooltip: 'Find Previous Row',
                 handler: me.onPreviousClick,
                 scope: me
             },{
                 xtype: 'button',
-                text: '>',
+                text: '&gt;',
                 tooltip: 'Find Next Row',
                 handler: me.onNextClick,
                 scope: me

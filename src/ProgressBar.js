@@ -62,21 +62,17 @@ Ext.define('Ext.ProgressBar', {
     */
     baseCls: Ext.baseCSSPrefix + 'progress',
 
-    config: {
-        /**
-         * @cfg {Boolean} animate
-         * True to animate the progress bar during transitions.
-         * @accessor
-         */
-        animate: false,
+    /**
+     * @cfg {Boolean} animate
+     * True to animate the progress bar during transitions.
+     */
+    animate: false,
 
-        /**
-         * @cfg {String} text
-         * The text shown in the progress bar.
-         * @accessor
-         */
-        text: ''
-    },
+    /**
+     * @cfg {String} text
+     * The text shown in the progress bar.
+     */
+    text: '',
 
     // private
     waitTimer: null,
@@ -199,6 +195,10 @@ Ext.define('Ext.ProgressBar', {
 
     applyText : function(text) {
         this.updateText(text);
+    },
+    
+    getText: function(){
+        return this.text;    
     },
 
     /**

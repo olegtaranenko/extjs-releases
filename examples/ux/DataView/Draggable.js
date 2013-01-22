@@ -182,8 +182,7 @@ Ext.define('Ext.ux.DataView.Draggable', {
     /**
      * @private
      * Creates the 'ghost' DataView that follows the mouse cursor during the drag operation. This div is usually a
-     * lighter-weight representation of just the nodes that are selected in the parent DataView. Delegates the creation
-     * of each selected item's element to {@link createGhostElement}
+     * lighter-weight representation of just the nodes that are selected in the parent DataView.
      */
     createGhost: function(records) {
         if (!this.ghost) {

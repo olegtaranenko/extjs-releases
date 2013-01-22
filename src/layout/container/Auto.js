@@ -45,11 +45,8 @@ Ext.define('Ext.layout.container.Auto', {
 
     renderTpl: [
         '{%this.renderBody(out,values)%}',
-        // Auto layout uses natural HTML flow to arrange the child items.
-        // To ensure that all browsers (I'm looking at you IE!) add the bottom margin of
-        // the last child to the containing element height, we create a zero-sized element
-        // with style clear:both to force a "new line"
-        '<div id="{ownerId}-clearEl" class="',Ext.baseCSSPrefix,'clear" role="presentation"></div>'
+        // clear element is needed to prevent the bottom margins of the last child element from collapsing
+        '<div id="{ownerId}-clearEl" class="', Ext.baseCSSPrefix, 'clear" role="presentation"></div>'
     ],
 
     // TODO - do we need to clear sizes in beginLayout?

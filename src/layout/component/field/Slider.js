@@ -41,5 +41,18 @@ Ext.define('Ext.layout.component.field.Slider', {
 
             ownerContext.innerElContext.setWidth(width - inputPad.left - endElPad.right - ownerContext.labelContext.getProp('width'));
         }
+    },
+
+    beginLayoutFixed: function(ownerContext, width, suffix) {
+        var me = this,
+            ieInputWidthAdjustment = me.ieInputWidthAdjustment;
+
+        if (ieInputWidthAdjustment) {
+            // adjust for IE 6/7 strict content-box model
+            // RTL: This might have to be padding-left unless the senses of the padding styles switch when in RTL mode.
+            me.owner.bodyEl.setStyle('padding-right', ieInputWidthAdjustment + 'px');
+        }
+
+        me.callParent(arguments);
     }
 });

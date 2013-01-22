@@ -13,12 +13,12 @@ Ext.onReady(function(){
         extend: 'Ext.data.Model',
         fields: [
             'title', 'forumtitle', 'forumid', 'username', {
-                name: 'replycount', 
+                name: 'replycount',
                 type: 'int'
             }, {
-                name: 'lastpost', 
-                mapping: 'lastpost', 
-                type: 'date', 
+                name: 'lastpost',
+                mapping: 'lastpost',
+                type: 'date',
                 dateFormat: 'timestamp'
             },
             'lastposter', 'excerpt', 'threadid'
@@ -33,6 +33,7 @@ Ext.onReady(function(){
         remoteSort: true,
         // allow the grid to interact with the paging scroller by buffering
         buffered: true,
+        pageSize: 100,
         proxy: {
             // load using script tags for cross domain, if the data in on the same domain as
             // this page, an HttpProxy would be better
@@ -48,7 +49,8 @@ Ext.onReady(function(){
         sorters: [{
             property: 'lastpost',
             direction: 'DESC'
-        }]
+        }],
+        autoLoad: true
     });
 
     function renderTopic(value, p, record) {
@@ -64,6 +66,7 @@ Ext.onReady(function(){
     var grid = Ext.create('Ext.grid.Panel', {
         width: 700,
         height: 500,
+        collapsible: true,
         title: 'ExtJS.com - Browse Forums',
         store: store,
         loadMask: true,
@@ -107,15 +110,5 @@ Ext.onReady(function(){
             sortable: true
         }],
         renderTo: Ext.getBody()
-    });
-
-    // Load a maximum of 100 records into the prefetch buffer (which is NOT mapped to the UI)
-    // When that has completed, instruct the Store to load the first page from prefetch into the live, mapped record cache
-    store.prefetch({
-        start: 0,
-        limit: 99,
-        callback: function() {
-            store.guaranteeRange(0, 49);
-        }
     });
 });

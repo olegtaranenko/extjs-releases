@@ -256,14 +256,26 @@ Ext.define('Ext.form.FieldContainer', {
      * @return {String[]} The combined list of error messages
      */
     getCombinedErrors: function(invalidFields) {
-        var forEach = Ext.Array.forEach,
-            errors = [];
-        forEach(invalidFields, function(field) {
-            forEach(field.getActiveErrors(), function(error) {
-                var label = field.getFieldLabel();
+        var errors = [],
+            f,
+            fLen   = invalidFields.length,
+            field,
+            activeErrors, a, aLen,
+            error, label;
+
+        for (f = 0; f < fLen; f++) {
+            field = invalidFields[f];
+            activeErrors = field.getActiveErrors();
+            aLen         = activeErrors.length;
+
+            for (a = 0; a < aLen; a++) {
+                error = activeErrors[a];
+                label = field.getFieldLabel();
+
                 errors.push((label ? label + ': ' : '') + error);
-            });
-        });
+            }
+        }
+
         return errors;
     },
 

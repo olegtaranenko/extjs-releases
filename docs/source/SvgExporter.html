@@ -15,7 +15,10 @@
   </script>
 </head>
 <body onload="prettyPrint(); highlight();">
-  <pre class="prettyprint lang-js">Ext.define('Ext.draw.engine.SvgExporter', {
+  <pre class="prettyprint lang-js"><span id='Ext-draw-engine-SvgExporter'>/**
+</span> * @private
+ */
+Ext.define('Ext.draw.engine.SvgExporter', {
     singleton: true,
    
     statics: (function(){ 
@@ -23,8 +26,8 @@
         height,
         init = function(s){
             surface = s;
-            len = surface.length,
-            width = surface.width,
+            len = surface.length;
+            width = surface.width;
             height = surface.height;
         },
         spriteProcessor = {
@@ -32,12 +35,14 @@
                
                 var attr = sprite.attr,
                     path = attr.path,
-                    pathString = '', props;
+                    pathString = '',
+                    props, p, pLen;
                 
                 if(Ext.isArray(path[0])){
-                    Ext.each(path, function(p){
-                        pathString += p.join(' ');
-                    });
+                    pLen = path.length;
+                    for (p = 0; p &lt; pLen; p++) {
+                        pathString += path[p].join(' ');
+                    }
                 }else if(Ext.isArray(path)){
                     pathString = path.join(' ');
                 }else{
@@ -51,6 +56,7 @@
                     'fill-opacity': attr.opacity,
                     'stroke-width': attr['stroke-width'],
                     'stroke-opacity': attr['stroke-opacity'],
+                    &quot;z-index&quot;: attr.zIndex,
                     transform: sprite.matrix.toSvg()    
                 });
 
@@ -69,10 +75,10 @@
                     family = (match &amp;&amp; match[3]) || 'Arial',
                     text = attr.text,
                     factor = (Ext.isFF3_0 || Ext.isFF3_5) ? 2 : 4,
-                    bbox = sprite.getBBox(),
                     tspanString = '',
                     props;
 
+                sprite.getBBox();
                 tspanString += '&lt;tspan x=&quot;' + (attr.x || '') + '&quot; dy=&quot;';
                 tspanString += (size/factor)+'&quot;&gt;';
                 tspanString += Ext.htmlEncode(text) + '&lt;/tspan&gt;';
@@ -155,7 +161,8 @@
         svgContent = function(){
             var svg = '&lt;svg width=&quot;'+width+'px&quot; height=&quot;'+height+'px&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; version=&quot;1.1&quot;&gt;',
                 defs = '', item, itemsLen, items, gradient,
-                groups, groupsLen, group, getSvgString, colorstops, stop;
+                getSvgString, colorstops, stop,
+                coll, keys, colls, k, kLen, key, collI, i, j, stopsLen, sortedItems, za, zb;
 
             items = surface.items.items;
             itemsLen = items.length;
@@ -165,17 +172,20 @@
                       
                 var childs = node.childNodes,
                     childLength = childs.length,
+                    i = 0,
+                    attrLength,
+                    j,
                     svgString = '', child, attr, tagName, attrItem;
 
-                    for(var i=0; i &lt; childLength; i++){
-                        child = childs[i],
-                        attr = child.attributes,
+                    for(; i &lt; childLength; i++){
+                        child = childs[i];
+                        attr = child.attributes;
                         tagName = child.tagName;
                         
                         svgString += '&lt;' +tagName;
                         
-                        for(var o=0, attrLength = attr.length; o &lt; attrLength; o++){
-                            attrItem = attr.item(o);
+                        for(j = 0, attrLength = attr.length; j &lt; attrLength; j++){
+                            attrItem = attr.item(j);
                             svgString += ' '+attrItem.name+'=&quot;'+attrItem.value+'&quot;';
                         }
                         
@@ -196,19 +206,31 @@
                 defs = getSvgString(surface.getDefs());
             }else{
                 // IE
-                surface.gradientsColl &amp;&amp; surface.gradientsColl.eachKey(function(key){
-                   
+                coll = surface.gradientsColl;
+                if (coll) {
+                    keys  = coll.keys;
+                    colls = coll.items;
+                    k     = 0;
+                    kLen  = keys.length;
+                }
+
+                for (; k &lt; kLen; k++) {
+                    key   = keys[k];
+                    collI = colls[k];
+
                     gradient = surface.gradientsColl.getByKey(key);
                     defs += '&lt;linearGradient id=&quot;' + key + '&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;1&quot; y2=&quot;1&quot;&gt;';
-                    
-                    colorstops = gradient.colors.split(&quot;,&quot;);
-                    for(var i=0, stopsLen = colorstops.length; i &lt; stopsLen; i++){
+
+                    var color = gradient.colors.replace(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/g, 'rgb($1|$2|$3)');
+                    color = color.replace(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,([\d\.]+)\)/g, 'rgba($1|$2|$3|$4)')
+                    colorstops = color.split(',');
+                    for(i=0, stopsLen = colorstops.length; i &lt; stopsLen; i++){
                         stop = colorstops[i].split(' ');
-                        defs += '&lt;stop offset=&quot;'+stop[0]+'&quot; stop-color=&quot;'+stop[1]+'&quot; stop-opacity=&quot;1&quot;&gt;&lt;/stop&gt;';
+                        color = Ext.draw.Color.fromString(stop[1].replace(/\|/g,','));
+                        defs += '&lt;stop offset=&quot;'+stop[0]+'&quot; stop-color=&quot;' + color.toString() + '&quot; stop-opacity=&quot;1&quot;&gt;&lt;/stop&gt;';
                     }
                     defs += '&lt;/linearGradient&gt;';
-
-                });
+                }
             }
             
             svg += '&lt;defs&gt;' + defs + '&lt;/defs&gt;';
@@ -224,9 +246,22 @@
                 }
             });
                 
-            for(var o = 0; o &lt; itemsLen; o++){
-                item = items[o];
-                
+            // Sort the items (stable sort guaranteed)
+            sortedItems = new Array(itemsLen);
+            for(i = 0; i &lt; itemsLen; i++){
+                sortedItems[i] = i;
+            }
+            sortedItems.sort(function (a, b) {
+                za = items[a].attr.zIndex || 0;
+                zb = items[b].attr.zIndex || 0;
+                if (za == zb) {
+                    return a - b;
+                }
+                return za - zb;
+            });
+
+            for(i = 0; i &lt; itemsLen; i++){
+                item = items[sortedItems[i]];
                 if(!item.attr.hidden){
                     svg += spriteProcessor[item.type](item);
                 }
@@ -237,9 +272,10 @@
             return svg;
         },                
         toPropertyString = function(obj){
-            var propString = '';
+            var propString = '',
+                key;
 
-            for(var key in obj){
+            for(key in obj){
 
                 if(obj.hasOwnProperty(key) &amp;&amp; obj[key] != null){
                     propString += key +'=&quot;'+ obj[key]+'&quot; ';
@@ -253,10 +289,10 @@
         return {
             generate: function(config, surface){
                 init(surface);
-                return svgHeader() + svgContent()
+                return svgHeader() + svgContent();
             }
-        }
-    })()
+        };
+    }())
 
 });</pre>
 </body>

@@ -149,12 +149,18 @@ Ext.dom.Element.override({
      *
      * @param {String} anchor (optional) One of the valid Fx anchor positions (defaults to top: 't')
      * @param {Object} options (optional) Object literal with any of the Fx config options
+     * @param {Boolean} options.preserveScroll Set to true if preservation of any descendant elements'
+     * `scrollTop` values is required. By default the DOM wrapping operation performed by `slideIn` and
+     * `slideOut` causes the browser to lose all scroll positions.
      * @return {Ext.dom.Element} The Element
      */
     slideIn: function(anchor, obj, slideOut) {
         var me = this,
             elStyle = me.dom.style,
-            beforeAnim, wrapAnim;
+            beforeAnim,
+            wrapAnim,
+            restoreScroll,
+            wrapDomParentNode;
 
         anchor = anchor || &quot;t&quot;;
         obj = obj || {};
@@ -179,18 +185,29 @@ Ext.dom.Element.override({
             originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', true);
             me.setSize(box.width, box.height);
 
+            // Cache all descendants' scrollTop &amp; scrollLeft values if configured to preserve scroll.
+            if (obj.preserveScroll) {
+                restoreScroll = me.cacheScrollValues();
+            }
+
             wrap = me.wrap({
                 id: Ext.id() + '-anim-wrap-for-' + me.id,
                 style: {
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
             });
+            wrapDomParentNode = wrap.dom.parentNode;
             wrap.setPositioning(me.getPositioning());
             if (wrap.isStyle('position', 'static')) {
                 wrap.position('relative');
             }
             me.clearPositioning('auto');
             wrap.clip();
+
+            // The wrap will have reset all descendant scrollTops. Restore them if we cached them.
+            if (restoreScroll) {
+                restoreScroll();
+            }
 
             // This element is temporarily positioned absolute within its wrapper.
             // Restore to its default, CSS-inherited visibility setting.
@@ -344,8 +361,16 @@ Ext.dom.Element.override({
                     }
                 }
                 if (wrap.dom) {
-                    wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
+                    if (wrap.dom.parentNode) {
+                        wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
+                    } else {
+                        wrapDomParentNode.appendChild(me.dom);
+                    }
                     wrap.remove();
+                }
+                // The unwrap will have reset all descendant scrollTops. Restore them if we cached them.
+                if (restoreScroll) {
+                    restoreScroll();
                 }
                 // kill the no-op element animation created below
                 animScope.end();
@@ -360,13 +385,7 @@ Ext.dom.Element.override({
             // See &quot;A Note About Wrapped Animations&quot; at the top of this class:
             duration: obj.duration ? Math.max(obj.duration, 500) * 2 : 1000,
             listeners: {
-                beforeanimate: beforeAnim, // kick off the wrap animation
-                afteranimate: function() {
-                    if (wrapAnim &amp;&amp; wrapAnim.running) {
-                        // should never get here, but just to be safe
-                        wrapAnim.end();
-                    }
-                }
+                beforeanimate: beforeAnim // kick off the wrap animation
             }
         });
         return me;
@@ -421,8 +440,11 @@ Ext.dom.Element.override({
      */
     puff: function(obj) {
         var me = this,
-            beforeAnim;
-        obj = Ext.applyIf(obj || {}, {
+            beforeAnim,
+            box = me.getBox(),
+            originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', 'font-size', 'opacity', true);
+
+       obj = Ext.applyIf(obj || {}, {
             easing: 'ease-out',
             duration: 500,
             useDisplay: false
@@ -431,10 +453,6 @@ Ext.dom.Element.override({
         beforeAnim = function() {
             me.clearOpacity();
             me.show();
-
-            var box = me.getBox(),
-                fontSize = me.getStyle('fontSize'),
-                position = me.getPositioning();
             this.to = {
                 width: box.width * 2,
                 height: box.height * 2,
@@ -450,9 +468,8 @@ Ext.dom.Element.override({
                     } else {
                         me.hide();
                     }
-                    me.clearOpacity();
-                    me.setPositioning(position);
-                    me.setStyle({fontSize: fontSize});
+                    me.setStyle(originalStyles);
+                    obj.callback.call(obj.scope);
                 }
             });
         };

@@ -41,13 +41,13 @@ Ext.define('Ext.picker.Date', {
     alternateClassName: 'Ext.DatePicker',
 
     childEls: [
-        'inner', 'eventEl', 'prevEl', 'nextEl', 'middleBtnEl', 'footerEl'
+        'innerEl', 'eventEl', 'prevEl', 'nextEl', 'middleBtnEl', 'footerEl'
     ],
     
     border: true,
 
     renderTpl: [
-        '<div id="{id}-inner">',
+        '<div id="{id}-innerEl" role="grid">',
             '<div role="presentation" class="{baseCls}-header">',
                 '<div class="{baseCls}-prev"><a id="{id}-prevEl" href="#" role="button" title="{prevText}"></a></div>',
                 '<div class="{baseCls}-month" id="{id}-middleBtnEl">{%this.renderMonthBtn(values, out)%}</div>',
@@ -85,9 +85,6 @@ Ext.define('Ext.picker.Date', {
                 var end = value % 7 === 0 && value !== 0;
                 return end ? '</tr><tr role="row">' : '';
             },
-            longDay: function(value){
-                return Ext.Date.format(value, this.longDayFormat);
-            },
             renderTodayBtn: function(values, out) {
                 Ext.DomHelper.generateMarkup(values.$comp.todayBtn.getRenderTree(), out);
             },
@@ -103,6 +100,22 @@ Ext.define('Ext.picker.Date', {
      */
     //<locale>
     todayText : 'Today',
+    //</locale>
+    
+    /**
+     * @cfg {String} ariaTitle
+     * The text to display for the aria title
+     */
+    //<locale>
+    ariaTitle: 'Date Picker: {0}',
+    //</locale>
+    
+    /**
+     * @cfg {String} ariaTitleDateFormat
+     * The date format to display for the current value in the {@link #ariaTitle}
+     */
+    //<locale>
+    ariaTitleDateFormat: 'F d, Y',
     //</locale>
 
     /**
@@ -205,6 +218,14 @@ Ext.define('Ext.picker.Date', {
      */
     //<locale>
     monthYearText : 'Choose a month (Control+Up/Down to move years)',
+    //</locale>
+    
+    /**
+     * @cfg {String} monthYearFormat
+     * The date format for the header month
+     */
+    //<locale>
+    monthYearFormat: 'F Y',
     //</locale>
 
     /**
@@ -404,22 +425,22 @@ Ext.define('Ext.picker.Date', {
 
         Ext.apply(me.renderData, {
             dayNames: me.dayNames,
-            value: me.value,
             showToday: me.showToday,
             prevText: me.prevText,
             nextText: me.nextText,
             days: days
         });
-        me.getTpl('renderTpl').longDayFormat = me.longDayFormat;
     },
 
     // Do the job of a container layout at this point even though we are not a Container.
     // TODO: Refactor as a Container.
     finishRenderChildren: function () {
-        this.callParent();
-        this.monthBtn.finishRender();
-        if (this.showToday) {
-            this.todayBtn.finishRender();
+        var me = this;
+        
+        me.callParent();
+        me.monthBtn.finishRender();
+        if (me.showToday) {
+            me.todayBtn.finishRender();
         }
     },
 
@@ -439,7 +460,7 @@ Ext.define('Ext.picker.Date', {
             eDate = Ext.Date,
             day = eDate.DAY;
 
-        this.callParent();
+        me.callParent();
 
         me.prevRepeater = new Ext.util.ClickRepeater(me.prevEl, {
             handler: me.showPrevMonth,
@@ -496,7 +517,7 @@ Ext.define('Ext.picker.Date', {
             }
         }, me.keyNavConfig));
 
-        if(me.showToday){
+        if (me.showToday) {
             me.todayKeyListener = me.eventEl.addKeyListener(Ext.EventObject.SPACE, me.selectToday,  me);
         }
         me.update(me.value);
@@ -510,17 +531,23 @@ Ext.define('Ext.picker.Date', {
         var me = this,
             dd = me.disabledDates,
             re = '(?:',
-            len;
+            len,
+            d, dLen, dI;
 
         if(!me.disabledDatesRE && dd){
                 len = dd.length - 1;
 
-            Ext.each(dd, function(d, i){
-                re += Ext.isDate(d) ? '^' + Ext.String.escapeRegex(Ext.Date.dateFormat(d, me.format)) + '$' : dd[i];
-                if(i != len){
+            dLen = dd.length;
+
+            for (d = 0; d < dLen; d++) {
+                dI = dd[d];
+
+                re += Ext.isDate(dI) ? '^' + Ext.String.escapeRegex(Ext.Date.dateFormat(dI, me.format)) + '$' : dI;
+                if (d != len) {
                     re += '|';
                 }
-            }, me);
+            }
+
             me.disabledDatesRE = new RegExp(re + ')');
         }
     },
@@ -843,9 +870,9 @@ Ext.define('Ext.picker.Date', {
 
         e.stopEvent();
         if(!me.disabled && t.dateValue && !Ext.fly(t.parentNode).hasCls(me.disabledCellCls)){
-            me.cancelFocus = me.focusOnSelect === false;
+            me.doCancelFocus = me.focusOnSelect === false;
             me.setValue(new Date(t.dateValue));
-            delete me.cancelFocus;
+            delete me.doCancelFocus;
             me.fireEvent('select', me, me.value);
             if (handler) {
                 handler.call(me.scope || me, me, me.value);
@@ -894,22 +921,31 @@ Ext.define('Ext.picker.Date', {
      * @param {Date} date The new date
      */
     selectedUpdate: function(date){
-        var me = this,
-            t = date.getTime(),
-            cells = me.cells,
-            cls = me.selectedCls;
+        var me        = this,
+            t         = date.getTime(),
+            cells     = me.cells,
+            cls       = me.selectedCls,
+            cellItems = cells.elements,
+            c,
+            cLen      = cellItems.length,
+            cell;
 
         cells.removeCls(cls);
-        cells.each(function(c){
-            if (c.dom.firstChild.dateValue == t) {
-                me.fireEvent('highlightitem', me, c);
-                c.addCls(cls);
-                if(me.isVisible() && !me.cancelFocus){
-                    Ext.fly(c.dom.firstChild).focus(50);
+
+        for (c = 0; c < cLen; c++) {
+            cell = Ext.fly(cellItems[c]);
+
+            if (cell.dom.firstChild.dateValue == t) {
+                me.fireEvent('highlightitem', me, cell);
+                cell.addCls(cls);
+
+                if(me.isVisible() && !me.doCancelFocus){
+                    Ext.fly(cell.dom.firstChild).focus(50);
                 }
-                return false;
+
+                break;
             }
-        }, this);
+        }
     },
 
     /**
@@ -1029,7 +1065,7 @@ Ext.define('Ext.picker.Date', {
             setCellClass(cells[i]);
         }
 
-        me.monthBtn.setText(me.monthNames[date.getMonth()] + ' ' + date.getFullYear());
+        me.monthBtn.setText(Ext.Date.format(date, me.monthYearFormat));
     },
 
     /**
@@ -1049,6 +1085,7 @@ Ext.define('Ext.picker.Date', {
             } else {
                 me.fullUpdate(date, active);
             }
+            me.innerEl.dom.title = Ext.String.format(me.ariaTitle, Ext.Date.format(me.activeDate, me.ariaTitleDateFormat));
         }
         return me;
     },

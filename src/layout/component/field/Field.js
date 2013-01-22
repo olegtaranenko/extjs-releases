@@ -34,15 +34,12 @@ Ext.define('Ext.layout.component.field.Field', {
         ownerContext.errorContext = ownerContext.getEl('errorEl');
         ownerContext.inputRow = ownerContext.getEl('inputRow');
 
-        // width:100% on an element inside a table in IE6/7 "strict" sizes the content box, so we must subtract the
-        // padding and border width from the TD's available space using padding to force it to fit.
+        // width:100% on an element inside a table in IE6/7 "strict" sizes the content box.
+        // store the input element's border and padding info so that subclasses can take it into consideration if needed
         if ((Ext.isIE6 || Ext.isIE7) && Ext.isStrict && ownerContext.inputContext) {
-            var p = ownerContext.inputContext.getPaddingInfo().width + ownerContext.inputContext.getBorderInfo().width;
-            if (p) {
-                // RTL: This might have to be padding-left unless the senses of the padding styles switch when in RTL mode.
-                Ext.fly(owner.inputEl.dom.parentNode).setStyle('padding-right', p + 'px');
-            }
+            me.ieInputWidthAdjustment = ownerContext.inputContext.getPaddingInfo().width + ownerContext.inputContext.getBorderInfo().width;
         }
+
         // perform preparation on the label and error (setting css classes, qtips, etc.)
         ownerContext.labelStrategy.prepare(ownerContext, owner);
         ownerContext.errorStrategy.prepare(ownerContext, owner);
@@ -55,7 +52,7 @@ Ext.define('Ext.layout.component.field.Field', {
 
             // When a size specified, natural becomes fixed width
             if (typeof owner.size == 'number') {
-                me.beginLayoutFixed(ownerContext, (width = owner.size * 6.5 + 20) + 'px');
+                me.beginLayoutFixed(ownerContext, (width = owner.size * 6.5 + 20), 'px');
             }
 
             // Otherwise it is the same as shrinkWrap
@@ -64,15 +61,15 @@ Ext.define('Ext.layout.component.field.Field', {
             }
             ownerContext.setWidth(width, false);
         } else {
-            me.beginLayoutFixed(ownerContext, '100%');
+            me.beginLayoutFixed(ownerContext, '100', '%');
         }
     },
 
-    beginLayoutFixed: function (ownerContext, width) {
+    beginLayoutFixed: function (ownerContext, width, suffix) {
         var owner = ownerContext.target;
 
         owner.el.setStyle('table-layout', 'fixed');
-        owner.bodyEl.setStyle('width', width);
+        owner.bodyEl.setStyle('width', width + suffix);
     },
 
     beginLayoutShrinkWrap: function (ownerContext) {
@@ -211,7 +208,7 @@ Ext.define('Ext.layout.component.field.Field', {
              */
             right: base
         };
-    })(),
+    }()),
 
     /**
      * Collection of named strategies for laying out and adjusting insets to accommodate error messages.
@@ -286,6 +283,10 @@ Ext.define('Ext.layout.component.field.Field', {
 
                     errorEl.addCls(cls);
                     errorEl.setDisplayed(owner.hasActiveError());
+                    if (owner.labelAlign == 'left') {
+                        // hide the under label placeholder td
+                        errorEl.prev().setDisplayed(owner.hasVisibleLabel() ? 'block' : 'none');
+                    }
                 },
                 getHeight: function (ownerContext) {
                     var height = 0,
@@ -338,7 +339,7 @@ Ext.define('Ext.layout.component.field.Field', {
                 }
             }, base)
         };
-    })(),
+    }()),
 
     statics: {
         /**

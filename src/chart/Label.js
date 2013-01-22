@@ -131,9 +131,10 @@ Ext.define('Ext.chart.Label', {
         }
         // no items displayed, hide all labels
         if(itemLength == 0){
-            while(groupLength--)
+            while(groupLength--) {
                 hides.push(groupLength);
-        }else{
+            }
+        } else {
             for (i = 0, count = 0, groupIndex = 0; i < len; i++) {
                 index = 0;
                 for (j = 0; j < ratio; j++) {
@@ -141,12 +142,8 @@ Ext.define('Ext.chart.Label', {
                     label = group.getAt(groupIndex);
                     storeItem = store.getAt(i);
                     //check the excludes
-                    while(this.__excludes && this.__excludes[index] && ratio > 1) {
-                        if(field[j]){
-                            hides.push(groupIndex);
-                        }
+                    while(this.__excludes && this.__excludes[index]) {
                         index++;
-
                     }
 
                     if (!item && label) {

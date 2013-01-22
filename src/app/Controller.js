@@ -215,14 +215,18 @@ Ext.define('Ext.app.Controller', {
 
     onClassExtended: function(cls, data, hooks) {
         var className = Ext.getClassName(cls),
-            match = className.match(/^(.*)\.controller\./);
+            match = className.match(/^(.*)\.controller\./),
+            namespace,
+            onBeforeClassCreated,
+            requires,
+            modules,
+            prefix;
 
         if (match !== null) {
-            var namespace = Ext.Loader.getPrefix(className) || match[1],
-                onBeforeClassCreated = hooks.onBeforeCreated,
-                requires = [],
-                modules = ['model', 'view', 'store'],
-                prefix;
+            namespace = Ext.Loader.getPrefix(className) || match[1];
+            onBeforeClassCreated = hooks.onBeforeCreated;
+            requires = [];
+            modules = ['model', 'view', 'store'];
 
             hooks.onBeforeCreated = function(cls, data) {
                 var i, ln, module,
@@ -235,6 +239,11 @@ Ext.define('Ext.app.Controller', {
 
                     for (j = 0,subLn = items.length; j < subLn; j++) {
                         item = items[j];
+
+                        // we check the ClassManager here because the following logic assumes a specific organization of folders
+                        if (Ext.ClassManager.isCreated(item)) {
+                            continue;
+                        }
 
                         prefix = Ext.Loader.getPrefix(item);
 
@@ -290,14 +299,22 @@ Ext.define('Ext.app.Controller', {
 
     createGetters: function(type, refs) {
         type = Ext.String.capitalize(type);
-        Ext.Array.each(refs, function(ref) {
-            var fn = 'get',
-                parts = ref.split('.');
+
+        var i      = 0,
+            length = (refs) ? refs.length : 0,
+            fn, ref, parts, x, numParts;
+
+        for (; i < length; i++) {
+            fn    = 'get';
+            ref   = refs[i];
+            parts = ref.split('.');
+            numParts = parts.length;
 
             // Handle namespaced class names. E.g. feed.Add becomes getFeedAddView etc.
-            Ext.Array.each(parts, function(part) {
-                fn += Ext.String.capitalize(part);
-            });
+            for (x = 0 ; x < numParts; x++) {
+                fn += Ext.String.capitalize(parts[x]);
+            }
+
             fn += type;
 
             if (!this[fn]) {
@@ -305,22 +322,28 @@ Ext.define('Ext.app.Controller', {
             }
             // Execute it right away
             this[fn](ref);
-        },
-        this);
+        }
     },
 
     ref: function(refs) {
-        var me = this;
         refs = Ext.Array.from(refs);
-        Ext.Array.each(refs, function(info) {
-            var ref = info.ref,
-                fn = 'get' + Ext.String.capitalize(ref);
+        
+        var me = this,
+            i = 0,
+            length = refs.length,
+            info, ref, fn;
+
+        for (; i < length; i++) {
+            info = refs[i];
+            ref  = info.ref;
+            fn   = 'get' + Ext.String.capitalize(ref);
+
             if (!me[fn]) {
                 me[fn] = Ext.Function.pass(me.getRef, [ref, info], me);
             }
             me.references = me.references || [];
             me.references.push(ref.toLowerCase());
-        });
+        }
     },
 
     addRef: function(ref) {
@@ -339,7 +362,6 @@ Ext.define('Ext.app.Controller', {
         }
 
         var me = this,
-            selector = info.selector,
             cached = me.refCache[ref];
 
         if (!cached) {

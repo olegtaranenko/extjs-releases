@@ -10,7 +10,13 @@ Ext._startTime = new Date().getTime();
         toString = objectPrototype.toString,
         enumerables = true,
         enumerablesTest = { toString: 1 },
-        emptyFn = function(){},
+        emptyFn = function () {},
+        // This is the "$previous" method of a hook function on an instance. When called, it
+        // calls through the class prototype by the name of the called method.
+        callOverrideParent = function () {
+            var method = callOverrideParent.caller.caller; // skip callParent (our caller)
+            return method.$owner.prototype[method.$name].apply(this, arguments);
+        },
         i;
 
     Ext.global = global;
@@ -153,7 +159,7 @@ Ext._startTime = new Date().getTime();
          * @return {Function} The subclass constructor from the <tt>overrides</tt> parameter, or a generated one if not provided.
          * @deprecated 4.0.0 Use {@link Ext#define Ext.define} instead
          */
-        extend: function() {
+        extend: (function() {
             // inline overrides
             var objectConstructor = objectPrototype.constructor,
                 inlineOverrides = function(o) {
@@ -212,25 +218,79 @@ Ext._startTime = new Date().getTime();
 
                 return subclass;
             };
-        }(),
+        }()),
 
         /**
-         * Proxy to {@link Ext.Base#override}. Please refer {@link Ext.Base#override} for further details.
+         * Overrides members of the specified `target` with the given values.
+         * 
+         * If the `target` is a class declared using {@link Ext#define Ext.define}, the
+         * `override` method of that class is called (see {@link Ext.Base#override}) given
+         * the `overrides`.
          *
-         * @param {Object} cls The class to override
-         * @param {Object} overrides The properties to add to origClass. This should be specified as an object literal
-         * containing one or more properties.
+         * If the `target` is a function, it is assumed to be a constructor and the contents
+         * of `overrides` are applied to its `prototype` using {@link Ext#apply Ext.apply}.
+         * 
+         * If the `target` is an instance of a class declared using {@link Ext#define Ext.define},
+         * the `overrides` are applied to only that instance. In this case, methods are
+         * specially processed to allow them to use {@link Ext.Base#callParent}.
+         * 
+         *      var panel = new Ext.Panel({ ... });
+         *      
+         *      Ext.override(panel, {
+         *          initComponent: function () {
+         *              // extra processing...
+         *              
+         *              this.callParent();
+         *          }
+         *      });
+         *
+         * If the `target` is none of these, the `overrides` are applied to the `target`
+         * using {@link Ext#apply Ext.apply}.
+         *
+         * Please refer to {@link Ext#define Ext.define} and {@link Ext.Base#override} for
+         * further details.
+         *
+         * @param {Object} target The target to override.
+         * @param {Object} overrides The properties to add or replace on `target`. 
          * @method override
-         * @markdown
-         * @deprecated 4.1.0 Use {@link Ext#define Ext.define} instead
          */
-        override: function(cls, overrides) {
-            if (cls.$isClass) {
-                return cls.override(overrides);
+        override: function (target, overrides) {
+            if (target.$isClass) {
+                target.override(overrides);
+            } else if (typeof target == 'function') {
+                Ext.apply(target.prototype, overrides);
+            } else {
+                var owner = target.self,
+                    name, value;
+
+                if (owner && owner.$isClass) { // if (instance of Ext.define'd class)
+                    for (name in overrides) {
+                        if (overrides.hasOwnProperty(name)) {
+                            value = overrides[name];
+
+                            if (typeof value == 'function') {
+                                //<debug>
+                                if (owner.$className) {
+                                    value.displayName = owner.$className + '#' + name;
+                                }
+                                //</debug>
+
+                                value.$name = name;
+                                value.$owner = owner;
+                                value.$previous = target.hasOwnProperty(name)
+                                    ? target[name] // already hooked, so call previous hook
+                                    : callOverrideParent; // calls by name on prototype
+                            }
+
+                            target[name] = value;
+                        }
+                    }
+                } else {
+                    Ext.apply(target, overrides);
+                }
             }
-            else {
-                Ext.apply(cls.prototype, overrides);
-            }
+
+            return target;
         }
     });
 
@@ -272,17 +332,20 @@ Ext._startTime = new Date().getTime();
          * @markdown
          */
         typeOf: function(value) {
+            var type,
+                typeToString;
+            
             if (value === null) {
                 return 'null';
             }
 
-            var type = typeof value;
+            type = typeof value;
 
             if (type === 'undefined' || type === 'string' || type === 'number' || type === 'boolean') {
                 return type;
             }
 
-            var typeToString = toString.call(value);
+            typeToString = toString.call(value);
 
             switch(typeToString) {
                 case '[object Array]':
@@ -498,11 +561,21 @@ Ext._startTime = new Date().getTime();
     Ext.apply(Ext, {
 
         /**
-         * Clone almost any type of variable including array, object, DOM nodes and Date without keeping the old reference
+         * Clone simple variables including array, {}-like objects, DOM nodes and Date without keeping the old reference.
+         * A reference for the object itself is returned if it's not a direct decendant of Object. For model cloning,
+         * see {@link Model#copy Model.copy}.
+         * 
          * @param {Object} item The variable to clone
          * @return {Object} clone
          */
         clone: function(item) {
+            var type,
+                i,
+                j,
+                k,
+                clone,
+                key;
+            
             if (item === null || item === undefined) {
                 return item;
             }
@@ -514,14 +587,13 @@ Ext._startTime = new Date().getTime();
                 return item.cloneNode(true);
             }
 
-            var type = toString.call(item);
+            type = toString.call(item);
 
             // Date
             if (type === '[object Date]') {
                 return new Date(item.getTime());
             }
 
-            var i, j, k, clone, key;
 
             // Array
             if (type === '[object Array]') {
@@ -557,10 +629,11 @@ Ext._startTime = new Date().getTime();
          * Generate a unique reference of Ext in the global scope, useful for sandboxing
          */
         getUniqueGlobalNamespace: function() {
-            var uniqueGlobalNamespace = this.uniqueGlobalNamespace;
+            var uniqueGlobalNamespace = this.uniqueGlobalNamespace,
+                i;
 
             if (uniqueGlobalNamespace === undefined) {
-                var i = 0;
+                i = 0;
 
                 do {
                     uniqueGlobalNamespace = 'ExtBox' + (++i);
@@ -618,18 +691,6 @@ Ext._startTime = new Date().getTime();
         },
 
         /**
-         * @property
-         * @private
-         */
-        globalEval: ('execScript' in global) ? function(code) {
-            global.execScript(code)
-        } : function(code) {
-            (function(){
-                eval(code);
-            })();
-        },
-
-        /**
          * @private
          * @property
          */
@@ -653,4 +714,23 @@ Ext._startTime = new Date().getTime();
      */
     Ext.type = Ext.typeOf;
 
-})();
+}());
+
+/*
+ * This method evaluates the given code free of any local variable. In some browsers this
+ * will be at global scope, in others it will be in a function.
+ * @parma {String} code The code to evaluate.
+ * @private
+ * @method
+ */
+Ext.globalEval = Ext.global.execScript
+    ? function(code) {
+        execScript(code);
+    }
+    : function($$code) {
+        // IMPORTANT: because we use eval we cannot place this in the above function or it
+        // will break the compressor's ability to rename local variables...
+        (function(){
+            eval($$code);
+        }());
+    };

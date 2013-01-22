@@ -65,7 +65,7 @@ bodyCls: ['foo', 'bar']
 
     /**
      * @property {Boolean} isPanel
-     * `true` in this class to identify an objact as an instantiated Panel, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Panel, or subclass thereof.
      */
     isPanel: true,
 
@@ -78,6 +78,14 @@ bodyCls: ['foo', 'bar']
     renderTpl: [
         // If this Panel is framed, the framing template renders the docked items round the frame
         '{% this.renderDockedItems(out,values,0); %}',
+        // This empty div solves an IE6/7/Quirks problem where the margin-top on the bodyEl
+        // is ignored. Best we can figure, this is triggered by the previousSibling being
+        // position absolute (a docked item). The goal is to use margins to position the
+        // bodyEl rather than left/top since that allows us to avoid writing a height on the
+        // panel and the body. This in turn allows CSS height to expand or contract the
+        // panel during things like portlet dragging where we want to avoid running a ton
+        // of layouts during the drag operation.
+        (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) ? '<div></div>' : '',
         '<div id="{id}-body" class="{baseCls}-body<tpl if="bodyCls"> {bodyCls}</tpl>',
             ' {baseCls}-body-{ui}<tpl if="uiCls">',
                 '<tpl for="uiCls"> {parent.baseCls}-body-{parent.ui}-{.}</tpl>',
@@ -205,8 +213,8 @@ var panel = new Ext.panel.Panel({
     },
 
     /**
-     * Parses the {@link bodyStyle} config if available to create a style string that will be applied to the body element.
-     * This also includes {@link bodyPadding} and {@link bodyBorder} if available.
+     * Parses the {@link #bodyStyle} config if available to create a style string that will be applied to the body element.
+     * This also includes {@link #bodyPadding} and {@link #bodyBorder} if available.
      * @return {String} A CSS style string with body styles, padding and border.
      * @private
      */
@@ -264,7 +272,7 @@ var panel = new Ext.panel.Panel({
     },
 
     // inherit docs
-    addUIClsToElement: function(cls, force) {
+    addUIClsToElement: function(cls) {
         var me = this,
             result = me.callParent(arguments);
 
@@ -273,7 +281,7 @@ var panel = new Ext.panel.Panel({
     },
 
     // inherit docs
-    removeUIClsFromElement: function(cls, force) {
+    removeUIClsFromElement: function(cls) {
         var me = this,
             result = me.callParent(arguments);
 
@@ -282,7 +290,7 @@ var panel = new Ext.panel.Panel({
     },
 
     // inherit docs
-    addUIToElement: function(force) {
+    addUIToElement: function() {
         var me = this;
 
         me.callParent(arguments);

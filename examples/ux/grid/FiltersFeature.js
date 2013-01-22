@@ -399,24 +399,30 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
      * Changes the data store bound to this view and refreshes it.
      * @param {Ext.data.Store} store The store to bind to this view
      */
-    bindStore : function(store, initial){
-        if(!initial && this.store){
-            if (this.local) {
-                store.un('load', this.onLoad, this);
-            } else {
-                store.un('beforeload', this.onBeforeLoad, this);
-            }
-        }
-        if(store){
-            if (this.local) {
-                store.on('load', this.onLoad, this);
-            } else {
-                store.on('beforeload', this.onBeforeLoad, this);
-            }
-        }
-        this.store = store;
-    },
+    bindStore : function(store) {
+        var me = this;
 
+        // Unbind from the old Store
+        if (me.store && me.storeListeners) {
+            me.store.un(me.storeListeners);
+        }
+
+        // Set up correct listeners
+        if (store) {
+            me.storeListeners = {
+                scope: me
+            };
+            if (me.local) {
+                me.storeListeners.load = me.onLoad;
+            } else {
+                me.storeListeners['before' + (store.buffered ? 'prefetch' : 'load')] = me.onBeforeLoad;
+            }
+            store.on(me.storeListeners);
+        } else {
+            delete me.storeListeners;
+        }
+        me.store = store;
+    },
 
     /**
      * @private
@@ -512,14 +518,16 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
     /** @private */
     reload : function () {
         var me = this,
-            store = me.view.getStore(),
-            start;
+            store = me.view.getStore();
 
         if (me.local) {
             store.clearFilter(true);
             store.filterBy(me.getRecordFilter());
         } else {
             me.deferredUpdate.cancel();
+            if (store.buffered) {
+                store.pageMap.clear();
+            }
             store.loadPage(1);
         }
     },

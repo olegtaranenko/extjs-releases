@@ -125,7 +125,7 @@ Ext.define('Ext.dd.DragZone', {
      * @return {Number[]} The xy location (e.g. `[100, 200]`)
      */
     getRepairXY : function(e){
-        return Ext.Element.fly(this.dragData.ddel).getXY();
+        return Ext.fly(this.dragData.ddel).getXY();
     },
 
     destroy : function(){

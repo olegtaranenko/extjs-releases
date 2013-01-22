@@ -9,50 +9,20 @@ Ext.String = (function() {
     var trimRegex     = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g,
         escapeRe      = /('|\\)/g,
         formatRe      = /\{(\d+)\}/g,
-        escapeRegexRe = /([-.*+?^${}()|[\]\/\\])/g,
+        escapeRegexRe = /([-.*+?\^${}()|\[\]\/\\])/g,
         basicTrimRe   = /^\s+|\s+$/g,
         whitespaceRe  = /\s+/,
         varReplace    = /(^[^a-z]*|[^\w])/gi,
-        charToEntity  = {
-            '&': '&amp;',
-            '>': '&gt;',
-            '<': '&lt;',
-            '"': '&quot;'
-        },
-        entityToChar  = {
-            '&amp;': '&',
-            '&gt;': '>',
-            '&lt;': '<',
-            '&quot;': '"'
-        },
-        keys = [],
-        key,
+        charToEntity,
+        entityToChar,
         charToEntityRegex,
         entityToCharRegex,
         htmlEncodeReplaceFn = function(match, capture) {
             return charToEntity[capture];
         },
-        htmlEncode = function(value) {
-            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
-        },
         htmlDecodeReplaceFn = function(match, capture) {
             return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
-        },
-        htmlDecode = function(value) {
-            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
         };
-
-        // Compile RexExps for HTML encode and decode functions
-        for (key in charToEntity) {
-            keys.push(key);
-        }
-        charToEntityRegex = new RegExp('(' + keys.join('|') + ')', 'g');
-
-        keys = [];
-        for (key in entityToChar) {
-            keys.push(key);
-        }
-        entityToCharRegex = new RegExp('(' + keys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
 
     return {
 
@@ -68,20 +38,86 @@ Ext.String = (function() {
         },
 
         /**
-         * Convert certain characters (&, <, >, and ") to their HTML character equivalents for literal display in web pages.
+         * Convert certain characters (&, <, >, ', and ") to their HTML character equivalents for literal display in web pages.
          * @param {String} value The string to encode
          * @return {String} The encoded text
          * @method
          */
-        htmlEncode: htmlEncode,
+        htmlEncode: function(value) {
+            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
+        },
 
         /**
-         * Convert certain characters (&, <, >, and ") from their HTML character equivalents.
+         * Convert certain characters (&, <, >, ', and ") from their HTML character equivalents.
          * @param {String} value The string to decode
          * @return {String} The decoded text
          * @method
          */
-        htmlDecode: htmlDecode,
+        htmlDecode: function(value) {
+            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
+        },
+
+        /**
+         * Adds a set of character entity definitions to the set used by
+         * {@link Ext.String#htmlEncode} and {@link Ext.String#htmlDecode}.
+         *
+         * This object should be keyed by the entity name sequence,
+         * with the value being the textual representation of the entity.
+         *
+         *      Ext.String.addCharacterEntities({
+         *          '&amp;Uuml;':'Ü',
+         *          '&amp;ccedil;':'ç',
+         *          '&amp;ntilde;':'ñ',
+         *          '&amp;egrave;':'è'
+         *      });
+         *      var s = Ext.String.htmlEncode("A string with entities: èÜçñ");
+         *
+         * Note: the values of the character entites defined on this object are expected
+         * to be single character values.  As such, the actual values represented by the
+         * characters are sensitive to the character encoding of the javascript source
+         * file when defined in string literal form. Script tasgs referencing server
+         * resources with character entities must ensure that the 'charset' attribute
+         * of the script node is consistent with the actual character encoding of the
+         * server resource.
+         *
+         * The set of character entities may be reset back to the default state by using
+         * the {@link Ext.String#resetCharacterEntities} method
+         *
+         * @param {Object} entities The set of character entities to add to the current
+         * definitions.
+         */
+        addCharacterEntities: function(newEntities) {
+            var charKeys = [],
+                entityKeys = [],
+                key, echar;
+            for (key in newEntities) {
+                echar = newEntities[key];
+                entityToChar[key] = echar;
+                charToEntity[echar] = key;
+                charKeys.push(echar);
+                entityKeys.push(key);
+            }
+            charToEntityRegex = new RegExp('(' + charKeys.join('|') + ')', 'g');
+            entityToCharRegex = new RegExp('(' + entityKeys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
+        },
+
+        /**
+         * Resets the set of character entity definitions used by
+         * {@link Ext.String#htmlEncode} and {@link Ext.String#htmlDecode} back to the
+         * default state.
+         */
+        resetCharacterEntities: function() {
+            charToEntity = {};
+            entityToChar = {};
+            // add the default set
+            this.addCharacterEntities({
+                '&amp;'     :   '&',
+                '&gt;'      :   '>',
+                '&lt;'      :   '<',
+                '&quot;'    :   '"',
+                '&apos;'    :   "'"
+            });
+        },
 
         /**
          * Appends content to the query string of a URL, handling logic for whether to place
@@ -263,7 +299,10 @@ Ext.String = (function() {
             return words || [];
         }
     };
-})();
+}());
+
+// initialize the default encode / decode entities
+Ext.String.resetCharacterEntities();
 
 /**
  * Old alias to {@link Ext.String#htmlEncode}

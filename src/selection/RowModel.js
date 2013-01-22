@@ -23,14 +23,14 @@ Ext.define('Ext.selection.RowModel', {
     enableKeyNav: true,
     
     /**
-     * @cfg {Boolean} [ignoreRightMouseSelection=true]
+     * @cfg {Boolean} [ignoreRightMouseSelection=false]
      * True to ignore selections that are made when using the right mouse button if there are
      * records that are already selected. If no records are selected, selection will continue 
      * as normal
      */
-    ignoreRightMouseSelection: true,
+    ignoreRightMouseSelection: false,
 
-    constructor: function(){
+    constructor: function() {
         this.addEvents(
             /**
              * @event beforedeselect
@@ -110,6 +110,7 @@ Ext.define('Ext.selection.RowModel', {
             target: view,
             eventName: 'itemkeydown',
             processEvent: function(view, record, node, index, event) {
+                event.record = record;
                 event.recordIndex = index;
                 return event;
             },
@@ -121,9 +122,9 @@ Ext.define('Ext.selection.RowModel', {
             pageUp: me.onKeyPageUp,
             home: me.onKeyHome,
             end: me.onKeyEnd,
+            space: me.onKeySpace,
             scope: me
         });
-        view.el.on(Ext.EventManager.getKeyEvent(), me.onKeyPress, me);
     },
 
     // Returns the number of rows currently visible on the screen or
@@ -184,8 +185,7 @@ Ext.define('Ext.selection.RowModel', {
             rowsVisible = me.getRowsVisible(),
             selIdx,
             prevIdx,
-            prevRecord,
-            currRec;
+            prevRecord;
 
         if (rowsVisible) {
             selIdx = e.recordIndex;
@@ -195,8 +195,7 @@ Ext.define('Ext.selection.RowModel', {
             }
             prevRecord = me.store.getAt(prevIdx);
             if (e.shiftKey) {
-                currRec = me.store.getAt(selIdx);
-                me.selectRange(prevRecord, currRec, e.ctrlKey, 'up');
+                me.selectRange(prevRecord, e.record, e.ctrlKey, 'up');
                 me.setLastFocused(prevRecord);
             } else if (e.ctrlKey) {
                 e.preventDefault();
@@ -214,8 +213,7 @@ Ext.define('Ext.selection.RowModel', {
             rowsVisible = me.getRowsVisible(),
             selIdx,
             nextIdx,
-            nextRecord,
-            currRec;
+            nextRecord;
 
         if (rowsVisible) {
             selIdx = e.recordIndex;
@@ -225,8 +223,7 @@ Ext.define('Ext.selection.RowModel', {
             }
             nextRecord = me.store.getAt(nextIdx);
             if (e.shiftKey) {
-                currRec = me.store.getAt(selIdx);
-                me.selectRange(nextRecord, currRec, e.ctrlKey, 'down');
+                me.selectRange(nextRecord, e.record, e.ctrlKey, 'down');
                 me.setLastFocused(nextRecord);
             } else if (e.ctrlKey) {
                 // some browsers, this means go thru browser tabs
@@ -241,18 +238,15 @@ Ext.define('Ext.selection.RowModel', {
 
     // Select/Deselect based on pressing Spacebar.
     // Assumes a SIMPLE selectionmode style
-    onKeyPress: function(e) {
-        if (e.getKey() === e.SPACE) {
-            e.stopEvent();
-            var me = this,
-                record = me.lastFocused;
+    onKeySpace: function(e) {
+        var me = this,
+            record = me.lastFocused;
 
-            if (record) {
-                if (me.isSelected(record)) {
-                    me.doDeselect(record, false);
-                } else {
-                    me.doSelect(record, true);
-                }
+        if (record) {
+            if (me.isSelected(record)) {
+                me.doDeselect(record, false);
+            } else {
+                me.doSelect(record, true);
             }
         }
     },
@@ -262,7 +256,6 @@ Ext.define('Ext.selection.RowModel', {
     // selection. Provides bounds checking.
     onKeyUp: function(e) {
         var me = this,
-            view = me.views[0],
             idx  = me.store.indexOf(me.lastFocused),
             record;
 
@@ -301,7 +294,6 @@ Ext.define('Ext.selection.RowModel', {
     // selection. Provides bounds checking.
     onKeyDown: function(e) {
         var me = this,
-            view = me.views[0],
             idx  = me.store.indexOf(me.lastFocused),
             record;
 
@@ -356,11 +348,13 @@ Ext.define('Ext.selection.RowModel', {
     // Select the record with the event included so that
     // we can take into account ctrlKey, shiftKey, etc
     onRowMouseDown: function(view, record, item, index, e) {
-        view.focus(false, Ext.isIE ? 200 : false);
         if (!this.allowRightMouseSelection(e)) {
             return;
         }
-        this.selectWithEvent(record, e);
+
+        if (e.button === 0 || !this.isSelected(record)) {
+            this.selectWithEvent(record, e);
+        }
     },
     
     /**
@@ -445,7 +439,7 @@ Ext.define('Ext.selection.RowModel', {
 
         do {
             position  = view.walkCells(position, direction, e, me.preventWrap);
-        } while(position && !view.headerCt.getHeaderAtIndex(position.column).getEditor())
+        } while(position && !view.headerCt.getHeaderAtIndex(position.column).getEditor());
 
         if (position) {
             editingPlugin.startEditByPosition(position);
@@ -494,13 +488,12 @@ Ext.define('Ext.selection.RowModel', {
             index = me.store.indexOf(record) - 1,
             success;
 
-        if(index < 0) {
+        if (index < 0) {
             success = false;
         } else {
             me.doSelect(index, keepExisting, suppressEvent);
-            success = true
+            success = true;
         }
         return success;
     }
-
 });

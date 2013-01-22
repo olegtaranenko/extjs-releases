@@ -209,6 +209,7 @@ Ext.define('Ext.resizer.BorderSplitterTracker', {
             //    neighbor.setSize(size - delta);
             //},
             adjustTarget: function (target, size, delta) {
+                target.flex = null;
                 target.setSize(size + delta);
             }
         },
@@ -218,6 +219,7 @@ Ext.define('Ext.resizer.BorderSplitterTracker', {
             //    neighbor.setSize(undefined, size - delta);
             //},
             adjustTarget: function (target, targetSize, delta) {
+                target.flex = null;
                 target.setSize(undefined, targetSize + delta);
             }
         }

@@ -53,6 +53,7 @@ Ext.onReady(function(){
                             title: 'State Window',
                             maximizable: true,
                             stateId: 'stateWindowExample',
+                            stateful: true,
                             styleHtmlContent: true,
                             bodyPadding: 5,
                             html: [
@@ -79,6 +80,7 @@ Ext.onReady(function(){
             title: 'Collapse/Width Panel',
             width: 200,
             stateId: 'statePanelExample',
+            stateful: true,
             split: true,
             collapsible: true,
             html: [
@@ -90,6 +92,7 @@ Ext.onReady(function(){
             ].join('')
         }, {
             region: 'center',
+            stateful: true,
             stateId: 'stateGridExample',
             xtype: 'grid',
             store: Ext.create('Ext.data.Store', {

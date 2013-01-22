@@ -205,16 +205,27 @@ Ext.define('Ext.form.CheckboxGroup', {
 
     // private override
     isDirty: function(){
-        return Ext.Array.some(this.getBoxes(), function(cb) {
-            return cb.isDirty();
-        });
+        var boxes = this.getBoxes(),
+            b ,
+            bLen  = boxes.length;
+
+        for (b = 0; b < bLen; b++) {
+            if (boxes[b].isDirty()) {
+                return true;
+            }
+        }
     },
 
     // private override
     setReadOnly: function(readOnly) {
-        this.eachBox(function(cb) {
-            cb.setReadOnly(readOnly);
-        });
+        var boxes = this.getBoxes(),
+            b,
+            bLen  = boxes.length;
+
+        for (b = 0; b < bLen; b++) {
+            boxes[b].setReadOnly(readOnly);
+        }
+
         this.readOnly = readOnly;
     },
 
@@ -229,9 +240,13 @@ Ext.define('Ext.form.CheckboxGroup', {
             preventMark = me.preventMark;
         me.preventMark = true;
         me.batchChanges(function() {
-            me.eachBox(function(cb) {
-                cb.reset();
-            });
+            var boxes = me.getBoxes(),
+                b,
+                bLen  = boxes.length;
+
+            for (b = 0; b < bLen; b++) {
+                boxes[b].reset();
+            }
         });
         me.preventMark = preventMark;
         me.unsetActiveError();
@@ -241,11 +256,15 @@ Ext.define('Ext.form.CheckboxGroup', {
     },
 
     resetOriginalValue: function(){
-        var me = this;
-        
-        me.eachBox(function(box){
-            box.resetOriginalValue();
-        });
+        var me    = this,
+            boxes = me.getBoxes(),
+            b,
+            bLen  = boxes.length;
+
+        for (b = 0; b < bLen; b++) {
+            boxes[b].resetOriginalValue();
+        }
+
         me.originalValue = me.getValue();
         me.checkDirty();
     },
@@ -304,21 +323,30 @@ Ext.define('Ext.form.CheckboxGroup', {
      * @return {Ext.form.CheckboxGroup} this
      */
     setValue: function(value) {
-        var me = this;
+        var me    = this,
+            boxes = me.getBoxes(),
+            b,
+            bLen  = boxes.length,
+            box, name,
+            cbValue;
+
         me.batchChanges(function() {
-            me.eachBox(function(cb) {
-                var name = cb.getName(),
-                    cbValue = false;
-                if (value && name in value) {
+            for (b = 0; b < bLen; b++) {
+                box = boxes[b];
+                name = box.getName();
+                cbValue = false;
+
+                if (value && value.hasOwnProperty(name)) {
                     if (Ext.isArray(value[name])) {
-                        cbValue = Ext.Array.contains(value[name], cb.inputValue);
+                        cbValue = Ext.Array.contains(value[name], box.inputValue);
                     } else {
                         // single value, let the checkbox's own setValue handle conversion
                         cbValue = value[name];
                     }
                 }
-                cb.setValue(cbValue);
-            });
+
+                box.setValue(cbValue);
+            }
         });
         return me;
     },
@@ -338,13 +366,19 @@ Ext.define('Ext.form.CheckboxGroup', {
      * Ext 4+, use the {@link #getChecked} method instead.
      */
     getValue: function() {
-        var values = {};
-        this.eachBox(function(cb) {
-            var name = cb.getName(),
-                inputValue = cb.inputValue,
-                bucket;
-            if (cb.getValue()) {
-                if (name in values) {
+        var values = {},
+            boxes  = this.getBoxes(),
+            b,
+            bLen   = boxes.length,
+            box, name, inputValue, bucket;
+
+        for (b = 0; b < bLen; b++) {
+            box        = boxes[b];
+            name       = box.getName();
+            inputValue = box.inputValue;
+
+            if (box.getValue()) {
+                if (values.hasOwnProperty(name)) {
                     bucket = values[name];
                     if (!Ext.isArray(bucket)) {
                         bucket = values[name] = [bucket];
@@ -354,7 +388,8 @@ Ext.define('Ext.form.CheckboxGroup', {
                     values[name] = inputValue;
                 }
             }
-        });
+        }
+
         return values;
     },
 

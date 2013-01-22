@@ -130,9 +130,10 @@ Ext.define('Ext.button.Cycle', {
 
     // private
     initComponent: function() {
-        var me = this,
+        var me      = this,
             checked = 0,
-            items;
+            items,
+            i, iLen, item;
 
         me.addEvents(
             /**
@@ -153,26 +154,33 @@ Ext.define('Ext.button.Cycle', {
 
         // Allow them to specify a menu config which is a standard Button config.
         // Remove direct use of "items" in 5.0.
-        items = (me.menu.items||[]).concat(me.items||[]);
+        items = (me.menu.items || []).concat(me.items || []);
         me.menu = Ext.applyIf({
             cls: Ext.baseCSSPrefix + 'cycle-menu',
             items: []
         }, me.menu);
 
+        iLen = items.length;
+
         // Convert all items to CheckItems
-        Ext.each(items, function(item, i) {
+        for (i = 0; i < iLen; i++) {
+            item = items[i];
+
             item = Ext.applyIf({
-                group: me.id,
-                itemIndex: i,
-                checkHandler: me.checkHandler,
-                scope: me,
-                checked: item.checked || false
+                group        : me.id,
+                itemIndex    : i,
+                checkHandler : me.checkHandler,
+                scope        : me,
+                checked      : item.checked || false
             }, item);
+
             me.menu.items.push(item);
+
             if (item.checked) {
                 checked = i;
             }
-        });
+        }
+
         me.itemCount = me.menu.items.length;
         me.callParent(arguments);
         me.on('click', me.toggleSelected, me);

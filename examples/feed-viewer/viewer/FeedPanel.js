@@ -208,12 +208,13 @@ Ext.define('FeedViewer.FeedPanel', {
      * @private
      */
     onAddFeedClick: function(){
-        var win = Ext.create('widget.feedwindow', {
+        var win = this.addFeedWindow || (this.addFeedWindow = Ext.create('widget.feedwindow', {
             listeners: {
                 scope: this,
                 feedvalid: this.onFeedValid
             }
-        });
+        }));
+        win.form.getForm().reset();
         win.show();
     },
 

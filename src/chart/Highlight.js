@@ -114,7 +114,6 @@ Ext.define('Ext.chart.Highlight', {
             animate = me.chart.animate,
             i = 0,
             obj, p, sprite;
-
         for (; i < len; i++) {
             if (!items[i]) {
                 continue;

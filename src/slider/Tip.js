@@ -115,7 +115,6 @@ Ext.define('Ext.slider.Tip', {
         var me = this;
         me.show();
         me.update(me.getText(thumb));
-        me.doComponentLayout();
         me.el.alignTo(thumb.el, me.align, me.offsets);
     },
 

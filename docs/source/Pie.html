@@ -220,13 +220,16 @@ Ext.define('Ext.chart.series.Pie', {
     // @private updates some onbefore render parameters.
     initialize: function() {
         var me = this,
-            store = me.chart.getChartStore();
+            store = me.chart.getChartStore(),
+            data = store.data.items,
+            i, ln, rec;
         //Add yFields to be used in Legend.js
         me.yField = [];
         if (me.label.field) {
-            store.each(function(rec) {
+            for (i = 0, ln = data.length; i &lt; ln; i++) {
+                rec = data[i];
                 me.yField.push(rec.get(me.label.field));
-            });
+            }
         }
     },
 
@@ -333,6 +336,8 @@ Ext.define('Ext.chart.series.Pie', {
     drawSeries: function() {
         var me = this,
             store = me.chart.getChartStore(),
+            data = store.data.items,
+            record,
             group = me.group,
             animate = me.chart.animate,
             field = me.angleField || me.field || me.xField,
@@ -406,10 +411,11 @@ Ext.define('Ext.chart.series.Pie', {
         me.slices = slices = [];
         me.items = items = [];
 
-        store.each(function(record, i) {
+        for (i = 0, ln = data.length; i &lt; ln; i++) {
+            record = data[i];
             if (this.__excludes &amp;&amp; this.__excludes[i]) {
                 //hidden series
-                return;
+                continue;
             }
             totalField += +record.get(field);
             if (lenField[0]) {
@@ -419,10 +425,11 @@ Ext.define('Ext.chart.series.Pie', {
                 layerTotals[i] = totalLenField;
                 maxLenField = Math.max(maxLenField, totalLenField);
             }
-        }, this);
+        }
 
         totalField = totalField || 1;
-        store.each(function(record, i) {
+        for (i = 0, ln = data.length; i &lt; ln; i++) {
+            record = data[i];
             if (this.__excludes &amp;&amp; this.__excludes[i]) {
                 value = 0;
             } else {
@@ -450,14 +457,16 @@ Ext.define('Ext.chart.series.Pie', {
                 storeItem: record
             };
             if (lenField[0]) {
-                lenValue = layerTotals[i];
-                slice.rho = me.radius * (lenValue / maxLenField);
+                lenValue = +layerTotals[i];
+                //removing the floor will break Opera 11.6*
+                slice.rho = Math.floor(me.radius / maxLenField * lenValue);
             } else {
                 slice.rho = me.radius;
             }
             slices[i] = slice;
             angle = endAngle;
-        }, me);
+        }
+
         //do all shadows first.
         if (enableShadows) {
             for (i = 0, ln = slices.length; i &lt; ln; i++) {
@@ -847,7 +856,24 @@ Ext.define('Ext.chart.series.Pie', {
      */
     highlightItem: function(item) {
         var me = this,
-            rad = me.rad;
+            rad = me.rad,
+            highlightSegment,
+            animate,
+            attrs,
+            i,
+            shadows,
+            shadow,
+            ln,
+            to,
+            itemHighlightSegment,
+            prop,
+            group,
+            display,
+            label,
+            middle,
+            r,
+            x,
+            y;
         item = item || this.items[this._index];
 
         //TODO(nico): sometimes in IE itemmouseover is triggered
@@ -864,18 +890,17 @@ Ext.define('Ext.chart.series.Pie', {
             return;
         }
         if ('segment' in me.highlightCfg) {
-            var highlightSegment = me.highlightCfg.segment,
-                animate = me.chart.animate,
-                attrs, i, shadows, shadow, ln, to, itemHighlightSegment, prop;
+            highlightSegment = me.highlightCfg.segment;
+            animate = me.chart.animate;
             //animate labels
             if (me.labelsGroup) {
-                var group = me.labelsGroup,
-                    display = me.label.display,
-                    label = group.getAt(item.index),
-                    middle = (item.startAngle + item.endAngle) / 2 * rad,
-                    r = highlightSegment.margin || 0,
-                    x = r * Math.cos(middle),
-                    y = r * Math.sin(middle);
+                group = me.labelsGroup;
+                display = me.label.display;
+                label = group.getAt(item.index);
+                middle = (item.startAngle + item.endAngle) / 2 * rad;
+                r = highlightSegment.margin || 0;
+                x = r * Math.cos(middle);
+                y = r * Math.sin(middle);
 
                 //TODO(nico): rounding to 1e-10
                 //gives the right translation. Translation
@@ -947,21 +972,39 @@ Ext.define('Ext.chart.series.Pie', {
      * @param item {Object} Info about the item; same format as returned by #getItemForPoint
      */
     unHighlightItem: function() {
-        var me = this;
+        var me = this,
+            items,
+            animate,
+            shadowsEnabled,
+            group,
+            len,
+            i,
+            j,
+            display,
+            shadowLen,
+            p,
+            to,
+            ihs,
+            hs,
+            sprite,
+            shadows,
+            shadow,
+            item,
+            label,
+            attrs;
         if (!me.highlight) {
             return;
         }
 
         if (('segment' in me.highlightCfg) &amp;&amp; me.items) {
-            var items = me.items,
-                animate = me.chart.animate,
-                shadowsEnabled = !!me.chart.shadow,
-                group = me.labelsGroup,
-                len = items.length,
-                i = 0,
-                j = 0,
-                display = me.label.display,
-                shadowLen, p, to, ihs, hs, sprite, shadows, shadow, item, label, attrs;
+            items = me.items;
+            animate = me.chart.animate;
+            shadowsEnabled = !!me.chart.shadow;
+            group = me.labelsGroup;
+            len = items.length;
+            i = 0;
+            j = 0;
+            display = me.label.display;
 
             for (; i &lt; len; i++) {
                 item = items[i];

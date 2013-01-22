@@ -54,10 +54,6 @@ describe("Ext.EventManager", function() {
                 it("should return the element id", function() {
                     expect(result).toBe(id);
                 });
-                
-                it("should add element to Ext.cache", function() {
-                   expect(Ext.cache[id].el.dom).toBe(elementWithoutId);
-                });
             });
             
             describe("document and window", function() {
@@ -67,10 +63,6 @@ describe("Ext.EventManager", function() {
                         result = Ext.EventManager.getId(document);
                     });
 
-                    it("should add document Ext.Element to cache", function() {
-                        expect(Ext.cache[Ext.documentId].el.dom).toBe(document);
-                    });
-                    
                     it("should enable skipGarbageCollection flag", function() {
                         expect(Ext.cache[Ext.documentId].skipGarbageCollection).toBe(true);
                     });
@@ -84,10 +76,6 @@ describe("Ext.EventManager", function() {
                     var result;
                     beforeEach(function() {
                         result = Ext.EventManager.getId(window);
-                    });
-                    
-                    it("should add window Ext.Element to cache", function() {
-                        expect(Ext.cache[Ext.windowId].el.dom).toBe(window);
                     });
                     
                     it("should enable skipGarbageCollection flag", function() {

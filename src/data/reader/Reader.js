@@ -160,7 +160,11 @@
 Ext.define('Ext.data.reader.Reader', {
     requires: ['Ext.data.ResultSet'],
     alternateClassName: ['Ext.data.Reader', 'Ext.data.DataReader'],
-    
+
+    mixins: {
+        observable: 'Ext.util.Observable'
+    },
+
     /**
      * @cfg {String} idProperty
      * Name of the property within a row object that contains a record identifier value. Defaults to The id of the
@@ -168,14 +172,14 @@ Ext.define('Ext.data.reader.Reader', {
      */
 
     /**
-     * @cfg {String} totalProperty
+     * @cfg {String} [totalProperty="total"]
      * Name of the property from which to retrieve the total number of records in the dataset. This is only needed if
-     * the whole dataset is not passed in one go, but is being paged from the remote server. Defaults to total.
+     * the whole dataset is not passed in one go, but is being paged from the remote server.
      */
     totalProperty: 'total',
 
     /**
-     * @cfg {String} successProperty
+     * @cfg {String} [successProperty="success"]
      * Name of the property from which to retrieve the success attribute. Defaults to success. See
      * {@link Ext.data.proxy.Server}.{@link Ext.data.proxy.Server#exception exception} for additional information.
      */
@@ -198,11 +202,18 @@ Ext.define('Ext.data.reader.Reader', {
      */
     
     /**
-     * @cfg {Boolean} implicitIncludes
+     * @cfg {Boolean} [implicitIncludes=true]
      * True to automatically parse models nested within other models in a response object. See the
-     * Ext.data.reader.Reader intro docs for full explanation. Defaults to true.
+     * Ext.data.reader.Reader intro docs for full explanation.
      */
     implicitIncludes: true,
+    
+    /**
+     * @cfg {Boolean} [readRecordsOnFailure=true]
+     * True to read extract the records from a data packet even if the {@link #success} property
+     * returns false.
+     */
+    readRecordsOnFailure: true,
     
     /**
      * @property {Object} metaData
@@ -226,7 +237,7 @@ Ext.define('Ext.data.reader.Reader', {
     
     /*
      * @property {Boolean} isReader
-     * `true` in this class to identify an objact as an instantiated Reader, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Reader, or subclass thereof.
      */
     isReader: true,
     
@@ -237,12 +248,29 @@ Ext.define('Ext.data.reader.Reader', {
     constructor: function(config) {
         var me = this;
         
-        Ext.apply(me, config || {});
+        me.mixins.observable.constructor.call(me, config);
         me.fieldCount = 0;
-        me.model = Ext.ModelManager.getModel(config.model);
-        if (me.model) {
+        me.model = Ext.ModelManager.getModel(me.model);
+
+        // Extractors can only be calculated if the fields MixedCollection has been set.
+        // A Model may only complete its setup (set the prototype properties) after asynchronous loading
+        // which would mean that there may be no "fields"
+        // If this happens, the load callback will call proxy.setModel which calls reader.setModel which
+        // triggers buildExtractors.
+        if (me.model && me.model.prototype.fields) {
             me.buildExtractors();
         }
+
+        this.addEvents(
+            /**
+             * @event
+             * Fires when the reader receives improperly encoded data from the server
+             * @param {Ext.data.reader.Reader} reader A reference to this reader
+             * @param {XMLHttpRequest} response The XMLHttpRequest response object
+             * @param {Ext.data.ResultSet} error The error object
+             */
+            'exception'
+        );
     },
 
     /**
@@ -263,23 +291,20 @@ Ext.define('Ext.data.reader.Reader', {
     },
 
     /**
-     * Reads the given response object. This method normalizes the different types of response object that may be passed
-     * to it, before handing off the reading of records to the {@link #readRecords} function.
+     * Reads the given response object. This method normalizes the different types of response object that may be passed to it.
+     * If it's an XMLHttpRequest object, hand off to the subclass' {@link #getResponseData} method.
+     * Else, hand off the reading of records to the {@link #readRecords} method.
      * @param {Object} response The response object. This may be either an XMLHttpRequest object or a plain JS object
-     * @return {Ext.data.ResultSet} The parsed ResultSet object
+     * @return {Ext.data.ResultSet} The parsed or default ResultSet object
      */
     read: function(response) {
-        var data = response;
-        
-        if (response && response.responseText) {
-            data = this.getResponseData(response);
+        var data;
+
+        if (response) {
+            data = response.responseText ? this.getResponseData(response) : this.readRecords(response);
         }
-        
-        if (data) {
-            return this.readRecords(data);
-        } else {
-            return this.nullResultSet;
-        }
+
+        return data || this.nullResultSet;
     },
 
     /**
@@ -290,7 +315,14 @@ Ext.define('Ext.data.reader.Reader', {
      * @return {Ext.data.ResultSet} A ResultSet object
      */
     readRecords: function(data) {
-        var me  = this;
+        var me = this,
+            success,
+            recordCount,
+            records,
+            root,
+            total,
+            value,
+            message;
         
         /*
          * We check here whether the number of fields has changed since the last read.
@@ -310,10 +342,9 @@ Ext.define('Ext.data.reader.Reader', {
 
         data = me.getData(data);
         
-        var success = true,
-            recordCount = 0,
-            records = [],
-            root, total, value, message;
+        success = true;
+        recordCount = 0;
+        records = [];
             
         if (me.successProperty) {
             value = me.getSuccess(data);
@@ -328,7 +359,7 @@ Ext.define('Ext.data.reader.Reader', {
 
         
         // Only try and extract other data if call was successful
-        if (success) {
+        if (me.readRecordsOnFailure || success) {
             // If we pass an array as the data, we dont use getRoot on the data.
             // Instead the root equals to the data.
             root = Ext.isArray(data) ? data : me.getRoot(data);
@@ -478,8 +509,8 @@ Ext.define('Ext.data.reader.Reader', {
     /**
      * Takes a raw response object (as passed to this.read) and returns the useful data segment of it. This must be
      * implemented by each subclass
-     * @param {Object} response The responce object
-     * @return {Object} The useful data from the response
+     * @param {Object} response The response object
+     * @return {Ext.data.ResultSet} A ResultSet object
      */
     getResponseData: function(response) {
         //<debug>
@@ -492,9 +523,10 @@ Ext.define('Ext.data.reader.Reader', {
      * Reconfigures the meta data tied to this Reader
      */
     onMetaChange : function(meta) {
-        var fields = meta.fields,
-            me = this,
-            newModel;
+        var me = this,
+            fields = meta.fields || me.getFields(),
+            newModel,
+            clientIdProperty;
         
         // save off the raw meta data
         me.metaData = meta;
@@ -505,29 +537,26 @@ Ext.define('Ext.data.reader.Reader', {
         me.totalProperty = meta.totalProperty || me.totalProperty;
         me.successProperty = meta.successProperty || me.successProperty;
         me.messageProperty = meta.messageProperty || me.messageProperty;
-        
-        if (fields) {
-            if (me.model) {
-                me.model.setFields(fields);
-                me.setModel(me.model, true);
-            }
-            else {
-                newModel = Ext.define("Ext.data.reader.Json-Model" + Ext.id(), {
-                    extend: 'Ext.data.Model',
-                    fields: fields
-                });
-                if (me.idProperty) {
-                    // We only do this if the reader actually has a custom idProperty set,
-                    // otherwise let the model use its own default value. It is valid for
-                    // the reader idProperty to be undefined, in which case it will use the
-                    // model's idProperty (in getIdProperty()).
-                    newModel.idProperty = me.idProperty;
-                }
-                me.setModel(newModel, true);
-            }
+        clientIdProperty = meta.clientIdProperty;
+
+        if (me.model) {
+            me.model.setFields(fields, me.idProperty, clientIdProperty);
+            me.setModel(me.model, true);
         }
         else {
-            me.buildExtractors(true);
+            newModel = Ext.define("Ext.data.reader.Json-Model" + Ext.id(), {
+                extend: 'Ext.data.Model',
+                fields: fields,
+                clientIdProperty: clientIdProperty
+            });
+            if (me.idProperty) {
+                // We only do this if the reader actually has a custom idProperty set,
+                // otherwise let the model use its own default value. It is valid for
+                // the reader idProperty to be undefined, in which case it will use the
+                // model's idProperty (in getIdProperty()).
+                newModel.idProperty = me.idProperty;
+            }
+            me.setModel(newModel, true);
         }
     },
     
@@ -616,6 +645,7 @@ Ext.define('Ext.data.reader.Reader', {
             fields = modelProto.fields.items,
             numFields = fields.length,
             fieldVarName = [],
+            prefix = '__field',
             varName,
             i = 0,
             field,
@@ -628,7 +658,7 @@ Ext.define('Ext.data.reader.Reader', {
 
         for (; i < numFields; i++) {
             field = fields[i];
-            fieldVarName[i] = Ext.String.createVarName(field.name);
+            fieldVarName[i] = '__field' + i;
             code.push(',\n    ', fieldVarName[i], ' = fields.get("', field.name, '")');
         }
         code.push(';\n\n    return function(dest, source, record) {\n');
@@ -637,14 +667,14 @@ Ext.define('Ext.data.reader.Reader', {
             field = fields[i];
             varName = fieldVarName[i];
             // createFieldAccessExpression must be implemented in subclasses to extract data from the source object in the correct way.
-            code.push('        dest', ((field.name === varName) ? ('.' + varName) : ('["' + field.name + '"]')), ' = ', me.createFieldAccessExpression(field, varName, 'source'), ';\n');
+            code.push('        dest["' + field.name + '"]', ' = ', me.createFieldAccessExpression(field, varName, 'source'), ';\n');
         }
 
         // set the client id as the internalId of the record.
         // clientId handles the case where a client side record did not previously exist on the server,
         // so the server is passing back a client id that can be used to pair the server side record up with the client record
         if (clientIdProp) {
-            code.push('        if (internalId = ' + me.createFieldAccessExpression({mapping: clientIdProp}, null, 'source') + ') {\n');
+            code.push('        if (record && (internalId = ' + me.createFieldAccessExpression({mapping: clientIdProp}, null, 'source') + ')) {\n');
             code.push('            record.internalId = internalId;\n        }\n');
         }
 

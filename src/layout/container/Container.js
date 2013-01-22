@@ -84,6 +84,134 @@ Ext.define('Ext.layout.container.Container', {
     usesHeight: true,
     usesWidth: true,
 
+
+    /**
+     * @cfg {Boolean} [reserveScrollbar=false]
+     * Set to `true` to leave space for a vertical scrollbar (if the OS shows space-consuming scrollbars) regardless
+     * of whether a scrollbar is needed.
+     *
+     * This is useful if content height changes during application usage, but you do not want the calculated width
+     * of child items to change when a scrollbar appears or disappears. The scrollbar will appear in the reserved space,
+     * and the calculated width of child Components will not change.
+     *
+     *     @example
+     *     Ext.define('Employee', {
+     *         extend: 'Ext.data.Model',
+     *         fields: [
+     *            {name: 'rating', type: 'int'},
+     *            {name: 'salary', type: 'float'},
+     *            {name: 'name'}
+     *         ]
+     *     });
+     *
+     *     function createFakeData(count) {
+     *         var firstNames   = ['Ed', 'Tommy', 'Aaron', 'Abe', 'Jamie', 'Adam', 'Dave', 'David', 'Jay', 'Nicolas', 'Nige'],
+     *             lastNames    = ['Spencer', 'Maintz', 'Conran', 'Elias', 'Avins', 'Mishcon', 'Kaneda', 'Davis', 'Robinson', 'Ferrero', 'White'],
+     *             ratings      = [1, 2, 3, 4, 5],
+     *             salaries     = [100, 400, 900, 1500, 1000000];
+     *
+     *         var data = [];
+     *         for (var i = 0; i < (count || 25); i++) {
+     *             var ratingId    = Math.floor(Math.random() * ratings.length),
+     *                 salaryId    = Math.floor(Math.random() * salaries.length),
+     *                 firstNameId = Math.floor(Math.random() * firstNames.length),
+     *                 lastNameId  = Math.floor(Math.random() * lastNames.length),
+     *
+     *                 rating      = ratings[ratingId],
+     *                 salary      = salaries[salaryId],
+     *                 name        = Ext.String.format("{0} {1}", firstNames[firstNameId], lastNames[lastNameId]);
+     *
+     *             data.push({
+     *                 rating: rating,
+     *                 salary: salary,
+     *                 name: name
+     *             });
+     *         }
+     *         store.loadData(data);
+     *     }
+     *
+     *     // create the Data Store
+     *     var store = Ext.create('Ext.data.Store', {
+     *         id: 'store',
+     *         model: 'Employee',
+     *         proxy: {
+     *             type: 'memory'
+     *         }
+     *     });
+     *     createFakeData(10);
+     *
+     *     var grid = Ext.create('Ext.grid.Panel', {
+     *         title: 'Grid loaded with varying number of records',
+     *         anchor: '100%',
+     *         store: store,
+     *         columns: [{
+     *             xtype: 'rownumberer',
+     *             width: 40,
+     *             sortable: false
+     *         },{
+     *             text: 'Name',
+     *             flex: 1,
+     *             sortable: true,
+     *             dataIndex: 'name'
+     *         },{
+     *             text: 'Rating',
+     *             width: 125,
+     *             sortable: true,
+     *             dataIndex: 'rating'
+     *         },{
+     *             text: 'Salary',
+     *             width: 125,
+     *             sortable: true,
+     *             dataIndex: 'salary',
+     *             align: 'right',
+     *             renderer: Ext.util.Format.usMoney
+     *         }]
+     *     });
+     *
+     *     Ext.create('Ext.panel.Panel', {
+     *         renderTo: document.body,
+     *         width: 800,
+     *         height: 600,
+     *         layout: {
+     *             type: 'anchor',
+     *             reserveScrollbar: true // There will be a gap even when there's no scrollbar
+     *         },
+     *         autoScroll: true,
+     *         items: grid,
+     *         tbar: {
+     *             defaults: {
+     *                 handler: function(b) {
+     *                     createFakeData(b.count);
+     *                 }
+     *             },
+     *             items: [{
+     *                  text: '10 Items',
+     *                  count: 10
+     *             },{
+     *                  text: '100 Items',
+     *                  count: 100
+     *             },{
+     *                  text: '300 Items',
+     *                  count: 300
+     *             },{
+     *                  text: '1000 Items',
+     *                  count: 1000
+     *             },{
+     *                  text: '5000 Items',
+     *                  count: 5000
+     *             }]
+     *         }
+     *     });
+     *
+     */
+    reserveScrollbar: false,
+
+    // Begin with no previous adjustments
+    lastOverflowAdjust: {
+        width: 0,
+        height: 0
+    },
+
     constructor: function () {
         this.callParent(arguments);
         this.mixins.elementCt.constructor.call(this);
@@ -92,6 +220,25 @@ Ext.define('Ext.layout.container.Container', {
     destroy : function() {
         this.callParent();
         this.mixins.elementCt.destroy.call(this);
+    },
+
+    initLayout: function() {
+        var me = this,
+            scrollbarWidth = Ext.getScrollbarSize().width;
+
+        me.callParent();
+
+        // Create a default lastOverflowAdjust based upon scrolling configuration.
+        // If the Container is to overflow, or we *always* reserve space for a scrollbar
+        // then reserve space for a vertical scrollbar
+        if (scrollbarWidth && me.manageOverflow && !me.hasOwnProperty('lastOverflowAdjust')) {
+            if (me.owner.autoScroll || me.reserveScrollbar) {
+                me.lastOverflowAdjust = {
+                    width: scrollbarWidth,
+                    height: 0
+                };
+            }
+        }
     },
 
     /**
@@ -116,6 +263,12 @@ Ext.define('Ext.layout.container.Container', {
 
         me.callParent(arguments);
 
+        // Begin with the scrollbar adjustment that we used last time - this is more likely to be correct
+        // than beginning with no adjustment at all
+        if (!ownerContext.state.overflowAdjust) {
+            ownerContext.state.overflowAdjust = me.lastOverflowAdjust;
+        }
+
         if (firstCycle) {
             if (me.usesContainerHeight) {
                 ++ownerContext.consumersContainerHeight;
@@ -128,6 +281,11 @@ Ext.define('Ext.layout.container.Container', {
         if (padEl) {
             padEl.setStyle('display', 'none');
         }
+    },
+
+    completeLayout: function (ownerContext) {
+        // Cache the scrollbar adjustment
+        this.lastOverflowAdjust = ownerContext.state.overflowAdjust;
     },
 
     cacheChildItems: function (ownerContext) {
@@ -266,7 +424,7 @@ Ext.define('Ext.layout.container.Container', {
             overflow, scrollbarSize, contentW, contentH, ownerW, ownerH, scrollbars,
             xauto, yauto;
 
-        if (manageOverflow && !overflowAdjust) {
+        if (manageOverflow && !state.secondPass && !me.reserveScrollbar) {
             // Determine the dimensions that have overflow:auto applied. If these come by
             // way of component config, this does not require a DOM read:
             if (owner.autoScroll) {
@@ -314,26 +472,25 @@ Ext.define('Ext.layout.container.Container', {
                     scrollbars &= ~dimensions; // ignore dimensions that have no effect
                 }
 
-                if (scrollbars) {
-                    overflowAdjust = {
-                        width:  (xauto && (scrollbars & 2)) ? scrollbarSize.width : 0,
-                        height: (yauto && (scrollbars & 1)) ? scrollbarSize.height : 0
-                    };
+                overflowAdjust = {
+                    width:  (xauto && (scrollbars & 2)) ? scrollbarSize.width : 0,
+                    height: (yauto && (scrollbars & 1)) ? scrollbarSize.height : 0
+                };
 
-                    // We can have 0-sized scrollbars (new Mac OS) and so don't invalidate
-                    // the layout unless this will change something...
-                    if (overflowAdjust.width + overflowAdjust.height) {
-                        me.done = false;
+                // We can have 0-sized scrollbars (new Mac OS) and so don't invalidate
+                // the layout unless this will change something...
+                if (overflowAdjust.width !== me.lastOverflowAdjust.width || overflowAdjust.height !== me.lastOverflowAdjust.height) {
+                    me.done = false;
 
-                        // we pass overflowAdjust and overflowState in as state for the next
-                        // cycle (these are discarded if one of our ownerCt's invalidates):
-                        ownerContext.invalidate({
-                            state: {
-                                overflowAdjust: overflowAdjust,
-                                overflowState: state.overflowState
-                            }
-                        });
-                    }
+                    // we pass overflowAdjust and overflowState in as state for the next
+                    // cycle (these are discarded if one of our ownerCt's invalidates):
+                    ownerContext.invalidate({
+                        state: {
+                            overflowAdjust: overflowAdjust,
+                            overflowState: state.overflowState,
+                            secondPass: true
+                        }
+                    });
                 }
             }
         }
@@ -378,7 +535,7 @@ Ext.define('Ext.layout.container.Container', {
     configureItem: function(item) {
         var me = this,
             ownerItemCls = me.owner.itemCls,
-            addClasses = me.itemCls || [];
+            addClasses = [].concat(me.itemCls || []);
 
         me.callParent(arguments);
 
@@ -453,7 +610,7 @@ Ext.define('Ext.layout.container.Container', {
                     out.push('position: relative; top: -1px;');
                 }/**/
 
-                out.push('"></div>')
+                out.push('"></div>');
 
                 me.scrollRangeFlags = scrollRangeFlags; // remember for calculateOverflow
             }
@@ -618,6 +775,17 @@ Ext.define('Ext.layout.container.Container', {
         return this.owner.getTargetEl();
     },
 
+    /**
+     * Returns the element into which extra functional DOM elements can be inserted. Defaults to the owner Component's encapsulating element.
+     *
+     * May be overridden in Component layout managers which implement a {@link #getRenderTarget component render target} which must only
+     * contain child components.
+     * @return {Ext.Element}
+     */
+    getElementTarget: function() {
+        return this.getRenderTarget();
+    },
+
     getRenderTpl: function () {
         var me = this,
             renderTpl = Ext.XTemplate.getTpl(this, 'renderTpl');
@@ -651,6 +819,10 @@ Ext.define('Ext.layout.container.Container', {
             needHorz = 0,
             needVert = 0;
 
+        // No space-consuming scrollbars.
+        if (!scrollbarSize.width) {
+            return 0;
+        }
         if (hasHeight && height < contentHeight) {
             needVert = 2;
             width -= scrollbarSize.width;
@@ -696,7 +868,7 @@ Ext.define('Ext.layout.container.Container', {
      * equal to padding-bottom. To preserve the right padding, the sizing element needs to
      * have a width that includes the right padding.
      */
-    getScrollRangeFlags: function () {
+    getScrollRangeFlags: (function () {
         var flags = -1;
 
         return function () {
@@ -746,7 +918,7 @@ Ext.define('Ext.layout.container.Container', {
 
             return flags;
         };
-    }(),
+    }()),
 
     /**
      * Returns the owner component's resize element.

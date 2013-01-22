@@ -121,6 +121,15 @@ Ext.define('Ext.grid.column.Column', {
      * of a group. Note that if all sub columns are dragged out of a group, the group is destroyed.
      */
 
+<span id='Ext-grid-column-Column-cfg-stateId'>    /**
+</span>     * @override
+     * @cfg {String} stateId
+     * An identifier which identifies this column uniquely within the owning grid's {@link #stateful state}.
+     * 
+     * This does not have to be *globally* unique. A column's state is not saved standalone. It is encapsulated within
+     * the owning grid's state.
+     */
+
 <span id='Ext-grid-column-Column-cfg-dataIndex'>    /**
 </span>     * @cfg {String} dataIndex
      * The name of the field in the grid's {@link Ext.data.Store}'s {@link Ext.data.Model} definition from
@@ -134,6 +143,13 @@ Ext.define('Ext.grid.column.Column', {
      * **Note**: to have a clickable header with no text displayed you can use the default of `&amp;#160;` aka `&amp;nbsp;`.
      */
     text: '&amp;#160;',
+
+<span id='Ext-grid-column-Column-cfg-menuText'>    /**
+</span>     * @cfg {String} menuText
+     * The text to render in the column visibility selection menu for this column.  If not
+     * specified, will default to the text value.
+     */
+    menuText: null,
 
 <span id='Ext-grid-column-Column-cfg-emptyCellText'>    /**
 </span>     * @cfg {String} [emptyCellText=undefined]
@@ -271,25 +287,12 @@ Ext.define('Ext.grid.column.Column', {
     initResizable: Ext.emptyFn,
 
     initComponent: function() {
-        var me = this;
+        var me = this,
+            renderer;
 
         if (Ext.isDefined(me.header)) {
             me.text = me.header;
             delete me.header;
-        }
-
-        // Flexed Headers need to have a minWidth defined so that they can never be squeezed out of existence by the
-        // HeaderContainer's specialized Box layout, the ColumnLayout. The ColumnLayout's overridden calculateChildboxes
-        // method extends the available layout space to accommodate the &quot;desiredWidth&quot; of all the columns.
-        if (me.flex) {
-            me.minWidth = me.minWidth || Ext.grid.plugin.HeaderResizer.prototype.minColWidth;
-        }
-        // Non-flexed Headers may never be squeezed in the event of a shortfall so
-        // always set their minWidth to their current width.
-        else {
-            //me.minWidth = me.width;
-            // we cannot set minWidth as that is a user controlled value... we need to not
-            // apply shortfall squeeze instead
         }
 
         if (!me.triStateSort) {
@@ -322,8 +325,28 @@ Ext.define('Ext.grid.column.Column', {
             // If we are not a group header, then this is not to be used as a container, and must not have a container layout executed, and it must
             // acquire layout height from DOM content, not from child items.
             me.isContainer = false;
+
+            // Flexed Headers need to have a minWidth defined so that they can never be squeezed out of existence by the
+            // HeaderContainer's specialized Box layout, the ColumnLayout. The ColumnLayout's overridden calculateChildboxes
+            // method extends the available layout space to accommodate the &quot;desiredWidth&quot; of all the columns.
+            if (me.flex) {
+                me.minWidth = me.minWidth || Ext.grid.plugin.HeaderResizer.prototype.minColWidth;
+            }
         }
         me.addCls(Ext.baseCSSPrefix + 'column-header-align-' + me.align);
+        
+        renderer = me.renderer;
+        if (renderer) {
+            // When specifying a renderer as a string, it always resolves
+            // to Ext.util.Format
+            if (typeof renderer == 'string') {
+                me.renderer = Ext.util.Format[renderer];
+            }
+            me.hasCustomRenderer = true;
+        } else if (me.defaultRenderer) {
+            me.scope = me;
+            me.renderer = me.defaultRenderer;
+        }
 
         // Initialize as a HeaderContainer
         me.callParent(arguments);
@@ -391,17 +414,22 @@ Ext.define('Ext.grid.column.Column', {
 
     getColumnState: function () {
         var me = this,
+            items = me.items.items,
+            // Check for the existence of items, since column.Action won't have them
+            iLen = items ? items.length : 0,
+            i,
             columns = [],
             state = {
-                id: me.headerId
+                id: me.stateId || me.headerId
             };
 
         me.savePropsToState(['hidden', 'sortable', 'locked', 'flex', 'width'], state);
         
         if (me.isGroupHeader) {
-            me.items.each(function(column){
-                columns.push(column.getColumnState());
-            });
+            for (i = 0; i &lt; iLen; i++) {
+                columns.push(items[i].getColumnState());
+            }
+
             if (columns.length) {
                 state.columns = columns;
             }
@@ -493,52 +521,14 @@ Ext.define('Ext.grid.column.Column', {
         });
     },
 
-<span id='Ext-grid-column-Column-method-setWidth'>    /**
-</span>     * Sets the width of this Column.
-     * @param {Number} width New width.
-     */
-    setWidth: function(width, /* private - used internally */ doLayout) {
-        var me = this,
-            headerCt = me.ownerCt,
-            siblings,
-            len, i,
-            oldWidth = me.getWidth(),
-            groupWidth = 0,
-            sibling;
-
-        if (width !== oldWidth) {
-            me.oldWidth = oldWidth;
-
-            // Non-flexed Headers may never be squeezed in the event of a shortfall so
-            // always set the minWidth to their current width.
-            me.minWidth = me.width = width;
-
-            // Bubble size changes upwards to group headers
-            if (headerCt.isGroupHeader) {
-                siblings = headerCt.items.items;
-                len = siblings.length;
-
-                for (i = 0; i &lt; len; i++) {
-                    sibling = siblings[i];
-                    if (!sibling.hidden) {
-                        groupWidth += (sibling === me) ? width : sibling.getWidth();
-                    }
-                }
-                headerCt.setWidth(groupWidth, doLayout);
-            } else if (doLayout !== false) {
-                // Allow the owning Container to perform the sizing
-                headerCt.doLayout();
-            }
-        }
-    },
-
+   
     afterComponentLayout: function(width, height, oldWidth, oldHeight) {
         var me = this,
             ownerHeaderCt = me.getOwnerHeaderCt();
 
         me.callParent(arguments);
 
-        if (ownerHeaderCt &amp;&amp; (width !== oldWidth)) {
+        if (ownerHeaderCt &amp;&amp; (oldWidth != null || me.flex) &amp;&amp; width !== oldWidth) {
             ownerHeaderCt.onHeaderResize(me, width, true);
         }
         delete me.oldWidth;
@@ -550,29 +540,36 @@ Ext.define('Ext.grid.column.Column', {
     setPadding: function(headerHeight) {
         var me = this,
             lineHeight = parseInt(me.textEl.getStyle('line-height'), 10),
-            textHeight = parseInt(me.textEl.dom.offsetHeight, 10);
+            textHeight = me.textEl.dom.offsetHeight,
+            titleEl = me.titleEl,
+            availableHeight = headerHeight - me.el.getBorderWidth('tb'),
+            titleElHeight;
 
         // Top title containing element must stretch to match height of sibling group headers
         if (!me.isGroupHeader) {
-            if (me.titleEl.getHeight() &lt; headerHeight) {
-                me.titleEl.dom.style.height = headerHeight + 'px';
+            if (titleEl.getHeight() &lt; availableHeight) {
+                titleEl.setHeight(availableHeight);
+                // the column el's parent element (the 'innerCt') may have an incorrect height
+                // at this point because it may have been shrink wrapped prior to the titleEl's
+                // height being set, so we need to sync it up here
+                me.ownerCt.layout.innerCt.setHeight(headerHeight);
             }
         }
-        headerHeight = me.titleEl.getViewSize().height;
+        titleElHeight = titleEl.getViewSize().height;
 
         // Vertically center the header text in potentially vertically stretched header
         if (textHeight) {
             if(lineHeight) {
                 textHeight = Math.ceil(textHeight / lineHeight) * lineHeight;
             }
-            me.titleEl.setStyle({
-                paddingTop: Math.max(((headerHeight - textHeight) / 2), 0) + 'px'
+            titleEl.setStyle({
+                paddingTop: Math.floor(Math.max(((titleElHeight - textHeight) / 2), 0)) + 'px'
             });
         }
 
         // Only IE needs this
         if (Ext.isIE &amp;&amp; me.triggerEl) {
-            me.triggerEl.setHeight(headerHeight);
+            me.triggerEl.setHeight(titleElHeight);
         }
     },
 
@@ -712,7 +709,7 @@ Ext.define('Ext.grid.column.Column', {
             }
             me.sortState = state;
             // we only want to fire the event if we have a null state when using triStateSort
-            if (me.triStateSort || state !== null) {
+            if (me.triStateSort || state != null) {
                 ownerHeaderCt.fireEvent('sortchange', ownerHeaderCt, me, state);
             }
         }
@@ -720,12 +717,11 @@ Ext.define('Ext.grid.column.Column', {
 
     hide: function(fromOwner) {
         var me = this,
-            newWidth = 0,
             ownerHeaderCt = me.getOwnerHeaderCt(),
             owner = me.ownerCt,
             ownerIsGroup = owner.isGroupHeader,
             item, items, len, i;
-            
+
         // owner is a group, hide call didn't come from the owner
         if (ownerIsGroup &amp;&amp; !fromOwner) {
             items = owner.query('&gt;:not([hidden])');
@@ -737,9 +733,6 @@ Ext.define('Ext.grid.column.Column', {
         }
 
         Ext.suspendLayouts();
-
-        // Hiding means setting to zero width, so cache the width
-        me.oldWidth = me.getWidth();
 
         if (me.isGroupHeader) {
             items = me.items.items;
@@ -755,24 +748,12 @@ Ext.define('Ext.grid.column.Column', {
         // Notify owning HeaderContainer
         ownerHeaderCt.onHeaderHide(me);
 
-        if (me.ownerCt.isGroupHeader) {
-            items = owner.query('&gt;:not([hidden])');
-            if (items.length &amp;&amp; !fromOwner) {
-                // We have visible child items and wasn't hidden by the owner
-                // Size the group down to accommodate fewer sub headers
-                for (i = 0, len = items.length; i &lt; len; i++) {
-                    newWidth += items[i].getWidth();
-                }
-                owner.setWidth(newWidth);
-            }
-        }
         Ext.resumeLayouts(true);
     },
 
     show: function(fromOwner, fromChild) {
         var me = this,
             ownerCt = me.ownerCt,
-            newWidth = 0,
             items,
             len, i,
             item;
@@ -794,27 +775,16 @@ Ext.define('Ext.grid.column.Column', {
                 if (item.hidden) {
                     item.show(true);
                 }
-                newWidth += item.getWidth();
             }
-            me.setWidth(newWidth);
         }
 
-        // Resize the owning group to accommodate
-        if (ownerCt.isGroupHeader &amp;&amp; !fromOwner) {
-            items = ownerCt.query('&gt;:not([hidden])');
-            for (i = 0, len = items.length; i &lt; len; i++) {
-                newWidth += items[i].getWidth();
-            }
-            ownerCt.minWidth = newWidth;
-            ownerCt.setWidth(newWidth);
-        }
+        Ext.resumeLayouts(true);
 
-        // Notify owning HeaderContainer
+        // Notify owning HeaderContainer AFTER layout has been flushed so that header and headerCt widths are all correct
         ownerCt = me.getOwnerHeaderCt();
         if (ownerCt) {
             ownerCt.onHeaderShow(me);
         }
-        Ext.resumeLayouts(true);
     },
 
     getDesiredWidth: function() {

@@ -130,7 +130,7 @@ Ext.define('Ext.form.action.Submit', {
      * NOTE: the form element is automatically added to the DOM, so any code that uses
      * it must remove it from the DOM after finishing with it.
      *
-     * @return {HTMLFormElement}
+     * @return {HTMLElement}
      */
     buildForm: function() {
         var fieldsSpec = [],
@@ -138,13 +138,20 @@ Ext.define('Ext.form.action.Submit', {
             formEl,
             basicForm = this.form,
             params = this.getParams(),
-            uploadFields = [];
+            uploadFields = [],
+            fields = basicForm.getFields().items,
+            f,
+            fLen   = fields.length,
+            field, key, value, v, vLen,
+            u, uLen;
 
-        basicForm.getFields().each(function(field) {
+        for (f = 0; f < fLen; f++) {
+            field = fields[f];
+
             if (field.isFileUpload()) {
                 uploadFields.push(field);
             }
-        });
+        }
 
         function addField(name, val) {
             fieldsSpec.push({
@@ -155,16 +162,20 @@ Ext.define('Ext.form.action.Submit', {
             });
         }
 
-        // Add the form field values
-        Ext.iterate(params, function(key, val) {
-            if (Ext.isArray(val)) {
-                Ext.each(val, function(v) {
-                    addField(key, v);
-                });
-            } else {
-                addField(key, val);
+        for (key in params) {
+            if (params.hasOwnProperty(key)) {
+                value = params[key];
+
+                if (Ext.isArray(value)) {
+                    vLen = value.length;
+                    for (v = 0; v < vLen; v++) {
+                        addField(key, value[v]);
+                    }
+                } else {
+                    addField(key, value);
+                }
             }
-        });
+        }
 
         formSpec = {
             tag: 'form',
@@ -186,11 +197,14 @@ Ext.define('Ext.form.action.Submit', {
         // Special handling for file upload fields: since browser security measures prevent setting
         // their values programatically, and prevent carrying their selected values over when cloning,
         // we have to move the actual field instances out of their components and into the form.
-        Ext.Array.each(uploadFields, function(field) {
+        uLen = uploadFields.length;
+
+        for (u = 0; u < uLen; u++) {
+            field = uploadFields[u];
             if (field.rendered) { // can only have a selected file value after being rendered
                 formEl.appendChild(field.extractFileInput());
             }
-        });
+        }
 
         return formEl;
     },

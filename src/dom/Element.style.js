@@ -4,119 +4,118 @@
 (function() {
 
 var Element = Ext.dom.Element,
-    view = document.defaultView;
-
-var adjustDirect2DTableRe = /table-row|table-.*-group/,
+    view = document.defaultView,
+    adjustDirect2DTableRe = /table-row|table-.*-group/,
     INTERNAL = '_internal',
     HIDDEN = 'hidden',
+    HEIGHT = 'height',
+    WIDTH = 'width',
     ISCLIPPED = 'isClipped',
     OVERFLOW = 'overflow',
     OVERFLOWX = 'overflow-x',
     OVERFLOWY = 'overflow-y',
-    ORIGINALCLIP = 'originalClip';
-
-// These property values are read from the parentNode if they cannot be read
-// from the child:
-Element.inheritedProps = {
-    fontSize: 1,
-    fontStyle: 1,
-    opacity: 1
-};
+    ORIGINALCLIP = 'originalClip',
+    DOCORBODYRE = /#document|body/i,
+    // This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
+    // the same object.
+    styleHooks,
+    edges, k, edge, borderWidth;
 
 if (!view || !view.getComputedStyle) {
-    Element.override({
-        getStyle: Ext.isIE6 ?
-            // IE6 flavor:
-            function (prop) {
-                var me = this,
-                    dom = me.dom,
-                    hook = me.styleHooks[prop],
-                    name, cs;
+    Element.prototype.getStyle = function (property, inline) {
+        var me = this,
+            dom = me.dom,
+            multiple = typeof property != 'string',
+            hooks = me.styleHooks,
+            prop = property,
+            props = prop,
+            len = 1,
+            isInline = inline,
+            camel, domStyle, values, hook, out, style, i;
 
-                if (dom == document) {
-                    return null;
-                }
-                if (!hook) {
-                    me.styleHooks[prop] = hook = { name: Element.normalize(prop) };
-                }
-                if (hook.get) {
-                    return hook.get(dom, me);
-                }
-
-                name = hook.name;
-
-                do {
-                    try {
-                        return dom.style[name] || ((cs = dom.currentStyle) ? cs[name] : null);
-                    } catch (e) {
-                        // in some cases, IE6 will throw Invalid Argument for properties
-                        // like fontSize (see in /examples/tabs/tabs.html).
-                    }
-
-                    if (!Element.inheritedProps[name]) {
-                        break;
-                    }
-
-                    dom = dom.parentNode;
-                    // this is _not_ perfect, but we can only hope that the style we
-                    // need is inherited from a parentNode. If not and since IE won't
-                    // give us the info we need, we are never going to be 100% right.
-                } while (dom);
-
-                //<debug>
-                Ext.log({
-                    level: 'warn',
-                    msg: 'Failed to get '+me.dom.id+'.currentStyle.'+prop // not dom.id!
-                });
-                //</debug>
-                return null;
-            } :
-            // IE7+ flavor:
-            function (prop) {
-                var me = this,
-                    dom = me.dom,
-                    hook = me.styleHooks[prop],
-                    name, cs;
-
-                if (dom == document) {
-                    return null;
-                }
-                if (!hook) {
-                    me.styleHooks[prop] = hook = { name: Element.normalize(prop) };
-                }
-                if (hook.get) {
-                    return hook.get(dom, me);
-                }
-
-                name = hook.name;
-
-                return dom.style[name] || ((cs = dom.currentStyle) ? cs[name] : null);
+        if (multiple) {
+            values = {};
+            prop = props[0];
+            i = 0;
+            if (!(len = props.length)) {
+                return values;
             }
-    });
+        }
+
+        if (!dom || dom.documentElement) {
+            return values || '';
+        }
+
+        domStyle = dom.style;
+
+        if (inline) {
+            style = domStyle;
+        } else {
+            style = dom.currentStyle;
+
+            // fallback to inline style if rendering context not available
+            if (!style) {
+                isInline = true;
+                style = domStyle;
+            }
+        }
+
+        do {
+            hook = hooks[prop];
+
+            if (!hook) {
+                hooks[prop] = hook = { name: Element.normalize(prop) };
+            }
+
+            if (hook.get) {
+                out = hook.get(dom, me, isInline, style);
+            } else {
+                camel = hook.name;
+
+                // In some cases, IE6 will throw Invalid Argument exceptions for properties
+                // like fontSize (/examples/tabs/tabs.html in 4.0 used to exhibit this but
+                // no longer does due to font style changes). There is a real cost to a try
+                // block, so we avoid it where possible...
+                if (hook.canThrow) {
+                    try {
+                        out = style[camel];
+                    } catch (e) {
+                        out = '';
+                    }
+                } else {
+                    out = style[camel];
+                }
+            }
+
+            if (!multiple) {
+                return out;
+            }
+
+            values[prop] = out;
+            prop = props[++i];
+        } while (i < len);
+
+        return values;
+    };
 }
 
 Element.override({
     getHeight: function(contentHeight, preciseHeight) {
         var me = this,
             dom = me.dom,
-            hidden = Ext.isIE && me.isStyle('display', 'none'),
-            height, overflow, style, floating;
+            hidden = me.isStyle('display', 'none'),
+            height,
+            floating;
 
-        // IE Quirks mode acts more like a max-size measurement unless overflow is hidden during measurement.
-        // We will put the overflow back to it's original value when we are done measuring.
-        if (Ext.isIEQuirks) {
-            style = dom.style;
-            overflow = style.overflow;
-            me.setStyle({ overflow: 'hidden'});
+        if (hidden) {
+            return 0;
         }
 
-        height = dom.offsetHeight;
-
-        height = Math.max(height, hidden ? 0 : dom.clientHeight) || 0;
+        height = Math.max(dom.offsetHeight, dom.clientHeight) || 0;
 
         // IE9 Direct2D dimension rounding bug
-        if (!hidden && Ext.supports.Direct2DBug) {
-            floating = me.adjustDirect2DDimension('height');
+        if (Ext.supports.Direct2DBug) {
+            floating = me.adjustDirect2DDimension(HEIGHT);
             if (preciseHeight) {
                 height += floating;
             }
@@ -126,50 +125,29 @@ Element.override({
         }
 
         if (contentHeight) {
-            height -= (me.getBorderWidth("tb") + me.getPadding("tb"));
+            height -= me.getBorderWidth("tb") + me.getPadding("tb");
         }
 
-        if (Ext.isIEQuirks) {
-            me.setStyle({ overflow: overflow});
-        }
-
-        if (height < 0) {
-            height = 0;
-        }
-        return height;
+        return (height < 0) ? 0 : height;
     },
 
     getWidth: function(contentWidth, preciseWidth) {
         var me = this,
             dom = me.dom,
-            hidden = Ext.isIE && me.isStyle('display', 'none'),
-            rect, width, overflow, style, floating, parentPosition;
+            hidden = me.isStyle('display', 'none'),
+            rect, width, floating;
 
-        // IE Quirks mode acts more like a max-size measurement unless overflow is hidden during measurement.
-        // We will put the overflow back to it's original value when we are done measuring.
-        if (Ext.isIEQuirks) {
-            style = dom.style;
-            overflow = style.overflow;
-            me.setStyle({overflow: 'hidden'});
+        if (hidden) {
+            return 0;
         }
 
-        // Fix Opera 10.5x width calculation issues
-        if (Ext.isOpera10_5) {
-            if (dom.parentNode.currentStyle.position === 'relative') {
-                parentPosition = dom.parentNode.style.position;
-                dom.parentNode.style.position = 'static';
-                width = dom.offsetWidth;
-                dom.parentNode.style.position = parentPosition;
-            }
-            width = Math.max(width || 0, dom.offsetWidth);
-
-            // Gecko will in some cases report an offsetWidth that is actually less than the width of the
-            // text contents, because it measures fonts with sub-pixel precision but rounds the calculated
-            // value down. Using getBoundingClientRect instead of offsetWidth allows us to get the precise
-            // subpixel measurements so we can force them to always be rounded up. See
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=458617
-            // Rounding up ensures that the width includes the full width of the text contents.
-        } else if (Ext.supports.BoundingClientRect) {
+        // Gecko will in some cases report an offsetWidth that is actually less than the width of the
+        // text contents, because it measures fonts with sub-pixel precision but rounds the calculated
+        // value down. Using getBoundingClientRect instead of offsetWidth allows us to get the precise
+        // subpixel measurements so we can force them to always be rounded up. See
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=458617
+        // Rounding up ensures that the width includes the full width of the text contents.
+        if (Ext.supports.BoundingClientRect) {
             rect = dom.getBoundingClientRect();
             width = rect.right - rect.left;
             width = preciseWidth ? width : Math.ceil(width);
@@ -177,17 +155,17 @@ Element.override({
             width = dom.offsetWidth;
         }
 
-        width = Math.max(width, hidden ? 0 : dom.clientWidth) || 0;
+        width = Math.max(width, dom.clientWidth) || 0;
 
         // IE9 Direct2D dimension rounding bug
-        if (!hidden && Ext.supports.Direct2DBug) {
+        if (Ext.supports.Direct2DBug) {
             // get the fractional portion of the sub-pixel precision width of the element's text contents
-            floating = me.adjustDirect2DDimension('width');
+            floating = me.adjustDirect2DDimension(WIDTH);
             if (preciseWidth) {
                 width += floating;
             }
             // IE9 also measures fonts with sub-pixel precision, but unlike Gecko, instead of rounding the offsetWidth down,
-            // it rounds to the nearest integer.  This means that in order to ensure that the width includes the full
+            // it rounds to the nearest integer. This means that in order to ensure that the width includes the full
             // width of the text contents we need to increment the width by 1 only if the fractional portion is less than 0.5
             else if (floating > 0 && floating < 0.5) {
                 width++;
@@ -195,17 +173,10 @@ Element.override({
         }
 
         if (contentWidth) {
-            width -= (me.getBorderWidth("lr") + me.getPadding("lr"));
+            width -= me.getBorderWidth("lr") + me.getPadding("lr");
         }
 
-        if (Ext.isIEQuirks) {
-            me.setStyle({ overflow: overflow});
-        }
-
-        if (width < 0) {
-            width = 0;
-        }
-        return width;
+        return (width < 0) ? 0 : width;
     },
 
     setWidth: function(width, animate) {
@@ -287,8 +258,8 @@ Element.override({
     getViewSize : function() {
         var me = this,
             dom = me.dom,
-            isDoc = (dom == Ext.getDoc().dom || dom == Ext.getBody().dom),
-            style, overflow, ret;
+            isDoc = DOCORBODYRE.test(dom.nodeName),
+            ret;
 
         // If the body, use static methods
         if (isDoc) {
@@ -296,25 +267,13 @@ Element.override({
                 width : Element.getViewWidth(),
                 height : Element.getViewHeight()
             };
-
-            // Else use clientHeight/clientWidth
-        }
-        else {
-            // IE 6 & IE Quirks mode acts more like a max-size measurement unless overflow is hidden during measurement.
-            // We will put the overflow back to it's original value when we are done measuring.
-            if (Ext.isIE6 || Ext.isIEQuirks) {
-                style = dom.style;
-                overflow = style.overflow;
-                me.setStyle({ overflow: 'hidden'});
-            }
+        } else {
             ret = {
                 width : dom.clientWidth,
                 height : dom.clientHeight
             };
-            if (Ext.isIE6 || Ext.isIEQuirks) {
-                me.setStyle({ overflow: overflow });
-            }
         }
+
         return ret;
     },
 
@@ -357,16 +316,18 @@ Element.override({
     getColor : function(attr, defaultValue, prefix) {
         var v = this.getStyle(attr),
             color = prefix || prefix === '' ? prefix : '#',
-            h;
+            h, len, i=0;
 
         if (!v || (/transparent|inherit/.test(v))) {
             return defaultValue;
         }
         if (/^r/.test(v)) {
-            Ext.each(v.slice(4, v.length - 1).split(','), function(s) {
-                h = parseInt(s, 10);
+             v = v.slice(4, v.length - 1).split(',');
+             len = v.length;
+             for (; i<len; i++) {
+                h = parseInt(v[i], 10);
                 color += (h < 16 ? '0' : '') + h.toString(16);
-            });
+            }
         } else {
             v = v.replace('#', '');
             color += v.length == 3 ? v.replace(/^(\w)(\w)(\w)$/, '$1$1$2$2$3$3') : v;
@@ -392,7 +353,7 @@ Element.override({
             me.setStyle('opacity', opacity);
         }
         else {
-            if (!Ext.isObject(animate)) {
+            if (typeof animate != 'object') {
                 animate = {
                     duration: 350,
                     easing: 'ease-in'
@@ -427,7 +388,8 @@ Element.override({
             display = me.getStyle('display'),
             inlineDisplay = dom.style.display,
             inlinePosition = dom.style.position,
-            originIndex = dimension === 'width' ? 0 : 1,
+            originIndex = dimension === WIDTH ? 0 : 1,
+            currentStyle = dom.currentStyle,
             floating;
 
         if (display === 'inline') {
@@ -438,7 +400,10 @@ Element.override({
 
         // floating will contain digits that appears after the decimal point
         // if height or width are set to auto we fallback to msTransformOrigin calculation
-        floating = (parseFloat(me.getStyle(dimension)) || parseFloat(dom.currentStyle.msTransformOrigin.split(' ')[originIndex]) * 2) % 1;
+        
+        // Use currentStyle here instead of getStyle. In some difficult to reproduce 
+        // instances it resets the scrollWidth of the element
+        floating = (parseFloat(currentStyle[dimension]) || parseFloat(currentStyle.msTransformOrigin.split(' ')[originIndex]) * 2) % 1;
 
         dom.style.position = inlinePosition;
 
@@ -455,14 +420,16 @@ Element.override({
      */
     clip : function() {
         var me = this,
-            data = (me.$cache || me.getCache()).data;
+            data = (me.$cache || me.getCache()).data,
+            style;
 
         if (!data[ISCLIPPED]) {
             data[ISCLIPPED] = true;
+            style = me.getStyle([OVERFLOW, OVERFLOWX, OVERFLOWY]);
             data[ORIGINALCLIP] = {
-                o: me.getStyle(OVERFLOW),
-                x: me.getStyle(OVERFLOWX),
-                y: me.getStyle(OVERFLOWY)
+                o: style[OVERFLOW],
+                x: style[OVERFLOWX],
+                y: style[OVERFLOWY]
             };
             me.setStyle(OVERFLOW, HIDDEN);
             me.setStyle(OVERFLOWX, HIDDEN);
@@ -481,7 +448,7 @@ Element.override({
             clip;
 
         if (data[ISCLIPPED]) {
-            data[ISCLIPPED] = true;
+            data[ISCLIPPED] = false;
             clip = data[ORIGINALCLIP];
             if (clip.o) {
                 me.setStyle(OVERFLOW, clip.o);
@@ -494,40 +461,6 @@ Element.override({
             }
         }
         return me;
-    },
-
-    /**
-     * Returns an object with properties matching the styles requested as computed by the browser based upon applicable
-     * CSS rules as well as inline styles.
-     *
-     * For example:
-     *
-     *     el.getStyles('color', 'font-size', 'width');
-     *
-     * might return:
-     *
-     *     {'color': '#FFFFFF', 'font-size': '13px', 'width': '100px'}
-     *
-     * If ```true``` is passed as the last parameter, *inline* styles are returned instead of computed styles.
-     *
-     * @param {String...} styles A variable number of style names
-     * @return {Object} The style object
-     */
-    getStyles : function() {
-        var styles = {},
-            len = arguments.length,
-            i = 0, style,
-            inline = false;
-
-        if (arguments[len - 1] === true) {
-            --len;
-            inline = true;
-        }
-        for (; i < len; ++i) {
-            style = arguments[i];
-            styles[style] = inline ? this.dom.style[Ext.Element.normalize(style)] : this.getStyle(style);
-        }
-        return styles;
     },
 
     /**
@@ -575,7 +508,7 @@ Element.override({
         var me = this,
             h = Math.max(me.dom.offsetHeight, me.dom.clientHeight);
         if (!h) {
-            h = parseFloat(me.getStyle('height')) || 0;
+            h = parseFloat(me.getStyle(HEIGHT)) || 0;
             if (!me.isBorderBox()) {
                 h += me.getFrameWidth('tb');
             }
@@ -594,7 +527,7 @@ Element.override({
             w = Math.max(me.dom.offsetWidth, me.dom.clientWidth);
 
         if (!w) {
-            w = parseFloat(me.getStyle('width')) || 0;
+            w = parseFloat(me.getStyle(WIDTH)) || 0;
             if (!me.isBorderBox()) {
                 w += me.getFrameWidth('lr');
             }
@@ -609,36 +542,53 @@ Element.override({
      * @return {Number}
      */
     getFrameWidth : function(sides, onlyContentBox) {
-        return onlyContentBox && this.isBorderBox() ? 0 : (this.getPadding(sides) + this.getBorderWidth(sides));
+        return (onlyContentBox && this.isBorderBox()) ? 0 : (this.getPadding(sides) + this.getBorderWidth(sides));
     },
 
     /**
      * Sets up event handlers to add and remove a css class when the mouse is over this element
-     * @param {String} className
+     * @param {String} className The class to add
+     * @param {Function} [testFn] A test function to execute before adding the class. The passed parameter
+     * will be the Element instance. If this functions returns false, the class will not be added.
+     * @param {Object} [scope] The scope to execute the testFn in.
      * @return {Ext.dom.Element} this
      */
-    addClsOnOver : function(className) {
-        var dom = this.dom;
-        this.hover(
-                function() {
-                    Ext.fly(dom, INTERNAL).addCls(className);
-                },
-                function() {
-                    Ext.fly(dom, INTERNAL).removeCls(className);
+    addClsOnOver : function(className, testFn, scope) {
+        var me = this,
+            dom = me.dom,
+            hasTest = Ext.isFunction(testFn);
+            
+        me.hover(
+            function() {
+                if (hasTest && testFn.call(scope || me, me) === false) {
+                    return;
                 }
-                );
-        return this;
+                Ext.fly(dom, INTERNAL).addCls(className);
+            },
+            function() {
+                Ext.fly(dom, INTERNAL).removeCls(className);
+            }
+        );
+        return me;
     },
 
     /**
      * Sets up event handlers to add and remove a css class when this element has the focus
-     * @param {String} className
+     * @param {String} className The class to add
+     * @param {Function} [testFn] A test function to execute before adding the class. The passed parameter
+     * will be the Element instance. If this functions returns false, the class will not be added.
+     * @param {Object} [scope] The scope to execute the testFn in.
      * @return {Ext.dom.Element} this
      */
-    addClsOnFocus : function(className) {
+    addClsOnFocus : function(className, testFn, scope) {
         var me = this,
-                dom = me.dom;
+            dom = me.dom,
+            hasTest = Ext.isFunction(testFn);
+            
         me.on("focus", function() {
+            if (hasTest && testFn.call(scope || me, me) === false) {
+                return false;
+            }
             Ext.fly(dom, INTERNAL).addCls(className);
         });
         me.on("blur", function() {
@@ -649,21 +599,30 @@ Element.override({
 
     /**
      * Sets up event handlers to add and remove a css class when the mouse is down and then up on this element (a click effect)
-     * @param {String} className
+     * @param {String} className The class to add
+     * @param {Function} [testFn] A test function to execute before adding the class. The passed parameter
+     * will be the Element instance. If this functions returns false, the class will not be added.
+     * @param {Object} [scope] The scope to execute the testFn in.
      * @return {Ext.dom.Element} this
      */
-    addClsOnClick : function(className) {
-        var dom = this.dom;
-        this.on("mousedown", function() {
+    addClsOnClick : function(className, testFn, scope) {
+        var me = this,
+            dom = me.dom,
+            hasTest = Ext.isFunction(testFn);
+            
+        me.on("mousedown", function() {
+            if (hasTest && testFn.call(scope || me, me) === false) {
+                return false;
+            }
             Ext.fly(dom, INTERNAL).addCls(className);
             var d = Ext.getDoc(),
-                    fn = function() {
-                        Ext.fly(dom, INTERNAL).removeCls(className);
-                        d.removeListener("mouseup", fn);
-                    };
+                fn = function() {
+                    Ext.fly(dom, INTERNAL).removeCls(className);
+                    d.removeListener("mouseup", fn);
+                };
             d.on("mouseup", fn);
         });
-        return this;
+        return me;
     },
 
     /**
@@ -673,18 +632,17 @@ Element.override({
      * offsetWidth/clientWidth. To obtain the size excluding scrollbars, use getViewSize.
      *
      * Sizing of the document body is handled at the adapter level which handles special cases for IE and strict modes, etc.
-     * 
+     *
      * @return {Object} Object describing width and height.
      * @return {Number} return.width
      * @return {Number} return.height
      */
     getStyleSize : function() {
         var me = this,
-                doc = document,
-                d = this.dom,
-                isDoc = (d == doc || d == doc.body),
-                s = d.style,
-                w, h;
+            d = this.dom,
+            isDoc = DOCORBODYRE.test(d.nodeName),
+            s ,
+            w, h;
 
         // If the body, use static methods
         if (isDoc) {
@@ -693,6 +651,8 @@ Element.override({
                 height : Element.getViewHeight()
             };
         }
+
+        s = me.getStyle([HEIGHT, WIDTH], true);  //seek inline
         // Use Styles if they are set
         if (s.width && s.width != 'auto') {
             w = parseFloat(s.width);
@@ -727,7 +687,7 @@ Element.override({
         me.removeCls(Ext.baseCSSPrefix + 'unselectable');
         return me;
     },
-        
+
     /**
      * Disables text selection for this element (normalized across browsers)
      * @return {Ext.dom.Element} this
@@ -744,20 +704,57 @@ Element.override({
     }
 });
 
-})();
+Element.prototype.styleHooks = styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
 
-// This reduces the lookup of 'me.styleHooks' by one hop in the prototype chain. It is
-// the same object.
-Ext.dom.Element.prototype.styleHooks = Ext.dom.AbstractElement.prototype.styleHooks;
+if (Ext.isIE6) {
+    styleHooks.fontSize = styleHooks['font-size'] = {
+        name: 'fontSize',
+        canThrow: true
+    };
+}
+
+// override getStyle for border-*-width
+if (Ext.isIEQuirks || Ext.isIE && Ext.ieVersion <= 8) {
+    function getBorderWidth (dom, el, inline, style) {
+        if (style[this.styleName] == 'none') {
+            return '0px';
+        }
+        return style[this.name];
+    }
+
+    edges = ['Top','Right','Bottom','Left'];
+    k = edges.length;
+
+    while (k--) {
+        edge = edges[k];
+        borderWidth = 'border' + edge + 'Width';
+
+        styleHooks['border-'+edge.toLowerCase()+'-width'] = styleHooks[borderWidth] = {
+            name: borderWidth,
+            styleName: 'border' + edge + 'Style',
+            get: getBorderWidth
+        };
+    }
+}
+
+}());
 
 Ext.onReady(function () {
     var opacityRe = /alpha\(opacity=(.*)\)/i,
-        trimRe = /^\s+|\s+$/g;
+        trimRe = /^\s+|\s+$/g,
+        hooks = Ext.dom.Element.prototype.styleHooks;
 
     // Ext.supports flags are not populated until onReady...
+    hooks.opacity = {
+        name: 'opacity',
+        afterSet: function(dom, value, el) {
+            if (el.isLayer) {
+                el.onOpacitySet(value);
+            }
+        }
+    };
     if (!Ext.supports.Opacity && Ext.isIE) {
-        Ext.dom.Element.prototype.styleHooks.opacity = {
-            name: 'opacity',
+        Ext.apply(hooks.opacity, {
             get: function (dom) {
                 var filter = dom.style.filter,
                     match, opacity;
@@ -785,28 +782,9 @@ Ext.onReady(function () {
                 } else {
                     style.filter = val;
                 }
-            }
-        };
+            }  
+        });
     }
     // else there is no work around for the lack of opacity support. Should not be a
     // problem given that this has been supported for a long time now...
 });
-
-// override getStyle for border-*-width
-if (Ext.isIEQuirks || Ext.isIE && Ext.ieVersion <= 8){
-    Ext.Array.forEach('Top Right Bottom Left'.split(' '), function(side){
-        var borderWidth = 'border' + side + 'Width',
-            borderStyle = 'border' + side + 'Style';
-
-        Ext.dom.Element.prototype.styleHooks['border-' + side.toLowerCase() + '-width'] = {
-            name: borderWidth,
-            get: function (dom) {
-                var currentStyle = dom.currentStyle;
-                if (currentStyle[borderStyle] == 'none'){
-                    return '0px';
-                }
-                return currentStyle[borderWidth];
-            }
-        };
-    });
-}

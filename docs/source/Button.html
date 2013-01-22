@@ -37,7 +37,8 @@ Ext.define('Ext.layout.component.Button', {
     constructor: function () {
         this.callParent(arguments);
 
-        this.hackWidth = (Ext.isIE6 || Ext.isIE7) &amp;&amp; Ext.isStrict;
+        this.hackWidth = Ext.isIE &amp;&amp; (!Ext.isStrict || Ext.isIE6 || Ext.isIE7);
+        this.heightIncludesPadding = Ext.isIE6 &amp;&amp; Ext.isStrict;
     },
 
     // TODO - use last run results if text has not changed?
@@ -49,17 +50,33 @@ Ext.define('Ext.layout.component.Button', {
     },
 
     beginLayoutCycle: function(ownerContext) {
-        var empty = '',
-            owner = this.owner;
+        var me = this,
+            empty = '',
+            owner = me.owner,
+            btnEl = owner.btnEl,
+            btnInnerEl = owner.btnInnerEl,
+            text = owner.text,
+            htmlAutoHeight;
 
-        this.callParent(arguments);
+        me.callParent(arguments);
 
-        owner.btnInnerEl.setStyle('overflow', empty);
+        btnInnerEl.setStyle('overflow', empty);
 
         // Clear all element widths
-        owner.el.setStyle('width', empty);
-        owner.btnEl.setStyle('width', empty);
-        owner.btnInnerEl.setStyle('width', empty);
+        if (!ownerContext.widthModel.natural) {
+            owner.el.setStyle('width', empty);
+        }
+
+        // If the text is HTML we need to let the browser automatically size things to cope with the case where the text
+        // is multi-line. This incurs a cost as we then have to measure those elements to derive other sizes
+        htmlAutoHeight = ownerContext.heightModel.shrinkWrap &amp;&amp; text &amp;&amp; me.htmlRE.test(text);
+
+        btnEl.setStyle('width', empty);
+        btnEl.setStyle('height', htmlAutoHeight ? 'auto' : empty);
+        btnInnerEl.setStyle('width', empty);
+        btnInnerEl.setStyle('height', htmlAutoHeight ? 'auto' : empty);
+        btnInnerEl.setStyle('line-height', htmlAutoHeight ? 'normal' : empty);
+        btnInnerEl.setStyle('padding-top', empty);
         owner.btnIconEl.setStyle('width', empty);
     },
 
@@ -76,14 +93,25 @@ Ext.define('Ext.layout.component.Button', {
             owner = me.owner,
             btnEl = owner.btnEl,
             btnInnerEl = owner.btnInnerEl,
+            text = owner.text,
             btnFrameWidth, metrics, sizeIconEl, width, btnElContext, btnInnerElContext;
 
-        // In IE7 strict mode button elements with width:auto get strange extra side margins within
-        // the wrapping table cell, but they go away if the width is explicitly set. So we measure
-        // the size of the text and set the width to match.
-        if (owner.text &amp;&amp; me.hackWidth &amp;&amp; btnEl &amp;&amp; btnEl.getWidth() &gt; 20) {
+        // IE suffers from various sizing problems, usually caused by relying on it to size elements automatically. Even
+        // if an element is sized correctly it can prove necessary to set that size explicitly on the element to get it
+        // to size and position its children correctly. While the exact nature of the problems varies depending on the
+        // browser version, doctype and button configuration there is a common solution: set the sizes manually.
+        if (owner.text &amp;&amp; me.hackWidth &amp;&amp; btnEl) {
             btnFrameWidth = me.btnFrameWidth;
-            metrics = Ext.util.TextMetrics.measure(btnInnerEl, owner.text);
+
+            // If the button text is something like '&lt;' or '&lt;&lt;' then we need to escape it or it won't be measured
+            // correctly. The button text is supposed to be HTML and strictly speaking '&lt;' and '&lt;&lt;' aren't valid HTML.
+            // However in practice they are commonly used and have worked 'correctly' in previous versions.
+            if (text.indexOf('&gt;') === -1) {
+                text = text.replace(/&lt;/g, '&amp;lt;');
+            }
+
+            metrics = Ext.util.TextMetrics.measure(btnInnerEl, text);
+
             width = metrics.width + btnFrameWidth + me.adjWidth;
 
             btnElContext = ownerContext.getEl('btnEl');
@@ -113,17 +141,49 @@ Ext.define('Ext.layout.component.Button', {
         var me = this,
             owner = me.owner,
             btnInnerEl = owner.btnInnerEl,
-            height;
+            btnItem = ownerContext.getEl('btnEl'),
+            btnInnerItem = ownerContext.getEl('btnInnerEl'),
+            minTextHeight = me.minTextHeight,
+            adjHeight = me.adjHeight,
+            text = owner.getText(),
+            height,
+            textHeight,
+            topPadding;
 
         if (owner.vertical) {
             height = Ext.util.TextMetrics.measure(btnInnerEl, owner.text).width;
-            height += me.btnFrameHeight + me.adjHeight;
+            height += me.btnFrameHeight + adjHeight;
 
             // Vertical buttons need height explicitly set
             ownerContext.setHeight(height, /*dirty=*/true, /*force=*/true);
-        } else {
-            height = ownerContext.el.getHeight();
         }
+        else {
+            // If the button text is HTML we have to handle it specially as it could contain multiple lines
+            if (text &amp;&amp; me.htmlRE.test(text)) {
+                textHeight = btnInnerEl.getHeight();
+
+                // HTML content doesn't guarantee multiple lines: in the single line case it could now be too short for the icon
+                if (textHeight &lt; minTextHeight) {
+                    topPadding = Math.floor((minTextHeight - textHeight) / 2);
+
+                    // Resize the span and use padding to center the text vertically. The hack to remove the padding
+                    // from the height on IE6 is especially needed for link buttons
+                    btnInnerItem.setHeight(minTextHeight - (me.heightIncludesPadding ? topPadding : 0));
+                    btnInnerItem.setProp('padding-top', topPadding);
+
+                    textHeight = minTextHeight;
+                }
+
+                // Calculate the height relative to the text span, auto can't be trusted in IE quirks
+                height = textHeight + adjHeight;
+            }
+            else {
+                height = ownerContext.el.getHeight();
+            }
+        }
+
+        // IE quirks needs the button height setting using style or it won't position the icon correctly (even if the height was already correct)
+        btnItem.setHeight(height - adjHeight);
 
         return height;
     },
@@ -138,7 +198,8 @@ Ext.define('Ext.layout.component.Button', {
             btnHeight = isNum(height) ? height - me.adjHeight : height,
             btnFrameHeight = me.btnFrameHeight,
             text = owner.getText(),
-            textHeight;
+            textHeight,
+            paddingTop;
 
         btnItem.setHeight(btnHeight);
         btnInnerItem.setHeight(btnHeight);
@@ -155,10 +216,11 @@ Ext.define('Ext.layout.component.Button', {
         // we only do it if the text contains markup.
         if (text &amp;&amp; me.htmlRE.test(text)) {
             btnInnerItem.setProp('line-height', 'normal');
+            btnInnerEl.setStyle('line-height', 'normal');
             textHeight = Ext.util.TextMetrics.measure(btnInnerEl, text).height;
-            btnInnerItem.setProp('padding-top',
-                me.btnFrameTop + Math.max(btnInnerEl.getHeight() - btnFrameHeight - textHeight, 0) / 2);
-            btnInnerItem.setHeight(btnHeight);
+            paddingTop = Math.floor(Math.max(btnHeight - btnFrameHeight - textHeight, 0) / 2);
+            btnInnerItem.setProp('padding-top', me.btnFrameTop + paddingTop);
+            btnInnerItem.setHeight(btnHeight - (me.heightIncludesPadding ? paddingTop : 0));
         }
     },
 
@@ -172,16 +234,31 @@ Ext.define('Ext.layout.component.Button', {
         btnItem.setWidth(btnWidth);
         btnInnerItem.setWidth(btnWidth);
     },
+    
+    clearTargetCache: function(){
+        delete this.adjWidth;    
+    },
 
     cacheTargetInfo: function(ownerContext) {
         var me = this,
-            padding, frameSize, btnWrapPadding, innerFrameSize;
+            owner = me.owner,
+            scale = owner.scale,
+            padding, frameSize, btnWrapPadding, btnInnerEl, innerFrameSize;
 
-        if (!('adjWidth' in me)) {
+        // The cache is only valid for a particular scale
+        if (!('adjWidth' in me) || me.lastScale !== scale) {
+            // If there has been a previous layout run it could have sullied the line-height
+            if (me.lastScale) {
+                owner.btnInnerEl.setStyle('line-height', '');
+            }
+
+            me.lastScale = scale;
+
             padding = ownerContext.getPaddingInfo();
             frameSize = ownerContext.getFrameInfo();
             btnWrapPadding = ownerContext.getEl('btnWrap').getPaddingInfo();
-            innerFrameSize = ownerContext.getEl('btnInnerEl').getPaddingInfo();
+            btnInnerEl = ownerContext.getEl('btnInnerEl');
+            innerFrameSize = btnInnerEl.getPaddingInfo();
 
             Ext.apply(me, {
                 // Width adjustment must take into account the arrow area. The btnWrap is the &lt;em&gt; which has padding to accommodate the arrow.
@@ -189,7 +266,10 @@ Ext.define('Ext.layout.component.Button', {
                 adjHeight      : btnWrapPadding.height + frameSize.height + padding.height,
                 btnFrameWidth  : innerFrameSize.width,
                 btnFrameHeight : innerFrameSize.height,
-                btnFrameTop    : innerFrameSize.top
+                btnFrameTop    : innerFrameSize.top,
+
+                // Use the line-height rather than height because if the text is multi-line then the height will be 'wrong'
+                minTextHeight  : parseInt(btnInnerEl.getStyle('line-height'), 10)
             });
         }
 

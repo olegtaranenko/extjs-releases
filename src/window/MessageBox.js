@@ -38,6 +38,7 @@ Ext.define('Ext.window.MessageBox', {
         'Ext.toolbar.Toolbar',
         'Ext.form.field.Text',
         'Ext.form.field.TextArea',
+        'Ext.form.field.Display',
         'Ext.button.Button',
         'Ext.layout.container.Anchor',
         'Ext.layout.container.HBox',
@@ -210,12 +211,14 @@ Ext.define('Ext.window.MessageBox', {
         me.dd.endDrag();
         me.progressBar.reset();
         me.removeCls(me.cfg.cls);
-        me.callParent();
+        me.callParent(arguments);
     },
 
     initComponent: function() {
         var me = this,
-            i, button;
+            baseId = me.id,
+            i, button,
+            tbLayout;
 
         me.title = '&#160;';
 
@@ -237,11 +240,12 @@ Ext.define('Ext.window.MessageBox', {
                         type: 'anchor'
                     },
                     items: [
-                        me.msg = new Ext.Component({
-                            autoEl: { tag: 'span' },
+                        me.msg = new Ext.form.field.Display({
+                            id: baseId + '-displayfield',
                             cls: me.baseCls + '-text'
                         }),
                         me.textField = new Ext.form.field.Text({
+                            id: baseId + '-testfield',
                             anchor: '100%',
                             enableKeyEvents: true,
                             listeners: {
@@ -250,6 +254,7 @@ Ext.define('Ext.window.MessageBox', {
                             }
                         }),
                         me.textArea = new Ext.form.field.TextArea({
+                            id: baseId + '-textarea',
                             anchor: '100%',
                             height: 75
                         })
@@ -258,6 +263,7 @@ Ext.define('Ext.window.MessageBox', {
             ]
         });
         me.progressBar = new Ext.ProgressBar({
+            id: baseId + '-progressbar',
             margins: '0 10 0 10'
         });
 
@@ -271,6 +277,7 @@ Ext.define('Ext.window.MessageBox', {
             me.msgButtons.push(button);
         }
         me.bottomTb = new Ext.toolbar.Toolbar({
+            id: baseId + '-toolbar',
             ui: 'footer',
             dock: 'bottom',
             layout: {
@@ -285,7 +292,22 @@ Ext.define('Ext.window.MessageBox', {
         });
         me.dockedItems = [me.bottomTb];
 
+        // Get control at Toolbar's finishedLayout call and snag the contentWidth to contribute to our auto width calculation
+        tbLayout = me.bottomTb.getLayout();
+        tbLayout.finishedLayout = Ext.Function.createInterceptor(tbLayout.finishedLayout, function(ownerContext) {
+            me.tbWidth = ownerContext.getProp('contentWidth');
+        });
+        me.on('close', me.onClose, me);
+
         me.callParent();
+    },
+    
+    onClose: function(){
+        var btn = this.header.child('[type=close]');
+        // Give a temporary itemId so it can act like the cancel button
+        btn.itemId = 'cancel';
+        this.btnCallback(btn);
+        delete btn.itemId;
     },
 
     onPromptKey: function(textField, e) {
@@ -312,6 +334,7 @@ Ext.define('Ext.window.MessageBox', {
             buttons = 0,
             hideToolbar = true,
             initialWidth = me.maxWidth,
+            oldButtonText = me.buttonText,
             i;
 
         // Restore default buttonText before reconfiguring.
@@ -350,8 +373,8 @@ Ext.define('Ext.window.MessageBox', {
         // Infer additional buttons from the specified property names in the buttonText object
         buttons = buttons | me.updateButtonText();
 
-        // Delete instance buttonText. Next run of reconfigure will restore to prototype's buttonText
-        delete me.buttonText;
+        // Restore buttonText. Next run of reconfigure will restore to prototype's buttonText
+        me.buttonText = oldButtonText;
 
         // During the on render, or size resetting layouts, and in subsequent hiding and showing, we need to
         // suspend layouts, and flush at the end when the Window's children are at their final visibility.
@@ -386,11 +409,16 @@ Ext.define('Ext.window.MessageBox', {
 
         // Hide or show the message area
         if (cfg.msg) {
-            me.msg.update(cfg.msg);
+            me.msg.setValue(cfg.msg);
             me.msg.show();
         } else {
             me.msg.hide();
         }
+
+        // flush the layout here to pick up
+        // height adjustments on the msg field
+        Ext.resumeLayouts(true);
+        Ext.suspendLayouts();
 
         // Hide or show the input field
         if (cfg.prompt || cfg.multiline) {
@@ -454,18 +482,21 @@ Ext.define('Ext.window.MessageBox', {
      */
     updateButtonText: function() {
         var me = this,
+            buttonText = me.buttonText,
+            buttons = 0,
             btnId,
-            btn,
-            buttons = 0;
+            btn;
 
-        for (btnId in me.buttonText) {
-            btn = me.msgButtons[btnId];
-            if (btn) {
-                if (me.cfg && me.cfg.buttonText) {
-                    buttons = buttons | Math.pow(2, Ext.Array.indexOf(me.buttonIds, btnId));
-                }
-                if (btn.text != me.buttonText[btnId]) {
-                    btn.setText(me.buttonText[btnId]);
+        for (btnId in buttonText) {
+            if (buttonText.hasOwnProperty(btnId)) {
+                btn = me.msgButtons[btnId];
+                if (btn) {
+                    if (me.cfg && me.cfg.buttonText) {
+                        buttons = buttons | Math.pow(2, Ext.Array.indexOf(me.buttonIds, btnId));
+                    }
+                    if (btn.text != buttonText[btnId]) {
+                        btn.setText(buttonText[btnId]);
+                    }
                 }
             }
         }
@@ -622,6 +653,7 @@ Ext.define('Ext.window.MessageBox', {
     doAutoSize: function() {
         var me = this,
             headerVisible = me.header.rendered && me.header.isVisible(),
+            footerVisible = me.bottomTb.rendered && me.bottomTb.isVisible(),
             width,
             height;
 
@@ -632,21 +664,24 @@ Ext.define('Ext.window.MessageBox', {
         // Allow per-invocation override of minWidth
         me.minWidth = me.cfg.minWidth || Ext.getClass(this).prototype.minWidth;
 
-        // Width must be max of titleWidth and message+icon width
-        width = Math.max(headerVisible ? me.header.getMinWidth() : 0,
-            me.cfg.width || me.msg.getWidth() + me.iconComponent.getWidth() + 25); /* topContainer's layout padding */
+        // Width must be max of titleWidth, message+icon width, and total button width
+        width = Math.max(
+            headerVisible ? me.header.getMinWidth() : 0,                            // title width
+            me.cfg.width || me.msg.getWidth() + me.iconComponent.getWidth() + 25,   // msg + icon width + topContainer's layout padding */
+            (footerVisible ? me.tbWidth : 0)// total button width
+        );
 
         height = (headerVisible ? me.header.getHeight() : 0) +
             me.topContainer.getHeight() +
             me.progressBar.getHeight() +
-            (me.bottomTb.rendered ? me.bottomTb.getHeight() + me.bottomTb.el.getMargin('tb') : 0);
+            (footerVisible ? me.bottomTb.getHeight() + me.bottomTb.el.getMargin('tb') : 0);
 
         me.setSize(width + me.frameWidth, height + me.frameWidth);
         return me;
     },
 
     updateText: function(text) {
-        this.msg.update(text);
+        this.msg.setValue(text);
         return this.doAutoSize(true);
     },
 
@@ -707,7 +742,7 @@ Ext.define('Ext.window.MessageBox', {
      * Displays a confirmation message box with Yes and No buttons (comparable to JavaScript's confirm).
      * If a callback function is passed it will be called after the user clicks either button,
      * and the id of the button that was clicked will be passed as the only parameter to the callback
-     * (could also be the top-right close button).
+     * (could also be the top-right close button, which will always report as "cancel").
      *
      * @param {String} title The title bar text
      * @param {String} msg The message box body text
@@ -733,7 +768,7 @@ Ext.define('Ext.window.MessageBox', {
      * Displays a message box with OK and Cancel buttons prompting the user to enter some text (comparable to JavaScript's prompt).
      * The prompt can be a single-line or multi-line textbox.  If a callback function is passed it will be called after the user
      * clicks either button, and the id of the button that was clicked (could also be the top-right
-     * close button) and the text that was entered will be passed as the two parameters to the callback.
+     * close button, which will always report as "cancel") and the text that was entered will be passed as the two parameters to the callback.
      *
      * @param {String} title The title bar text
      * @param {String} msg The message box body text
@@ -790,7 +825,7 @@ Ext.define('Ext.window.MessageBox', {
      * Displays a standard read-only message box with an OK button (comparable to the basic JavaScript alert prompt).
      * If a callback function is passed it will be called after the user clicks the button, and the
      * id of the button that was clicked will be passed as the only parameter to the callback
-     * (could also be the top-right close button).
+     * (could also be the top-right close button, which will always report as "cancel").
      *
      * @param {String} title The title bar text
      * @param {String} msg The message box body text

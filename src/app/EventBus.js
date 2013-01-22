@@ -60,7 +60,8 @@ Ext.define('Ext.app.EventBus', {
 
     control: function(selectors, listeners, controller) {
         var bus = this.bus,
-            selector, fn;
+            hasListeners, tree, list,
+            selector, options, listener, scope, event, listenerList, ev;
 
         if (Ext.isString(selectors)) {
             selector = selectors;
@@ -70,31 +71,42 @@ Ext.define('Ext.app.EventBus', {
             return;
         }
 
-        Ext.Object.each(selectors, function(selector, listeners) {
-            Ext.Object.each(listeners, function(ev, listener) {
-                var options = {},
-                    scope = controller,
-                    event = new Ext.util.Event(controller, ev);
+        hasListeners = Ext.util.Observable.HasListeners.prototype;
+        for (selector in selectors) {
+            if (selectors.hasOwnProperty(selector)) {
+                listenerList = selectors[selector] || {};
 
-                // Normalize the listener
-                if (Ext.isObject(listener)) {
-                    options = listener;
-                    listener = options.fn;
-                    scope = options.scope || controller;
-                    delete options.fn;
-                    delete options.scope;
-                }
+                for (ev in listenerList) {
+                    if (listenerList.hasOwnProperty(ev)) {
+                        options  = {};
+                        listener = listenerList[ev];
+                        scope    = controller;
+                        event    = new Ext.util.Event(controller, ev);
 
-                event.addListener(listener, scope, options);
+                        // Normalize the listener
+                        if (Ext.isObject(listener)) {
+                            options  = listener;
+                            listener = options.fn;
+                            scope    = options.scope || controller;
 
-                // Create the bus tree if it is not there yet
-                bus[ev] = bus[ev] || {};
-                bus[ev][selector] = bus[ev][selector] || {};
-                bus[ev][selector][controller.id] = bus[ev][selector][controller.id] || [];
+                            delete options.fn;
+                            delete options.scope;
+                        }
 
-                // Push our listener in our bus
-                bus[ev][selector][controller.id].push(event);
-            });
-        });
+                        event.addListener(listener, scope, options);
+
+                        hasListeners[ev] = 1;
+
+                        // Create the bus tree if it is not there yet
+                        tree = bus[ev] || (bus[ev] = {});
+                        tree = tree[selector] || (tree[selector] = {});
+                        list = tree[controller.id] || (tree[controller.id] = []);
+
+                        // Push our listener in our bus
+                        list.push(event);
+                    }
+                } //end inner loop
+            }
+        } //end outer loop
     }
 });

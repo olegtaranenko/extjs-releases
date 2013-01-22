@@ -126,9 +126,13 @@ Ext.define('Ext.chart.series.Radar', {
     drawSeries: function() {
         var me = this,
             store = me.chart.getChartStore(),
+            data = store.data.items,
+            d, record,
             group = me.group,
             sprite,
             chart = me.chart,
+            seriesItems = chart.series.items,
+            s, sLen, series,
             animate = chart.animate,
             field = me.field || me.yField,
             surface = chart.surface,
@@ -184,21 +188,24 @@ Ext.define('Ext.chart.series.Radar', {
 
         if (aggregate) {
             //get all renderer fields
-            chart.series.each(function(series) {
+            for (s = 0, sLen = seriesItems.length; s < sLen; s++) {
+                series = seriesItems[s];
                 fields.push(series.yField);
-            });
+            }
             //get maxValue to interpolate
-            store.each(function(record, i) {
+            for (d = 0; d < l; d++) {
+                record = data[d];
                 for (i = 0, nfields = fields.length; i < nfields; i++) {
                     maxValue = max(+record.get(fields[i]), maxValue);
                 }
-            });
+            }
         }
         //ensure non-zero value.
         maxValue = maxValue || 1;
         //create path and items
         startPath = []; path = [];
-        store.each(function(record, i) {
+        for (i = 0; i < l; i++) {
+            record = data[i];
             rho = radius * record.get(field) / maxValue;
             x = rho * cos(i / l * pi2);
             y = rho * sin(i / l * pi2);
@@ -215,7 +222,7 @@ Ext.define('Ext.chart.series.Radar', {
                 storeItem: record,
                 series: me
             });
-        });
+        }
         path.push('Z');
         //create path sprite
         if (!me.radar) {

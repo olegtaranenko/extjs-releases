@@ -376,7 +376,6 @@ Ext.define('Ext.toolbar.Paging', {
                 );
             }
             displayItem.setText(msg);
-            me.doComponentLayout();
         }
     },
 
@@ -403,6 +402,7 @@ Ext.define('Ext.toolbar.Paging', {
             afterText = Ext.String.format(me.afterPageText, 0);
         }
 
+        Ext.suspendLayouts();
         me.child('#afterTextItem').setText(afterText);
         me.child('#inputItem').setDisabled(isEmpty).setValue(currPage);
         me.child('#first').setDisabled(currPage === 1 || isEmpty);
@@ -411,6 +411,7 @@ Ext.define('Ext.toolbar.Paging', {
         me.child('#last').setDisabled(currPage === pageCount  || isEmpty);
         me.child('#refresh').enable();
         me.updateInfo();
+        Ext.resumeLayouts();
 
         if (me.rendered) {
             me.fireEvent('change', me, pageData);

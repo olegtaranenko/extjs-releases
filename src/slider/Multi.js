@@ -198,7 +198,8 @@ Ext.define('Ext.slider.Multi', {
     initComponent : function() {
         var me = this,
             tipPlug,
-            hasTip;
+            hasTip,
+            p, pLen, plugins;
 
         /**
          * @property {Array} thumbs
@@ -277,13 +278,17 @@ Ext.define('Ext.slider.Multi', {
             } else {
                 tipPlug = me.tipText ? {getText: me.tipText} : {};    
             }
-            me.plugins = me.plugins || [];
-            Ext.each(me.plugins, function(plug){
-                if (plug.isSliderTip) {
+
+            plugins = me.plugins = me.plugins || [];
+            pLen    = plugins.length;
+            
+            for (p = 0; p < pLen; p++) {
+                if (plugins[p].isSliderTip) {
                     hasTip = true;
-                    return false;
+                    break;
                 }
-            });
+            }
+
             if (!hasTip) {
                 me.plugins.push(new Ext.slider.Tip(tipPlug));
             }
@@ -384,8 +389,8 @@ Ext.define('Ext.slider.Multi', {
 
     /**
      * @private
-     * Given an `[x, y]` position within the slider's track, calculate how many pixels **from the slider origin**
-     * (left for horizontal Sliders and bottom for vertical Sliders) that point is.
+     * Given an `[x, y]` position within the slider's track (Points outside the slider's track are coerced to either the minimum or maximum value),
+     * calculate how many pixels **from the slider origin** (left for horizontal Sliders and bottom for vertical Sliders) that point is.
      *
      * If the point is outside the range of the Slider's track, the return value is `undefined`
      * @param {Number[]} xy The point to calculate the track point for
@@ -404,10 +409,8 @@ Ext.define('Ext.slider.Multi', {
             positionProperty = 'left';
             trackLength = sliderTrack.getWidth();
         }
-        result = sliderTrack.translatePoints(xy)[positionProperty];
-        if (result >= 0 && result <= trackLength) {
-            return me.vertical ? trackLength - result : result;
-        }
+        result = Ext.Number.constrain(sliderTrack.translatePoints(xy)[positionProperty], 0, trackLength);
+        return me.vertical ? trackLength - result : result;
     },
 
     /**
@@ -626,6 +629,7 @@ Ext.define('Ext.slider.Multi', {
                 thumb.move(me.calculateThumbPosition(value), Ext.isDefined(animate) ? animate !== false : me.animate);
 
                 me.fireEvent('change', me, value, thumb);
+                me.checkDirty();
                 if (changeComplete) {
                     me.fireEvent('changecomplete', me, value, thumb);
                 }
@@ -663,13 +667,12 @@ Ext.define('Ext.slider.Multi', {
      * @return {Number} The mapped value for the given position
      */
     reversePixelValue : function(pos) {
-        var ratio = this.getRatio();
-        return (pos + (this.minValue * ratio)) / ratio;
+        return this.minValue + (pos / this.getRatio());
     },
 
     /**
      * @private
-     * Given a Thumb's percentage posoition along the slider, returns the mapped slider value for that pixel.
+     * Given a Thumb's percentage position along the slider, returns the mapped slider value for that pixel.
      * E.g. if we have a slider 200px wide with minValue = 100 and maxValue = 500, reversePercentageValue(25)
      * returns 200
      * @param {Number} pos The percentage along the slider track to return a mapped value for
@@ -795,10 +798,17 @@ Ext.define('Ext.slider.Multi', {
 
     reset: function() {
         var me = this,
-            Array = Ext.Array;
-        Array.forEach(Array.from(me.originalValue), function(val, i) {
-            me.setValue(i, val);
-        });
+            arr = [].concat(me.originalValue),
+            a     = 0,
+            aLen  = arr.length,
+            val;
+
+        for (; a < aLen; a++) {
+            val = arr[a];
+
+            me.setValue(a, val);
+        }
+
         me.clearInvalid();
         // delete here so we reset back to the original state
         delete me.wasValid;
@@ -806,12 +816,19 @@ Ext.define('Ext.slider.Multi', {
 
     // private
     beforeDestroy : function() {
-        var me = this;
+        var me     = this,
+            thumbs = me.thumbs,
+            t      = 0,
+            tLen   = thumbs.length,
+            thumb;
 
         Ext.destroy(me.innerEl, me.endEl, me.focusEl);
-        Ext.each(me.thumbs, function(thumb) {
+
+        for (; t < tLen; t++) {
+            thumb = thumbs[t];
+
             Ext.destroy(thumb);
-        }, me);
+        }
 
         me.callParent();
     }

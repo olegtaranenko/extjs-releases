@@ -174,10 +174,30 @@ Ext.define('Ext.form.Panel', {
         me.callParent();
 
         me.relayEvents(me.form, [
+            /**
+             * @event beforeaction
+             * @inheritdoc Ext.form.Basic#beforeaction
+             */
             'beforeaction',
+            /**
+             * @event actionfailed
+             * @inheritdoc Ext.form.Basic#actionfailed
+             */
             'actionfailed',
+            /**
+             * @event actioncomplete
+             * @inheritdoc Ext.form.Basic#actioncomplete
+             */
             'actioncomplete',
+            /**
+             * @event validitychange
+             * @inheritdoc Ext.form.Basic#validitychange
+             */
             'validitychange',
+            /**
+             * @event dirtychange
+             * @inheritdoc Ext.form.Basic#dirtychange
+             */
             'dirtychange'
         ]);
 
@@ -237,10 +257,14 @@ Ext.define('Ext.form.Panel', {
     /**
      * Convenience function for fetching the current value of each field in the form. This is the same as calling
      * {@link Ext.form.Basic#getValues this.getForm().getValues()}
-     * @return {Object} The current form field values, keyed by field name
+     * @param {Boolean} [asString=false] If true, will return the key/value collection as a single
+     * URL-encoded param string.
+     * @param {Boolean} [dirtyOnly=false] If true, only fields that are dirty will be included in the result.
+     * @param {Boolean} [includeEmptyText=false]] If true, the configured emptyText of empty fields will be used.
+     * @return {String/Object}
      */
-    getValues: function() {
-        return this.getForm().getValues();
+    getValues: function(asString, dirtyOnly, includeEmptyText, useDataValues) {
+        return this.getForm().getValues(asString, dirtyOnly, includeEmptyText, useDataValues);
     },
 
     beforeDestroy: function() {
@@ -299,8 +323,13 @@ Ext.define('Ext.form.Panel', {
      * {@link Ext.form.field.Field#checkChange check if its value has changed}.
      */
     checkChange: function() {
-        this.form.getFields().each(function(field) {
-            field.checkChange();
-        });
+        var fields = this.form.getFields().items,
+            f,
+            fLen   = fields.length,
+            field;
+
+        for (f = 0; f < fLen; f++) {
+            fields[f].checkChange();
+        }
     }
 });

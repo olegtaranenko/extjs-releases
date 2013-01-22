@@ -59,20 +59,16 @@ Ext.define('Ext.view.DragZone', {
 
     getDragData: function(e) {
         var view = this.view,
-            item = e.getTarget(view.getItemSelector()),
-            record, selectionModel, records;
+            item = e.getTarget(view.getItemSelector());
 
         if (item) {
-            record = view.getRecord(item);
-            selectionModel = view.getSelectionModel();
-            records = selectionModel.getSelection();
             return {
-                copy: this.view.copy || (this.view.allowCopy && e.ctrlKey),
+                copy: view.copy || (view.allowCopy && e.ctrlKey),
                 event: new Ext.EventObjectImpl(e),
                 view: view,
                 ddel: this.ddel,
                 item: item,
-                records: records,
+                records: view.getSelectionModel().getSelection(),
                 fromPosition: Ext.fly(item).getXY()
             };
         }

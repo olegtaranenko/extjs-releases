@@ -5,12 +5,12 @@
     // local style camelizing for speed
     var Element = Ext.dom.AbstractElement,
         view = document.defaultView,
+        array = Ext.Array,
         trimRe = /^\s+|\s+$/g,
         wordsRe = /\w/g,
         spacesRe = /\s+/,
         transparentRe = /^(?:transparent|(?:rgba[(](?:\s*\d+\s*[,]){3}\s*0\s*[)]))$/i,
         hasClassList = Ext.supports.ClassList,
-
         PADDING = 'padding',
         MARGIN = 'margin',
         BORDER = 'border',
@@ -19,9 +19,6 @@
         TOP_SUFFIX = '-top',
         BOTTOM_SUFFIX = '-bottom',
         WIDTH = '-width',
-
-        supportsTransparentColor = Ext.supports.TransparentColor,
-
         // special markup used throughout Ext when box wrapping elements
         borders = {l: BORDER + LEFT_SUFFIX + WIDTH, r: BORDER + RIGHT_SUFFIX + WIDTH, t: BORDER + TOP_SUFFIX + WIDTH, b: BORDER + BOTTOM_SUFFIX + WIDTH},
         paddings = {l: PADDING + LEFT_SUFFIX, r: PADDING + RIGHT_SUFFIX, t: PADDING + TOP_SUFFIX, b: PADDING + BOTTOM_SUFFIX},
@@ -51,19 +48,30 @@
         styleHooks: {},
 
         // private
-        addStyles: function(sides, styles){
+        addStyles : function(sides, styles){
             var totalSize = 0,
-                sidesArr = sides.match(wordsRe),
-                i = 0,
+                sidesArr = (sides || '').match(wordsRe),
+                i,
                 len = sidesArr.length,
-                side, size;
-            for (; i < len; i++) {
-                side = sidesArr[i];
-                size = side && parseInt(this.getStyle(styles[side]), 10);
-                if (size) {
-                    totalSize += Math.abs(size);
+                side,
+                styleSides = [];
+
+            if (len == 1) {
+                totalSize = Math.abs(parseFloat(this.getStyle(styles[sidesArr[0]])) || 0);
+            } else if (len) {
+                for (i = 0; i < len; i++) {
+                    side = sidesArr[i];
+                    styleSides.push(styles[side]);
+                }
+                //Gather all at once, returning a hash
+                styleSides = this.getStyle(styleSides);
+
+                for (i=0; i < len; i++) {
+                    side = sidesArr[i];
+                    totalSize += Math.abs(parseFloat(styleSides[styles[side]]) || 0);
                 }
             }
+
             return totalSize;
         },
 
@@ -180,14 +188,15 @@
          */
         radioCls: function(className) {
             var cn = this.dom.parentNode.childNodes,
-                v;
+                v,
+                i, len;
             className = Ext.isArray(className) ? className: [className];
-            for (var i = 0, len = cn.length; i < len; i++) {
+            for (i = 0, len = cn.length; i < len; i++) {
                 v = cn[i];
                 if (v && v.nodeType == 1) {
                     Ext.fly(v, '_internal').removeCls(className);
                 }
-            };
+            }
             return this.addCls(className);
         },
 
@@ -253,40 +262,92 @@
         },
 
         /**
-         * Normalizes currentStyle and computedStyle.
-         * @param {String} prop The style property whose value is returned.
-         * @return {String} The current value of the style property for this element.
+         * Returns a named style property based on computed/currentStyle (primary) and
+         * inline-style if primary is not available.
+         *
+         * @param {String/String[]} property The style property (or multiple property names
+         * in an array) whose value is returned.
+         * @param {Boolean} [inline=false] if `true` only inline styles will be returned.
+         * @return {String/Object} The current value of the style property for this element
+         * (or a hash of named style values if multiple property arguments are requested).
+         * @method
          */
-        getStyle: function(prop) {
+        getStyle: function (property, inline) {
             var me = this,
                 dom = me.dom,
-                hook = me.styleHooks[prop],
-                cs, result;
+                multiple = typeof property != 'string',
+                hooks = me.styleHooks,
+                prop = property,
+                props = prop,
+                len = 1,
+                domStyle, camel, values, hook, out, style, i;
 
-            if (dom == document) {
-                return null;
+            if (multiple) {
+                values = {};
+                prop = props[0];
+                i = 0;
+                if (!(len = props.length)) {
+                    return values;
+                }
             }
-            if (!hook) {
-                me.styleHooks[prop] = hook = { name: Element.normalize(prop) };
-            }
-            if (hook.get) {
-                return hook.get(dom, me);
+
+            if (!dom || dom.documentElement) {
+                return values || '';
             }
 
-            cs = view.getComputedStyle(dom, '');
+            domStyle = dom.style;
 
-            // why the dom.style lookup? It is not true that "style == computedStyle" as
-            // well as the fact that 0/false are valid answers...
-            result = (cs && cs[hook.name]); // || dom.style[hook.name];
+            if (inline) {
+                style = domStyle;
+            } else {
+                // Caution: Firefox will not render "presentation" (ie. computed styles) in
+                // iframes that are display:none or those inheriting display:none. Similar
+                // issues with legacy Safari.
+                //
+                style = dom.ownerDocument.defaultView.getComputedStyle(dom, null);
 
-            // Webkit returns rgb values for transparent.
-            if (!supportsTransparentColor && result == 'rgba(0, 0, 0, 0)') {
-                result = 'transparent';
+                // fallback to inline style if rendering context not available
+                if (!style) {
+                    inline = true;
+                    style = domStyle;
+                }
             }
-            // TODO - we should use isTransparent to handle this. The above is not a very
-            // reliable technique depending on the intent (e.g., rgba(255,0,0,0) is also transparent)
 
-            return result;
+            do {
+                hook = hooks[prop];
+
+                if (!hook) {
+                    hooks[prop] = hook = { name: Element.normalize(prop) };
+                }
+
+                if (hook.get) {
+                    out = hook.get(dom, me, inline, style);
+                } else {
+                    camel = hook.name;
+                    out = style[camel];
+                }
+
+                if (!multiple) {
+                   return out;
+                }
+
+                values[prop] = out;
+                prop = props[++i];
+            } while (i < len);
+
+            return values;
+        },
+
+        getStyles: function () {
+            var props = Ext.Array.slice(arguments),
+                len = props.length,
+                inline;
+
+            if (len && typeof props[len-1] == 'boolean') {
+                inline = props.pop();
+            }
+
+            return this.getStyle(props, inline);
         },
 
         /**
@@ -327,6 +388,9 @@
                 } else {
                     style[hook.name] = value;
                 }
+                if (hook.afterSet) {
+                    hook.afterSet(dom, value, me);
+                }
             } else {
                 for (name in prop) {
                     if (prop.hasOwnProperty(name)) {
@@ -340,6 +404,9 @@
                             hook.set(dom, value, me);
                         } else {
                             style[hook.name] = value;
+                        }
+                        if (hook.afterSet) {
+                            hook.afterSet(dom, value, me);
                         }
                     }
                 }
@@ -573,13 +640,27 @@
         getMargin: function(side){
             var me = this,
                 hash = {t:"top", l:"left", r:"right", b: "bottom"},
-                o = {},
-                key;
+                key,
+                o,
+                margins;
 
             if (!side) {
-                for (key in me.margins){
-                    o[hash[key]] = parseFloat(me.getStyle(me.margins[key])) || 0;
+                margins = [];
+                for (key in me.margins) {
+                    if(me.margins.hasOwnProperty(key)) {
+                        margins.push(me.margins[key]);
+                    }
                 }
+                o = me.getStyle(margins);
+                if(o && typeof o == 'object') {
+                    //now mixin nomalized values (from hash table)
+                    for (key in me.margins) {
+                        if(me.margins.hasOwnProperty(key)) {
+                            o[hash[key]] = parseFloat(o[me.margins[key]]) || 0;
+                        }
+                    }
+                }
+
                 return o;
             } else {
                 return me.addStyles.call(me, side, me.margins);
@@ -609,13 +690,11 @@
             if (el) {
                 el.remove();
             }
-            if (Ext.isString(msgCls) && !Ext.isEmpty(msgCls)) {
+            if (msgCls && typeof msgCls == 'string' ) {
                 cls = ' ' + msgCls;
             }
             else {
-                if (msgCls) {
-                    cls = ' ' + prefix + 'mask-gray';
-                }
+                cls = ' ' + prefix + 'mask-gray';
             }
 
             mask = me.createChild({
@@ -689,68 +768,84 @@
             }
         }
     };
-})();
 
-Ext.onReady(function () {
-    var view = document.defaultView,
-        Element = Ext.dom.AbstractElement,
-        supports = Ext.supports;
+    Ext.onReady(function () {
+        var supports = Ext.supports,
+            styleHooks,
+            colorStyles, i, name, camel;
 
-    function fixRightMargin (dom) {
-        var cs = view.getComputedStyle(dom, ''),
-            result = cs ? cs.marginRight : null,
-            style, display;
-
-        // Ignore cases when the margin is correctly reported as 0, the bug only shows
-        // numbers larger.
-        if (result != '0px') {
-            style = dom.style;
-            display = style.display;
-            style.display = 'inline-block';
-            result = view.getComputedStyle(dom, null).marginRight;
-            style.display = display;
+        function fixTransparent (dom, el, inline, style) {
+            var value = style[this.name] || '';
+            return transparentRe.test(value) ? 'transparent' : value;
         }
 
-        return result;
-    }
+        function fixRightMargin (dom, el, inline, style) {
+            var result = style.marginRight,
+                domStyle, display;
 
-    function fixRightMarginAndInputFocus (dom) {
-        var cs = view.getComputedStyle(dom, ''),
-            result = cs ? cs.marginRight : null,
-            style, cleaner, display;
+            // Ignore cases when the margin is correctly reported as 0, the bug only shows
+            // numbers larger.
+            if (result != '0px') {
+                domStyle = dom.style;
+                display = domStyle.display;
+                domStyle.display = 'inline-block';
+                result = (inline ? style : dom.ownerDocument.defaultView.getComputedStyle(dom, null)).marginRight;
+                domStyle.display = display;
+            }
 
-        if (result != '0px') {
-            style = dom.style;
-            cleaner = Element.getRightMarginFixCleaner(dom);
-            display = style.display;
-            style.display = 'inline-block';
-            result = view.getComputedStyle(dom, '').marginRight;
-            style.display = display;
-            cleaner();
+            return result;
         }
 
-        return result;
-    }
+        function fixRightMarginAndInputFocus (dom, el, inline, style) {
+            var result = style.marginRight,
+                domStyle, cleaner, display;
 
-    var styleHooks = Element.prototype.styleHooks;
+            if (result != '0px') {
+                domStyle = dom.style;
+                cleaner = Element.getRightMarginFixCleaner(dom);
+                display = domStyle.display;
+                domStyle.display = 'inline-block';
+                result = (inline ? style : dom.ownerDocument.defaultView.getComputedStyle(dom, '')).marginRight;
+                domStyle.display = display;
+                cleaner();
+            }
 
-    // Populate the LTR flavors of margin-before et.al. (see Ext.rtl.AbstractElement):
-    Element.populateStyleMap(styleHooks, ['left', 'right']);
+            return result;
+        }
 
-    // Ext.supports needs to be initialized (we run very early in the onready sequence),
-    // but it is OK to call Ext.supports.init() more times than necessary...
-    if (supports.init) {
-        supports.init();
-    }
+        styleHooks = Element.prototype.styleHooks;
 
-    // Fix bug caused by this: https://bugs.webkit.org/show_bug.cgi?id=13343
-    if (!supports.RightMargin) {
-        styleHooks['margin-right'] = styleHooks.marginRight = {
-            name: 'marginRight',
-            // TODO - Touch should use conditional compilation here or ensure that the
-            //      underlying Ext.supports flags are set correctly...
-            get: (supports.DisplayChangeInputSelectionBug || supports.DisplayChangeTextAreaSelectionBug) ?
-                    fixRightMarginAndInputFocus : fixRightMargin
-        };
-    }
-});
+        // Populate the LTR flavors of margin-before et.al. (see Ext.rtl.AbstractElement):
+        Element.populateStyleMap(styleHooks, ['left', 'right']);
+
+        // Ext.supports needs to be initialized (we run very early in the onready sequence),
+        // but it is OK to call Ext.supports.init() more times than necessary...
+        if (supports.init) {
+            supports.init();
+        }
+
+        // Fix bug caused by this: https://bugs.webkit.org/show_bug.cgi?id=13343
+        if (!supports.RightMargin) {
+            styleHooks.marginRight = styleHooks['margin-right'] = {
+                name: 'marginRight',
+                // TODO - Touch should use conditional compilation here or ensure that the
+                //      underlying Ext.supports flags are set correctly...
+                get: (supports.DisplayChangeInputSelectionBug || supports.DisplayChangeTextAreaSelectionBug) ?
+                        fixRightMarginAndInputFocus : fixRightMargin
+            };
+        }
+
+        if (!supports.TransparentColor) {
+            colorStyles = ['background-color', 'border-color', 'color', 'outline-color'];
+            for (i = colorStyles.length; i--; ) {
+                name = colorStyles[i];
+                camel = Element.normalize(name);
+
+                styleHooks[name] = styleHooks[camel] = {
+                    name: camel,
+                    get: fixTransparent
+                };
+            }
+        }
+    });
+}());

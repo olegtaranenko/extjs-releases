@@ -27,8 +27,6 @@
  *              if (name) {
  *                  this.name = name;
  *              }
- *
- *              return this;
  *          },
  *
  *          eat: function(foodType) {
@@ -54,9 +52,6 @@
  *
  *              // Apply a method from the parent class' prototype
  *              this.callParent([name]);
- *
- *              return this;
- *
  *          },
  *
  *          code: function(language) {
@@ -141,8 +136,6 @@
  *
  *          constructor: function(config) {
  *              this.initConfig(config);
- *
- *              return this;
  *          },
  *
  *          applyPrice: function(price) {
@@ -230,8 +223,7 @@
             alternateToName: {},
             aliasToName: {},
             nameToAliases: {},
-            nameToAlternates: {},
-            overridesByName: {}
+            nameToAlternates: {}
         },
 
         /** @private */
@@ -303,22 +295,30 @@
         triggerCreated: function(className) {
             var listeners = this.createdListeners,
                 nameListeners = this.nameCreatedListeners,
-                i, ln, listener;
+                alternateNames = this.maps.nameToAlternates[className],
+                names = [className],
+                i, ln, j, subLn, listener, name;
 
             for (i = 0,ln = listeners.length; i < ln; i++) {
                 listener = listeners[i];
                 listener.fn.call(listener.scope, className);
             }
 
-            listeners = nameListeners[className];
+            if (alternateNames) {
+                names.push.apply(names, alternateNames);
+            }
 
-            if (listeners) {
-                for (i = 0,ln = listeners.length; i < ln; i++) {
-                    listener = listeners[i];
-                    listener.fn.call(listener.scope, className);
+            for (i = 0,ln = names.length; i < ln; i++) {
+                name = names[i];
+                listeners = nameListeners[name];
+
+                if (listeners) {
+                    for (j = 0,subLn = listeners.length; j < subLn; j++) {
+                        listener = listeners[j];
+                        listener.fn.call(listener.scope, name);
+                    }
+                    delete nameListeners[name];
                 }
-
-                delete nameListeners[className];
             }
         },
 
@@ -361,7 +361,12 @@
             }
             //</debug>
 
-            var cache = this.namespaceParseCache;
+            var cache = this.namespaceParseCache,
+                parts,
+                rewrites,
+                root,
+                name,
+                rewrite, from, to, i, ln;
 
             if (this.enableNamespaceParseCache) {
                 if (cache.hasOwnProperty(namespace)) {
@@ -369,11 +374,10 @@
                 }
             }
 
-            var parts = [],
-                rewrites = this.namespaceRewrites,
-                root = global,
-                name = namespace,
-                rewrite, from, to, i, ln;
+            parts = [];
+            rewrites = this.namespaceRewrites;
+            root = global;
+            name = namespace;
 
             for (i = 0, ln = rewrites.length; i < ln; i++) {
                 rewrite = rewrites[i];
@@ -501,15 +505,17 @@
          * @return {Ext.Class} class
          */
         get: function(name) {
-            var classes = this.classes;
+            var classes = this.classes,
+                root,
+                parts,
+                part, i, ln;
 
             if (classes[name]) {
                 return classes[name];
             }
 
-            var root = global,
-                parts = this.parseNamespace(name),
-                part, i, ln;
+            root = global;
+            parts = this.parseNamespace(name);
 
             for (i = 0, ln = parts.length; i < ln; i++) {
                 part = parts[i];
@@ -636,24 +642,6 @@
         },
 
         /**
-         * @private
-         */
-        applyOverrides: function (name) {
-            var me = this,
-                overridesByName = me.maps.overridesByName,
-                overrides = overridesByName[name],
-                length = overrides && overrides.length || 0,
-                createOverride = me.createOverride,
-                i;
-
-            delete overridesByName[name];
-
-            for (i = 0; i < length; ++i) {
-                createOverride.apply(me, overrides[i]);
-            }
-        },
-
-        /**
          * Defines a class.
          * @deprecated 4.1.0 Use {@link Ext#define} instead, as that also supports creating overrides.
          */
@@ -669,10 +657,8 @@
             return new Class(data, function() {
                 var postprocessorStack = data.postprocessors || Manager.defaultPostprocessors,
                     registeredPostprocessors = Manager.postprocessors,
-                    index = 0,
                     postprocessors = [],
-                    postprocessor, process, i, ln, j, subLn, postprocessorProperties, postprocessorProperty,
-                    alternateNames;
+                    postprocessor, i, ln, j, subLn, postprocessorProperties, postprocessorProperty;
 
                 delete data.postprocessors;
 
@@ -702,93 +688,82 @@
                     }
                 }
 
-                process = function(clsName, cls, clsData) {
-                    postprocessor = postprocessors[index++];
+                data.postprocessors = postprocessors;
+                data.createdFn = createdFn;
+                Manager.processCreate(className, this, data);
+            });
+        },
+        
+        processCreate: function(className, cls, clsData){
+            var me = this,
+                postprocessor = clsData.postprocessors.shift(),
+                createdFn = clsData.createdFn;
 
-                    if (!postprocessor) {
-                        Manager.set(className, cls);
+            if (!postprocessor) {
+                me.set(className, cls);
 
-                        if (createdFn) {
-                            createdFn.call(cls, cls);
+                if (createdFn) {
+                     createdFn.call(cls, cls);
+                }
+
+                me.triggerCreated(className);
+                return;
+            }
+
+            if (postprocessor.call(me, className, cls, clsData, me.processCreate) !== false) {
+                me.processCreate(className, cls, clsData);
+            }
+        },
+
+        createOverride: function (className, data, createdFn) {
+            var me = this,
+                overriddenClassName = data.override,
+                requires = data.requires,
+                uses = data.uses,
+                classReady = function () {
+                    var cls, temp;
+
+                    if (requires) {
+                        temp = requires;
+                        requires = null; // do the real thing next time (which may be now)
+
+                        // Since the override is going to be used (its target class is now
+                        // created), we need to fetch the required classes for the override
+                        // and call us back once they are loaded:
+                        Ext.Loader.require(temp, classReady);
+                    } else {
+                        // The target class and the required classes for this override are
+                        // ready, so we can apply the override now:
+                        cls = me.get(overriddenClassName);
+
+                        // We don't want to apply these:
+                        delete data.override;
+                        delete data.requires;
+                        delete data.uses;
+
+                        Ext.override(cls, data);
+
+                        // This pushes the overridding file itself into Ext.Loader.history
+                        // Hence if the target class never exists, the overriding file will
+                        // never be included in the build.
+                        me.triggerCreated(className);
+
+                        if (uses) {
+                            Ext.Loader.addUsedClasses(uses); // get these classes too!
                         }
 
-                        Manager.triggerCreated(className);
-                        return;
-                    }
-
-                    if (postprocessor.call(this, clsName, cls, clsData, process) !== false) {
-                        process.apply(this, arguments);
+                        if (createdFn) {
+                            createdFn.call(cls); // last but not least!
+                        }
                     }
                 };
 
-                process.call(Manager, className, this, data);
+            me.existCache[className] = true;
 
-                //TODO: Take this out, hook into classCreated instead
-                Manager.applyOverrides(className);
-                alternateNames = Manager.maps.nameToAlternates[className];
-
-                for (i = 0, ln = alternateNames && alternateNames.length || 0; i < ln; ++i) {
-                    Manager.applyOverrides(alternateNames[i]);
-                }
-            });
-        },
-
-        createOverride: function (overrideName, data, createdFn) {
-            var me = this,
-                className = data.override,
-                cls = me.get(className),
-                overrideBody, overridesByName, overrides;
-
-            if (cls) {
-                // We use a "faux class" here because it has all the mechanics we need to
-                // work with the loader via uses/requires and loader history (for build).
-                // This way we don't have to refactor any of the class-loader relationship.
-
-                // hoist any 'requires' or 'uses' from the body onto the faux class:
-                overrideBody = Ext.apply({}, data);
-                delete overrideBody.requires;
-                delete overrideBody.uses;
-                delete overrideBody.override;
-
-                me.create(overrideName, {
-                        //<debug error>
-                        constructor: function () {
-                            throw new Error("Cannot create instance of override '" + overrideName + "'");
-                        },
-                        //</debug>
-                        requires: data.requires,
-                        uses: data.uses,
-                        override: className
-                    }, function () {
-                        this.active = true;
-                        if (cls.override) { // if (normal class)
-                            cls.override(overrideBody);
-                        } else { // else (singleton)
-                            cls.self.override(overrideBody);
-                        }
-
-                        if (createdFn) {
-                            // called once the override is applied and with the context of the
-                            // overridden class (the override itself is a meaningless, name-only
-                            // thing).
-                            createdFn.call(cls);
-                        }
-                    });
-            } else {
-                // The class is not loaded and may never load, but in case it does we add
-                // the override arguments to an internal map keyed by the className. When
-                // (or if) the class loads, we will call this method again with those same
-                // arguments to complete the override.
-                overridesByName = me.maps.overridesByName;
-                overrides = overridesByName[className] || (overridesByName[className] = []);
-                overrides.push(Array.prototype.slice.call(arguments, 0));
-
-                // place an inactive stub in the namespace (appeases the Loader and could
-                // be useful diagnostically)
-                me.setNamespace(overrideName, {
-                    override: className
-                });
-            }
+            // Override the target class right after it's created
+            me.onCreated(classReady, me, overriddenClassName);
+ 
+            return me;
         },
 
         /**
@@ -927,13 +902,15 @@
          */
         getInstantiator: function(length) {
             var instantiators = this.instantiators,
-                instantiator;
+                instantiator,
+                i,
+                args;
 
             instantiator = instantiators[length];
 
             if (!instantiator) {
-                var i = length,
-                    args = [];
+                i = length;
+                args = [];
 
                 for (i = 0; i < length; i++) {
                     args.push('a[' + i + ']');
@@ -1293,10 +1270,13 @@
             if (typeof xtype != 'string') { // if (form 3 or 5)
                 // first arg is config or component
                 config = name; // arguments[0]
-                if (config.isComponent) {
-                    return config;
-                }
                 xtype = config.xtype;
+            } else {
+                config = config || {};
+            }
+            
+            if (config.isComponent) {
+                return config;
             }
 
             alias = 'widget.' + xtype;
@@ -1309,7 +1289,7 @@
             
             T = Manager.get(className);
             if (load || !T) {
-                return Manager.instantiateByAlias(alias, config || {});
+                return Manager.instantiateByAlias(alias, config);
             }
             return new T(config);
         },
@@ -1608,4 +1588,4 @@
 
     }, ['xtype', 'alias']);
 
-})(Ext.Class, Ext.Function.alias, Array.prototype.slice, Ext.Array.from, Ext.global);
+}(Ext.Class, Ext.Function.alias, Array.prototype.slice, Ext.Array.from, Ext.global));

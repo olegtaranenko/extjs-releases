@@ -100,7 +100,6 @@ Ext.define('Ext.grid.feature.GroupingSummary', {
         this.mixins.summary.init.call(this);
     },
 
-
    /**
     * Modifies the row template to include the summary row.
     * @private
@@ -179,7 +178,11 @@ Ext.define('Ext.grid.feature.GroupingSummary', {
             fieldData,
             root,
             key,
-            comp;
+            comp,
+            summaryRows,
+            s,
+            sLen,
+            convertedSummaryRow;
 
         for (i = 0, length = groups.length; i < length; ++i) {
             data[groups[i].name] = {};
@@ -195,9 +198,22 @@ Ext.define('Ext.grid.feature.GroupingSummary', {
             root = reader.root;
             reader.root = me.remoteRoot;
             reader.buildExtractors(true);
-            Ext.Array.each(reader.getRoot(reader.rawData), function(value) {
-                 remoteData[value[groupField]] = value;
-            });
+            summaryRows = reader.getRoot(reader.rawData);
+            sLen      = summaryRows.length;
+
+            // Ensure the Reader has a data conversion function to convert a raw data row into a Record data hash
+            if (!reader.convertRecordData) {
+                reader.buildExtractors();
+            }
+
+            for (s = 0; s < sLen; s++) {
+                convertedSummaryRow = {};
+
+                // Convert a raw data row into a Record's hash object using the Reader
+                reader.convertRecordData(convertedSummaryRow, summaryRows[s]);
+                remoteData[convertedSummaryRow[groupField]] = convertedSummaryRow;
+            }
+
             // restore initial reader configuration
             reader.root = root;
             reader.buildExtractors(true);

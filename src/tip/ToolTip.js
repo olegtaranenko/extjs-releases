@@ -277,23 +277,24 @@ Ext.define('Ext.tip.ToolTip', {
     // private
     getTargetXY: function() {
         var me = this,
-            mouseOffset;
+            mouseOffset,
+            offsets, xy, dw, dh, de, bd, scrollX, scrollY, axy, sz, constrainPosition;
         if (me.delegate) {
             me.anchorTarget = me.triggerElement;
         }
         if (me.anchor) {
             me.targetCounter++;
-                var offsets = me.getOffsets(),
-                    xy = (me.anchorToTarget && !me.trackMouse) ? me.el.getAlignToXY(me.anchorTarget, me.getAnchorAlign()) : me.targetXY,
-                    dw = Ext.Element.getViewWidth() - 5,
-                    dh = Ext.Element.getViewHeight() - 5,
-                    de = document.documentElement,
-                    bd = document.body,
-                    scrollX = (de.scrollLeft || bd.scrollLeft || 0) + 5,
-                    scrollY = (de.scrollTop || bd.scrollTop || 0) + 5,
-                    axy = [xy[0] + offsets[0], xy[1] + offsets[1]],
-                    sz = me.getSize(),
-                    constrainPosition = me.constrainPosition;
+            offsets = me.getOffsets();
+            xy = (me.anchorToTarget && !me.trackMouse) ? me.el.getAlignToXY(me.anchorTarget, me.getAnchorAlign()) : me.targetXY;
+            dw = Ext.Element.getViewWidth() - 5;
+            dh = Ext.Element.getViewHeight() - 5;
+            de = document.documentElement;
+            bd = document.body;
+            scrollX = (de.scrollLeft || bd.scrollLeft || 0) + 5;
+            scrollY = (de.scrollTop || bd.scrollTop || 0) + 5;
+            axy = [xy[0] + offsets[0], xy[1] + offsets[1]];
+            sz = me.getSize();
+            constrainPosition = me.constrainPosition;
 
             me.anchorEl.removeCls(me.anchorCls);
 
@@ -529,7 +530,10 @@ Ext.define('Ext.tip.ToolTip', {
             if (me.anchor) {
                 me.anchor = me.origAnchor;
             }
-            me.showAt(me.getTargetXY());
+            
+            if (!me.calledFromShowAt) {
+                me.showAt(me.getTargetXY());
+            }
 
             if (me.anchor) {
                 me.syncAnchor();
@@ -545,6 +549,7 @@ Ext.define('Ext.tip.ToolTip', {
         var me = this;
         me.lastActive = new Date();
         me.clearTimers();
+        me.calledFromShowAt = true;
 
         // Only call if this is hidden. May have been called from show above.
         if (!me.isVisible()) {
@@ -571,6 +576,7 @@ Ext.define('Ext.tip.ToolTip', {
                 me.anchorEl.hide();
             }
         }
+        delete me.calledFromShowAt;
     },
 
     // private

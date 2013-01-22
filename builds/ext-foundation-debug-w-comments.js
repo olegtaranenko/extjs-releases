@@ -13,7 +13,7 @@ Ext license terms. Public redistribution is prohibited.
 
 For early licensing, please contact us at licensing@sencha.com
 
-Build date: 2012-01-25 03:11:22 (293e284c08c6be1f089d04f63fce48aa8215ebcb)
+Build date: 2012-04-09 21:11:41 (689b0758837b782dcb0747ba1c4d8ba76344070d)
 */
 /**
  * @class Ext
@@ -27,7 +27,13 @@ Ext._startTime = new Date().getTime();
         toString = objectPrototype.toString,
         enumerables = true,
         enumerablesTest = { toString: 1 },
-        emptyFn = function(){},
+        emptyFn = function () {},
+        // This is the "$previous" method of a hook function on an instance. When called, it
+        // calls through the class prototype by the name of the called method.
+        callOverrideParent = function () {
+            var method = callOverrideParent.caller.caller; // skip callParent (our caller)
+            return method.$owner.prototype[method.$name].apply(this, arguments);
+        },
         i;
 
     Ext.global = global;
@@ -170,7 +176,7 @@ Ext._startTime = new Date().getTime();
          * @return {Function} The subclass constructor from the <tt>overrides</tt> parameter, or a generated one if not provided.
          * @deprecated 4.0.0 Use {@link Ext#define Ext.define} instead
          */
-        extend: function() {
+        extend: (function() {
             // inline overrides
             var objectConstructor = objectPrototype.constructor,
                 inlineOverrides = function(o) {
@@ -220,25 +226,74 @@ Ext._startTime = new Date().getTime();
 
                 return subclass;
             };
-        }(),
+        }()),
 
         /**
-         * Proxy to {@link Ext.Base#override}. Please refer {@link Ext.Base#override} for further details.
+         * Overrides members of the specified `target` with the given values.
+         * 
+         * If the `target` is a class declared using {@link Ext#define Ext.define}, the
+         * `override` method of that class is called (see {@link Ext.Base#override}) given
+         * the `overrides`.
          *
-         * @param {Object} cls The class to override
-         * @param {Object} overrides The properties to add to origClass. This should be specified as an object literal
-         * containing one or more properties.
+         * If the `target` is a function, it is assumed to be a constructor and the contents
+         * of `overrides` are applied to its `prototype` using {@link Ext#apply Ext.apply}.
+         * 
+         * If the `target` is an instance of a class declared using {@link Ext#define Ext.define},
+         * the `overrides` are applied to only that instance. In this case, methods are
+         * specially processed to allow them to use {@link Ext.Base#callParent}.
+         * 
+         *      var panel = new Ext.Panel({ ... });
+         *      
+         *      Ext.override(panel, {
+         *          initComponent: function () {
+         *              // extra processing...
+         *              
+         *              this.callParent();
+         *          }
+         *      });
+         *
+         * If the `target` is none of these, the `overrides` are applied to the `target`
+         * using {@link Ext#apply Ext.apply}.
+         *
+         * Please refer to {@link Ext#define Ext.define} and {@link Ext.Base#override} for
+         * further details.
+         *
+         * @param {Object} target The target to override.
+         * @param {Object} overrides The properties to add or replace on `target`. 
          * @method override
-         * @markdown
-         * @deprecated 4.1.0 Use {@link Ext#define Ext.define} instead
          */
-        override: function(cls, overrides) {
-            if (cls.$isClass) {
-                return cls.override(overrides);
+        override: function (target, overrides) {
+            if (target.$isClass) {
+                target.override(overrides);
+            } else if (typeof target == 'function') {
+                Ext.apply(target.prototype, overrides);
+            } else {
+                var owner = target.self,
+                    name, value;
+
+                if (owner && owner.$isClass) { // if (instance of Ext.define'd class)
+                    for (name in overrides) {
+                        if (overrides.hasOwnProperty(name)) {
+                            value = overrides[name];
+
+                            if (typeof value == 'function') {
+
+                                value.$name = name;
+                                value.$owner = owner;
+                                value.$previous = target.hasOwnProperty(name)
+                                    ? target[name] // already hooked, so call previous hook
+                                    : callOverrideParent; // calls by name on prototype
+                            }
+
+                            target[name] = value;
+                        }
+                    }
+                } else {
+                    Ext.apply(target, overrides);
+                }
             }
-            else {
-                Ext.apply(cls.prototype, overrides);
-            }
+
+            return target;
         }
     });
 
@@ -280,17 +335,20 @@ Ext._startTime = new Date().getTime();
          * @markdown
          */
         typeOf: function(value) {
+            var type,
+                typeToString;
+            
             if (value === null) {
                 return 'null';
             }
 
-            var type = typeof value;
+            type = typeof value;
 
             if (type === 'undefined' || type === 'string' || type === 'number' || type === 'boolean') {
                 return type;
             }
 
-            var typeToString = toString.call(value);
+            typeToString = toString.call(value);
 
             switch(typeToString) {
                 case '[object Array]':
@@ -499,11 +557,21 @@ Ext._startTime = new Date().getTime();
     Ext.apply(Ext, {
 
         /**
-         * Clone almost any type of variable including array, object, DOM nodes and Date without keeping the old reference
+         * Clone simple variables including array, {}-like objects, DOM nodes and Date without keeping the old reference.
+         * A reference for the object itself is returned if it's not a direct decendant of Object. For model cloning,
+         * see {@link Model#copy Model.copy}.
+         * 
          * @param {Object} item The variable to clone
          * @return {Object} clone
          */
         clone: function(item) {
+            var type,
+                i,
+                j,
+                k,
+                clone,
+                key;
+            
             if (item === null || item === undefined) {
                 return item;
             }
@@ -515,14 +583,13 @@ Ext._startTime = new Date().getTime();
                 return item.cloneNode(true);
             }
 
-            var type = toString.call(item);
+            type = toString.call(item);
 
             // Date
             if (type === '[object Date]') {
                 return new Date(item.getTime());
             }
 
-            var i, j, k, clone, key;
 
             // Array
             if (type === '[object Array]') {
@@ -558,10 +625,11 @@ Ext._startTime = new Date().getTime();
          * Generate a unique reference of Ext in the global scope, useful for sandboxing
          */
         getUniqueGlobalNamespace: function() {
-            var uniqueGlobalNamespace = this.uniqueGlobalNamespace;
+            var uniqueGlobalNamespace = this.uniqueGlobalNamespace,
+                i;
 
             if (uniqueGlobalNamespace === undefined) {
-                var i = 0;
+                i = 0;
 
                 do {
                     uniqueGlobalNamespace = 'ExtBox' + (++i);
@@ -619,18 +687,6 @@ Ext._startTime = new Date().getTime();
         },
 
         /**
-         * @property
-         * @private
-         */
-        globalEval: ('execScript' in global) ? function(code) {
-            global.execScript(code)
-        } : function(code) {
-            (function(){
-                eval(code);
-            })();
-        },
-
-        /**
          * @private
          * @property
          */
@@ -654,7 +710,26 @@ Ext._startTime = new Date().getTime();
      */
     Ext.type = Ext.typeOf;
 
-})();
+}());
+
+/*
+ * This method evaluates the given code free of any local variable. In some browsers this
+ * will be at global scope, in others it will be in a function.
+ * @parma {String} code The code to evaluate.
+ * @private
+ * @method
+ */
+Ext.globalEval = Ext.global.execScript
+    ? function(code) {
+        execScript(code);
+    }
+    : function($$code) {
+        // IMPORTANT: because we use eval we cannot place this in the above function or it
+        // will break the compressor's ability to rename local variables...
+        (function(){
+            eval($$code);
+        }());
+    };
 
 /**
  * @author Jacky Nguyen <jacky@sencha.com>
@@ -687,7 +762,7 @@ Ext._startTime = new Date().getTime();
 (function() {
 
 // Current core version
-var version = '4.1.0', Version;
+var version = '4.1.0RC', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         /**
@@ -1019,7 +1094,7 @@ var version = '4.1.0', Version;
 
     Ext.setVersion('core', version);
 
-})();
+}());
 
 /**
  * @class Ext.String
@@ -1032,50 +1107,20 @@ Ext.String = (function() {
     var trimRegex     = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g,
         escapeRe      = /('|\\)/g,
         formatRe      = /\{(\d+)\}/g,
-        escapeRegexRe = /([-.*+?^${}()|[\]\/\\])/g,
+        escapeRegexRe = /([-.*+?\^${}()|\[\]\/\\])/g,
         basicTrimRe   = /^\s+|\s+$/g,
         whitespaceRe  = /\s+/,
         varReplace    = /(^[^a-z]*|[^\w])/gi,
-        charToEntity  = {
-            '&': '&amp;',
-            '>': '&gt;',
-            '<': '&lt;',
-            '"': '&quot;'
-        },
-        entityToChar  = {
-            '&amp;': '&',
-            '&gt;': '>',
-            '&lt;': '<',
-            '&quot;': '"'
-        },
-        keys = [],
-        key,
+        charToEntity,
+        entityToChar,
         charToEntityRegex,
         entityToCharRegex,
         htmlEncodeReplaceFn = function(match, capture) {
             return charToEntity[capture];
         },
-        htmlEncode = function(value) {
-            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
-        },
         htmlDecodeReplaceFn = function(match, capture) {
             return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
-        },
-        htmlDecode = function(value) {
-            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
         };
-
-        // Compile RexExps for HTML encode and decode functions
-        for (key in charToEntity) {
-            keys.push(key);
-        }
-        charToEntityRegex = new RegExp('(' + keys.join('|') + ')', 'g');
-
-        keys = [];
-        for (key in entityToChar) {
-            keys.push(key);
-        }
-        entityToCharRegex = new RegExp('(' + keys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
 
     return {
 
@@ -1091,20 +1136,86 @@ Ext.String = (function() {
         },
 
         /**
-         * Convert certain characters (&, <, >, and ") to their HTML character equivalents for literal display in web pages.
+         * Convert certain characters (&, <, >, ', and ") to their HTML character equivalents for literal display in web pages.
          * @param {String} value The string to encode
          * @return {String} The encoded text
          * @method
          */
-        htmlEncode: htmlEncode,
+        htmlEncode: function(value) {
+            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
+        },
 
         /**
-         * Convert certain characters (&, <, >, and ") from their HTML character equivalents.
+         * Convert certain characters (&, <, >, ', and ") from their HTML character equivalents.
          * @param {String} value The string to decode
          * @return {String} The decoded text
          * @method
          */
-        htmlDecode: htmlDecode,
+        htmlDecode: function(value) {
+            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
+        },
+
+        /**
+         * Adds a set of character entity definitions to the set used by
+         * {@link Ext.String#htmlEncode} and {@link Ext.String#htmlDecode}.
+         *
+         * This object should be keyed by the entity name sequence,
+         * with the value being the textual representation of the entity.
+         *
+         *      Ext.String.addCharacterEntities({
+         *          '&amp;Uuml;':'Ü',
+         *          '&amp;ccedil;':'ç',
+         *          '&amp;ntilde;':'ñ',
+         *          '&amp;egrave;':'è'
+         *      });
+         *      var s = Ext.String.htmlEncode("A string with entities: èÜçñ");
+         *
+         * Note: the values of the character entites defined on this object are expected
+         * to be single character values.  As such, the actual values represented by the
+         * characters are sensitive to the character encoding of the javascript source
+         * file when defined in string literal form. Script tasgs referencing server
+         * resources with character entities must ensure that the 'charset' attribute
+         * of the script node is consistent with the actual character encoding of the
+         * server resource.
+         *
+         * The set of character entities may be reset back to the default state by using
+         * the {@link Ext.String#resetCharacterEntities} method
+         *
+         * @param {Object} entities The set of character entities to add to the current
+         * definitions.
+         */
+        addCharacterEntities: function(newEntities) {
+            var charKeys = [],
+                entityKeys = [],
+                key, echar;
+            for (key in newEntities) {
+                echar = newEntities[key];
+                entityToChar[key] = echar;
+                charToEntity[echar] = key;
+                charKeys.push(echar);
+                entityKeys.push(key);
+            }
+            charToEntityRegex = new RegExp('(' + charKeys.join('|') + ')', 'g');
+            entityToCharRegex = new RegExp('(' + entityKeys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
+        },
+
+        /**
+         * Resets the set of character entity definitions used by
+         * {@link Ext.String#htmlEncode} and {@link Ext.String#htmlDecode} back to the
+         * default state.
+         */
+        resetCharacterEntities: function() {
+            charToEntity = {};
+            entityToChar = {};
+            // add the default set
+            this.addCharacterEntities({
+                '&amp;'     :   '&',
+                '&gt;'      :   '>',
+                '&lt;'      :   '<',
+                '&quot;'    :   '"',
+                '&apos;'    :   "'"
+            });
+        },
 
         /**
          * Appends content to the query string of a URL, handling logic for whether to place
@@ -1286,7 +1397,10 @@ Ext.String = (function() {
             return words || [];
         }
     };
-})();
+}());
+
+// initialize the default encode / decode entities
+Ext.String.resetCharacterEntities();
 
 /**
  * Old alias to {@link Ext.String#htmlEncode}
@@ -1339,15 +1453,17 @@ Ext.Number = new function() {
          * @return {Number} The constrained value if outside the range, otherwise the current value
          */
         constrain: function(number, min, max) {
-            number = parseFloat(number);
+            var x = parseFloat(number);
 
-            if (!isNaN(min)) {
-                number = math.max(number, min);
-            }
-            if (!isNaN(max)) {
-                number = math.min(number, max);
-            }
-            return number;
+            // Watch out for NaN in Chrome 18
+            // V8bug: http://code.google.com/p/v8/issues/detail?id=2056
+
+            // Operators are faster than Math.min/max. See http://jsperf.com/number-constrain
+            // ... and (x < Nan) || (x < undefined) == false
+            // ... same for (x > NaN) || (x > undefined)
+            // so if min or max are undefined or NaN, we never return them... sadly, this
+            // is not true of null (but even Math.max(-1,null)==0 and isNaN(null)==false)
+            return (x < min) ? min : ((x > max) ? max : x);
         },
 
         /**
@@ -1422,8 +1538,6 @@ Ext.Number = new function() {
                 tween *= 2;
                 if (tween >= increment) {
                     value += increment;
-                } else if (tween < -increment) {
-                    value -= increment;
                 }
             }
 
@@ -1442,13 +1556,11 @@ Ext.Number = new function() {
          * @param {Number} value The number to format
          * @param {Number} precision The number of digits to show after the decimal point
          */
-        toFixed: function(value, precision) {
-            if (isToFixedBroken) {
-                precision = precision || 0;
-                var pow = math.pow(10, precision);
-                return (math.round(value * pow) / pow).toFixed(precision);
-            }
-
+        toFixed: isToFixedBroken ? function(value, precision) {
+            precision = precision || 0;
+            var pow = math.pow(10, precision);
+            return (math.round(value * pow) / pow).toFixed(precision);
+        } : function(value, precision) {
             return value.toFixed(precision);
         },
 
@@ -1504,7 +1616,7 @@ Ext.Number = new function() {
 
     var arrayPrototype = Array.prototype,
         slice = arrayPrototype.slice,
-        supportsSplice = function () {
+        supportsSplice = (function () {
             var array = [],
                 lengthBefore,
                 j = 20;
@@ -1531,19 +1643,22 @@ Ext.Number = new function() {
             // end IE8 bug
 
             return true;
-        }(),
+        }()),
         supportsForEach = 'forEach' in arrayPrototype,
         supportsMap = 'map' in arrayPrototype,
         supportsIndexOf = 'indexOf' in arrayPrototype,
         supportsEvery = 'every' in arrayPrototype,
         supportsSome = 'some' in arrayPrototype,
         supportsFilter = 'filter' in arrayPrototype,
-        supportsSort = function() {
+        supportsSort = (function() {
             var a = [1,2,3,4,5].sort(function(){ return 0; });
             return a[0] === 1 && a[1] === 2 && a[2] === 3 && a[3] === 4 && a[4] === 5;
-        }(),
+        }()),
         supportsSliceOnNodeList = true,
-        ExtArray;
+        ExtArray,
+        erase,
+        replace,
+        splice;
 
     try {
         // IE 6 - 8 will throw an error when using Array.prototype.slice on NodeList
@@ -1592,7 +1707,13 @@ Ext.Number = new function() {
     function replaceSim (array, index, removeCount, insert) {
         var add = insert ? insert.length : 0,
             length = array.length,
-            pos = fixArrayIndex(array, index);
+            pos = fixArrayIndex(array, index),
+            remove,
+            tailOldPos,
+            tailNewPos,
+            tailCount,
+            lengthAfterRemove,
+            i;
 
         // we try to use Array.push when we can for efficiency...
         if (pos === length) {
@@ -1600,12 +1721,11 @@ Ext.Number = new function() {
                 array.push.apply(array, insert);
             }
         } else {
-            var remove = Math.min(removeCount, length - pos),
-                tailOldPos = pos + remove,
-                tailNewPos = tailOldPos + add - remove,
-                tailCount = length - tailOldPos,
-                lengthAfterRemove = length - remove,
-                i;
+            remove = Math.min(removeCount, length - pos);
+            tailOldPos = pos + remove;
+            tailNewPos = tailOldPos + add - remove;
+            tailCount = length - tailOldPos;
+            lengthAfterRemove = length - remove;
 
             if (tailNewPos < tailOldPos) { // case A
                 for (i = 0; i < tailCount; ++i) {
@@ -1670,9 +1790,9 @@ Ext.Number = new function() {
         return array.splice.apply(array, slice.call(arguments, 1));
     }
 
-    var erase = supportsSplice ? eraseNative : eraseSim,
-        replace = supportsSplice ? replaceNative : replaceSim,
-        splice = supportsSplice ? spliceNative : spliceSim;
+    erase = supportsSplice ? eraseNative : eraseSim;
+    replace = supportsSplice ? replaceNative : replaceSim;
+    splice = supportsSplice ? spliceNative : spliceSim;
 
     // NOTE: from here on, use erase, replace or splice (not native methods)...
 
@@ -1758,11 +1878,9 @@ Ext.Number = new function() {
          * @param {Array}  fn.allItems The `array` itself which was passed as the first argument
          * @param {Object} scope (Optional) The execution scope (`this`) in which the specified function is executed.
          */
-        forEach: function(array, fn, scope) {
-            if (supportsForEach) {
-                return array.forEach(fn, scope);
-            }
-
+        forEach: supportsForEach ? function(array, fn, scope) {
+            return array.forEach(fn, scope);
+        } : function(array, fn, scope) {
             var i = 0,
                 ln = array.length;
 
@@ -1780,11 +1898,9 @@ Ext.Number = new function() {
          * @param {Number} from (Optional) The index at which to begin the search
          * @return {Number} The index of item in the array (or -1 if it is not found)
          */
-        indexOf: function(array, item, from) {
-            if (supportsIndexOf) {
-                return array.indexOf(item, from);
-            }
-
+        indexOf: supportsIndexOf ? function(array, item, from) {
+            return array.indexOf(item, from);
+         } : function(array, item, from) {
             var i, length = array.length;
 
             for (i = (from < 0) ? Math.max(0, length + from) : from || 0; i < length; i++) {
@@ -1803,11 +1919,9 @@ Ext.Number = new function() {
          * @param {Object} item The item to look for
          * @return {Boolean} True if the array contains the item, false otherwise
          */
-        contains: function(array, item) {
-            if (supportsIndexOf) {
-                return array.indexOf(item) !== -1;
-            }
-
+        contains: supportsIndexOf ? function(array, item) {
+            return array.indexOf(item) !== -1;
+        } : function(array, item) {
             var i, ln;
 
             for (i = 0, ln = array.length; i < ln; i++) {
@@ -1835,13 +1949,13 @@ Ext.Number = new function() {
          *
          *     Ext.Array.toArray(document.getElementsByTagName('div')); // will convert the NodeList into an array
          *     Ext.Array.toArray('splitted'); // returns ['s', 'p', 'l', 'i', 't', 't', 'e', 'd']
-         *     Ext.Array.toArray('splitted', 0, 3); // returns ['s', 'p', 'l', 'i']
+         *     Ext.Array.toArray('splitted', 0, 3); // returns ['s', 'p', 'l']
          *
          * {@link Ext#toArray Ext.toArray} is alias for {@link Ext.Array#toArray Ext.Array.toArray}
          *
          * @param {Object} iterable the iterable object to be turned into a true Array.
          * @param {Number} start (Optional) a zero-based index that specifies the start of extraction. Defaults to 0
-         * @param {Number} end (Optional) a zero-based index that specifies the end of extraction. Defaults to the last
+         * @param {Number} end (Optional) a 1-based index that specifies the end of extraction. Defaults to the last
          * index of the iterable value
          * @return {Array} array
          */
@@ -1901,11 +2015,9 @@ Ext.Number = new function() {
          * @param {Object} scope Callback function scope
          * @return {Array} results
          */
-        map: function(array, fn, scope) {
-            if (supportsMap) {
-                return array.map(fn, scope);
-            }
-
+        map: supportsMap ? function(array, fn, scope) {
+            return array.map(fn, scope);
+        } : function(array, fn, scope) {
             var results = [],
                 i = 0,
                 len = array.length;
@@ -1927,11 +2039,9 @@ Ext.Number = new function() {
          * @param {Object} scope Callback function scope
          * @return {Boolean} True if no false value is returned by the callback function.
          */
-        every: function(array, fn, scope) {
-            if (supportsEvery) {
-                return array.every(fn, scope);
-            }
-
+        every: supportsEvery ? function(array, fn, scope) {
+            return array.every(fn, scope);
+        } : function(array, fn, scope) {
             var i = 0,
                 ln = array.length;
 
@@ -1953,11 +2063,9 @@ Ext.Number = new function() {
          * @param {Object} scope Callback function scope
          * @return {Boolean} True if the callback function returns a truthy value.
          */
-        some: function(array, fn, scope) {
-            if (supportsSome) {
-                return array.some(fn, scope);
-            }
-
+        some: supportsSome ? function(array, fn, scope) {
+            return array.some(fn, scope);
+        } : function(array, fn, scope) {
             var i = 0,
                 ln = array.length;
 
@@ -2027,11 +2135,9 @@ Ext.Number = new function() {
          * @param {Object} scope Callback function scope
          * @return {Array} results
          */
-        filter: function(array, fn, scope) {
-            if (supportsFilter) {
-                return array.filter(fn, scope);
-            }
-
+        filter: supportsFilter ? function(array, fn, scope) {
+            return array.filter(fn, scope);
+        } : function(array, fn, scope) {
             var results = [],
                 i = 0,
                 ln = array.length;
@@ -2067,7 +2173,10 @@ Ext.Number = new function() {
                 return (newReference) ? slice.call(value) : value;
             }
 
-            if (value && value.length !== undefined && typeof value !== 'string') {
+            var type = typeof value;
+            // Both strings and functions will have a length property. In phantomJS, NodeList
+            // instances report typeof=='function' but don't have an apply method...
+            if (value && value.length !== undefined && type !== 'string' && (type !== 'function' || !value.apply)) {
                 return ExtArray.toArray(value);
             }
 
@@ -2146,46 +2255,64 @@ Ext.Number = new function() {
          * @return {Array} intersect
          */
         intersect: function() {
-            var intersect = [],
+            var intersection = [],
                 arrays = slice.call(arguments),
-                i, j, k, minArray, array, x, y, ln, arraysLn, arrayLn;
+                arraysLength,
+                array,
+                arrayLength,
+                minArray,
+                minArrayIndex,
+                minArrayCandidate,
+                minArrayLength,
+                element,
+                elementCandidate,
+                elementCount,
+                i, j, k;
 
             if (!arrays.length) {
-                return intersect;
+                return intersection;
             }
 
             // Find the smallest array
-            for (i = x = 0,ln = arrays.length; i < ln,array = arrays[i]; i++) {
-                if (!minArray || array.length < minArray.length) {
-                    minArray = array;
-                    x = i;
+            arraysLength = arrays.length;
+            for (i = minArrayIndex = 0; i < arraysLength; i++) {
+                minArrayCandidate = arrays[i];
+                if (!minArray || minArrayCandidate.length < minArray.length) {
+                    minArray = minArrayCandidate;
+                    minArrayIndex = i;
                 }
             }
 
             minArray = ExtArray.unique(minArray);
-            erase(arrays, x, 1);
+            erase(arrays, minArrayIndex, 1);
 
             // Use the smallest unique'd array as the anchor loop. If the other array(s) do contain
             // an item in the small array, we're likely to find it before reaching the end
             // of the inner loop and can terminate the search early.
-            for (i = 0,ln = minArray.length; i < ln,x = minArray[i]; i++) {
-                var count = 0;
+            minArrayLength = minArray.length;
+            arraysLength = arrays.length;
+            for (i = 0; i < minArrayLength; i++) {
+                element = minArray[i];
+                elementCount = 0;
 
-                for (j = 0,arraysLn = arrays.length; j < arraysLn,array = arrays[j]; j++) {
-                    for (k = 0,arrayLn = array.length; k < arrayLn,y = array[k]; k++) {
-                        if (x === y) {
-                            count++;
+                for (j = 0; j < arraysLength; j++) {
+                    array = arrays[j];
+                    arrayLength = array.length;
+                    for (k = 0; k < arrayLength; k++) {
+                        elementCandidate = array[k];
+                        if (element === elementCandidate) {
+                            elementCount++;
                             break;
                         }
                     }
                 }
 
-                if (count === arraysLn) {
-                    intersect.push(x);
+                if (elementCount === arraysLength) {
+                    intersection.push(element);
                 }
             }
 
-            return intersect;
+            return intersection;
         },
 
         /**
@@ -2255,15 +2382,13 @@ Ext.Number = new function() {
          * @param {Function} sortFn (optional) The comparison function.
          * @return {Array} The sorted array.
          */
-        sort: function(array, sortFn) {
-            if (supportsSort) {
-                if (sortFn) {
-                    return array.sort(sortFn);
-                } else {
-                    return array.sort();
-                }
+        sort: supportsSort ? function(array, sortFn) {
+            if (sortFn) {
+                return array.sort(sortFn);
+            } else {
+                return array.sort();
             }
-
+         } : function(array, sortFn) {
             var length = array.length,
                 i = 0,
                 comparison,
@@ -2639,7 +2764,7 @@ Ext.Number = new function() {
     Ext.toArray = function() {
         return ExtArray.toArray.apply(ExtArray, arguments);
     };
-})();
+}());
 
 /**
  * @class Ext.Function
@@ -2774,10 +2899,10 @@ Ext.Function = {
      */
     pass: function(fn, args, scope) {
         if (!Ext.isArray(args)) {
-            if (typeof args == 'string') {
-                args = [args];
-            } else {
+            if (Ext.isIterable(args)) {
                 args = Ext.Array.clone(args);
+            } else {
+                args = args !== undefined ? [args] : [];
             }
         }
 
@@ -2919,7 +3044,9 @@ Ext.Function = {
     defer: function(fn, millis, scope, args, appendArgs) {
         fn = Ext.Function.bind(fn, scope, args, appendArgs);
         if (millis > 0) {
-            return setTimeout(fn, millis);
+            return setTimeout(Ext.supports.TimeoutActualLateness ? function () {
+                fn();
+            } : fn, millis);
         }
         fn();
         return 0;
@@ -3025,6 +3152,7 @@ Ext.Function = {
             }
         };
     },
+
 
     /**
      * Adds behavior to an existing method that is executed before the
@@ -3137,9 +3265,8 @@ Ext.bind = Ext.Function.alias(Ext.Function, 'bind');
 (function() {
 
 // The "constructor" for chain:
-var TemplateClass = function(){};
-
-var ExtObject = Ext.Object = {
+var TemplateClass = function(){},
+    ExtObject = Ext.Object = {
 
     /**
      * Returns a new object with the given object as the prototype chain.
@@ -3656,7 +3783,7 @@ var ExtObject = Ext.Object = {
 
                 for (; i < ln; i++) {
                     property = objectProperties[i];
-                    this[property] = new propertyClassesMap[property];
+                    this[property] = new propertyClassesMap[property]();
                 }
             },
             key, value;
@@ -3724,9 +3851,8 @@ Ext.urlDecode = function() {
     return ExtObject.fromQueryString.apply(ExtObject, arguments);
 };
 
-})();
+}());
 
-//<localeInfo useApply="true" />
 /**
  * @class Ext.Date
  * A set of useful static methods to deal with date
@@ -3945,8 +4071,8 @@ Ext.Date.parseFunctions['x-date-format'] = myDateParser;
         "MS": function(input, strict) {
             // note: the timezone offset is ignored since the MS Ajax server sends
             // a UTC milliseconds-since-Unix-epoch value (negative values are allowed)
-            var re = new RegExp('\\/Date\\(([-+])?(\\d+)(?:[+-]\\d{4})?\\)\\/');
-            var r = (input || '').match(re);
+            var re = new RegExp('\\/Date\\(([-+])?(\\d+)(?:[+-]\\d{4})?\\)\\/'),
+                r = (input || '').match(re);
             return r? new Date(((r[1] || '') + r[2]) * 1) : null;
         }
     },
@@ -4111,7 +4237,9 @@ Ext.Date.monthNames = [
      * Example:
      * <pre><code>
 Ext.Date.monthNumbers = {
+    'LongJanNameInYourLang': 0,
     'ShortJanNameInYourLang':0,
+    'LongFebNameInYourLang':1,
     'ShortFebNameInYourLang':1,
     ...
 };
@@ -4119,18 +4247,29 @@ Ext.Date.monthNumbers = {
      */
     //<locale type="object">
     monthNumbers : {
-        Jan:0,
-        Feb:1,
-        Mar:2,
-        Apr:3,
-        May:4,
-        Jun:5,
-        Jul:6,
-        Aug:7,
-        Sep:8,
-        Oct:9,
-        Nov:10,
-        Dec:11
+        January: 0,
+        Jan: 0,
+        February: 1,
+        Feb: 1,
+        March: 2,
+        Mar: 2,
+        April: 3,
+        Apr: 3,
+        May: 4,
+        June: 5,
+        Jun: 5,
+        July: 6,
+        Jul: 6,
+        August: 7,
+        Aug: 7,
+        September: 8,
+        Sep: 8,
+        October: 9,
+        Oct: 9,
+        November: 10,
+        Nov: 10,
+        December: 11,
+        Dec: 11
     },
     //</locale>
     
@@ -4192,7 +4331,7 @@ Ext.Date.monthNumbers = {
         return function(format){
             return hourInfoRe.test(format.replace(stripEscapeRe, ''));
         };
-    })(),
+    }()),
 
     /**
      * Checks if the specified format contains information about
@@ -4209,7 +4348,24 @@ Ext.Date.monthNumbers = {
         return function(format){
             return dateInfoRe.test(format.replace(stripEscapeRe, ''));
         };
-    })(),
+    }()),
+    
+    /**
+     * Removes all escaping for a date format string. In date formats,
+     * using a '\' can be used to escape special characters.
+     * @param {String} format The format to unescape
+     * @return {String} The unescaped format
+     * @method
+     */
+    unescapeFormat: (function() { 
+        var slashRe = /\\/gi;
+        return function(format) {
+            // Escape the format, since \ can be used to escape special
+            // characters in a date format. For example, in a spanish
+            // locale the format may be: 'd \\de F \\de Y'
+            return format.replace(slashRe, '');
+        }
+    }()),
 
     /**
      * The base format-code to formatting-function hashmap used by the {@link #format} method.
@@ -4259,8 +4415,9 @@ console.log(Ext.Date.format(new Date(), 'X'); // returns the current day of the 
         Z: "(this.getTimezoneOffset() * -60)",
 
         c: function() { // ISO-8601 -- GMT format
-            for (var c = "Y-m-dTH:i:sP", code = [], i = 0, l = c.length; i < l; ++i) {
-                var e = c.charAt(i);
+            var c, code, i, l, e;
+            for (c = "Y-m-dTH:i:sP", code = [], i = 0, l = c.length; i < l; ++i) {
+                e = c.charAt(i);
                 code.push(e == "T" ? "'T'" : utilDate.getFormatCode(e)); // treat T as a character literal
             }
             return code.join(" + ");
@@ -4374,9 +4531,10 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
     createFormat : function(format) {
         var code = [],
             special = false,
-            ch = '';
+            ch = '',
+            i;
 
-        for (var i = 0; i < format.length; ++i) {
+        for (i = 0; i < format.length; ++i) {
             ch = format.charAt(i);
             if (!special && ch == "\\") {
                 special = true;
@@ -4491,7 +4649,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
             utilDate.parseRegexes[regexNum] = new RegExp("^" + regex.join('') + "$", 'i');
             utilDate.parseFunctions[format] = Ext.functionFactory("input", "strict", xf(code, regexNum, calc.join('')));
         };
-    })(),
+    }()),
 
     // private
     parseCodes : {
@@ -4665,7 +4823,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
                     "mn = o.substring(3,5) % 60;", // get minutes
                 "o = ((-12 <= (hr*60 + mn)/60) && ((hr*60 + mn)/60 <= 14))? (sn + Ext.String.leftPad(hr, 2, '0') + Ext.String.leftPad(mn, 2, '0')) : null;\n" // -12hrs <= GMT offset <= 14hrs
             ].join("\n"),
-            s: "([+\-]\\d{4})" // GMT offset in hrs and mins
+            s: "([+-]\\d{4})" // GMT offset in hrs and mins
         },
         P: {
             g:1,
@@ -4676,7 +4834,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
                     "mn = o.substring(4,6) % 60;", // get minutes
                 "o = ((-12 <= (hr*60 + mn)/60) && ((hr*60 + mn)/60 <= 14))? (sn + Ext.String.leftPad(hr, 2, '0') + Ext.String.leftPad(mn, 2, '0')) : null;\n" // -12hrs <= GMT offset <= 14hrs
             ].join("\n"),
-            s: "([+\-]\\d{2}:\\d{2})" // GMT offset in hrs and mins (with colon separator)
+            s: "([+-]\\d{2}:\\d{2})" // GMT offset in hrs and mins (with colon separator)
         },
         T: {
             g:0,
@@ -4687,7 +4845,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
             g:1,
             c:"zz = results[{0}] * 1;\n" // -43200 <= UTC offset <= 50400
                   + "zz = (-43200 <= zz && zz <= 50400)? zz : null;\n",
-            s:"([+\-]?\\d{1,5})" // leading '+' sign is optional for UTC offset
+            s:"([+-]?\\d{1,5})" // leading '+' sign is optional for UTC offset
         },
         c: function() {
             var calc = [],
@@ -4710,9 +4868,11 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
                             "}",
                         "}"
                     ].join('\n')}
-                ];
+                ],
+                i,
+                l;
 
-            for (var i = 0, l = arr.length; i < l; ++i) {
+            for (i = 0, l = arr.length; i < l; ++i) {
                 calc.push(arr[i].c);
             }
 
@@ -4747,7 +4907,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
     dateFormat: function(date, format) {
         return utilDate.format(date, format);
     },
-    
+
     /**
      * Compares if two dates are equal by comparing their values.
      * @param {Date} date1
@@ -4855,7 +5015,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
 
             return AWN - Math.floor(Date.UTC(Wyr, 0, 7) / ms7d) + 1;
         };
-    })(),
+    }()),
 
     /**
      * Checks if the current date falls within a leap year.
@@ -4935,7 +5095,7 @@ console.log(Ext.Date.dayNames[lastDay]); //output: 'Wednesday'
 
             return m == 1 && utilDate.isLeapYear(date) ? 29 : daysInMonth[m];
         };
-    })(),
+    }()),
 
     /**
      * Get the English ordinal suffix of the current day (equivalent to the format specifier 'S').
@@ -5013,7 +5173,9 @@ console.log(orig);  //returns 'Thu Oct 01 2006'
         }
 
         // get current date before clearing time
-        var d = date.getDate();
+        var d = date.getDate(),
+            hr,
+            c;
 
         // clear time
         date.setHours(0);
@@ -5026,7 +5188,7 @@ console.log(orig);  //returns 'Thu Oct 01 2006'
             // refer to http://www.timeanddate.com/time/aboutdst.html for the (rare) exceptions to this rule
 
             // increment hour until cloned date == current date
-            for (var hr = 1, c = utilDate.add(date, Ext.Date.HOUR, hr); c.getDate() != d; hr++, c = utilDate.add(date, Ext.Date.HOUR, hr));
+            for (hr = 1, c = utilDate.add(date, Ext.Date.HOUR, hr); c.getDate() != d; hr++, c = utilDate.add(date, Ext.Date.HOUR, hr));
 
             date.setDate(d);
             date.setHours(c.getHours());
@@ -5059,8 +5221,11 @@ console.log(dt2); //returns 'Tue Sep 26 2006 00:00:00'
      */
     add : function(date, interval, value) {
         var d = Ext.Date.clone(date),
-            Date = Ext.Date;
-        if (!interval || value === 0) return d;
+            Date = Ext.Date,
+            day;
+        if (!interval || value === 0) {
+            return d;
+        }
 
         switch(interval.toLowerCase()) {
             case Ext.Date.MILLI:
@@ -5079,14 +5244,19 @@ console.log(dt2); //returns 'Tue Sep 26 2006 00:00:00'
                 d.setDate(d.getDate() + value);
                 break;
             case Ext.Date.MONTH:
-                var day = date.getDate();
+                day = date.getDate();
                 if (day > 28) {
-                    day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), 'mo', value)).getDate());
+                    day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.MONTH, value)).getDate());
                 }
                 d.setDate(day);
                 d.setMonth(date.getMonth() + value);
                 break;
             case Ext.Date.YEAR:
+                day = date.getDate();
+                if (day > 28) {
+                    day = Math.min(day, Ext.Date.getLastDateOfMonth(Ext.Date.add(Ext.Date.getFirstDateOfMonth(date), Ext.Date.YEAR, value)).getDate());
+                }
+                d.setDate(day);
                 d.setFullYear(date.getFullYear() + value);
                 break;
         }
@@ -5110,27 +5280,32 @@ console.log(dt2); //returns 'Tue Sep 26 2006 00:00:00'
         var nativeDate = window.Date,
             p, u,
             statics = ['useStrict', 'formatCodeToRegex', 'parseFunctions', 'parseRegexes', 'formatFunctions', 'y2kYear', 'MILLI', 'SECOND', 'MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR', 'defaults', 'dayNames', 'monthNames', 'monthNumbers', 'getShortMonthName', 'getShortDayName', 'getMonthNumber', 'formatCodes', 'isValid', 'parseDate', 'getFormatCode', 'createFormat', 'createParser', 'parseCodes'],
-            proto = ['dateFormat', 'format', 'getTimezone', 'getGMTOffset', 'getDayOfYear', 'getWeekOfYear', 'isLeapYear', 'getFirstDayOfMonth', 'getLastDayOfMonth', 'getDaysInMonth', 'getSuffix', 'clone', 'isDST', 'clearTime', 'add', 'between'];
+            proto = ['dateFormat', 'format', 'getTimezone', 'getGMTOffset', 'getDayOfYear', 'getWeekOfYear', 'isLeapYear', 'getFirstDayOfMonth', 'getLastDayOfMonth', 'getDaysInMonth', 'getSuffix', 'clone', 'isDST', 'clearTime', 'add', 'between'],
+            sLen    = statics.length,
+            pLen    = proto.length,
+            stat, prot, s;
 
         //Append statics
-        Ext.Array.forEach(statics, function(s) {
-            nativeDate[s] = utilDate[s];
-        });
+        for (s = 0; s < sLen; s++) {
+            stat = statics[s];
+            nativeDate[stat] = utilDate[stat];
+        }
 
         //Append to prototype
-        Ext.Array.forEach(proto, function(s) {
-            nativeDate.prototype[s] = function() {
+        for (p = 0; p < pLen; p++) {
+            prot = proto[p];
+            nativeDate.prototype[prot] = function() {
                 var args = Array.prototype.slice.call(arguments);
                 args.unshift(this);
-                return utilDate[s].apply(utilDate, args);
+                return utilDate[prot].apply(utilDate, args);
             };
-        });
+        }
     }
 };
 
 var utilDate = Ext.Date;
 
-})();
+}());
 
 /**
  * @author Jacky Nguyen <jacky@sencha.com>
@@ -5146,13 +5321,6 @@ var utilDate = Ext.Date;
 
 var noArgs = [],
     Base = function(){};
-
-    // This is the "$previous" method of a hook function on an instance. When called, it
-    // calls through the class prototype by the name of the called method.
-    function callHookParent () {
-        var method = callHookParent.caller.caller; // skip callParent (our caller)
-        return method.$owner.prototype[method.$name].apply(this, arguments);
-    }
 
     // These static properties will be copied to every newly created class with {@link Ext#define}
     Ext.apply(Base, {
@@ -5221,7 +5389,7 @@ var noArgs = [],
                 this.$onExtended = parent.$onExtended.slice();
             }
 
-            prototype.config = new prototype.configClass;
+            prototype.config = new prototype.configClass();
             prototype.initConfigList = prototype.initConfigList.slice();
             prototype.initConfigMap = Ext.clone(prototype.initConfigMap);
             prototype.configMap = Ext.Object.chain(prototype.configMap);
@@ -5352,7 +5520,6 @@ var noArgs = [],
                 hasInheritableStatics = prototype.$hasInheritableStatics = {};
             }
 
-
             for (name in members) {
                 if (members.hasOwnProperty(name)) {
                     member = members[name];
@@ -5395,7 +5562,6 @@ var noArgs = [],
                 enumerables = Ext.enumerables,
                 names = [],
                 i, ln, name, member;
-
 
             for (name in members) {
                 names.push(name);
@@ -5487,9 +5653,7 @@ var noArgs = [],
                 toBorrow = fromPrototype[name];
 
                 if (typeof toBorrow == 'function') {
-                    fn = function() {
-                        return toBorrow.apply(this, arguments);
-                    };
+                    fn = Ext.Function.clone(toBorrow);
 
 
                     fn.$owner = this;
@@ -5519,11 +5683,9 @@ var noArgs = [],
          *         constructor: function() {
          *             alert("I'm going to be a cat!");
          *
-         *             var instance = this.callParent(arguments);
+         *             this.callParent(arguments);
          *
          *             alert("Meeeeoooowwww");
-         *
-         *             return instance;
          *         }
          *     });
          *
@@ -5539,11 +5701,9 @@ var noArgs = [],
          *         constructor: function() {
          *             alert("I'm going to be a cat!");
          *
-         *             var instance = this.callParent(arguments);
+         *             this.callParent(arguments);
          *
          *             alert("Meeeeoooowwww");
-         *
-         *             return instance;
          *         }
          *     });
          *
@@ -5581,6 +5741,8 @@ var noArgs = [],
                 for (name in members) { // hasOwnProperty is checked in the next loop...
                     if (name == 'statics') {
                         statics = members[name];
+                    } else if (name == 'config') {
+                        me.addConfig(members[name], true);
                     } else {
                         names.push(name);
                     }
@@ -5622,9 +5784,7 @@ var noArgs = [],
             return this;
         },
 
-        /**
-         * @private
-         */
+        // Documented downwards
         callParent: function(args) {
             var method;
 
@@ -5937,7 +6097,7 @@ var noArgs = [],
          *         },
          *
          *         constructor: function() {
-         *             alert(this.self.speciesName); / dependentOL on 'this'
+         *             alert(this.self.speciesName); // dependent on 'this'
          *         },
          *
          *         clone: function() {
@@ -5968,27 +6128,6 @@ var noArgs = [],
             return this;
         },
 
-        hookMethod: function (name, hookFn) {
-            var me = this,
-                owner = me.self;
-
-
-            hookFn.$owner = owner;
-            hookFn.$name = name;
-
-            if (me.hasOwnProperty(name)) {
-                hookFn.$previous = me[name]; // already hooked, so call previous hook
-            } else {
-                hookFn.$previous = callHookParent; // special "previous" to call on prototype
-            }
-
-            me[name] = hookFn;
-        },
-
-        hookMethods: function (hooks) {
-            Ext.Object.each(hooks, this.hookMethod, this);
-        },
-
         /**
          * Initialize configuration for this class. a typical example:
          *
@@ -6017,7 +6156,7 @@ var noArgs = [],
         initConfig: function(config) {
             var instanceConfig = config,
                 configNameCache = Ext.Class.configNameCache,
-                defaultConfig = new this.configClass,
+                defaultConfig = new this.configClass(),
                 defaultConfigList = this.initConfigList,
                 hasConfig = this.configMap,
                 nameMap, i, ln, name, initializedName;
@@ -6168,11 +6307,9 @@ var noArgs = [],
      *         constructor: function() {
      *             alert("I'm going to be a cat!");
      *
-     *             var instance = this.callOverridden();
+     *             this.callOverridden();
      *
      *             alert("Meeeeoooowwww");
-     *
-     *             return instance;
      *         }
      *     });
      *
@@ -6190,7 +6327,7 @@ var noArgs = [],
 
     Ext.Base = Base;
 
-})(Ext.Function.flexSetter);
+}(Ext.Function.flexSetter));
 
 /**
  * @author Jacky Nguyen <jacky@sencha.com>
@@ -6224,8 +6361,10 @@ var noArgs = [],
     // Creates a constructor that has nothing extra in its scope chain.
     function makeCtor (className) {
         function constructor () {
-            return this.constructor.apply(this, arguments);
-        };
+            // Opera has some problems returning from a constructor when Dragonfly isn't running. The || null seems to
+            // be sufficient to stop it misbehaving. Known to be required against 10.53, 11.51 and 11.61.
+            return this.constructor.apply(this, arguments) || null;
+        }
         return constructor;
     }
 
@@ -6316,7 +6455,6 @@ var noArgs = [],
                 hooks = {
                     onBeforeCreated: this.onBeforeCreated
                 },
-                index = 0,
                 preprocessors = [],
                 preprocessor, preprocessorsProperties,
                 i, ln, j, subLn, preprocessorProperty, process;
@@ -6350,21 +6488,23 @@ var noArgs = [],
             }
 
             hooks.onCreated = onCreated ? onCreated : Ext.emptyFn;
+            hooks.preprocessors = preprocessors;
 
-            process = function(Class, data, hooks) {
-                preprocessor = preprocessors[index++];
+            this.doProcess(Class, data, hooks);
+        },
+        
+        doProcess: function(Class, data, hooks){
+            var me = this,
+                preprocessor = hooks.preprocessors.shift();
 
-                if (!preprocessor) {
-                    hooks.onBeforeCreated.apply(this, arguments);
-                    return;
-                }
+            if (!preprocessor) {
+                hooks.onBeforeCreated.apply(me, arguments);
+                return;
+            }
 
-                if (preprocessor.call(this, Class, data, hooks, process) !== false) {
-                    process.apply(this, arguments);
-                }
-            };
-
-            process.call(this, Class, data, hooks);
+            if (preprocessor.call(me, Class, data, hooks, me.doProcess) !== false) {
+                me.doProcess(Class, data, hooks);
+            }
         },
 
         /** @private */
@@ -6530,7 +6670,7 @@ var noArgs = [],
                     'get': 'get' + capitalizedName,
                     doSet : 'doSet' + capitalizedName,
                     changeEvent: name.toLowerCase() + 'change'
-                }
+                };
             }
 
             return map;
@@ -6695,7 +6835,7 @@ var noArgs = [],
                     }
 
                     return this;
-                }
+                };
             }
 
             if (!(getName in prototype) || data.hasOwnProperty(getName)) {
@@ -6788,9 +6928,9 @@ var noArgs = [],
                 }
             }
             else {
-                for (name in mixins) {
-                    if (mixins.hasOwnProperty(name)) {
-                        Class.mixin(name, mixins[name]);
+                for (var mixinName in mixins) {
+                    if (mixins.hasOwnProperty(mixinName)) {
+                        Class.mixin(mixinName, mixins[mixinName]);
                     }
                 }
             }
@@ -6838,7 +6978,7 @@ var noArgs = [],
         return cls;
     };
 
-})();
+}());
 
 /**
  * @author Jacky Nguyen <jacky@sencha.com>
@@ -6869,8 +7009,6 @@ var noArgs = [],
  *              if (name) {
  *                  this.name = name;
  *              }
- *
- *              return this;
  *          },
  *
  *          eat: function(foodType) {
@@ -6896,9 +7034,6 @@ var noArgs = [],
  *
  *              // Apply a method from the parent class' prototype
  *              this.callParent([name]);
- *
- *              return this;
- *
  *          },
  *
  *          code: function(language) {
@@ -6983,8 +7118,6 @@ var noArgs = [],
  *
  *          constructor: function(config) {
  *              this.initConfig(config);
- *
- *              return this;
  *          },
  *
  *          applyPrice: function(price) {
@@ -7072,8 +7205,7 @@ var noArgs = [],
             alternateToName: {},
             aliasToName: {},
             nameToAliases: {},
-            nameToAlternates: {},
-            overridesByName: {}
+            nameToAlternates: {}
         },
 
         /** @private */
@@ -7140,22 +7272,30 @@ var noArgs = [],
         triggerCreated: function(className) {
             var listeners = this.createdListeners,
                 nameListeners = this.nameCreatedListeners,
-                i, ln, listener;
+                alternateNames = this.maps.nameToAlternates[className],
+                names = [className],
+                i, ln, j, subLn, listener, name;
 
             for (i = 0,ln = listeners.length; i < ln; i++) {
                 listener = listeners[i];
                 listener.fn.call(listener.scope, className);
             }
 
-            listeners = nameListeners[className];
+            if (alternateNames) {
+                names.push.apply(names, alternateNames);
+            }
 
-            if (listeners) {
-                for (i = 0,ln = listeners.length; i < ln; i++) {
-                    listener = listeners[i];
-                    listener.fn.call(listener.scope, className);
+            for (i = 0,ln = names.length; i < ln; i++) {
+                name = names[i];
+                listeners = nameListeners[name];
+
+                if (listeners) {
+                    for (j = 0,subLn = listeners.length; j < subLn; j++) {
+                        listener = listeners[j];
+                        listener.fn.call(listener.scope, name);
+                    }
+                    delete nameListeners[name];
                 }
-
-                delete nameListeners[className];
             }
         },
 
@@ -7193,7 +7333,12 @@ var noArgs = [],
          */
         parseNamespace: function(namespace) {
 
-            var cache = this.namespaceParseCache;
+            var cache = this.namespaceParseCache,
+                parts,
+                rewrites,
+                root,
+                name,
+                rewrite, from, to, i, ln;
 
             if (this.enableNamespaceParseCache) {
                 if (cache.hasOwnProperty(namespace)) {
@@ -7201,11 +7346,10 @@ var noArgs = [],
                 }
             }
 
-            var parts = [],
-                rewrites = this.namespaceRewrites,
-                root = global,
-                name = namespace,
-                rewrite, from, to, i, ln;
+            parts = [];
+            rewrites = this.namespaceRewrites;
+            root = global;
+            name = namespace;
 
             for (i = 0, ln = rewrites.length; i < ln; i++) {
                 rewrite = rewrites[i];
@@ -7333,15 +7477,17 @@ var noArgs = [],
          * @return {Ext.Class} class
          */
         get: function(name) {
-            var classes = this.classes;
+            var classes = this.classes,
+                root,
+                parts,
+                part, i, ln;
 
             if (classes[name]) {
                 return classes[name];
             }
 
-            var root = global,
-                parts = this.parseNamespace(name),
-                part, i, ln;
+            root = global;
+            parts = this.parseNamespace(name);
 
             for (i = 0, ln = parts.length; i < ln; i++) {
                 part = parts[i];
@@ -7462,24 +7608,6 @@ var noArgs = [],
         },
 
         /**
-         * @private
-         */
-        applyOverrides: function (name) {
-            var me = this,
-                overridesByName = me.maps.overridesByName,
-                overrides = overridesByName[name],
-                length = overrides && overrides.length || 0,
-                createOverride = me.createOverride,
-                i;
-
-            delete overridesByName[name];
-
-            for (i = 0; i < length; ++i) {
-                createOverride.apply(me, overrides[i]);
-            }
-        },
-
-        /**
          * Defines a class.
          * @deprecated 4.1.0 Use {@link Ext#define} instead, as that also supports creating overrides.
          */
@@ -7490,10 +7618,8 @@ var noArgs = [],
             return new Class(data, function() {
                 var postprocessorStack = data.postprocessors || Manager.defaultPostprocessors,
                     registeredPostprocessors = Manager.postprocessors,
-                    index = 0,
                     postprocessors = [],
-                    postprocessor, process, i, ln, j, subLn, postprocessorProperties, postprocessorProperty,
-                    alternateNames;
+                    postprocessor, i, ln, j, subLn, postprocessorProperties, postprocessorProperty;
 
                 delete data.postprocessors;
 
@@ -7523,88 +7649,82 @@ var noArgs = [],
                     }
                 }
 
-                process = function(clsName, cls, clsData) {
-                    postprocessor = postprocessors[index++];
+                data.postprocessors = postprocessors;
+                data.createdFn = createdFn;
+                Manager.processCreate(className, this, data);
+            });
+        },
+        
+        processCreate: function(className, cls, clsData){
+            var me = this,
+                postprocessor = clsData.postprocessors.shift(),
+                createdFn = clsData.createdFn;
 
-                    if (!postprocessor) {
-                        Manager.set(className, cls);
+            if (!postprocessor) {
+                me.set(className, cls);
 
-                        if (createdFn) {
-                            createdFn.call(cls, cls);
+                if (createdFn) {
+                     createdFn.call(cls, cls);
+                }
+
+                me.triggerCreated(className);
+                return;
+            }
+
+            if (postprocessor.call(me, className, cls, clsData, me.processCreate) !== false) {
+                me.processCreate(className, cls, clsData);
+            }
+        },
+
+        createOverride: function (className, data, createdFn) {
+            var me = this,
+                overriddenClassName = data.override,
+                requires = data.requires,
+                uses = data.uses,
+                classReady = function () {
+                    var cls, temp;
+
+                    if (requires) {
+                        temp = requires;
+                        requires = null; // do the real thing next time (which may be now)
+
+                        // Since the override is going to be used (its target class is now
+                        // created), we need to fetch the required classes for the override
+                        // and call us back once they are loaded:
+                        Ext.Loader.require(temp, classReady);
+                    } else {
+                        // The target class and the required classes for this override are
+                        // ready, so we can apply the override now:
+                        cls = me.get(overriddenClassName);
+
+                        // We don't want to apply these:
+                        delete data.override;
+                        delete data.requires;
+                        delete data.uses;
+
+                        Ext.override(cls, data);
+
+                        // This pushes the overridding file itself into Ext.Loader.history
+                        // Hence if the target class never exists, the overriding file will
+                        // never be included in the build.
+                        me.triggerCreated(className);
+
+                        if (uses) {
+                            Ext.Loader.addUsedClasses(uses); // get these classes too!
                         }
 
-                        Manager.triggerCreated(className);
-                        return;
-                    }
-
-                    if (postprocessor.call(this, clsName, cls, clsData, process) !== false) {
-                        process.apply(this, arguments);
+                        if (createdFn) {
+                            createdFn.call(cls); // last but not least!
+                        }
                     }
                 };
 
-                process.call(Manager, className, this, data);
+            me.existCache[className] = true;
 
-                //TODO: Take this out, hook into classCreated instead
-                Manager.applyOverrides(className);
-                alternateNames = Manager.maps.nameToAlternates[className];
-
-                for (i = 0, ln = alternateNames && alternateNames.length || 0; i < ln; ++i) {
-                    Manager.applyOverrides(alternateNames[i]);
-                }
-            });
-        },
-
-        createOverride: function (overrideName, data, createdFn) {
-            var me = this,
-                className = data.override,
-                cls = me.get(className),
-                overrideBody, overridesByName, overrides;
-
-            if (cls) {
-                // We use a "faux class" here because it has all the mechanics we need to
-                // work with the loader via uses/requires and loader history (for build).
-                // This way we don't have to refactor any of the class-loader relationship.
-
-                // hoist any 'requires' or 'uses' from the body onto the faux class:
-                overrideBody = Ext.apply({}, data);
-                delete overrideBody.requires;
-                delete overrideBody.uses;
-                delete overrideBody.override;
-
-                me.create(overrideName, {
-                        requires: data.requires,
-                        uses: data.uses,
-                        override: className
-                    }, function () {
-                        this.active = true;
-                        if (cls.override) { // if (normal class)
-                            cls.override(overrideBody);
-                        } else { // else (singleton)
-                            cls.self.override(overrideBody);
-                        }
-
-                        if (createdFn) {
-                            // called once the override is applied and with the context of the
-                            // overridden class (the override itself is a meaningless, name-only
-                            // thing).
-                            createdFn.call(cls);
-                        }
-                    });
-            } else {
-                // The class is not loaded and may never load, but in case it does we add
-                // the override arguments to an internal map keyed by the className. When
-                // (or if) the class loads, we will call this method again with those same
-                // arguments to complete the override.
-                overridesByName = me.maps.overridesByName;
-                overrides = overridesByName[className] || (overridesByName[className] = []);
-                overrides.push(Array.prototype.slice.call(arguments, 0));
-
-                // place an inactive stub in the namespace (appeases the Loader and could
-                // be useful diagnostically)
-                me.setNamespace(overrideName, {
-                    override: className
-                });
-            }
+            // Override the target class right after it's created
+            me.onCreated(classReady, me, overriddenClassName);
+ 
+            return me;
         },
 
         /**
@@ -7712,13 +7832,15 @@ var noArgs = [],
          */
         getInstantiator: function(length) {
             var instantiators = this.instantiators,
-                instantiator;
+                instantiator,
+                i,
+                args;
 
             instantiator = instantiators[length];
 
             if (!instantiator) {
-                var i = length,
-                    args = [];
+                i = length;
+                args = [];
 
                 for (i = 0; i < length; i++) {
                     args.push('a[' + i + ']');
@@ -8059,10 +8181,13 @@ var noArgs = [],
             if (typeof xtype != 'string') { // if (form 3 or 5)
                 // first arg is config or component
                 config = name; // arguments[0]
-                if (config.isComponent) {
-                    return config;
-                }
                 xtype = config.xtype;
+            } else {
+                config = config || {};
+            }
+            
+            if (config.isComponent) {
+                return config;
             }
 
             alias = 'widget.' + xtype;
@@ -8075,7 +8200,7 @@ var noArgs = [],
             
             T = Manager.get(className);
             if (load || !T) {
-                return Manager.instantiateByAlias(alias, config || {});
+                return Manager.instantiateByAlias(alias, config);
             }
             return new T(config);
         },
@@ -8361,7 +8486,7 @@ var noArgs = [],
 
     }, ['xtype', 'alias']);
 
-})(Ext.Class, Ext.Function.alias, Array.prototype.slice, Ext.Array.from, Ext.global);
+}(Ext.Class, Ext.Function.alias, Array.prototype.slice, Ext.Array.from, Ext.global));
 
 /**
  * @author Jacky Nguyen <jacky@sencha.com>
@@ -8498,18 +8623,27 @@ var noArgs = [],
  * @singleton
  */
 
-(function(Manager, Class, flexSetter, alias, pass, arrayFrom, arrayErase, arrayInclude) {
-
-    var
+Ext.Loader = new function() {
+    var Loader = this,
+        Manager = Ext.ClassManager,
+        Class = Ext.Class,
+        flexSetter = Ext.Function.flexSetter,
+        alias = Ext.Function.alias,
+        pass = Ext.Function.pass,
+        defer = Ext.Function.defer,
+        arrayErase = Ext.Array.erase,
         dependencyProperties = ['extend', 'mixins', 'requires'],
-        Loader;
+        isInHistory = {},
+        history = [],
+        slashDotSlashRe = /\/\.\//g,
+        dotRe = /\./g;
 
-    Loader = Ext.Loader = {
+    Ext.apply(Loader, {
 
         /**
          * @private
          */
-        isInHistory: {},
+        isInHistory: isInHistory,
 
         /**
          * An array of class names to keep track of the dependency loading order.
@@ -8518,7 +8652,7 @@ var noArgs = [],
          *
          * @property {Array} history
          */
-        history: [],
+        history: history,
 
         /**
          * Configuration
@@ -8532,6 +8666,13 @@ var noArgs = [],
             enabled: false,
 
             /**
+             * @cfg {Boolean} scriptChainDelay
+             * millisecond delay between asynchronous script injection (prevents stack overflow on some user agents)
+             * 'false' disables delay but potentially increases stack load.
+             */
+            scriptChainDelay : false,
+
+            /**
              * @cfg {Boolean} disableCaching
              * Appends current timestamp to script files to prevent caching.
              */
@@ -8542,6 +8683,13 @@ var noArgs = [],
              * The get parameter name for the cache buster's timestamp.
              */
             disableCachingParam: '_dc',
+
+            /**
+             * @cfg {Boolean} garbageCollect
+             * True to prepare an asynchronous script tag for garbage collection (effective only
+             * if {@link #preserveScripts preserveScripts} is false)
+             */
+            garbageCollect : false,
 
             /**
              * @cfg {Object} paths
@@ -8561,7 +8709,20 @@ var noArgs = [],
              */
             paths: {
                 'Ext': '.'
-            }
+            },
+
+            /**
+             * @cfg {Boolean} preserveScripts
+             * False to remove and optionally {@link #garbageCollect garbage-collect} asynchronously loaded scripts,
+             * True to retain script element for browser debugger compatibility and improved load performance.
+             */
+            preserveScripts : true,
+
+            /**
+             * @cfg {String} scriptCharset
+             * Optional charset to specify encoding of dynamic script content.
+             */
+            scriptCharset : undefined
         },
 
         /**
@@ -8592,13 +8753,13 @@ var noArgs = [],
          */
         setConfig: function(name, value) {
             if (Ext.isObject(name) && arguments.length === 1) {
-                Ext.merge(this.config, name);
+                Ext.merge(Loader.config, name);
             }
             else {
-                this.config[name] = (Ext.isObject(value)) ? Ext.merge(this.config[name], value) : value;
+                Loader.config[name] = (Ext.isObject(value)) ? Ext.merge(Loader.config[name], value) : value;
             }
 
-            return this;
+            return Loader;
         },
 
         /**
@@ -8608,10 +8769,10 @@ var noArgs = [],
          */
         getConfig: function(name) {
             if (name) {
-                return this.config[name];
+                return Loader.config[name];
             }
 
-            return this.config;
+            return Loader.config;
         },
 
         /**
@@ -8626,9 +8787,9 @@ var noArgs = [],
          * @method
          */
         setPath: flexSetter(function(name, path) {
-            this.config.paths[name] = path;
+            Loader.config.paths[name] = path;
 
-            return this;
+            return Loader;
         }),
 
         /**
@@ -8660,8 +8821,8 @@ var noArgs = [],
          */
         getPath: function(className) {
             var path = '',
-                paths = this.config.paths,
-                prefix = this.getPrefix(className);
+                paths = Loader.config.paths,
+                prefix = Loader.getPrefix(className);
 
             if (prefix.length > 0) {
                 if (prefix === className) {
@@ -8676,7 +8837,7 @@ var noArgs = [],
                 path += '/';
             }
 
-            return path.replace(/\/\.\//g, '/') + className.replace(/\./g, "/") + '.js';
+            return path.replace(slashDotSlashRe, '/') + className.replace(dotRe, "/") + '.js';
         },
 
         /**
@@ -8684,7 +8845,7 @@ var noArgs = [],
          * @param {String} className
          */
         getPrefix: function(className) {
-            var paths = this.config.paths,
+            var paths = Loader.config.paths,
                 prefix, deepestPrefix = '';
 
             if (paths.hasOwnProperty(className)) {
@@ -8737,15 +8898,13 @@ var noArgs = [],
          * @return {Object} object contains `require` method for chaining
          */
         exclude: function(excludes) {
-            var me = this;
-
             return {
                 require: function(expressions, fn, scope) {
-                    return me.require(expressions, fn, scope, excludes);
+                    return Loader.require(expressions, fn, scope, excludes);
                 },
 
                 syncRequire: function(expressions, fn, scope) {
-                    return me.syncRequire(expressions, fn, scope, excludes);
+                    return Loader.syncRequire(expressions, fn, scope, excludes);
                 }
             };
         },
@@ -8770,7 +8929,16 @@ var noArgs = [],
 
             fn.call(scope);
         }
-    };
+    });
+
+    var queue = [],
+        isClassFileLoaded = {},
+        isFileLoaded = {},
+        classNameToFilePathMap = {},
+        scriptElements = {},
+        readyListeners = [],
+        usedClasses = [],
+        requiresMap = {};
 
     Ext.apply(Loader, {
         /**
@@ -8794,36 +8962,36 @@ var noArgs = [],
          *
          * @private
          */
-        queue: [],
+        queue: queue,
 
         /**
          * Maintain the list of files that have already been handled so that they never get double-loaded
          * @private
          */
-        isClassFileLoaded: {},
+        isClassFileLoaded: isClassFileLoaded,
 
         /**
          * @private
          */
-        isFileLoaded: {},
+        isFileLoaded: isFileLoaded,
 
         /**
          * Maintain the list of listeners to execute when all required scripts are fully loaded
          * @private
          */
-        readyListeners: [],
+        readyListeners: readyListeners,
 
         /**
-         * Contains optional dependencies to be loaded last
+         * Contains classes referenced in `uses` properties.
          * @private
          */
-        optionalRequires: [],
+        optionalRequires: usedClasses,
 
         /**
          * Map of fully qualified class names to an array of dependent classes.
          * @private
          */
-        requiresMap: {},
+        requiresMap: requiresMap,
 
         /**
          * @private
@@ -8841,14 +9009,20 @@ var noArgs = [],
         /**
          * @private
          */
-        classNameToFilePathMap: {},
+        classNameToFilePathMap: classNameToFilePathMap,
+
+        /**
+         * The number of scripts loading via loadScript.
+         * @private
+         */
+        scriptsLoading: 0,
 
         /**
          * @private
          */
         syncModeEnabled: false,
 
-        scriptElements: {},
+        scriptElements: scriptElements,
 
         /**
          * Refresh all items in the queue. If all dependencies for an item exist during looping,
@@ -8857,13 +9031,13 @@ var noArgs = [],
          * @private
          */
         refreshQueue: function() {
-            var queue = this.queue,
-                ln = queue.length,
-                i, item, j, requires, references;
+            var ln = queue.length,
+                i, item, j, requires;
 
-            if (ln === 0) {
-                this.triggerReady();
-                return;
+            // When the queue of loading classes reaches zero, trigger readiness
+
+            if (!ln && !Loader.scriptsLoading) {
+                return Loader.triggerReady();
             }
 
             for (i = 0; i < ln; i++) {
@@ -8871,17 +9045,15 @@ var noArgs = [],
 
                 if (item) {
                     requires = item.requires;
-                    references = item.references;
 
                     // Don't bother checking when the number of files loaded
                     // is still less than the array length
-                    if (requires.length > this.numLoadedFiles) {
+                    if (requires.length > Loader.numLoadedFiles) {
                         continue;
                     }
 
-                    j = 0;
-
-                    do {
+                    // Remove any required classes that are loaded
+                    for (j = 0; j < requires.length; ) {
                         if (Manager.isCreated(requires[j])) {
                             // Take out from the queue
                             arrayErase(requires, j, 1);
@@ -8889,118 +9061,192 @@ var noArgs = [],
                         else {
                             j++;
                         }
-                    } while (j < requires.length);
+                    }
 
+                    // If we've ended up with no required classes, call the callback
                     if (item.requires.length === 0) {
                         arrayErase(queue, i, 1);
                         item.callback.call(item.scope);
-                        this.refreshQueue();
+                        Loader.refreshQueue();
                         break;
                     }
                 }
             }
 
-            return this;
+            return Loader;
         },
 
         /**
          * Inject a script element to document's head, call onLoad and onError accordingly
          * @private
          */
-        injectScriptElement: function(url, onLoad, onError, scope) {
+        injectScriptElement: function(url, onLoad, onError, scope, charset) {
             var script = document.createElement('script'),
-                me = this,
+                dispatched = false,
+                config = Loader.config,
                 onLoadFn = function() {
-                    me.cleanupScriptElement(script);
-                    onLoad.call(scope);
+
+                    if(!dispatched) {
+                        dispatched = true;
+                        script.onload = script.onreadystatechange = script.onerror = null;
+                        if (typeof config.scriptChainDelay == 'number') {
+                            //free the stack (and defer the next script)
+                            defer(onLoad, config.scriptChainDelay, scope);
+                        } else {
+                            onLoad.call(scope);
+                        }
+                        Loader.cleanupScriptElement(script, config.preserveScripts === false, config.garbageCollect);
+                    }
+
                 },
-                onErrorFn = function() {
-                    me.cleanupScriptElement(script);
-                    onError.call(scope);
+                onErrorFn = function(arg) {
+                    defer(onError, 1, scope);   //free the stack
+                    Loader.cleanupScriptElement(script, config.preserveScripts === false, config.garbageCollect);
                 };
 
             script.type = 'text/javascript';
-            script.src = url;
-            script.onload = onLoadFn;
             script.onerror = onErrorFn;
-            script.onreadystatechange = function() {
-                if (this.readyState === 'loaded' || this.readyState === 'complete') {
-                    onLoadFn();
-                }
-            };
+            charset = charset || config.scriptCharset;
+            if (charset) {
+                script.charset = charset;
+            }
 
-            this.documentHead.appendChild(script);
+            /*
+             * IE9 Standards mode (and others) SHOULD follow the load event only
+             * (Note: IE9 supports both onload AND readystatechange events)
+             */
+            if ('addEventListener' in script ) {
+                script.onload = onLoadFn;
+            } else if ('readyState' in script) {   // for <IE9 Compatability
+                script.onreadystatechange = function() {
+                    if ( this.readyState == 'loaded' || this.readyState == 'complete' ) {
+                        onLoadFn();
+                    }
+                };
+            } else {
+                 script.onload = onLoadFn;
+            }
+
+            script.src = url;
+            (Loader.documentHead || document.getElementsByTagName('head')[0]).appendChild(script);
 
             return script;
         },
 
+        /**
+         * @private
+         */
         removeScriptElement: function(url) {
-            var scriptElements = this.scriptElements;
-
             if (scriptElements[url]) {
-                this.cleanupScriptElement(scriptElements[url], true);
+                Loader.cleanupScriptElement(scriptElements[url], true, !!Loader.getConfig('garbageCollect'));
                 delete scriptElements[url];
             }
 
-            return this;
+            return Loader;
         },
 
         /**
          * @private
          */
-        cleanupScriptElement: function(script, remove) {
-            script.onload = null;
-            script.onreadystatechange = null;
-            script.onerror = null;
-
+        cleanupScriptElement: function(script, remove, collect) {
+            var prop;
+            script.onload = script.onreadystatechange = script.onerror = null;
             if (remove) {
-                this.documentHead.removeChild(script);
+                Ext.removeNode(script);       // Remove, since its useless now
+                if (collect) {
+                    for (prop in script) {
+                        try {
+                            script[prop] = null;
+                            delete script[prop];      // and prepare for GC
+                        } catch (cleanEx) {
+                            //ignore
+                        }
+                    }
+                }
             }
 
-            return this;
+            return Loader;
+        },
+
+        /**
+         * Loads the specified script URL and calls the supplied callbacks. If this method
+         * is called before {@link Ext#isReady}, the script's load will delay the transition
+         * to ready. This can be used to load arbitrary scripts that may contain further
+         * {@link Ext#require Ext.require} calls.
+         *
+         * @param {Object/String} options The options object or simply the URL to load.
+         * @param {String} options.url The URL from which to load the script.
+         * @param {Function} [options.onLoad] The callback to call on successful load.
+         * @param {Function} [options.onError] The callback to call on failure to load.
+         * @param {Object} [options.scope] The scope (`this`) for the supplied callbacks.
+         */
+        loadScript: function (options) {
+            var config = Loader.getConfig(),
+                isString = typeof options == 'string',
+                url = isString ? options : options.url,
+                onError = !isString && options.onError,
+                onLoad = !isString && options.onLoad,
+                scope = !isString && options.scope,
+                onScriptError = function() {
+                    Loader.numPendingFiles--;
+                    Loader.scriptsLoading--;
+
+                    if (onError) {
+                        onError.call(scope, "Failed loading '" + url + "', please verify that the file exists");
+                    }
+
+                    if (Loader.numPendingFiles + Loader.scriptsLoading === 0) {
+                        Loader.refreshQueue();
+                    }
+                },
+                onScriptLoad = function () {
+                    Loader.numPendingFiles--;
+                    Loader.scriptsLoading--;
+
+                    if (onLoad) {
+                        onLoad.call(scope);
+                    }
+
+                    if (Loader.numPendingFiles + Loader.scriptsLoading === 0) {
+                        Loader.refreshQueue();
+                    }
+                },
+                src;
+
+            Loader.isLoading = true;
+            Loader.numPendingFiles++;
+            Loader.scriptsLoading++;
+
+            src = config.disableCaching ?
+                (url + '?' + config.disableCachingParam + '=' + Ext.Date.now()) : url;
+
+            scriptElements[url] = Loader.injectScriptElement(src, onScriptLoad, onScriptError);
         },
 
         /**
          * Load a script file, supports both asynchronous and synchronous approaches
-         *
-         * @param {String} url
-         * @param {Function} onLoad
-         * @param {Scope} scope
-         * @param {Boolean} synchronous
          * @private
          */
         loadScriptFile: function(url, onLoad, onError, scope, synchronous) {
-            var me = this,
-                isFileLoaded = this.isFileLoaded,
-                scriptElements = this.scriptElements,
-                noCacheUrl = url + (this.getConfig('disableCaching') ? ('?' + this.getConfig('disableCachingParam') + '=' + Ext.Date.now()) : ''),
+            if (isFileLoaded[url]) {
+                return Loader;
+            }
+
+            var config = Loader.getConfig(),
+                noCacheUrl = url + (config.disableCaching ? ('?' + config.disableCachingParam + '=' + Ext.Date.now()) : ''),
                 isCrossOriginRestricted = false,
                 xhr, status, onScriptError;
 
-            if (isFileLoaded[url]) {
-                return this;
-            }
+            scope = scope || Loader;
 
-            scope = scope || this;
-
-            this.isLoading = true;
+            Loader.isLoading = true;
 
             if (!synchronous) {
                 onScriptError = function() {
                 };
 
-                if (!Ext.isReady && Ext.onDocumentReady) {
-                    Ext.onDocumentReady(function() {
-                        if (!isFileLoaded[url]) {
-                            scriptElements[url] = me.injectScriptElement(noCacheUrl, onLoad, onScriptError, scope);
-                        }
-                    });
-                }
-                else {
-                    scriptElements[url] = this.injectScriptElement(noCacheUrl, onLoad, onScriptError, scope);
-                }
-            }
-            else {
+                scriptElements[url] = Loader.injectScriptElement(noCacheUrl, onLoad, onScriptError, scope);
+            } else {
                 if (typeof XMLHttpRequest != 'undefined') {
                     xhr = new XMLHttpRequest();
                 } else {
@@ -9014,16 +9260,15 @@ var noArgs = [],
                     isCrossOriginRestricted = true;
                 }
 
-                status = (xhr.status === 1223) ? 204 : xhr.status;
+                status = (xhr.status === 1223) ? 204 :
+                    (xhr.status === 0 && (self.location || {}).protocol == 'file:') ? 200 : xhr.status;
 
-                if (!isCrossOriginRestricted) {
-                    isCrossOriginRestricted = (status === 0);
-                }
+                isCrossOriginRestricted = isCrossOriginRestricted || (status === 0);
 
                 if (isCrossOriginRestricted
                 ) {
                 }
-                else if (status >= 200 && status < 300
+                else if ((status >= 200 && status < 300) || (status === 304)
                 ) {
                     // Debugger friendly, file names are still shown even though they're eval'ed code
                     // Breakpoints work on both Firebug and Chrome's Web Inspector
@@ -9041,28 +9286,25 @@ var noArgs = [],
 
         // documented above
         syncRequire: function() {
-            var syncModeEnabled = this.syncModeEnabled;
+            var syncModeEnabled = Loader.syncModeEnabled;
 
             if (!syncModeEnabled) {
-                this.syncModeEnabled = true;
+                Loader.syncModeEnabled = true;
             }
 
-            this.require.apply(this, arguments);
+            Loader.require.apply(Loader, arguments);
 
             if (!syncModeEnabled) {
-                this.syncModeEnabled = false;
+                Loader.syncModeEnabled = false;
             }
 
-            this.refreshQueue();
+            Loader.refreshQueue();
         },
 
         // documented above
         require: function(expressions, fn, scope, excludes) {
             var excluded = {},
                 included = {},
-                queue = this.queue,
-                classNameToFilePathMap = this.classNameToFilePathMap,
-                isClassFileLoaded = this.isClassFileLoaded,
                 excludedClassNames = [],
                 possibleClassNames = [],
                 classNames = [],
@@ -9073,7 +9315,8 @@ var noArgs = [],
                 possibleClassName, i, j, ln, subLn;
 
             if (excludes) {
-                excludes = arrayFrom(excludes);
+                // Convert possible single string to an array.
+                excludes = (typeof excludes === 'string') ? [ excludes ] : excludes;
 
                 for (i = 0,ln = excludes.length; i < ln; i++) {
                     exclude = excludes[i];
@@ -9088,17 +9331,17 @@ var noArgs = [],
                 }
             }
 
-            expressions = arrayFrom(expressions);
+            // Convert possible single string to an array.
+            expressions = (typeof expressions === 'string') ? [ expressions ] : (expressions ? expressions : []);
 
             if (fn) {
                 if (fn.length > 0) {
                     callback = function() {
                         var classes = [],
-                            i, ln, name;
+                            i, ln;
 
                         for (i = 0,ln = references.length; i < ln; i++) {
-                            name = references[i];
-                            classes.push(Manager.get(name));
+                            classes.push(Manager.get(references[i]));
                         }
 
                         return fn.apply(this, classes);
@@ -9139,17 +9382,17 @@ var noArgs = [],
             // If the dynamic dependency feature is not being used, throw an error
             // if the dependencies are not defined
             if (classNames.length > 0) {
-                if (!this.config.enabled) {
+                if (!Loader.config.enabled) {
                     throw new Error("Ext.Loader is not enabled, so dependencies cannot be resolved dynamically. " +
                              "Missing required class" + ((classNames.length > 1) ? "es" : "") + ": " + classNames.join(', '));
                 }
             }
             else {
                 callback.call(scope);
-                return this;
+                return Loader;
             }
 
-            syncModeEnabled = this.syncModeEnabled;
+            syncModeEnabled = Loader.syncModeEnabled;
 
             if (!syncModeEnabled) {
                 queue.push({
@@ -9165,14 +9408,14 @@ var noArgs = [],
             for (i = 0; i < ln; i++) {
                 className = classNames[i];
 
-                filePath = this.getPath(className);
+                filePath = Loader.getPath(className);
 
                 // If we are synchronously loading a file that has already been asychronously loaded before
                 // we need to destroy the script tag and revert the count
                 // This file will then be forced loaded in synchronous
                 if (syncModeEnabled && isClassFileLoaded.hasOwnProperty(className)) {
-                    this.numPendingFiles--;
-                    this.removeScriptElement(filePath);
+                    Loader.numPendingFiles--;
+                    Loader.removeScriptElement(filePath);
                     delete isClassFileLoaded[className];
                 }
 
@@ -9181,13 +9424,12 @@ var noArgs = [],
 
                     classNameToFilePathMap[className] = filePath;
 
-                    this.numPendingFiles++;
-
-                    this.loadScriptFile(
+                    Loader.numPendingFiles++;
+                    Loader.loadScriptFile(
                         filePath,
-                        pass(this.onFileLoaded, [className, filePath], this),
-                        pass(this.onFileLoadError, [className, filePath], this),
-                        this,
+                        pass(Loader.onFileLoaded, [className, filePath], Loader),
+                        pass(Loader.onFileLoadError, [className, filePath], Loader),
+                        Loader,
                         syncModeEnabled
                     );
                 }
@@ -9201,7 +9443,7 @@ var noArgs = [],
                 }
             }
 
-            return this;
+            return Loader;
         },
 
         /**
@@ -9210,15 +9452,15 @@ var noArgs = [],
          * @param {String} filePath
          */
         onFileLoaded: function(className, filePath) {
-            this.numLoadedFiles++;
+            Loader.numLoadedFiles++;
 
-            this.isClassFileLoaded[className] = true;
-            this.isFileLoaded[filePath] = true;
+            isClassFileLoaded[className] = true;
+            isFileLoaded[filePath] = true;
 
-            this.numPendingFiles--;
+            Loader.numPendingFiles--;
 
-            if (this.numPendingFiles === 0) {
-                this.refreshQueue();
+            if (Loader.numPendingFiles === 0) {
+                Loader.refreshQueue();
             }
 
         },
@@ -9227,67 +9469,66 @@ var noArgs = [],
          * @private
          */
         onFileLoadError: function(className, filePath, errorMessage, isSynchronous) {
-            this.numPendingFiles--;
-            this.hasFileLoadError = true;
+            Loader.numPendingFiles--;
+            Loader.hasFileLoadError = true;
 
         },
 
         /**
          * @private
+         * Ensure that any classes referenced in the `uses` property are loaded.
          */
-        addOptionalRequires: function(requires) {
-            var optionalRequires = this.optionalRequires,
-                i, ln, require;
+        addUsedClasses: function (classes) {
+            var cls, i, ln;
 
-            requires = arrayFrom(requires);
-
-            for (i = 0, ln = requires.length; i < ln; i++) {
-                require = requires[i];
-
-                arrayInclude(optionalRequires, require);
-            }
-
-            return this;
-        },
-
-        /**
-         * @private
-         */
-        triggerReady: function(force) {
-            var readyListeners = this.readyListeners,
-                optionalRequires = this.optionalRequires,
-                listener;
-
-            if (this.isLoading || force) {
-                this.isLoading = false;
-
-                if (optionalRequires.length !== 0) {
-                    // Clone then empty the array to eliminate potential recursive loop issue
-                    optionalRequires = optionalRequires.slice();
-
-                    // Empty the original array
-                    this.optionalRequires.length = 0;
-
-                    this.require(optionalRequires, pass(this.triggerReady, [true], this), this);
-                    return this;
-                }
-
-                while (readyListeners.length) {
-                    listener = readyListeners.shift();
-                    listener.fn.call(listener.scope);
-
-                    if (this.isLoading) {
-                        return this;
+            if (classes) {
+                classes = (typeof classes == 'string') ? [classes] : classes;
+                for (i = 0, ln = classes.length; i < ln; i++) {
+                    cls = classes[i];
+                    if (typeof cls == 'string' && !Ext.Array.contains(usedClasses, cls)) {
+                        usedClasses.push(cls);
                     }
                 }
             }
 
-            return this;
+            return Loader;
         },
 
         /**
-         * @ignore
+         * @private
          */
+        triggerReady: function() {
+            var listener,
+                i, refClasses = usedClasses;
+
+            if (Loader.isLoading) {
+                Loader.isLoading = false;
+
+                if (refClasses.length !== 0) {
+                    // Clone then empty the array to eliminate potential recursive loop issue
+                    refClasses = refClasses.slice();
+                    usedClasses.length = 0;
+                    // this may immediately call us back if all 'uses' classes
+                    // have been loaded
+                    Loader.require(refClasses, Loader.triggerReady, Loader);
+                    return Loader;
+                }
+            }
+
+            // this method can be called with Loader.isLoading either true or false
+            // (can be called with false when all 'uses' classes are already loaded)
+            // this may bypass the above if condition
+            while (readyListeners.length && !Loader.isLoading) {
+                // calls to refreshQueue may re-enter triggerReady
+                // so we cannot necessarily iterate the readyListeners array
+                listener = readyListeners.shift();
+                listener.fn.call(listener.scope);
+            }
+
+            return Loader;
+        },
+
+        // Documented above already
         onReady: function(fn, scope, withDomReady, options) {
             var oldFn;
 
@@ -9299,11 +9540,11 @@ var noArgs = [],
                 };
             }
 
-            if (!this.isLoading) {
+            if (!Loader.isLoading) {
                 fn.call(scope);
             }
             else {
-                this.readyListeners.push({
+                readyListeners.push({
                     fn: fn,
                     scope: scope
                 });
@@ -9315,14 +9556,11 @@ var noArgs = [],
          * @param {String} className
          */
         historyPush: function(className) {
-            var isInHistory = this.isInHistory;
-
-            if (className && this.isClassFileLoaded.hasOwnProperty(className) && !isInHistory[className]) {
+            if (className && isClassFileLoaded.hasOwnProperty(className) && !isInHistory[className]) {
                 isInHistory[className] = true;
-                this.history.push(className);
+                history.push(className);
             }
-
-            return this;
+            return Loader;
         }
     });
 
@@ -9391,8 +9629,10 @@ var noArgs = [],
     Class.registerPreprocessor('loader', function(cls, data, hooks, continueFn) {
         var me = this,
             dependencies = [],
+            dependency,
             className = Manager.getName(cls),
-            i, j, ln, subLn, value, propertyName, propertyValue;
+            i, j, ln, subLn, value, propertyName, propertyValue,
+            requiredMap, requiredDep;
 
         /*
         Loop through the dependencyProperties, look for string class names and push
@@ -9509,27 +9749,14 @@ var noArgs = [],
      *     });
      */
     Manager.registerPostprocessor('uses', function(name, cls, data) {
-        var uses = arrayFrom(data.uses),
-            items = [],
-            i, ln, item;
-
-        for (i = 0,ln = uses.length; i < ln; i++) {
-            item = uses[i];
-
-            if (typeof item == 'string') {
-                items.push(item);
-            }
+        var uses = data.uses;
+        if (uses) {
+            Loader.addUsedClasses(uses);
         }
-
-        Loader.addOptionalRequires(items);
     });
 
-    Manager.onCreated(function(className) {
-        this.historyPush(className);
-    }, Loader);
-
-})(Ext.ClassManager, Ext.Class, Ext.Function.flexSetter, Ext.Function.alias,
-   Ext.Function.pass, Ext.Array.from, Ext.Array.erase, Ext.Array.include);
+    Manager.onCreated(Loader.historyPush);
+};
 
 /**
  * @author Brian Moeskau <brian@sencha.com>
@@ -9677,7 +9904,8 @@ Ext.Error = Ext.extend(Error, {
                 err = { msg: err };
             }
 
-            var method = this.raise.caller;
+            var method = this.raise.caller,
+                msg;
 
             if (method) {
                 if (method.$name) {
@@ -9689,7 +9917,7 @@ Ext.Error = Ext.extend(Error, {
             }
 
             if (Ext.Error.handle(err) !== true) {
-                var msg = Ext.Error.prototype.toString.call(err);
+                msg = Ext.Error.prototype.toString.call(err);
 
                 Ext.log({
                     msg: msg,
@@ -9790,4 +10018,3 @@ Ext.deprecated = function (suggestion) {
 
 
 
-Ext._endTime = new Date().getTime();

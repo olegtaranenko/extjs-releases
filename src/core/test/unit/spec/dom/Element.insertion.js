@@ -168,18 +168,6 @@ describe("Ext.Element.insertion", function() {
                     nodes = Ext.getDom(el).childNodes;
                     expect(nodes.length).toEqual(4);
                 });
-                
-                it("should move the element next to the el", function() {
-                    var nodes = Ext.getDom(el).childNodes;
-                    expect(nodes.length).toEqual(3);
-
-                    child3.insertSibling({
-                        id: 'sibling1'
-                    }, 'after');
-
-                    nodes = Ext.getDom(el).childNodes;
-                    expect(nodes.length).toEqual(4);
-                });
             });
             
             describe("before", function() {

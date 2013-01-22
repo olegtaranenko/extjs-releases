@@ -124,7 +124,8 @@ Ext.define('Ext.grid.CellEditor', {
         // let's assume this cell contains additional elements before the text node.
         // This is the case for tree cells, but could also be used to accomodate grid cells that
         // have a custom renderer that render, say, an icon followed by some text for example
-        if(childCount > 1 || (childCount === 1 && children[0].nodeType !== 3)) {
+        // For now however, this support will only be used for trees.
+        if(me.isForTree && (childCount > 1 || (childCount === 1 && children[0].nodeType !== 3))) {
             // get the inner cell's last child
             lastChild = innerCell.last();
             // calculate the left bound of the text node
@@ -154,6 +155,13 @@ Ext.define('Ext.grid.CellEditor', {
         }
 
         me.alignTo(boundEl, me.alignment, offsets);
+    },
+    
+    onEditorTab: function(e){
+        var field = this.field;
+        if (field.onEditorTab) {
+            field.onEditorTab(e);
+        }
     },
 
     alignment: "tl-tl",

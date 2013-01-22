@@ -130,10 +130,9 @@ Ext.define('Ext.util.HashMap', {
      * @return {Object} The item added.
      */
     add: function(key, value) {
-        var me = this,
-            data;
+        var me = this;
 
-        if (arguments.length === 1) {
+        if (value === undefined) {
             value = key;
             key = me.getKey(value);
         }
@@ -142,12 +141,11 @@ Ext.define('Ext.util.HashMap', {
             return me.replace(key, value);
         }
 
-        data = me.getData(key, value);
-        key = data[0];
-        value = data[1];
         me.map[key] = value;
         ++me.length;
-        me.fireEvent('add', me, key, value);
+        if (me.hasListeners.add) {
+            me.fireEvent('add', me, key, value);
+        }
         return value;
     },
 
@@ -163,12 +161,19 @@ Ext.define('Ext.util.HashMap', {
             map = me.map,
             old;
 
+        if (value === undefined) {
+            value = key;
+            key = me.getKey(value);
+        }
+
         if (!me.containsKey(key)) {
             me.add(key, value);
         }
         old = map[key];
         map[key] = value;
-        me.fireEvent('replace', me, key, value, old);
+        if (me.hasListeners.replace) {
+            me.fireEvent('replace', me, key, value, old);
+        }
         return value;
     },
 
@@ -198,7 +203,9 @@ Ext.define('Ext.util.HashMap', {
             value = me.map[key];
             delete me.map[key];
             --me.length;
-            me.fireEvent('remove', me, key, value);
+            if (me.hasListeners.remove) {
+                me.fireEvent('remove', me, key, value);
+            }
             return true;
         }
         return false;
@@ -221,7 +228,7 @@ Ext.define('Ext.util.HashMap', {
         var me = this;
         me.map = {};
         me.length = 0;
-        if (initial !== true) {
+        if (initial !== true && me.hasListeners.clear) {
             me.fireEvent('clear', me);
         }
         return me;

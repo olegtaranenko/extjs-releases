@@ -13,13 +13,6 @@
 var noArgs = [],
     Base = function(){};
 
-    // This is the "$previous" method of a hook function on an instance. When called, it
-    // calls through the class prototype by the name of the called method.
-    function callHookParent () {
-        var method = callHookParent.caller.caller; // skip callParent (our caller)
-        return method.$owner.prototype[method.$name].apply(this, arguments);
-    }
-
     // These static properties will be copied to every newly created class with {@link Ext#define}
     Ext.apply(Base, {
         $className: 'Ext.Base',
@@ -90,7 +83,7 @@ var noArgs = [],
             }
 
             //<feature classSystem.config>
-            prototype.config = new prototype.configClass;
+            prototype.config = new prototype.configClass();
             prototype.initConfigList = prototype.initConfigList.slice();
             prototype.initConfigMap = Ext.clone(prototype.initConfigMap);
             prototype.configMap = Ext.Object.chain(prototype.configMap);
@@ -193,16 +186,13 @@ var noArgs = [],
          */
         addStatics: function(members) {
             var member, name;
-            //<debug>
-            var className = Ext.getClassName(this);
-            //</debug>
 
             for (name in members) {
                 if (members.hasOwnProperty(name)) {
                     member = members[name];
                     //<debug>
                     if (typeof member == 'function') {
-                        member.displayName = className + '.' + name;
+                        member.displayName = Ext.getClassName(this) + '.' + name;
                     }
                     //</debug>
                     this[name] = member;
@@ -230,16 +220,12 @@ var noArgs = [],
                 hasInheritableStatics = prototype.$hasInheritableStatics = {};
             }
 
-            //<debug>
-            var className = Ext.getClassName(this);
-            //</debug>
-
             for (name in members) {
                 if (members.hasOwnProperty(name)) {
                     member = members[name];
                     //<debug>
                     if (typeof member == 'function') {
-                        member.displayName = className + '.' + name;
+                        member.displayName = Ext.getClassName(this) + '.' + name;
                     }
                     //</debug>
                     this[name] = member;
@@ -282,10 +268,6 @@ var noArgs = [],
                 names = [],
                 i, ln, name, member;
 
-            //<debug>
-            var className = this.$className || '';
-            //</debug>
-
             for (name in members) {
                 names.push(name);
             }
@@ -304,7 +286,7 @@ var noArgs = [],
                         member.$owner = this;
                         member.$name = name;
                         //<debug>
-                        member.displayName = className + '#' + name;
+                        member.displayName = (this.$className || '') + '#' + name;
                         //</debug>
                     }
 
@@ -385,9 +367,7 @@ var noArgs = [],
                 toBorrow = fromPrototype[name];
 
                 if (typeof toBorrow == 'function') {
-                    fn = function() {
-                        return toBorrow.apply(this, arguments);
-                    };
+                    fn = Ext.Function.clone(toBorrow);
 
                     //<debug>
                     if (className) {
@@ -422,11 +402,9 @@ var noArgs = [],
          *         constructor: function() {
          *             alert("I'm going to be a cat!");
          *
-         *             var instance = this.callParent(arguments);
+         *             this.callParent(arguments);
          *
          *             alert("Meeeeoooowwww");
-         *
-         *             return instance;
          *         }
          *     });
          *
@@ -442,11 +420,9 @@ var noArgs = [],
          *         constructor: function() {
          *             alert("I'm going to be a cat!");
          *
-         *             var instance = this.callParent(arguments);
+         *             this.callParent(arguments);
          *
          *             alert("Meeeeoooowwww");
-         *
-         *             return instance;
          *         }
          *     });
          *
@@ -484,6 +460,8 @@ var noArgs = [],
                 for (name in members) { // hasOwnProperty is checked in the next loop...
                     if (name == 'statics') {
                         statics = members[name];
+                    } else if (name == 'config') {
+                        me.addConfig(members[name], true);
                     } else {
                         names.push(name);
                     }
@@ -505,9 +483,8 @@ var noArgs = [],
                             }
 
                             //<debug>
-                            var className = me.$className;
-                            if (className) {
-                                member.displayName = className + '#' + name;
+                            if (me.$className) {
+                                member.displayName = me.$className + '#' + name;
                             }
                             //</debug>
 
@@ -531,9 +508,7 @@ var noArgs = [],
             return this;
         },
 
-        /**
-         * @private
-         */
+        // Documented downwards
         callParent: function(args) {
             var method;
 
@@ -872,7 +847,7 @@ var noArgs = [],
          *         },
          *
          *         constructor: function() {
-         *             alert(this.self.speciesName); / dependentOL on 'this'
+         *             alert(this.self.speciesName); // dependent on 'this'
          *         },
          *
          *         clone: function() {
@@ -901,33 +876,6 @@ var noArgs = [],
         // Default constructor, simply returns `this`
         constructor: function() {
             return this;
-        },
-
-        hookMethod: function (name, hookFn) {
-            var me = this,
-                owner = me.self;
-
-            //<debug>
-            var className = owner.$className;
-            if (className) {
-                hookFn.displayName = className + '#' + name;
-            }
-            //</debug>
-
-            hookFn.$owner = owner;
-            hookFn.$name = name;
-
-            if (me.hasOwnProperty(name)) {
-                hookFn.$previous = me[name]; // already hooked, so call previous hook
-            } else {
-                hookFn.$previous = callHookParent; // special "previous" to call on prototype
-            }
-
-            me[name] = hookFn;
-        },
-
-        hookMethods: function (hooks) {
-            Ext.Object.each(hooks, this.hookMethod, this);
         },
 
         //<feature classSystem.config>
@@ -959,7 +907,7 @@ var noArgs = [],
         initConfig: function(config) {
             var instanceConfig = config,
                 configNameCache = Ext.Class.configNameCache,
-                defaultConfig = new this.configClass,
+                defaultConfig = new this.configClass(),
                 defaultConfigList = this.initConfigList,
                 hasConfig = this.configMap,
                 nameMap, i, ln, name, initializedName;
@@ -1117,11 +1065,9 @@ var noArgs = [],
      *         constructor: function() {
      *             alert("I'm going to be a cat!");
      *
-     *             var instance = this.callOverridden();
+     *             this.callOverridden();
      *
      *             alert("Meeeeoooowwww");
-     *
-     *             return instance;
      *         }
      *     });
      *
@@ -1139,4 +1085,4 @@ var noArgs = [],
 
     Ext.Base = Base;
 
-})(Ext.Function.flexSetter);
+}(Ext.Function.flexSetter));

@@ -186,7 +186,7 @@ Ext.define('Ext.form.field.Checkbox', {
 
     /*
      * @property {Boolean} isCheckbox
-     * `true` in this class to identify an objact as an instantiated Checkbox, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Checkbox, or subclass thereof.
      */
     isCheckbox: true,
 
@@ -194,7 +194,7 @@ Ext.define('Ext.form.field.Checkbox', {
      * @cfg {String} [focusCls='x-form-cb-focus']
      * The CSS class to use when the checkbox receives focus
      */
-    focusCls: Ext.baseCSSPrefix + 'form-cb-focus',
+    focusCls: 'form-cb-focus',
 
     /**
      * @cfg {String} [fieldCls='x-form-field']
@@ -395,16 +395,21 @@ Ext.define('Ext.form.field.Checkbox', {
      * @return {Ext.form.field.Checkbox} this
      */
     setValue: function(checked) {
-        var me = this;
+        var me = this,
+            boxes, i, len, box;
 
         // If an array of strings is passed, find all checkboxes in the group with the same name as this
         // one and check all those whose inputValue is in the array, unchecking all the others. This is to
         // facilitate setting values from Ext.form.Basic#setValues, but is not publicly documented as we
         // don't want users depending on this behavior.
         if (Ext.isArray(checked)) {
-            me.getManager().getByName(me.name).each(function(cb) {
-                cb.setValue(Ext.Array.contains(checked, cb.inputValue));
-            });
+            boxes = me.getManager().getByName(me.name, me.getFormId()).items;
+            len = boxes.length;
+
+            for (i = 0; i < len; ++i) {
+                box = boxes[i];
+                box.setValue(Ext.Array.contains(checked, box.inputValue));
+            }
         } else {
             me.callParent(arguments);
         }
@@ -430,6 +435,28 @@ Ext.define('Ext.form.field.Checkbox', {
             handler.call(me.scope || me, me, newVal);
         }
         me.callParent(arguments);
+    },
+    
+    resetOriginalValue: function(/* private */ fromBoxInGroup){
+        var me = this,
+            boxes,
+            box,
+            len,
+            i;
+            
+        // If we're resetting the value of a field in a group, also reset the others.
+        if (!fromBoxInGroup) {
+            boxes = me.getManager().getByName(me.name, me.getFormId()).items;
+            len  = boxes.length;
+            
+            for (i = 0; i < len; ++i) {
+                box = boxes[i];
+                if (box !== me) {
+                    boxes[i].resetOriginalValue(true);
+                }
+            }
+        }
+        me.callParent();
     },
 
     // inherit docs
@@ -461,5 +488,18 @@ Ext.define('Ext.form.field.Checkbox', {
             inputEl.dom.disabled = !!readOnly || me.disabled;
         }
         me.callParent(arguments);
+    },
+
+    getFormId: function(){
+        var me = this,
+            form;
+
+        if (!me.formId) {
+            form = me.up('form');
+            if (form) {
+                me.formId = form.id;
+            }
+        }
+        return me.formId;
     }
 });

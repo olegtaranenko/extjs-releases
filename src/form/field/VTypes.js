@@ -1,4 +1,3 @@
-//<localeInfo useApply="true" />
 /**
  * @singleton
  * @alternateClassName Ext.form.VTypes
@@ -170,4 +169,4 @@ Ext.define('Ext.form.field.VTypes', (function(){
          */
         'alphanumMask' : /[a-z0-9_]/i
     };
-})());
+}()));

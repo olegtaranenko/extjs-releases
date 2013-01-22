@@ -154,7 +154,7 @@ Ext.define('Ext.view.AbstractView', {
 
     /**
      * @cfg {Boolean} preserveScrollOnRefresh=false
-     * True to preserve scroll position across refresh operationss.
+     * True to preserve scroll position across refresh operations.
      */
     preserveScrollOnRefresh: false,
 
@@ -335,23 +335,20 @@ Ext.define('Ext.view.AbstractView', {
         me.getSelectionModel().deselectAll();
         me.all.clear();
         if (loadingHeight && loadingHeight > me.getHeight()) {
-            me.isLoadingHeight = true;
-            me.bufferHeight = me.height;
-            me.setHeight(loadingHeight);
+            me.hasLoadingHeight = true;
+            me.oldMinHeight = me.minHeight;
+            me.minHeight = loadingHeight;
+            me.updateLayout();
         }
     },
     
     onMaskHide: function(){
         var me = this;
         
-        if (!me.destroying && me.loadingHeight && me.isLoadingHeight) {
-            if (me.bufferHeight) {
-                me.setHeight(me.bufferHeight);
-            } else {
-                delete me.height;
-                me.updateLayout();
-            }
-            delete me.isLoadingHeight;
+        if (!me.destroying && me.hasLoadingHeight) {
+            me.minHeight = me.oldMinHeight;
+            me.updateLayout();
+            delete me.hasLoadingHeight;
         }
     },
 
@@ -414,69 +411,91 @@ Ext.define('Ext.view.AbstractView', {
         var me = this,
             targetEl,
             targetParent,
+            nextSibling,
+            dom,
             records;
 
         if (!me.rendered || me.isDestroyed) {
             return;
         }
 
-        me.fireEvent('beforerefresh', me);
-        targetEl = me.getTargetEl();
-        records = me.store.getRange();
+        if (!me.hasListeners.beforerefresh || me.fireEvent('beforerefresh', me) !== false) {
+            targetEl = me.getTargetEl();
+            records = me.store.getRange();
+            dom = targetEl.dom;
 
-        // Updating is much quicker if done when the targetEl is detached from the document, and not displayed.
-        // But this resets the scroll position, so when preserving scroll position, this cannot be done.
-        if (!me.preserveScrollOnRefresh) {
-            targetParent = targetEl.dom.parentNode;
-            targetEl.dom.style.display = 'none';
-            targetParent.removeChild(targetEl.dom);
-        }
-
-        if (me.refreshCounter) {
-            me.clearViewEl();
-        } else {
-            me.fixedNodes = targetEl.dom.childNodes.length;
-            me.refreshCounter = 1;
-        }
-
-        // Always attempt to create the required markup after the fixedNodes.
-        // Usually, for an empty record set, this would be blank, but when the Template
-        // Creates markup outside of the record loop, this must still be honoured even if there are no
-        // records.
-        me.tpl.append(targetEl, me.collectData(records, 0));
-
-        // The emptyText is now appended to the View's element
-        // after any fixedNodes.
-        if (records.length < 1) {
-            if (!me.deferEmptyText || me.hasSkippedEmptyText) {
-                Ext.core.DomHelper.insertHtml('beforeEnd', targetEl.dom, me.emptyText);
+            // Updating is much quicker if done when the targetEl is detached from the document, and not displayed.
+            // But this resets the scroll position, so when preserving scroll position, this cannot be done.
+            if (!me.preserveScrollOnRefresh) {
+                targetParent = dom.parentNode;
+                dom.style.display = 'none';
+                nextSibling = dom.nextSibling;
+                targetParent.removeChild(dom);
             }
-            me.all.clear();
-        } else {
-            me.all.fill(Ext.query(me.getItemSelector(), targetEl.dom));
-            me.updateIndexes(0);
-        }
 
-        me.selModel.refresh();
-        me.hasSkippedEmptyText = true;
+            if (me.refreshCounter) {
+                me.clearViewEl();
+            } else {
+                me.fixedNodes = targetEl.dom.childNodes.length;
+                me.refreshCounter = 1;
+            }
 
-        if (!me.preserveScrollOnRefresh) {
-            targetParent.appendChild(targetEl.dom);
-            targetEl.dom.style.display = '';
-        }
+            // Always attempt to create the required markup after the fixedNodes.
+            // Usually, for an empty record set, this would be blank, but when the Template
+            // Creates markup outside of the record loop, this must still be honoured even if there are no
+            // records.
+            me.tpl.append(targetEl, me.collectData(records, 0));
 
-        me.fireEvent('refresh', me);
+            // The emptyText is now appended to the View's element
+            // after any fixedNodes.
+            if (records.length < 1) {
+                if (!me.deferEmptyText || me.hasSkippedEmptyText) {
+                    Ext.core.DomHelper.insertHtml('beforeEnd', targetEl.dom, me.emptyText);
+                }
+                me.all.clear();
+            } else {
+                me.all.fill(Ext.query(me.getItemSelector(), targetEl.dom));
+                me.updateIndexes(0);
+            }
 
-        // Upon first refresh, fire the viewready event.
-        // Reconfiguring the grid "renews" this event.
-        if (!me.viewReady) {
-            // Fire an event when deferred content becomes available.
-            // This supports grid Panel's deferRowRender capability
-            me.viewReady = true;
-            me.fireEvent('viewready', me);
+            me.selModel.refresh();
+            me.hasSkippedEmptyText = true;
+
+            if (!me.preserveScrollOnRefresh) {
+                targetParent.insertBefore(dom, nextSibling);
+                dom.style.display = '';
+            }
+
+            // Ensure layout system knows about new content size
+            this.refreshSize();
+
+            me.fireEvent('refresh', me);
+
+            // Upon first refresh, fire the viewready event.
+            // Reconfiguring the grid "renews" this event.
+            if (!me.viewReady) {
+                // Fire an event when deferred content becomes available.
+                // This supports grid Panel's deferRowRender capability
+                me.viewReady = true;
+                me.fireEvent('viewready', me);
+            }
         }
     },
-    
+
+    /**
+     * @private
+     * Called by the framework when the view is refreshed, or when rows are added or deleted.
+     * 
+     * These operations may cause the view's dimensions to change, and if the owning container
+     * is shrinkwrapping this view, then the layout must be updated to accommodate these new dimensions.
+     */
+    refreshSize: function() {
+        var sizeModel = this.getSizeModel();
+        if (sizeModel.height.shrinkWrap || sizeModel.width.shrinkWrap) {
+            this.updateLayout();
+        }
+    },
+
     clearViewEl: function(){
         // The purpose of this is to allow boilerplate HTML nodes to remain in place inside a View
         // while the transient, templated data can be discarded and recreated.
@@ -484,7 +503,7 @@ Ext.define('Ext.view.AbstractView', {
         // Subsequent refreshes then do not clear the entire element, but remove all nodes
         // *after* the fixedNodes count.
         // In particular, this is used in infinite grid scrolling: A very tall "stretcher" element is
-        // inserted into the View's element to create a scollbar of the correct proportion.
+        // inserted into the View's element to create a scrollbar of the correct proportion.
         
         var me = this,
             el = me.getTargetEl();
@@ -573,7 +592,7 @@ Ext.define('Ext.view.AbstractView', {
 
         for (; i < len; i++) {
             record = records[i];
-            data[i] = this.prepareData(record.getData(), startIndex + i, record);
+            data[i] = this.prepareData(record.data, startIndex + i, record);
         }
         return data;
     },
@@ -593,7 +612,7 @@ Ext.define('Ext.view.AbstractView', {
             index = me.store.indexOf(record),
             node;
 
-        if (index > -1){
+        if (index > -1) {
             node = me.bufferRender([record], index)[0];
             // ensure the node actually exists in the DOM
             if (me.getNode(record)) {
@@ -602,7 +621,9 @@ Ext.define('Ext.view.AbstractView', {
                 // Maintain selection after update
                 // TODO: Move to approriate event handler.
                 me.selModel.refresh();
-                me.fireEvent('itemupdate', record, index, node);
+                if (me.hasListeners.itemupdate) {
+                    me.fireEvent('itemupdate', record, index, node);
+                }
                 return node;
             }
         }
@@ -626,19 +647,28 @@ Ext.define('Ext.view.AbstractView', {
 
         me.selModel.refresh();
         me.updateIndexes(index);
-        me.fireEvent('itemadd', records, index, nodes);
+
+        // Ensure layout system knows about new content size
+        this.refreshSize();
+
+        if (me.hasListeners.itemadd) {
+            me.fireEvent('itemadd', records, index, nodes);
+        }
     },
 
     doAdd: function(nodes, records, index) {
         var all = this.all,
-            count = all.getCount(),
-            el;
+            count = all.getCount();
 
         if (count === 0) {
             this.clearViewEl();
             this.getTargetEl().appendChild(nodes);
         } else if (index < count) {
-            all.item(index).insertSibling(nodes, 'before', true);
+            if (index === 0) {
+                all.item(index).insertSibling(nodes, 'before', true);
+            } else {
+                all.item(index - 1).insertSibling(nodes, 'after', true);
+            }
         } else {
             all.last().insertSibling(nodes, 'after', true);
         }
@@ -650,12 +680,17 @@ Ext.define('Ext.view.AbstractView', {
     onRemove : function(ds, record, index) {
         var me = this;
 
+        // Just remove the element which corresponds to the removed record
+        // The tpl's full HTML will still be in place.
         me.doRemove(record, index);
         me.updateIndexes(index);
-        if (me.store.getCount() === 0){
-            me.refresh();
+
+        // Ensure layout system knows about new content height
+        this.refreshSize();
+
+        if (me.hasListeners.itemremove) {
+            me.fireEvent('itemremove', record, index);
         }
-        me.fireEvent('itemremove', record, index);
     },
 
     doRemove: function(record, index) {
@@ -705,11 +740,12 @@ Ext.define('Ext.view.AbstractView', {
         // Bind the store to our selection model
         me.getSelectionModel().bindStore(me.store);
 
-        // 4.1.0: Always refresh regardless of record count.
+        // 4.1.0: If the Store is *NOT* already loading (a refresh is on the way), then
+        // on render, refresh regardless of record count.
         // Template may contain boilerplate HTML outside of record iteration loop.
         // Also, emptyText is appended by the refresh method.
         // We call refresh on a defer if this is the initial call, and we are configured to defer the initial refresh.
-        if (store) {
+        if (store && !store.loading) {
             if (initial && me.deferInitialRefresh) {
                 Ext.Function.defer(function () {
                     if (!me.isDestroyed) {

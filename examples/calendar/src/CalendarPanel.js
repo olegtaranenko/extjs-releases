@@ -488,10 +488,12 @@ Ext.define('Ext.calendar.CalendarPanel', {
     updateNavState: function() {
         if (this.showNavBar !== false) {
             var item = this.layout.activeItem,
-            suffix = item.id.split(this.id + '-')[1];
+                suffix = item.id.split(this.id + '-')[1],
+                btn = Ext.getCmp(this.id + '-tb-' + suffix);
 
-            var btn = Ext.getCmp(this.id + '-tb-' + suffix);
-            btn.toggle(true);
+            if (btn) {
+                btn.toggle(true);
+            }
         }
     },
 

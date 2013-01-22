@@ -119,15 +119,7 @@ Ext.define('Ext.dom.AbstractElement', {
 
         addToCache: function(el, id) {
             if (el) {
-                id = id || el.id;
-                el.$cache = Ext.cache[id] || (Ext.cache[id] = {
-                    data: {},
-                    events: {}
-                });
-                
-                // Inject the back link from the cache in case the cache entry
-                // had already been created by Ext.fly. Ext.fly creates a cache entry with no el link.
-                el.$cache.el = el;
+                Ext.addCacheEntry(id, el);
             }
             return el;
         },
@@ -226,7 +218,12 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
 
         /**
          * @property
-         * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use visibility to hide element
+         * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
+         * Use the CSS 'visibility' property to hide the element.
+         *
+         * Note that in this mode, {@link #isVisible} may return true for an element even though 
+         * it actually has a parent element that is hidden. For this reason, and in most cases,
+         * using the {@link #OFFSETS} mode is a better choice.
          * @static
          * @inheritable
          */
@@ -234,7 +231,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
 
         /**
          * @property
-         * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use display to hide element
+         * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
+         * Use the CSS 'display' property to hide the element.
          * @static
          * @inheritable
          */
@@ -242,11 +240,21 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
 
         /**
          * @property
-         * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. Use offsets to hide element
+         * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
+         * Use CSS absolute positioning and top/left offsets to hide the element.
          * @static
          * @inheritable
          */
-        OFFSETS: 3
+        OFFSETS: 3,
+
+        /**
+         * @property
+         * Visibility mode constant for use with {@link Ext.dom.Element#setVisibilityMode}. 
+         * Add or remove the {@link Ext.Layer#visibilityCls} class to hide the element.
+         * @static
+         * @inheritable
+         */
+        ASCLASS: 4
     },
 
     constructor: function(element, forceNew) {
@@ -484,7 +492,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     },
 
     /**
-     * Use this to change the visisbiliy mode between {@link #VISIBILITY}, {@link #DISPLAY} or {@link #OFFSETS}.
+     * Use this to change the visibility mode between {@link #VISIBILITY}, {@link #DISPLAY}, {@link #OFFSETS} or {@link #ASCLASS}.
      */
     setVisibilityMode: function(mode) {
         (this.$cache || this.getCache()).data.visibilityMode = mode;
@@ -498,17 +506,13 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         // Note that we do not assign an ID to the calling object here.
         // An Ext.dom.Element will have one assigned at construction, and an Ext.dom.AbstractElement.Fly must not have one.
         // We assign an ID to the DOM element if it does not have one.
-        me.$cache = Ext.cache[id] || (Ext.cache[id] = {
-            data: {},
-            events: {}
-        });     
+        me.$cache = Ext.cache[id] || Ext.addCacheEntry(id, null, me.dom);
             
         return me.$cache;
     }
     
 }, function() {
-    var AbstractElement = this,
-        validIdRe = /^[a-z_][a-z0-9_\-]*$/i;
+    var AbstractElement = this;
 
     Ext.getDetachedBody = function () {
         var detachedEl = AbstractElement.detachedBodyEl;
@@ -526,8 +530,8 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
         var el = document.getElementById(id),
             detachedBodyEl;
 
-        if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl) && validIdRe.test(id)) {
-            el = detachedBodyEl.dom.querySelector('#' + id);
+        if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl)) {
+            el = detachedBodyEl.dom.querySelector('#' + Ext.escapeId(id));
         }
 
         return el;
@@ -545,7 +549,9 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
     this.addStatics({
         /**
          * @class Ext.dom.AbstractElement.Fly
-         * A non-persistent wrapper for a DOM element which may be used to execute methods of {@link Ext.Dom.Element}
+         * @extends Ext.dom.AbstractElement
+         *
+         * A non-persistent wrapper for a DOM element which may be used to execute methods of {@link Ext.dom.Element}
          * upon a DOM element without creating an instance of {@link Ext.dom.Element}.
          *
          * A **singleton** instance of this class is returned when you use {@link Ext#fly}
@@ -605,6 +611,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
          * internally Ext uses "_global")
          * @return {Ext.dom.AbstractElement.Fly} The singleton flyweight object (or null if no matching element was found)
          * @static
+         * @member Ext.dom.AbstractElement
          */
         fly: function(dom, named) {
             var fly = null,
@@ -659,7 +666,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
                 // for normal elements getElementById is the best solution, but if the el is
                 // not part of the document.body, we have to resort to querySelector
                 var dom = document.getElementById(id) ||
-                          (validIdRe.test(id) ? this.dom.querySelector('#'+id) : null);
+                    this.dom.querySelector('#'+Ext.escapeId(id));
                 return asDom ? dom : (dom ? Ext.get(dom) : null);
             };
         } else {
@@ -668,7 +675,7 @@ myElement.dom.className = Ext.core.Element.removeCls(this.initialClasses, 'x-inv
                 return asDom ? dom : (dom ? Ext.get(dom) : null);
             };
         }
-    })(this.prototype);
+    }(this.prototype));
 });
 
-})();
+}());

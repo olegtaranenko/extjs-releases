@@ -116,6 +116,8 @@ Ext.define('Ext.tree.Panel', {
     // normal and locked sub tablepanels
     normalCfgCopy: ['displayField', 'root', 'singleExpand', 'useArrows', 'lines', 'rootVisible', 'scroll'],
     lockedCfgCopy: ['displayField', 'root', 'singleExpand', 'useArrows', 'lines', 'rootVisible'],
+    
+    isTree: true,
 
     /**
      * @cfg {Boolean} hideHeaders
@@ -135,7 +137,7 @@ Ext.define('Ext.tree.Panel', {
     constructor: function(config) {
         config = config || {};
         if (config.animate === undefined) {
-            config.animate = Ext.enableFx;
+            config.animate = Ext.isDefined(this.animate) ? this.animate : Ext.enableFx;
         }
         this.enableAnimations = config.animate;
         delete config.animate;
@@ -290,7 +292,6 @@ Ext.define('Ext.tree.Panel', {
             if (me.initialConfig.hideHeaders === undefined) {
                 me.hideHeaders = true;
             }
-            me.autoWidth = true;
             me.addCls(Ext.baseCSSPrefix + 'autowidth-table');
             me.columns = [{
                 xtype    : 'treecolumn',

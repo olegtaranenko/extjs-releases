@@ -138,7 +138,8 @@ Ext.define('Ext.draw.Component', {
             'mousemove',
             'mouseenter',
             'mouseleave',
-            'click'
+            'click',
+            'dblclick'
         );
     },
 
@@ -165,9 +166,7 @@ Ext.define('Ext.draw.Component', {
                 y = bbox.y;
                 if (me.viewBox) {
                     me.surface.setViewBox(x, y, width, height);
-                }
-                else {
-                    // AutoSized
+                } else {
                     me.autoSizeSurface();
                 }
             }
@@ -176,13 +175,8 @@ Ext.define('Ext.draw.Component', {
 
     // @private
     autoSizeSurface: function() {
-        var me = this,
-            items = me.surface.items,
-            bbox = items.getBBox(),
-            width = bbox.width,
-            height = bbox.height;
-        me.setSurfaceSize(width, height);
-        me.updateLayout();
+        var bbox = this.surface.items.getBBox();
+        this.setSurfaceSize(bbox.width, bbox.height);
     },
 
     setSurfaceSize: function (width, height) {
@@ -207,7 +201,7 @@ Ext.define('Ext.draw.Component', {
                 height: me.height,
                 width: me.width,
                 items: me.items
-            }, me.initialConfig), cfg, surface;
+            }, me.initialConfig), surface;
 
         // ensure we remove any listeners to prevent duplicate events since we refire them below
         delete cfg.listeners;
@@ -232,7 +226,8 @@ Ext.define('Ext.draw.Component', {
             mousemove: refire('mousemove'),
             mouseenter: refire('mouseenter'),
             mouseleave: refire('mouseleave'),
-            click: refire('click')
+            click: refire('click'),
+            dblclick: refire('dblclick')
         });
     },
 

@@ -4,7 +4,7 @@
 Ext.dom.AbstractElement.addInheritableStatics({
     unitRe: /\d+(px|em|%|en|ex|pt|in|cm|mm|pc)$/i,
     camelRe: /(-[a-z])/gi,
-    cssRe: /([a-z0-9-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*);?/gi,
+    cssRe: /([a-z0-9\-]+)\s*:\s*([^;\s]+(?:\s*[^;\s]+)*);?/gi,
     opacityRe: /alpha\(opacity=(.*)\)/i,
     propertyCache: {},
     defaultUnit : "px",
@@ -107,13 +107,13 @@ Ext.dom.AbstractElement.addInheritableStatics({
      * @return {String} An string with unitized (px if units is not specified) metrics for top, right, bottom and left
      */
     unitizeBox: function(box, units) {
-        var A = this.addUnits,
-            B = this.parseBox(box);
+        var a = this.addUnits,
+            b = this.parseBox(box);
 
-        return A(B.top, units) + ' ' +
-               A(B.right, units) + ' ' +
-               A(B.bottom, units) + ' ' +
-               A(B.left, units);
+        return a(b.top, units) + ' ' +
+               a(b.right, units) + ' ' +
+               a(b.bottom, units) + ' ' +
+               a(b.left, units);
 
     },
 
@@ -309,13 +309,15 @@ Ext.dom.AbstractElement.addInheritableStatics({
         getRightMarginFixCleaner: function (target) {
             var supports = Ext.supports,
                 hasInputBug = supports.DisplayChangeInputSelectionBug,
-                hasTextAreaBug = supports.DisplayChangeTextAreaSelectionBug;
+                hasTextAreaBug = supports.DisplayChangeTextAreaSelectionBug,
+                activeEl,
+                tag,
+                start,
+                end;
 
             if (hasInputBug || hasTextAreaBug) {
-                var activeEl = doc.activeElement || activeElement, // save a call
-                    tag = activeEl && activeEl.tagName,
-                    start,
-                    end;
+                activeEl = doc.activeElement || activeElement; // save a call
+                tag = activeEl && activeEl.tagName;
 
                 if ((hasTextAreaBug && tag == 'TEXTAREA') ||
                     (hasInputBug && tag == 'INPUT' && activeEl.type == 'text')) {
@@ -373,71 +375,34 @@ Ext.dom.AbstractElement.addInheritableStatics({
         },
 
         getXY: function(el) {
-            var p,
-                pe,
+            var bd = (doc.body || doc.documentElement),
+                leftBorder = 0,
+                topBorder = 0,
+                ret = [0,0],
+                round = Math.round,
                 b,
-                bt,
-                bl,
-                dbd,
-                x = 0,
-                y = 0,
-                scroll,
-                hasAbsolute,
-                bd = (doc.body || doc.documentElement),
-                ret = [0,0];
+                scroll;
 
             el = Ext.getDom(el);
 
-            if(el != bd){
-                hasAbsolute = fly(el).isStyle("position", "absolute");
-
-                if (el.getBoundingClientRect) {
-                    b = el.getBoundingClientRect();
-                    scroll = fly(document).getScroll();
-                    ret = [Math.round(b.left + scroll.left), Math.round(b.top + scroll.top)];
+            if(el != doc && el != bd){
+                // IE has the potential to throw when getBoundingClientRect called
+                // on element not attached to dom
+                if (Ext.isIE) {
+                    try {
+                        b = el.getBoundingClientRect();
+                        // In some versions of IE, the html element will have a 1px border that gets included, so subtract it off
+                        topBorder = bd.clientTop;
+                        leftBorder = bd.clientLeft;
+                    } catch (ex) {
+                        b = { left: 0, top: 0 };
+                    }
                 } else {
-                    p = el;
-
-                    while (p) {
-                        pe = fly(p);
-                        x += p.offsetLeft;
-                        y += p.offsetTop;
-
-                        hasAbsolute = hasAbsolute || pe.isStyle("position", "absolute");
-
-                        if (Ext.isGecko) {
-                            y += bt = parseInt(pe.getStyle("borderTopWidth"), 10) || 0;
-                            x += bl = parseInt(pe.getStyle("borderLeftWidth"), 10) || 0;
-
-                            if (p != el && !pe.isStyle('overflow','visible')) {
-                                x += bl;
-                                y += bt;
-                            }
-                        }
-                        p = p.offsetParent;
-                    }
-
-                    if (Ext.isSafari && hasAbsolute) {
-                        x -= bd.offsetLeft;
-                        y -= bd.offsetTop;
-                    }
-
-                    if (Ext.isGecko && !hasAbsolute) {
-                        dbd = fly(bd);
-                        x += parseInt(dbd.getStyle("borderLeftWidth"), 10) || 0;
-                        y += parseInt(dbd.getStyle("borderTopWidth"), 10) || 0;
-                    }
-
-                    p = el.parentNode;
-                    while (p && p != bd) {
-                        if (!Ext.isOpera || (p.tagName != 'TR' && !fly(p).isStyle("display", "inline"))) {
-                            x -= p.scrollLeft;
-                            y -= p.scrollTop;
-                        }
-                        p = p.parentNode;
-                    }
-                    ret = [x,y];
+                    b = el.getBoundingClientRect();
                 }
+
+                scroll = fly(document).getScroll();
+                ret = [round(b.left + scroll.left - leftBorder), round(b.top + scroll.top - topBorder)];
             }
             return ret;
         },
@@ -472,24 +437,28 @@ Ext.dom.AbstractElement.addInheritableStatics({
         serializeForm: function(form) {
             var fElements = form.elements || (document.forms[form] || Ext.getDom(form)).elements,
                 hasSubmit = false,
-                encoder = encodeURIComponent,
-                name,
-                data = '',
-                type,
-                hasValue;
+                encoder   = encodeURIComponent,
+                data      = '',
+                eLen      = fElements.length,
+                element, name, type, options, hasValue, e,
+                o, oLen, opt;
 
-            Ext.each(fElements, function(element){
-                name = element.name;
-                type = element.type;
+            for (e = 0; e < eLen; e++) {
+                element = fElements[e];
+                name    = element.name;
+                type    = element.type;
+                options = element.options;
 
                 if (!element.disabled && name) {
                     if (/select-(one|multiple)/i.test(type)) {
-                        Ext.each(element.options, function(opt){
+                        oLen = options.length;
+                        for (o = 0; o < oLen; o++) {
+                            opt = options[o];
                             if (opt.selected) {
                                 hasValue = opt.hasAttribute ? opt.hasAttribute('value') : opt.getAttributeNode('value').specified;
                                 data += Ext.String.format("{0}={1}&", encoder(name), encoder(hasValue ? opt.value : opt.text));
                             }
-                        });
+                        }
                     } else if (!(/file|undefined|reset|button/i.test(type))) {
                         if (!(/radio|checkbox/i.test(type) && !element.checked) && !(type == 'submit' && hasSubmit)) {
                             data += encoder(name) + '=' + encoder(element.value) + '&';
@@ -497,8 +466,8 @@ Ext.dom.AbstractElement.addInheritableStatics({
                         }
                     }
                 }
-            });
+            }
             return data.substr(0, data.length - 1);
         }
     });
-})();
+}());

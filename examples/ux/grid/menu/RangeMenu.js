@@ -198,11 +198,21 @@ menuItemCfgs : {
      * @param {Object} data The data to assign to this menu
      */	
     setValue : function (data) {
-        var key;
-        for (key in this.fields) {
-            this.fields[key].setValue(key in data ? data[key] : '');
+        var me = this,
+            key,
+            field;
+
+        for (key in me.fields) {
+            
+            // Prevent field's change event from tiggering a Store filter. The final upate event will do that
+            field = me.fields[key];
+            field.suspendEvents();
+            field.setValue(key in data ? data[key] : '');
+            field.resumeEvents();
         }
-        this.fireEvent('update', this);
+
+        // Trigger the filering of the Store
+        me.fireEvent('update', me);
     },
 
     /**  

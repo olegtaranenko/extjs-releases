@@ -77,26 +77,28 @@ Ext.define('Ext.util.Renderable', {
         br: []
     },
 
+    frameElNames: ['TL','TC','TR','ML','MC','MR','BL','BC','BR'],
+
     frameTpl: [
         '{%this.renderDockedItems(out,values,0);%}',
         '<tpl if="top">',
-            '<tpl if="left"><div id="{fgid}TL" class="{frameCls}-tl {baseCls}-tl {baseCls}-{ui}-tl<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tl</tpl></tpl>" style="background-position: {tl}; padding-left: {frameWidth}px" role="presentation"></tpl>',
-                '<tpl if="right"><div id="{fgid}TR" class="{frameCls}-tr {baseCls}-tr {baseCls}-{ui}-tr<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tr</tpl></tpl>" style="background-position: {tr}; padding-right: {frameWidth}px" role="presentation"></tpl>',
-                    '<div id="{fgid}TC" class="{frameCls}-tc {baseCls}-tc {baseCls}-{ui}-tc<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tc</tpl></tpl>" style="background-position: {tc}; height: {frameWidth}px" role="presentation"></div>',
+            '<tpl if="left"><div id="{fgid}TL" class="{frameCls}-tl {baseCls}-tl {baseCls}-{ui}-tl<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tl</tpl>" style="background-position: {tl}; padding-left: {frameWidth}px" role="presentation"></tpl>',
+                '<tpl if="right"><div id="{fgid}TR" class="{frameCls}-tr {baseCls}-tr {baseCls}-{ui}-tr<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tr</tpl>" style="background-position: {tr}; padding-right: {frameWidth}px" role="presentation"></tpl>',
+                    '<div id="{fgid}TC" class="{frameCls}-tc {baseCls}-tc {baseCls}-{ui}-tc<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tc</tpl>" style="background-position: {tc}; height: {frameWidth}px" role="presentation"></div>',
                 '<tpl if="right"></div></tpl>',
             '<tpl if="left"></div></tpl>',
         '</tpl>',
-        '<tpl if="left"><div id="{fgid}ML" class="{frameCls}-ml {baseCls}-ml {baseCls}-{ui}-ml<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-ml</tpl></tpl>" style="background-position: {ml}; padding-left: {frameWidth}px" role="presentation"></tpl>',
-            '<tpl if="right"><div id="{fgid}MR" class="{frameCls}-mr {baseCls}-mr {baseCls}-{ui}-mr<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mr</tpl></tpl>" style="background-position: {mr}; padding-right: {frameWidth}px" role="presentation"></tpl>',
-                '<div id="{fgid}MC" class="{frameCls}-mc {baseCls}-mc {baseCls}-{ui}-mc<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mc</tpl></tpl>" role="presentation">',
+        '<tpl if="left"><div id="{fgid}ML" class="{frameCls}-ml {baseCls}-ml {baseCls}-{ui}-ml<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-ml</tpl>" style="background-position: {ml}; padding-left: {frameWidth}px" role="presentation"></tpl>',
+            '<tpl if="right"><div id="{fgid}MR" class="{frameCls}-mr {baseCls}-mr {baseCls}-{ui}-mr<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mr</tpl>" style="background-position: {mr}; padding-right: {frameWidth}px" role="presentation"></tpl>',
+                '<div id="{fgid}MC" class="{frameCls}-mc {baseCls}-mc {baseCls}-{ui}-mc<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mc</tpl>" role="presentation">',
                     '{%this.applyRenderTpl(out, values)%}',
                 '</div>',
             '<tpl if="right"></div></tpl>',
         '<tpl if="left"></div></tpl>',
         '<tpl if="bottom">',
-            '<tpl if="left"><div id="{fgid}BL" class="{frameCls}-bl {baseCls}-bl {baseCls}-{ui}-bl<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bl</tpl></tpl>" style="background-position: {bl}; padding-left: {frameWidth}px" role="presentation"></tpl>',
-                '<tpl if="right"><div id="{fgid}BR" class="{frameCls}-br {baseCls}-br {baseCls}-{ui}-br<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-br</tpl></tpl>" style="background-position: {br}; padding-right: {frameWidth}px" role="presentation"></tpl>',
-                    '<div id="{fgid}BC" class="{frameCls}-bc {baseCls}-bc {baseCls}-{ui}-bc<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bc</tpl></tpl>" style="background-position: {bc}; height: {frameWidth}px" role="presentation"></div>',
+            '<tpl if="left"><div id="{fgid}BL" class="{frameCls}-bl {baseCls}-bl {baseCls}-{ui}-bl<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bl</tpl>" style="background-position: {bl}; padding-left: {frameWidth}px" role="presentation"></tpl>',
+                '<tpl if="right"><div id="{fgid}BR" class="{frameCls}-br {baseCls}-br {baseCls}-{ui}-br<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-br</tpl>" style="background-position: {br}; padding-right: {frameWidth}px" role="presentation"></tpl>',
+                    '<div id="{fgid}BC" class="{frameCls}-bc {baseCls}-bc {baseCls}-{ui}-bc<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bc</tpl>" style="background-position: {bc}; height: {frameWidth}px" role="presentation"></div>',
                 '<tpl if="right"></div></tpl>',
             '<tpl if="left"></div></tpl>',
         '</tpl>',
@@ -108,23 +110,23 @@ Ext.define('Ext.util.Renderable', {
         '<table><tbody>',
             '<tpl if="top">',
                 '<tr>',
-                    '<tpl if="left"><td id="{fgid}TL" class="{frameCls}-tl {baseCls}-tl {baseCls}-{ui}-tl<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tl</tpl></tpl>" style="background-position: {tl}; padding-left:{frameWidth}px" role="presentation"></td></tpl>',
-                    '<td id="{fgid}TC" class="{frameCls}-tc {baseCls}-tc {baseCls}-{ui}-tc<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tc</tpl></tpl>" style="background-position: {tc}; height: {frameWidth}px" role="presentation"></td>',
-                    '<tpl if="right"><td id="{fgid}TR" class="{frameCls}-tr {baseCls}-tr {baseCls}-{ui}-tr<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tr</tpl></tpl>" style="background-position: {tr}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
+                    '<tpl if="left"><td id="{fgid}TL" class="{frameCls}-tl {baseCls}-tl {baseCls}-{ui}-tl<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tl</tpl>" style="background-position: {tl}; padding-left:{frameWidth}px" role="presentation"></td></tpl>',
+                    '<td id="{fgid}TC" class="{frameCls}-tc {baseCls}-tc {baseCls}-{ui}-tc<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tc</tpl>" style="background-position: {tc}; height: {frameWidth}px" role="presentation"></td>',
+                    '<tpl if="right"><td id="{fgid}TR" class="{frameCls}-tr {baseCls}-tr {baseCls}-{ui}-tr<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-tr</tpl>" style="background-position: {tr}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
                 '</tr>',
             '</tpl>',
             '<tr>',
-                '<tpl if="left"><td id="{fgid}ML" class="{frameCls}-ml {baseCls}-ml {baseCls}-{ui}-ml<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-ml</tpl></tpl>" style="background-position: {ml}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
-                '<td id="{fgid}MC" class="{frameCls}-mc {baseCls}-mc {baseCls}-{ui}-mc<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mc</tpl></tpl>" style="background-position: 0 0;" role="presentation">',
+                '<tpl if="left"><td id="{fgid}ML" class="{frameCls}-ml {baseCls}-ml {baseCls}-{ui}-ml<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-ml</tpl>" style="background-position: {ml}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
+                '<td id="{fgid}MC" class="{frameCls}-mc {baseCls}-mc {baseCls}-{ui}-mc<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mc</tpl>" style="background-position: 0 0;" role="presentation">',
                     '{%this.applyRenderTpl(out, values)%}',
                 '</td>',
-                '<tpl if="right"><td id="{fgid}MR" class="{frameCls}-mr {baseCls}-mr {baseCls}-{ui}-mr<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mr</tpl></tpl>" style="background-position: {mr}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
+                '<tpl if="right"><td id="{fgid}MR" class="{frameCls}-mr {baseCls}-mr {baseCls}-{ui}-mr<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-mr</tpl>" style="background-position: {mr}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
             '</tr>',
             '<tpl if="bottom">',
                 '<tr>',
-                    '<tpl if="left"><td id="{fgid}BL" class="{frameCls}-bl {baseCls}-bl {baseCls}-{ui}-bl<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bl</tpl></tpl>" style="background-position: {bl}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
-                    '<td id="{fgid}BC" class="{frameCls}-bc {baseCls}-bc {baseCls}-{ui}-bc<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bc</tpl></tpl>" style="background-position: {bc}; height: {frameWidth}px" role="presentation"></td>',
-                    '<tpl if="right"><td id="{fgid}BR" class="{frameCls}-br {baseCls}-br {baseCls}-{ui}-br<tpl if="uiCls"><tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-br</tpl></tpl>" style="background-position: {br}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
+                    '<tpl if="left"><td id="{fgid}BL" class="{frameCls}-bl {baseCls}-bl {baseCls}-{ui}-bl<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bl</tpl>" style="background-position: {bl}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
+                    '<td id="{fgid}BC" class="{frameCls}-bc {baseCls}-bc {baseCls}-{ui}-bc<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-bc</tpl>" style="background-position: {bc}; height: {frameWidth}px" role="presentation"></td>',
+                    '<tpl if="right"><td id="{fgid}BR" class="{frameCls}-br {baseCls}-br {baseCls}-{ui}-br<tpl for="uiCls"> {parent.baseCls}-{parent.ui}-{.}-br</tpl>" style="background-position: {br}; padding-left: {frameWidth}px" role="presentation"></td></tpl>',
                 '</tr>',
             '</tpl>',
         '</tbody></table>',
@@ -180,7 +182,7 @@ Ext.define('Ext.util.Renderable', {
         }
     },
 
-    afterFirstLayout : function() {
+    afterFirstLayout : function(width, height) {
         var me = this,
             hasX = Ext.isDefined(me.x),
             hasY = Ext.isDefined(me.y),
@@ -204,10 +206,12 @@ Ext.define('Ext.util.Renderable', {
         if (hasX || hasY) {
             me.setPosition(me.x, me.y);
         }
-        me.onBoxReady();
-        me.fireEvent('boxready', me);
+        me.onBoxReady(width, height);
+        if (me.hasListeners.boxready) {
+            me.fireEvent('boxready', me, width, height);
+        }
     },
-    
+
     onBoxReady: Ext.emptyFn,
 
     /**
@@ -378,11 +382,12 @@ Ext.define('Ext.util.Renderable', {
             }
         } else if (!me.rendering) {
             // We were configured with an el and then told to render (e.g., Viewport). We
-            // need to generate the proper DOM below us:
+            // need to generate the proper DOM. Insert first because the layout system
+            // insists that child Component elements indices match the Component indices.
             tpl = me.initRenderTpl();
             if (tpl) {
                 data = me.initRenderData();
-                tpl.append(me.getTargetEl(), data);
+                tpl.insertFirst(me.getTargetEl(), data);
             }
         }
         // else we are rendering
@@ -411,7 +416,9 @@ Ext.define('Ext.util.Renderable', {
             me.el.hover(me.addOverCls, me.removeOverCls, me);
         }
 
-        me.fireEvent('render', me);
+        if (me.hasListeners.render) {
+            me.fireEvent('render', me);
+        }
 
         if (me.contentEl) {
             pre = Ext.baseCSSPrefix;
@@ -422,7 +429,9 @@ Ext.define('Ext.util.Renderable', {
         }
 
         me.afterRender(); // this can cause a layout
-        me.fireEvent('afterrender', me);
+        if (me.hasListeners.afterrender) {
+            me.fireEvent('afterrender', me);
+        }
         me.initEvents();
 
         if (me.hidden) {
@@ -443,12 +452,12 @@ Ext.define('Ext.util.Renderable', {
         var me = this,
             autoEl = me.autoEl,
             frameInfo = me.getFrameInfo(),
-            frameGenId,
             config = {
                 tag: 'div',
                 id: me.id,
                 tpl: frameInfo ? me.initFramingTpl(frameInfo.table) : me.initRenderTpl()
-            };
+            },
+            i, frameElNames, len, suffix, frameGenId;
 
         me.initStyles(me.protoEl);
         me.protoEl.writeTo(config);
@@ -463,8 +472,11 @@ Ext.define('Ext.util.Renderable', {
         if (config.tpl) {
             // Use the framingTpl as the main content creating template. It will call out to this.applyRenderTpl(out, values)
             if (frameInfo) {
-                me.frameGenId = 1;
+                frameElNames = me.frameElNames;
+                len = frameElNames.length;
                 frameGenId = me.id + '-frame1';
+
+                me.frameGenId = 1;
                 config.tplData = Ext.apply({}, {
                     $comp:      me,
                     fgid:       frameGenId,
@@ -481,9 +493,10 @@ Ext.define('Ext.util.Renderable', {
                 }, me.getFramePositions(frameInfo));
 
                 // Add the childEls for each of the frame elements
-                Ext.each(['TL','TC','TR','ML','MC','MR','BL','BC','BR'], function (suffix) {
+                for (i = 0; i < len; i++) {
+                    suffix = frameElNames[i];
                     me.addChildEls({ name: 'frame' + suffix, id: frameGenId + suffix });
-                });
+                }
 
                 // Panel must have a frameBody
                 me.addChildEls({
@@ -544,9 +557,9 @@ Ext.define('Ext.util.Renderable', {
     getRenderTree: function() {
         var me = this;
 
-        me.beforeRender();
+        if (!me.hasListeners.beforerender || me.fireEvent('beforerender', me) !== false) {
+            me.beforeRender();
 
-        if (me.fireEvent('beforerender', me) !== false) {
             // Flag to let the layout's finishRenderItems and afterFinishRenderItems
             // know which items to process
             me.rendering = true;
@@ -705,12 +718,17 @@ Ext.define('Ext.util.Renderable', {
 
         if (!el) {
             tree = me.getRenderTree();
-            if (nextSibling) {
-                el = Ext.DomHelper.insertBefore(nextSibling, tree);
-            } else {
-                el = Ext.DomHelper.append(container, tree);
+
+            // tree will be null if a beforerender listener returns false
+            if (tree) {
+                if (nextSibling) {
+                    el = Ext.DomHelper.insertBefore(nextSibling, tree);
+                } else {
+                    el = Ext.DomHelper.append(container, tree);
+                }
+
+                me.wrapPrimaryEl(el);
             }
-            me.wrapPrimaryEl(el);
         } else {
             // Set configured styles on pre-rendered Component's element
             me.initStyles(el);
@@ -724,7 +742,9 @@ Ext.define('Ext.util.Renderable', {
             }
         }
 
-        me.finishRender(position);
+        if (el) {
+            me.finishRender(position);
+        }
 
         Ext.resumeLayouts(!container.isDetachedBody);
     },
@@ -767,13 +787,17 @@ Ext.define('Ext.util.Renderable', {
      * @private
      */
     initFrame : function() {
-        if (Ext.supports.CSS3BorderRadius) {
-            return false;
+        if (Ext.supports.CSS3BorderRadius || !this.frame) {
+            return;
         }
 
         var me = this,
             frameInfo = me.getFrameInfo(),
-            frameWidth, frameTpl, frameGenId;
+            frameWidth, frameTpl, frameGenId,
+            i,
+            frameElNames = me.frameElNames,
+            len = frameElNames.length,
+            suffix;
 
         if (frameInfo) {
             frameWidth = frameInfo.maxWidth;
@@ -807,16 +831,17 @@ Ext.define('Ext.util.Renderable', {
                 return c.id && me.frameIdRegex.test(c.id);
             });
 
-            // Grab referennces to the childEls for each of the new frame elements
-            Ext.each(['TL','TC','TR','ML','MC','MR','BL','BC','BR'], function (suffix) {
+            // Grab references to the childEls for each of the new frame elements
+            for (i = 0; i < len; i++) {
+                suffix = frameElNames[i];
                 me['frame' + suffix] = me.el.getById(frameGenId + suffix);
-            });
+            }
         }
     },
 
     updateFrame: function() {
-        if (Ext.supports.CSS3BorderRadius) {
-            return false;
+        if (Ext.supports.CSS3BorderRadius || !this.frame) {
+            return;
         }
 
         var me = this,
@@ -862,10 +887,6 @@ Ext.define('Ext.util.Renderable', {
                     }
                 }
             }
-            else {
-                // We were framed but not anymore. Move all content from the old frame to the body
-
-            }
         }
         else if (me.frame) {
             this.applyRenderSelectors();
@@ -877,44 +898,29 @@ Ext.define('Ext.util.Renderable', {
      * On render, reads an encoded style attribute, "background-position" from the style of this Component's element.
      * This information is memoized based upon the CSS class name of this Component's element.
      * Because child Components are rendered as textual HTML as part of the topmost Container, a dummy div is inserted
-     * into the document to recieve the document element's CSS class name, and therefore style attributes.
+     * into the document to receive the document element's CSS class name, and therefore style attributes.
      */
     getFrameInfo: function() {
-        var me = this;
-        if (Ext.supports.CSS3BorderRadius) {
+        // If native framing can be used, or this Component is not configured (or written) to be framed,
+        // then do not attempt to read CSS framing info.
+        if (Ext.supports.CSS3BorderRadius || !this.frame) {
             return false;
         }
 
-        var frameInfoCache = me.frameInfoCache,
-            el = me.el ? me.el : me.protoEl,
+        var me = this,
+            frameInfoCache = me.frameInfoCache,
+            el = me.el || me.protoEl,
             cls = el.dom ? el.dom.className : el.classList.join(' '),
-            styleEl,
-            left,
-            top,
-            ownerCt = me.ownerCt,
-            info, frameInfo, max,
-            frameKey = me.getXType();
+            frameInfo = frameInfoCache[cls],
+            styleEl, left, top, info;
 
-        if (me.dock) {
-            frameKey += '-dock-' + me.dock; // ex: 'toolbar-dock-top'
-            if (ownerCt.isWindow) {
-                frameKey = 'window:' + frameKey; // ex: 'window:toolbar-dock-top'
-            }
-        } else if (ownerCt && ownerCt.dock) {
-            frameKey = ownerCt.getXType() + '-dock-' + ownerCt.dock + ':' + frameKey;
-            // ex: 'tabbar-dock-top:tab'
-        }
-        // TODO - frameKey needs to use css classes most likely to ensure correct answers
-
-        // If we have already looked up framing info for this Component class, just return it.
-        //frameInfo = frameInfoCache[frameKey];
-        if (typeof frameInfo == 'undefined') {
+        if (frameInfo == null) {
             // Get the singleton frame style proxy with our el class name stamped into it.
             styleEl = Ext.fly(me.getStyleProxy(cls), 'frame-style-el');
             left = styleEl.getStyle('background-position-x');
             top = styleEl.getStyle('background-position-y');
 
-            // Some browsers dont support background-position-x and y, so for those
+            // Some browsers don't support background-position-x and y, so for those
             // browsers let's split background-position into two parts.
             if (!left && !top) {
                 info = styleEl.getStyle('background-position').split(' ');
@@ -923,31 +929,27 @@ Ext.define('Ext.util.Renderable', {
             }
 
             frameInfo = me.calculateFrame(left, top);
+
             if (frameInfo) {
                 // Just to be sure we set the background image of the el to none.
                 el.setStyle('background-image', 'none');
             }
 
+            //<debug error>
             // This happens when you set frame: true explicitly without using the x-frame mixin in sass.
             // This way IE can't figure out what sizes to use and thus framing can't work.
-            //<debug error>
             if (me.frame === true && !frameInfo) {
-                Ext.log.error('You have set frame: true explicity on this component (' + frameKey +
-                        ') and it does not have any framing defined in the CSS template. In this ' +
-                        'case IE cannot figure out what sizes to use and thus framing on this ' +
-                        'component will be disabled.');
+                Ext.log.error('You have set frame: true explicity on this component (' + me.getXType() + ') and it ' +
+                        'does not have any framing defined in the CSS template. In this case IE cannot figure out ' +
+                        'what sizes to use and thus framing on this component will be disabled.');
             }
-
-            // turn on if we restore frameInfoCache
-            //Ext.log.info('No frameInfo cached for ', frameKey, ': ', Ext.encode(frameInfo));
-
             //</debug>
 
-            frameInfoCache[frameKey] = frameInfo || false;
+            frameInfoCache[cls] = frameInfo;
         }
 
         me.frame = !!frameInfo;
-        me.frameSize = frameInfo || false;
+        me.frameSize = frameInfo;
 
         return frameInfo;
     },
@@ -957,7 +959,7 @@ Ext.define('Ext.util.Renderable', {
         // the background position of this.el from the CSS to indicate to IE that this component needs
         // framing. We parse it here.
         if (!(parseInt(left, 10) >= 1000000 && parseInt(top, 10) >= 1000000)) {
-            return;
+            return false;
         }
         var max = Math.max,
             tl = parseInt(left.substr(3, 2), 10),
@@ -1061,215 +1063,6 @@ Ext.define('Ext.util.Renderable', {
         return this.getTpl(table ? 'frameTableTpl' : 'frameTpl');
     },
 
-    // Cache the frame information object for all unique Component xtypes so as not to
-    // cause style recaclculations.
-    frameInfoCache: {},
-    _frameInfoCache: {
-        // Components
-        panel: {
-            "table": false,
-            "vertical": false,
-            "top": 4,
-            "right": 4,
-            "bottom": 4,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 8,
-            "height": 8
-        },
-        window: {
-            "table": false,
-            "vertical": false,
-            "top": 5,
-            "right": 5,
-            "bottom": 5,
-            "left": 5,
-            "maxWidth": 5,
-            "width": 10,
-            "height": 10
-        },
-        form: {
-            "table": false,
-            "vertical": false,
-            "top": 4,
-            "right": 4,
-            "bottom": 4,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 8,
-            "height": 8
-        },
-        grid: {
-            "table": false,
-            "vertical": false,
-            "top": 4,
-            "right": 4,
-            "bottom": 4,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 8,
-            "height": 8
-        },
-        button: {
-            "table": true,
-            "vertical": false,
-            "top": 3,
-            "right": 3,
-            "bottom": 3,
-            "left": 3,
-            "maxWidth": 3,
-            "width": 6,
-            "height": 6
-        },
-        buttongroup: {
-            "table": false,
-            "vertical": false,
-            "top": 2,
-            "right": 2,
-            "bottom": 2,
-            "left": 2,
-            "maxWidth": 2,
-            "width": 4,
-            "height": 4
-        },
-        splitbutton: {
-            "table": true,
-            "vertical": false,
-            "top": 3,
-            "right": 3,
-            "bottom": 3,
-            "left": 3,
-            "maxWidth": 3,
-            "width": 6,
-            "height": 6
-        },
-        tip: {
-            "table": true,
-            "vertical": false,
-            "top": 5,
-            "right": 5,
-            "bottom": 5,
-            "left": 5,
-            "maxWidth": 5,
-            "width": 10,
-            "height": 10
-        },
-
-        // Headers in non-Windows (Panels):
-        'header-dock-top': {
-            "table": false,
-            "vertical": false,
-            "top": 4,
-            "right": 4,
-            "bottom": 0,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 8,
-            "height": 4
-        },
-        /* TODO - this is not being read properly from the DOM yet... missing classes??
-        'header-dock-bottom': {
-            "table": false,
-            "vertical": false,
-            "top": 0,
-            "right": 4,
-            "bottom": 4,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 8,
-            "height": 4
-        },*/
-        'header-dock-left': {
-            "table": false,
-            "vertical": true,
-            "top": 4,
-            "right": 0,
-            "bottom": 4,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 4,
-            "height": 8
-        },
-        'header-dock-right': {
-            "table": false,
-            "vertical": true,
-            "top": 4,
-            "right": 4,
-            "bottom": 4,
-            "left": 0,
-            "maxWidth": 4,
-            "width": 4,
-            "height": 8
-        },
-
-        // Headers in Windows:
-        'window:header-dock-top': {
-            "table": false,
-            "vertical": false,
-            "top": 5,
-            "right": 5,
-            "bottom": 0,
-            "left": 5,
-            "maxWidth": 5,
-            "width": 10,
-            "height": 5
-        },
-        'window:header-dock-right': {
-            "table": false,
-            "vertical": false,
-            "top": 5,
-            "right": 5,
-            "bottom": 5,
-            "left": 0,
-            "maxWidth": 5,
-            "width": 5,
-            "height": 10
-        },
-        'window:header-dock-bottom': {
-            "table": false,
-            "vertical": false,
-            "top": 0,
-            "right": 5,
-            "bottom": 5,
-            "left": 5,
-            "maxWidth": 5,
-            "width": 10,
-            "height": 5
-        },
-        'window:header-dock-left': {
-            "table": false,
-            "vertical": false,
-            "top": 5,
-            "right": 0,
-            "bottom": 5,
-            "left": 5,
-            "maxWidth": 5,
-            "width": 5,
-            "height": 10
-        },
-
-        // Tabs in a TabBar:
-        'tabbar-dock-top:tab': {
-            "table": true,
-            "vertical": false,
-            "top": 4,
-            "right": 4,
-            "bottom": 0,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 8,
-            "height": 4
-        },
-        'tabbar-dock-bottom:tab': {
-            "table": true,
-            "vertical": false,
-            "top": 0,
-            "right": 4,
-            "bottom": 4,
-            "left": 4,
-            "maxWidth": 4,
-            "width": 8,
-            "height": 4
-        }
-    }
+    // Cache the frame information object so as not to cause style recalculations
+    frameInfoCache: {}
 });

@@ -66,40 +66,17 @@ Ext.define('Ext.layout.component.Body', {
     },
 
     measureContentWidth: function (ownerContext) {
-        var contentWidth = ownerContext.bodyContext.el.dom.offsetWidth,
-            targetContext = ownerContext.targetContext,
-            padding = targetContext &amp;&amp; targetContext.getPaddingInfo();
-
-        ownerContext.bodyContext.setWidth(contentWidth, false);
-
-        if (padding) {
-            contentWidth += padding.width;
-        }
-
-        return contentWidth;
+        return ownerContext.bodyContext.setWidth(ownerContext.bodyContext.el.dom.offsetWidth, false);
     },
 
     measureContentHeight: function (ownerContext) {
-        var contentHeight = ownerContext.bodyContext.el.dom.offsetHeight,
-            targetContext = ownerContext.targetContext,
-            padding = targetContext &amp;&amp; targetContext.getPaddingInfo();
-
-        ownerContext.bodyContext.setHeight(contentHeight, false);
-
-        if (padding) {
-            contentHeight += padding.height;
-        }
-
-        return contentHeight;
+        return ownerContext.bodyContext.setHeight(ownerContext.bodyContext.el.dom.offsetHeight, false);
     },
 
     publishInnerHeight: function (ownerContext, height) {
         var innerHeight = height - ownerContext.getFrameInfo().height,
             targetContext = ownerContext.targetContext;
 
-        if (targetContext) {
-            innerHeight -= targetContext.getPaddingInfo().height;
-        }
         if (targetContext != ownerContext) {
             innerHeight -= ownerContext.getPaddingInfo().height;
         }
@@ -111,9 +88,6 @@ Ext.define('Ext.layout.component.Body', {
         var innerWidth = width - ownerContext.getFrameInfo().width,
             targetContext = ownerContext.targetContext;
 
-        if (targetContext) {
-            innerWidth -= targetContext.getPaddingInfo().width;
-        }
         if (targetContext != ownerContext) {
             innerWidth -= ownerContext.getPaddingInfo().width;
         }

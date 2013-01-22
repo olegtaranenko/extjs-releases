@@ -36,33 +36,26 @@ Ext.define('Ext.diag.layout.ContextItem', {
     },
 
     addTrigger: function (propName, inDom) {
-        var name = inDom ? 'domTriggers' : 'triggers',
-            layout = this.context.currentLayout,
-            result = this.callParent(arguments),
+        var layout = this.context.currentLayout,
             triggers;
 
-        //Ext.log(this.id,'.',propName,' ',name,' ',this.getLayoutName(layout));
+        //Ext.log(this.id,'.',propName,' ',inDom ? ':dom' : '',' ',this.getLayoutName(layout));
+        this.callParent(arguments);
 
-        if (result) {
-            triggers = this.context.triggersByLayoutId;
-            (triggers[layout.id] || (triggers[layout.id] = {}))[
-                this.id+'.'+propName+(inDom ? ':dom' : '')] = {
-                    item: this,
-                    name: propName
-                };
-        } else {
-            //console.log(me.target.el.dom, (' ' + this.getLayoutName(layout) + 
-            //' is asking for the ' + propName + ' which it is supposed to provide'));
-        }
-
-        return result;
+        triggers = this.context.triggersByLayoutId;
+        (triggers[layout.id] || (triggers[layout.id] = {}))[
+            this.id+'.'+propName+(inDom ? ':dom' : '')] = {
+                item: this,
+                name: propName
+            };
     },
 
     checkAuthority: function (prop) {
         var me = this,
             model = me[prop + 'Model'], // not me.sizeModel[prop] since it is immutable
             layout = me.context.currentLayout,
-            ok;
+            ok,
+            setBy;
 
         if (layout == me.target.ownerLayout) {
             // the ownerLayout is only allowed to set calculated dimensions
@@ -77,11 +70,9 @@ Ext.define('Ext.diag.layout.ContextItem', {
         }
 
         if (!ok) {
-            var setBy = me.getLayoutName(layout);
+            setBy = me.getLayoutName(layout);
 
-            Ext.Error.raise({
-                msg: setBy + ' cannot set ' + prop
-            });
+            Ext.log(setBy + ' cannot set ' + prop);
         }
     },
 

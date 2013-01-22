@@ -23,9 +23,6 @@
 Ext.define('Ext.layout.container.CheckboxGroup', {
     extend: 'Ext.layout.container.Container',
     alias: ['layout.checkboxgroup'],
-    requires: ['Ext.layout.container.HBox'],
-
-    childGeneration: 0,
 
 <span id='Ext-layout-container-CheckboxGroup-cfg-autoFlex'>    /**
 </span>     * @cfg {Boolean} [autoFlex=true]
@@ -54,27 +51,30 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
 
     beginLayout: function(ownerContext) {
         var me = this,
-            columns = me.columnEls,
-            numCols,
+            columns,
+            numCols, numChildren,
             childItems,
-            i, width,
+            i, width, cwidth,
+            totalFlex = 0, flexedCols = 0,
             autoFlex = me.autoFlex,
-            percentWidthColumns = false;
+            currGen = me.owner.items.generation,
+            innerCtStyle = me.innerCt.dom.style;
 
         me.callParent(arguments);
         childItems = ownerContext.childItems;
 
         // If the child items have changed since the last layout then we need to fixup
         // the association of items to columns:
-        if (me.lastChildGeneration != me.childGeneration) {
-            me.lastChildGeneration = me.childGeneration;
+        if (me.lastChildGeneration != currGen) {
+            me.lastChildGeneration = currGen;
             me.fixColumns();
         }
 
-        ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
+        // fixColumns may have updated the element cache, no need to get the columnEls
+        // now...
+        columns = me.columnEls;
 
-        // Child items can grab a flex of the available width, so collect flexes
-        Ext.layout.container.Box.prototype.cacheFlexes.call(me, ownerContext);
+        ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
 
         // The columns config may be an array of widths. Any value &lt; 1 is taken to be a fraction:
         if (!ownerContext.widthModel.shrinkWrap) {
@@ -82,37 +82,64 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
 
             // If columns is an array of numeric widths
             if (me.columnsArray) {
-                for (i = 0; i &lt; numCols; i++) {
-                    width = me.owner.columns[i];
-                    columns[i].style.width = (percentWidthColumns |= (width &lt; 1)) ? (width * 100) + '%' : width + 'px';
-                }
-            }
 
-            // Otherwise it's the *number* of columns, so use child item width settings
-            else {
-                // this won't run unless we force percentWidthColumns to false
-                for (i = 0; i &lt; numCols; i++) {
-                    if (childItems[i].flex) {
-                        columns[i].style.width = (childItems[i].flex / ownerContext.totalFlex * 100) + '%';
-                        percentWidthColumns = true;
-                    } else if (childItems[i].width) {
-                        columns[i].style.width = childItems[i].width + 'px';
-                        autoFlex = false;
-                    } else if (me.evenColumns) {
-                        columns[i].style.width = (1 / numCols * 100) + '%';
-                        percentWidthColumns = true;
+                // first calculate total flex
+                for (i=0; i &lt; columns; i++) {
+                    width = me.owner.columns[i];
+                    if (width &lt; 1) {
+                        totalFlex += width;
+                        flexedCols++;
                     }
                 }
+
+                // now apply widths
+                for (i = 0; i &lt; numCols; i++) {
+                    width = me.owner.columns[i];
+                    if (width &lt; 1) {
+                        cwidth = ((width / totalFlex) * 100) + '%';
+                    } else {
+                        cwidth = width + 'px';
+                    }
+                    columns[i].style.width = cwidth;
+                }
             }
 
-            // If the columns config was an array of column widths, allow table to auto width
-            if (percentWidthColumns || autoFlex) {
-                me.innerCt.dom.style.tableLayout = 'fixed';
-                me.innerCt.dom.style.width = '100%';
-            } else {
-                me.innerCt.dom.style.tableLayout = 'auto';
-                me.innerCt.dom.style.width = 'auto';
+            // Otherwise it's the *number* of columns, so distributed the widths evenly
+            else {
+                for (i = 0; i &lt; numCols; i++) {
+                    // autoFlex: true will automatically calculate % widths
+                    // autoFlex: false allows the table to decide (shrinkWrap, in effect)
+                    // on a per-column basis
+                    cwidth = autoFlex
+                        ? (1 / numCols * 100) + '%'
+                        : '';
+                    columns[i].style.width = cwidth;
+                    flexedCols++;
+                }
             }
+
+            // no flexed cols -- all widths are fixed
+            if (!flexedCols) {
+                innerCtStyle.tableLayout = 'fixed';
+                innerCtStyle.width = '';
+            // some flexed cols -- need to fix some
+            } else if (flexedCols &lt; numCols) {
+                innerCtStyle.tableLayout = 'fixed';
+                innerCtStyle.width = '100%';
+            // let the table decide
+            } else {
+                innerCtStyle.tableLayout = 'auto';
+                // if autoFlex, fill available space, else compact down
+                if (autoFlex) {
+                    innerCtStyle.width = '100%';
+                } else {
+                    innerCtStyle.width = '';
+                }
+            }
+
+        } else {
+            innerCtStyle.tableLayout = 'auto';
+            innerCtStyle.width = '';
         }
     },
 
@@ -126,7 +153,7 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
         me.columnEls = me.innerCt.query('td.' + me.owner.groupCls);
 
         // we just rendered so the items are in the correct columns:
-        me.lastChildGeneration = me.childGeneration;
+        me.lastChildGeneration = me.owner.items.generation;
     },
 
     /*
@@ -134,19 +161,20 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
      * to make available to them. Then we can measure our height.
      */
     calculate: function(ownerContext) {
-        var me = this;
+        var me = this,
+            targetContext, widthShrinkWrap, heightShrinkWrap, shrinkWrap, table, targetPadding;
 
         // The columnEls are widthed using their own width attributes, we just need to wait
         // for all children to have arranged themselves in that width, and then collect our height.
         if (!ownerContext.getDomProp('containerChildrenDone')) {
             me.done = false;
         } else {
-            var targetContext = ownerContext.innerCtContext,
-                widthShrinkWrap = ownerContext.widthModel.shrinkWrap,
-                heightShrinkWrap = ownerContext.heightModel.shrinkWrap,
-                shrinkWrap = heightShrinkWrap || widthShrinkWrap,
-                table = targetContext.el.dom,
-                targetPadding = shrinkWrap &amp;&amp; targetContext.getPaddingInfo();
+            targetContext = ownerContext.innerCtContext;
+            widthShrinkWrap = ownerContext.widthModel.shrinkWrap;
+            heightShrinkWrap = ownerContext.heightModel.shrinkWrap;
+            shrinkWrap = heightShrinkWrap || widthShrinkWrap;
+            table = targetContext.el.dom;
+            targetPadding = shrinkWrap &amp;&amp; targetContext.getPaddingInfo();
 
             if (widthShrinkWrap) {
                 ownerContext.setContentWidth(table.offsetWidth + targetPadding.width, true);
@@ -218,11 +246,31 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
     fixColumns: function () {
         var me = this,
             owner = me.owner,
-            columns = me.columns,
+            cfgCols = owner.columns,
+            columns = me.columnEls,
             items = owner.items.items,
             columnCount = columns.length,
             itemCount = items.length,
-            columnIndex, i, rowCount;
+            columnIndex, i, rowCount, tr, td, newCount;
+
+        // if running in 'auto' columns mode, and the number of items has increased (add call)
+        // then we need to add a new td to the table
+        if ((!cfgCols || cfgCols == 'auto') &amp;&amp; (itemCount &gt; columnCount)) {
+
+            // add column td's for each new item added
+            newCount = itemCount - columnCount;
+            for (var i = 0; i &lt; newCount; i++) {
+                tr = me.innerCt.down('tr');
+                tr.createChild({
+                    cls: owner.groupCls,
+                    tag: 'td',
+                    vAlign: 'top'
+                });
+            }
+            me.cacheElements();
+            columns = me.columnEls;
+            columnCount = columns.length;
+        }
 
         if (owner.vertical) {
             columnIndex = -1; // first loop will increment this to 0
@@ -271,24 +319,24 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
         var me = this,
             data = me.callParent(),
             owner = me.owner,
-            i = 0, columns = me.getColumnCount(),
-            items = owner.items.items,
-            width,
-            childItem, column, totalFlex,
+            i, columns = me.getColumnCount(),
+            width, column, cwidth,
             autoFlex = me.autoFlex,
-            percentWidthColumns = false;
+            totalFlex = 0, flexedCols = 0;
 
-        // Calculate total flex
-        if (!me.columnsArray) {
-            for (; i &lt; columns; i++) {
-                if (items[i].flex) {
-                    totalFlex += items[i].flex;
+        // calculate total flex
+        if (me.columnsArray) {
+            for (i=0; i &lt; columns; i++) {
+                width = me.owner.columns[i];
+                if (width &lt; 1) {
+                    totalFlex += width;
+                    flexedCols++;
                 }
             }
         }
 
         data.colCls = owner.groupCls;
-        data.columnCount = me.getColumnCount();
+        data.columnCount = columns;
 
         data.columns = [];
         for (i = 0; i &lt; columns; i++) {
@@ -296,24 +344,23 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
 
             if (me.columnsArray) {
                 width = me.owner.columns[i];
-                column.style = 'width:' + ((percentWidthColumns |= (width &lt; 1)) ? (width * 100) + '%' : width + 'px');
-            } else {
-                childItem = items[i];
-                if (childItem.flex) {
-                    column.style = 'width:' + (childItem.flex / totalFlex * 100) + '%';
-                    percentWidthColumns = true;
-                } else if (childItem.width) {
-                    column.style = 'width:' + childItem.width + 'px';
-                    autoFlex = false;
-                } else if (me.evenColumns) {
-                    column.style = 'width:' + (1 / columns * 100) + '%';
-                    percentWidthColumns = true;
+                if (width &lt; 1) {
+                    cwidth = ((width / totalFlex) * 100) + '%';
+                } else {
+                    cwidth = width + 'px';
                 }
+                column.style = 'width:' + cwidth;
+            } else {
+                column.style = 'width:' + (1 / columns * 100) + '%';
+                flexedCols++;
             }
         }
 
         // If the columns config was an array of column widths, allow table to auto width
-        data.tableStyle = percentWidthColumns || autoFlex ? 'table-layout:fixed;width:100%' : '';
+        data.tableStyle =
+            !flexedCols ? 'table-layout:fixed;' :
+            (flexedCols &lt; columns) ? 'table-layout:fixed;width:100%' :
+            (autoFlex) ? 'table-layout:auto;width:100%' : 'table-layout:auto;';
 
         return data;
     },
@@ -338,24 +385,11 @@ Ext.define('Ext.layout.container.CheckboxGroup', {
         return true;
     },
 
-    onAdd: function () {
-        this.callParent(arguments);
-        ++this.childGeneration;
-    },
-
-    onRemove: function () {
-        this.callParent(arguments);
-        ++this.childGeneration;
-    },
-
     setupRenderTpl: function (renderTpl) {
         this.callParent(arguments);
 
         renderTpl.renderColumn = this.doRenderColumn;
     }
-}, function() {
-    this.prototype.names = Ext.layout.container.HBox.prototype.names;
-    this.prototype.getNames = Ext.layout.container.HBox.prototype.getNames;
 });</pre>
 </body>
 </html>

@@ -22,7 +22,8 @@ Ext.define('Ext.layout.component.field.Text', {
             inputEl = owner.inputEl;
 
             // Find the width that contains the whole text value
-            value = (inputEl.dom.value || (owner.hasFocus ? '' : owner.emptyText) || '') + owner.growAppend;
+            value = Ext.util.Format.htmlEncode(inputEl.dom.value || (owner.hasFocus ? '' : owner.emptyText) || '');
+            value += owner.growAppend;
             calcWidth = inputEl.getTextWidth(value) + inputContext.getFrameInfo().width;
 
             max = owner.growMax;
@@ -43,5 +44,21 @@ Ext.define('Ext.layout.component.field.Text', {
     
     publishInnerHeight: function (ownerContext, height) {
         ownerContext.inputContext.setHeight(height - this.measureLabelErrorHeight(ownerContext));
+    },
+
+    beginLayoutFixed: function(ownerContext, width, suffix) {
+        var me = this,
+            ieInputWidthAdjustment = me.ieInputWidthAdjustment;
+
+        if (ieInputWidthAdjustment) {
+            // adjust for IE 6/7 strict content-box model
+            // RTL: This might have to be padding-left unless the senses of the padding styles switch when in RTL mode.
+            me.owner.bodyEl.setStyle('padding-right', ieInputWidthAdjustment + 'px');
+            if(suffix === 'px') {
+                width -= ieInputWidthAdjustment;
+            }
+        }
+
+        me.callParent(arguments);
     }
 });

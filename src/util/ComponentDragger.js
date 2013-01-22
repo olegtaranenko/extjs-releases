@@ -6,6 +6,10 @@
  *
  * A {@link #delegate} may be provided which may be either the element to use as the mousedown target or a {@link
  * Ext.DomQuery} selector to activate multiple mousedown targets.
+ *
+ * When the Component begins to be dragged, its `beginDrag` method will be called if implemented.
+ *
+ * When the drag ends, its `endDrag` method will be called if implemented.
  */
 Ext.define('Ext.util.ComponentDragger', {
     extend: 'Ext.dd.DragTracker',
@@ -60,6 +64,10 @@ Ext.define('Ext.util.ComponentDragger', {
         if (me.constrain || me.constrainDelegate) {
             me.constrainTo = me.calculateConstrainRegion();
         }
+
+        if (comp.beginDrag) {
+            comp.beginDrag();
+        }
     },
 
     calculateConstrainRegion: function() {
@@ -107,8 +115,12 @@ Ext.define('Ext.util.ComponentDragger', {
     },
 
     onEnd: function(e) {
-        if (this.proxy && !this.comp.liveDrag) {
-            this.comp.unghost();
+        var comp = this.comp;
+        if (this.proxy && !comp.liveDrag) {
+            comp.unghost();
+        }
+        if (comp.endDrag) {
+            comp.endDrag();
         }
     }
 });

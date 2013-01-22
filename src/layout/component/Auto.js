@@ -66,6 +66,23 @@ Ext.define('Ext.layout.component.Auto', {
 
     waitForOuterHeightInDom: false,
     waitForOuterWidthInDom: false,
+    
+    beginLayoutCycle: function(ownerContext, firstCycle){
+        var me = this,
+            lastWidthModel = me.lastWidthModel,
+            lastHeightModel = me.lastHeightModel,
+            owner = me.owner;
+            
+        me.callParent(arguments);
+            
+        if (lastWidthModel && lastWidthModel.fixed && ownerContext.widthModel.shrinkWrap) {
+            owner.el.setWidth(null);
+        }
+            
+        if (lastHeightModel && lastHeightModel.fixed && ownerContext.heightModel.shrinkWrap) {
+            owner.el.setHeight(null);
+        }    
+    },
 
     calculate: function(ownerContext) {
         var me = this,
@@ -120,12 +137,24 @@ Ext.define('Ext.layout.component.Auto', {
     calculateOwnerWidthFromContentWidth: function (ownerContext, contentWidth) {
         return contentWidth + ownerContext.getFrameInfo().width;
     },
+    
+    onConstrainSize: function (ownerContext, options) {
+        var heightModel = options.heightModel,
+            widthModel = options.widthModel;
+
+        if (heightModel) {
+            ownerContext.heightModel = heightModel;
+        }
+        if (widthModel) {
+            ownerContext.widthModel = widthModel;
+        }
+    },
 
     publishOwnerHeight: function (ownerContext, contentHeight) {
         var me = this,
             owner = me.owner,
             height = me.calculateOwnerHeightFromContentHeight(ownerContext, contentHeight),
-            constrainedHeight, dirty;
+            heightModel, constrainedHeight, dirty;
 
         if (isNaN(height)) {
             me.done = false;
@@ -135,10 +164,19 @@ Ext.define('Ext.layout.component.Auto', {
             if (constrainedHeight == height) {
                 dirty = me.setHeightInDom;
             } else {
-                ownerContext.heightModel = me.sizeModels.configured;
+                heightModel = me.sizeModels[
+                    (constrainedHeight < height) ? 'constrainedMax' : 'constrainedMin'];
                 height = constrainedHeight;
-                if (me.publishInnerHeight) {
-                    me.publishInnerHeight(ownerContext, height);
+
+                if (ownerContext.heightModel.calculatedFromShrinkWrap) {
+                    // don't bother to invalidate since that will come soon from the
+                    // owner... but note that we are constrained...
+                    ownerContext.heightModel = heightModel;
+                } else {
+                    ownerContext.invalidate({
+                        before: me.onConstrainSize,
+                        heightModel: heightModel
+                    });
                 }
             }
             
@@ -150,7 +188,7 @@ Ext.define('Ext.layout.component.Auto', {
         var me = this,
             owner = me.owner,
             width = me.calculateOwnerWidthFromContentWidth(ownerContext, contentWidth),
-            constrainedWidth, dirty;
+            widthModel, constrainedWidth, dirty;
 
         if (isNaN(width)) {
             me.done = false;
@@ -160,10 +198,19 @@ Ext.define('Ext.layout.component.Auto', {
             if (constrainedWidth == width) {
                 dirty = me.setWidthInDom;
             } else {
-                ownerContext.widthModel = me.sizeModels.configured;
+                widthModel = me.sizeModels[
+                    (constrainedWidth < width) ? 'constrainedMax' : 'constrainedMin'];
                 width = constrainedWidth;
-                if (me.publishInnerWidth) {
-                    me.publishInnerWidth(ownerContext, width);
+
+                if (ownerContext.widthModel.calculatedFromShrinkWrap) {
+                    // don't bother to invalidate since that will come soon from the
+                    // owner... but note that we are constrained...
+                    ownerContext.widthModel = widthModel;
+                } else {
+                    ownerContext.invalidate({
+                        before: me.onConstrainSize,
+                        widthModel: widthModel
+                    });
                 }
             }
 

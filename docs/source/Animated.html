@@ -202,7 +202,7 @@ Ext.define('Ext.ux.DataView.Animated', {
                 var elapsed  = new Date() - startTime,
                     fraction = elapsed / duration,
                     id;
-                
+
                 if (fraction &gt;= 1) {
                     for (id in newPositions) {
                         Ext.fly(dataviewID + '-' + id).applyStyles({
@@ -210,7 +210,7 @@ Ext.define('Ext.ux.DataView.Animated', {
                             left: newPositions[id].left + &quot;px&quot;
                         });
                     }
-                    
+
                     Ext.TaskManager.stop(task);
                 } else {
                     //move each item
@@ -229,7 +229,7 @@ Ext.define('Ext.ux.DataView.Animated', {
                             diffLeft= fraction * Math.abs(oldLeft - newLeft),
                             midTop  = oldTop  &gt; newTop  ? oldTop  - diffTop  : oldTop  + diffTop,
                             midLeft = oldLeft &gt; newLeft ? oldLeft - diffLeft : oldLeft + diffLeft;
-                        
+
                         Ext.fly(dataviewID + '-' + id).applyStyles({
                             top : midTop + &quot;px&quot;,
                             left: midLeft + &quot;px&quot;

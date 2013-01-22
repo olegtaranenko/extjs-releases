@@ -92,6 +92,7 @@ Ext.onReady(function() {
     var grid = Ext.create('Ext.grid.Panel', {
         store: store,
         stateful: true,
+        collapsible: true,
         multiSelect: true,
         stateId: 'stateGrid',
         columns: [

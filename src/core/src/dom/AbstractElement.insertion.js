@@ -74,18 +74,22 @@ Ext.dom.AbstractElement.addMethods({
      * @return {Ext.dom.AbstractElement} The inserted Element. If an array is passed, the last inserted element is returned.
      */
     insertSibling: function(el, where, returnDom){
-        var me = this, rt,
-        isAfter = (where || 'before').toLowerCase() == 'after',
-        insertEl;
+        var me      = this,
+            isAfter = (where || 'before').toLowerCase() == 'after',
+            rt, insertEl, eLen, e;
 
-        if(Ext.isArray(el)){
+        if (Ext.isArray(el)) {
             insertEl = me;
-            Ext.each(el, function(e) {
-                rt = Ext.fly(insertEl, '_internal').insertSibling(e, where, returnDom);
-                if(isAfter){
+            eLen = el.length;
+            
+            for (e = 0; e < eLen; e++) {
+                rt = Ext.fly(insertEl, '_internal').insertSibling(el[e], where, returnDom);
+
+                if (isAfter) {
                     insertEl = rt;
                 }
-            });
+            }
+
             return rt;
         }
 

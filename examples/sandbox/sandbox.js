@@ -117,7 +117,8 @@ Ext4.onReady(function() {
         shadow: true,
 
         legend: {
-            position: 'right'
+            position: 'right',
+            update: false
         },
         insetPadding: 40,
         theme: 'Memory:gradients',
@@ -244,7 +245,8 @@ Ext4.onReady(function() {
         animate: false,
         store: cpuLoadStore,
         legend: {
-            position: 'bottom'
+            position: 'bottom',
+            update: false
         },
         axes: [{
             type: 'Numeric',
@@ -283,7 +285,8 @@ Ext4.onReady(function() {
         animate: false,
         store: cpuLoadStore,
         legend: {
-            position: 'bottom'
+            position: 'bottom',
+            update: false
         },
         axes: [{
             type: 'Numeric',

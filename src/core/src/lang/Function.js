@@ -131,10 +131,10 @@ Ext.Function = {
      */
     pass: function(fn, args, scope) {
         if (!Ext.isArray(args)) {
-            if (typeof args == 'string') {
-                args = [args];
-            } else {
+            if (Ext.isIterable(args)) {
                 args = Ext.Array.clone(args);
+            } else {
+                args = args !== undefined ? [args] : [];
             }
         }
 
@@ -276,7 +276,9 @@ Ext.Function = {
     defer: function(fn, millis, scope, args, appendArgs) {
         fn = Ext.Function.bind(fn, scope, args, appendArgs);
         if (millis > 0) {
-            return setTimeout(fn, millis);
+            return setTimeout(Ext.supports.TimeoutActualLateness ? function () {
+                fn();
+            } : fn, millis);
         }
         fn();
         return 0;
@@ -382,6 +384,7 @@ Ext.Function = {
             }
         };
     },
+
 
     /**
      * Adds behavior to an existing method that is executed before the

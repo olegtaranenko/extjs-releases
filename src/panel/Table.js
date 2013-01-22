@@ -89,13 +89,30 @@ Ext.define('Ext.panel.Table', {
     scroll: true,
 
     /**
-     * @cfg {Ext.grid.column.Column[]} columns
+     * @cfg {Ext.grid.column.Column[]/Object} columns
      * An array of {@link Ext.grid.column.Column column} definition objects which define all columns that appear in this
      * grid. Each column definition provides the header text for the column, and a definition of where the data for that
      * column comes from.
      *
      * This can also be a configuration object for a {Ext.grid.header.Container HeaderContainer} which may override
-     * certain default configurations if necessary. For example, the special layout may be overridden to use a simpler layout.
+     * certain default configurations if necessary. For example, the special layout may be overridden to use a simpler
+     * layout, or one can set default values shared by all columns:
+     * 
+     *     columns: {
+     *         items: [
+     *             {
+     *                 text: "Column A"
+     *                 dataIndex: "field_A"
+     *             },{
+     *                 text: "Column B",
+     *                 dataIndex: "field_B"
+     *             }, 
+     *             ...
+     *         ],
+     *         defaults: {
+     *             flex: 1
+     *         }
+     *     }
      */
 
     /**
@@ -121,6 +138,15 @@ Ext.define('Ext.panel.Table', {
      *
      * This allows the View to execute a refresh quickly, with the expensive update of the row structure deferred so
      * that layouts with GridPanels appear, and lay out more quickly.
+     */
+
+    /**
+     * @cfg {Object} verticalScroller
+     * A config object to be used when configuring the {@link Ext.grid.PagingScroller scroll monitor} to control
+     * refreshing of data in an "infinite grid".
+     * 
+     * Configurations of this object allow fine tuning of data caching which can improve performance and usability
+     * of the infinite grid.
      */
 
     deferRowRender: true,
@@ -181,6 +207,20 @@ Ext.define('Ext.panel.Table', {
      * True to disable selection model.
      */
 
+    /**
+     * @cfg {String} emptyText Default text (html tags are accepted) to display in the Panel body when the Store
+     * is empty. When specified, and the Store is empty, the text will be rendered inside a DIV with the CSS class "x-grid-empty".
+     */
+
+    /**
+     * @property {Boolean} optimizedColumnMove
+     * If you are writing a grid plugin or a {Ext.grid.feature.Feature Feature} which creates a column-based structure which
+     * needs a view refresh when columns are moved, then set this property in the grid.
+     *
+     * An example is the built in {@link Ext.grid.feature.AbstractSummary Summary} Feature. This creates summary rows, and the
+     * summary columns must be in the same order as the data columns. This plugin sets the `optimizedColumnMove` to `false.
+     */
+
     initComponent: function() {
         //<debug>
         if (!this.viewType) {
@@ -197,11 +237,8 @@ Ext.define('Ext.panel.Table', {
             horizontal  = false,
             headerCtCfg = me.columns || me.colModel,
             view,
-            border = me.border;
-
-        if (me.hideHeaders) {
-            border = false;
-        }
+            border = me.border,
+            i, len;
 
         if (me.columnLines) {
             me.addCls(Ext.baseCSSPrefix + 'grid-with-col-lines');
@@ -210,10 +247,10 @@ Ext.define('Ext.panel.Table', {
         if (me.rowLines) {
             me.addCls(Ext.baseCSSPrefix + 'grid-with-row-lines');
         }
-        
+
         // Look up the configured Store. If none configured, use the fieldless, empty Store defined in Ext.data.Store.
         me.store = Ext.data.StoreManager.lookup(me.store || 'ext-empty-store');
-        
+
         //<debug>
         if (!headerCtCfg) {
             Ext.Error.raise("A column configuration must be specified");
@@ -251,17 +288,11 @@ Ext.define('Ext.panel.Table', {
                  me.injectLockable();
              }
         }
-        
+
         me.scrollTask = new Ext.util.DelayedTask(me.syncHorizontalScroll, me);
 
         me.addEvents(
-            /**
-             * @event reconfigure
-             * Fires after a reconfigure.
-             * @param {Ext.panel.Table} this
-             * @param {Ext.data.Store} store The store that was passed to the {@link #method-reconfigure} method
-             * @param {Object[]} columns The column configs that were passed to the {@link #method-reconfigure} method
-             */
+            // documented on GridPanel
             'reconfigure',
             /**
              * @event viewready
@@ -295,14 +326,13 @@ Ext.define('Ext.panel.Table', {
 
             // If the Store is paging blocks of the dataset in, then it can only be sorted remotely.
             if (me.store.buffered && !me.store.remoteSort) {
-                for (var i = 0, len = me.columns.length; i < len; i++) {
+                for (i = 0, len = me.columns.length; i < len; i++) {
                     me.columns[i].sortable = false;
                 }
             }
 
             if (me.hideHeaders) {
                 me.headerCt.height = 0;
-                me.headerCt.border = false;
                 me.headerCt.addCls(Ext.baseCSSPrefix + 'grid-header-ct-hidden');
                 me.addCls(Ext.baseCSSPrefix + 'grid-header-hidden');
                 // IE Quirks Mode fix
@@ -378,7 +408,7 @@ Ext.define('Ext.panel.Table', {
             });
             me.mon(view, {
                 viewready: me.onViewReady,
-                refresh: me.onViewRefresh,
+                refresh: me.onRestoreHorzScroll,
                 scope: me
             });
         }
@@ -548,12 +578,11 @@ Ext.define('Ext.panel.Table', {
         ]);
 
         me.callParent(arguments);
-    },
+        me.addStateEvents(['columnresize', 'columnmove', 'columnhide', 'columnshow', 'sortchange']);
 
-    // state management
-    initStateEvents: function(){
-        this.stateEvents = Ext.Array.merge(this.stateEvents, ['columnresize', 'columnmove', 'columnhide', 'columnshow', 'sortchange']);
-        this.callParent();
+        if (me.headerCt) {
+            me.headerCt.on('afterlayout', me.onRestoreHorzScroll, me);
+        }
     },
 
     relayHeaderCtEvents: function (headerCt) {
@@ -652,6 +681,9 @@ Ext.define('Ext.panel.Table', {
         if (!me.view) {
             sm = me.getSelectionModel();
             me.view = Ext.widget(Ext.apply({}, me.viewConfig, {
+
+                // Features need a reference to the grid, so configure a reference into the View
+                grid: me,
                 deferInitialRefresh: me.deferRowRender !== false,
                 scroll: me.scroll,
                 xtype: me.viewType,
@@ -659,7 +691,8 @@ Ext.define('Ext.panel.Table', {
                 headerCt: me.headerCt,
                 selModel: sm,
                 features: me.features,
-                panel: me
+                panel: me,
+                emptyText : me.emptyText ? '<div class="' + Ext.baseCSSPrefix + 'grid-empty">' + me.emptyText + '</div>' : ''
             }));
             me.mon(me.view, {
                 uievent: me.processEvent,
@@ -772,11 +805,26 @@ Ext.define('Ext.panel.Table', {
     saveScrollPos: Ext.emptyFn,
 
     restoreScrollPos: Ext.emptyFn,
-
-    // refresh the view when a header moves
-    onHeaderMove: function(headerCt, header, colsToMove, fromIdx, toIdx) {
-        this.view.moveColumn(fromIdx, toIdx, colsToMove);
+    
+    onHeaderResize: function(){
         this.delayScroll();
+    },
+
+    // Update the view when a header moves
+    onHeaderMove: function(headerCt, header, colsToMove, fromIdx, toIdx) {
+        var me = this;
+
+        // If there are Features or Plugins which create DOM which must match column order, they set the optimizedColumnMove flag to false.
+        // In this case we must refresh the view on column move.
+        if (me.optimizedColumnMove === false) {
+            me.view.refresh();
+        }
+
+        // Simplest case for default DOM structure is just to swap the columns round in the view.
+        else {
+            me.view.moveColumn(fromIdx, toIdx, colsToMove);
+        }
+        me.delayScroll();
     },
 
     // Section onHeaderHide is invoked after view.
@@ -795,7 +843,7 @@ Ext.define('Ext.panel.Table', {
         }
     },
 
-/**
+    /**
      * @private
      * Fires the TablePanel's viewready event when the view declares that its internal DOM is ready
      */
@@ -805,22 +853,12 @@ Ext.define('Ext.panel.Table', {
 
     /**
      * @private
-     * Tracks when the first data arrives in the grid, and if it needs to be initially refitted to fit within the Panel's scrollWidth, updates
-     * the header container's layhout.
+     * Tracks when things happen to the view and preserves the horizontal scroll position.
      */
-    onViewRefresh: function() {
-        var me = this,
-            headerCt = me.headerCt,
-            left = me.scrollLeftPos;
-            
-        // First "real", (that is with data) refresh of View should relay the header container if there is any flexing, or grouping.
-        if (me.store.getCount() && !me.firstDataArrived && headerCt.down('gridcolumn[flex]') || headerCt.down('gridcolumn[isGroupHeader]')) {
-            me.firstDataArrived = true;
-            me.headerCt.updateLayout();
-        }
-        
+    onRestoreHorzScroll: function() {
+        var left = this.scrollLeftPos;
         if (left) {
-            me.syncHorizontalScroll(left);
+            this.syncHorizontalScroll(left);
         }
     },
 
@@ -921,12 +959,14 @@ Ext.define('Ext.panel.Table', {
     
     syncHorizontalScroll: function(left) {
         var me = this,
+            scrollTarget;
+            
+        if (me.rendered) {   
             scrollTarget = me.getScrollTarget();
-        
-        
-        scrollTarget.el.dom.scrollLeft = left;
-        me.headerCt.el.dom.scrollLeft = left;
-        me.scrollLeftPos = left;
+            scrollTarget.el.dom.scrollLeft = left;
+            me.headerCt.el.dom.scrollLeft = left;
+            me.scrollLeftPos = left;
+        }
     },
 
     // template method meant to be overriden
@@ -947,12 +987,7 @@ Ext.define('Ext.panel.Table', {
         this.callParent();    
     },
 
-    /**
-     * Reconfigures the table with a new store/columns. Either the store or the columns can be ommitted if you don't wish
-     * to change them.
-     * @param {Ext.data.Store} store (Optional) The new store.
-     * @param {Object[]} columns (Optional) An array of column configs
-     */
+    // documented on GridPanel
     reconfigure: function(store, columns) {
         var me = this,
             headerCt = me.headerCt;

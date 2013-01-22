@@ -90,27 +90,55 @@ Ext.define('Ext.layout.container.Fit', {
        return this.sizePolicies[mode];
     },
 
-    beginLayout: function(ownerContext) {
+    beginLayoutCycle: function(ownerContext, firstCycle) {
         var me = this,
-            childItems,
-            length,
-            i = 0, itemContext;
+            widthModel = ownerContext.widthModel,
+            heightModel = ownerContext.heightModel,
+            childItems = ownerContext.childItems,
+            childWidthCalculated = !widthModel.shrinkWrap,
+            childHeightCalculated = !heightModel.shrinkWrap,
+            length = childItems.length,
+            clearItemSizes = (ownerContext.targetContext.el.dom.tagName === 'TD'),
+            i, invalidateOptions, itemContext, targetEl;
 
         me.callParent(arguments);
 
-        // Clear any dimensions which we set before calculation, in case the current settings affect the available size.
-        // This particularly effects self-sizing containers such as fields, in which the target element is naturally sized,
-        // and should not be stretched by a sized child item.
-        if (ownerContext.targetContext.el.dom.tagName === 'TD') {
-            childItems = ownerContext.childItems;
-            length = childItems.length;
-            for (i = 0; i < length; ++i) {
-                itemContext = childItems[i];
+        for (i = 0; i < length; ++i) {
+            itemContext = childItems[i];
+
+            if (!firstCycle) {
+                if (itemContext.widthModel.calculated == childWidthCalculated) {
+                    invalidateOptions = null;
+                } else {
+                    invalidateOptions = {
+                        widthModel: childWidthCalculated ? me.sizeModels.calculated
+                                                         : itemContext.sizeModel.width
+                    };
+                }
+
+                if (itemContext.heightModel.calculated != childHeightCalculated) {
+                    (invalidateOptions || (invalidateOptions = {})).heightModel =
+                        childHeightCalculated ? me.sizeModels.calculated
+                                              : itemContext.sizeModel.height
+                }
+
+                if (invalidateOptions) {
+                    invalidateOptions.before = me.onBeforeInvalidateChild;
+                    itemContext.invalidate(invalidateOptions);
+                }
+            }
+
+            // Clear any dimensions which we set before calculation, in case the current
+            // settings affect the available size. This particularly effects self-sizing
+            // containers such as fields, in which the target element is naturally sized,
+            // and should not be stretched by a sized child item.
+            if (clearItemSizes) {
+                targetEl = itemContext.target.el.dom;
                 if (itemContext.heightModel.calculated) {
-                    itemContext.target.el.dom.style.height = '';
+                    targetEl.style.height = '';
                 }
                 if (itemContext.widthModel.calculated) {
-                    itemContext.target.el.dom.style.width = '';
+                    targetEl.style.width = '';
                 }
             }
         }
@@ -150,9 +178,9 @@ Ext.define('Ext.layout.container.Fit', {
             if (calcHeight) {
                 padHeight = padding.height;
             }
-            
         }
 
+        // contentWidth and contentHeight include the margins
         if (!ownerContext.setContentSize(info.contentWidth + padWidth, info.contentHeight + padHeight)) {
             me.done = false;
         }
@@ -160,6 +188,11 @@ Ext.define('Ext.layout.container.Fit', {
 
     fitItem: function (itemContext, info) {
         var me = this;
+
+        if (itemContext.invalid) {
+            me.done = false;
+            return;
+        }
 
         info.margins = itemContext.getMarginInfo();
         info.needed = info.got = 0;
@@ -176,7 +209,8 @@ Ext.define('Ext.layout.container.Fit', {
     fitItemWidth: function (itemContext, info) {
         // Attempt to set only dimensions that are being controlled, not shrinkWrap dimensions
         if (info.ownerContext.widthModel.shrinkWrap) {
-            info.contentWidth = Math.max(info.contentWidth, itemContext.getProp('width'));
+            // contentWidth must include the margins to be consistent with setItemWidth
+            info.contentWidth = Math.max(info.contentWidth, itemContext.getProp('width') + info.margins.width);
         } else if (itemContext.widthModel.calculated) {
             ++info.needed;
             if (info.targetSize.gotWidth) {
@@ -190,7 +224,8 @@ Ext.define('Ext.layout.container.Fit', {
 
     fitItemHeight: function (itemContext, info) {
         if (info.ownerContext.heightModel.shrinkWrap) {
-            info.contentHeight = Math.max(info.contentHeight, itemContext.getProp('height'));
+            // contentHeight must include the margins to be consistent with setItemHeight
+            info.contentHeight = Math.max(info.contentHeight, itemContext.getProp('height') + info.margins.height);
         } else if (itemContext.heightModel.calculated) {
             ++info.needed;
             if (info.targetSize.gotHeight) {
@@ -202,6 +237,17 @@ Ext.define('Ext.layout.container.Fit', {
         this.positionItemY(itemContext, info);
     },
 
+    onBeforeInvalidateChild: function (itemContext, options) {
+        ++itemContext.context.progressCount;
+
+        if (options.widthModel) {
+            itemContext.widthModel = options.widthModel;
+        }
+        if (options.heightModel) {
+            itemContext.heightModel = options.heightModel;
+        }
+    },
+
     positionItemX: function (itemContext, info) {
         var margins = info.margins;
 
@@ -210,6 +256,11 @@ Ext.define('Ext.layout.container.Fit', {
         if (info.index || margins.left) {
             itemContext.setProp('x', margins.left);
         }
+
+        if (margins.width) {
+            // Need the margins for shrink-wrapping but old IE sometimes collapses the left margin into the padding
+            itemContext.setProp('margin-right', margins.width);
+        }
     },
 
     positionItemY: function (itemContext, info) {
@@ -217,6 +268,11 @@ Ext.define('Ext.layout.container.Fit', {
 
         if (info.index || margins.top) {
             itemContext.setProp('y', margins.top);
+        }
+
+        if (margins.height) {
+            // Need the margins for shrink-wrapping but old IE sometimes collapses the top margin into the padding
+            itemContext.setProp('margin-bottom', margins.height);
         }
     },
 

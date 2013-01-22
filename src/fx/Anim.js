@@ -56,7 +56,7 @@ Ext.define('Ext.fx.Anim', {
 
     /**
      * @property {Boolean} isAnimation
-     * `true` in this class to identify an objact as an instantiated Anim, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Anim, or subclass thereof.
      */
     isAnimation: true,
 
@@ -440,12 +440,17 @@ from : {
         }
     },
 
+    endWasCalled: 0,
+
     /**
      * Fire afteranimate event and end the animation. Usually called automatically when the
      * animation reaches its final frame, but can also be called manually to pre-emptively
      * stop and destroy the running animation.
      */
     end: function() {
+        if (this.endWasCalled++) {
+            return;
+        }
         var me = this;
         me.startTime = 0;
         me.paused = false;

@@ -221,7 +221,7 @@ Ext.define('Ext.data.NodeInterface', {
             return {
                 /**
                  * @property {Boolean} isNode
-                 * `true` in this class to identify an objact as an instantiated Node, or subclass thereof.
+                 * `true` in this class to identify an object as an instantiated Node, or subclass thereof.
                  */
                 isNode: true,
                 
@@ -498,7 +498,7 @@ Ext.define('Ext.data.NodeInterface', {
                         // Make sure it is a record
                         node = me.createNode(node);
 
-                        if (suppressEvents !== true && me.fireEvent("beforeappend", me, node) === false) {
+                        if (suppressEvents !== true && (!me.hasListeners.beforeappend || me.fireEvent("beforeappend", me, node) === false)) {
                             return false;
                         }
 
@@ -507,7 +507,7 @@ Ext.define('Ext.data.NodeInterface', {
 
                         // it's a move, make sure we move it cleanly
                         if (oldParent) {
-                            if (suppressEvents !== true && node.fireEvent("beforemove", node, oldParent, me, index) === false) {
+                            if (suppressEvents !== true && (!me.hasListeners.beforeremove || node.fireEvent("beforemove", node, oldParent, me, index) === false)) {
                                 return false;
                             }
                             oldParent.removeChild(node, false, false, true);
@@ -538,10 +538,10 @@ Ext.define('Ext.data.NodeInterface', {
                         // As soon as we append a child to this node, we are loaded
                         if (!me.isLoaded()) {
                             me.set('loaded', true);
-                        }
-                        // If this node didnt have any childnodes before, update myself
-                        else if (me.childNodes.length === 1) {
-                            me.set('loaded', me.isLoaded());
+                        } else if (me.childNodes.length === 1) {
+                            // This isn't ideal, however none of the underlying fields have changed
+                            // but we still need to update the UI
+                            me.afterEdit([]);
                         }
 
                         if(!node.isLeaf() && node.phantom) {
@@ -580,7 +580,7 @@ Ext.define('Ext.data.NodeInterface', {
                         index = me.indexOf(node),
                         i, childCount;
 
-                    if (index == -1 || (suppressEvents !== true && me.fireEvent("beforeremove", me, node, !!isMove) === false)) {
+                    if (index == -1 || (suppressEvents !== true && (!me.hasListeners.beforeremove || me.fireEvent("beforeremove", me, node, !!isMove) === false))) {
                         return false;
                     }
 
@@ -614,7 +614,9 @@ Ext.define('Ext.data.NodeInterface', {
                     }
 
                     if (suppressEvents !== true) {
-                        me.fireEvent("remove", me, node, !!isMove);
+                        if (me.hasListeners.remove) {
+                            me.fireEvent("remove", me, node, !!isMove);
+                        }
                     }
 
                     if (destroy) {
@@ -673,14 +675,19 @@ Ext.define('Ext.data.NodeInterface', {
                      * 2) When destroy on the tree is called
                      * 3) For destroying child nodes on a node
                      */
-                    var me = this,
-                        options = me.destroyOptions;
+                    var me      = this,
+                        options = me.destroyOptions,
+                        nodes   = me.childNodes,
+                        nLen    = nodes.length,
+                        n;
 
                     if (silent === true) {
                         me.clear(true);
-                        Ext.each(me.childNodes, function(n) {
-                            n.destroy(true);
-                        });
+
+                        for (n = 0; n < nLen; n++) {
+                            nodes[n].destroy(true);
+                        }
+
                         me.childNodes = null;
                         delete me.destroyOptions;
                         me.callOverridden([options]);
@@ -716,7 +723,7 @@ Ext.define('Ext.data.NodeInterface', {
                     // Make sure it is a record with the NodeInterface
                     node = me.createNode(node);
 
-                    if (suppressEvents !== true && me.fireEvent("beforeinsert", me, node, refNode) === false) {
+                    if (suppressEvents !== true && (!me.hasListeners.beforeinsert || me.fireEvent("beforeinsert", me, node, refNode) === false)) {
                         return false;
                     }
 
@@ -727,7 +734,7 @@ Ext.define('Ext.data.NodeInterface', {
 
                     // it's a move, make sure we move it cleanly
                     if (oldParent) {
-                        if (suppressEvents !== true && node.fireEvent("beforemove", node, oldParent, me, index, refNode) === false) {
+                        if (suppressEvents !== true && (!me.hasListeners.beforeremove || node.fireEvent("beforemove", node, oldParent, me, index, refNode) === false)) {
                             return false;
                         }
                         oldParent.removeChild(node, false, false, true);
@@ -769,9 +776,11 @@ Ext.define('Ext.data.NodeInterface', {
                     }
 
                     if (suppressEvents !== true) {
-                        me.fireEvent("insert", me, node, refNode);
+                        if (me.hasListeners.insert) {
+                            me.fireEvent("insert", me, node, refNode);
+                        }
 
-                        if (oldParent) {
+                        if (oldParent && me.hasListeners.move) {
                             node.fireEvent("move", node, oldParent, me, refIndex, refNode);
                         }
                     }
@@ -854,6 +863,24 @@ Ext.define('Ext.data.NodeInterface', {
                  */
                 indexOf : function(child) {
                     return Ext.Array.indexOf(this.childNodes, child);
+                },
+                
+                /**
+                 * Returns the index of a child node that matches the id
+                 * @param {String} id The id of the node to find
+                 * @return {Number} The index of the node or -1 if it was not found
+                 */
+                indexOfId: function(id) {
+                    var childNodes = this.childNodes,
+                        len = childNodes.length,
+                        i = 0;
+                        
+                    for (; i < len; ++i) {
+                        if (childNodes[i].getId() === id) {
+                            return i;
+                        }    
+                    }
+                    return -1;
                 },
 
                 /**
@@ -1126,9 +1153,11 @@ Ext.define('Ext.data.NodeInterface', {
                                 // whether we have to asynchronously load the children from the server
                                 // first. Thats why we pass a callback function to the event that the
                                 // store can call once it has loaded and parsed all the children.
-                                me.fireEvent('beforeexpand', me, function(){
+                                me.fireEvent('beforeexpand', me, function() {
                                     me.set('expanded', true);
-                                    me.fireEvent('expand', me, me.childNodes, false);
+                                    if (me.hasListeners.expand) {
+                                        me.fireEvent('expand', me, me.childNodes, false);
+                                    }
 
                                     // Call the expandChildren method if recursive was set to true
                                     if (recursive) {
@@ -1196,7 +1225,9 @@ Ext.define('Ext.data.NodeInterface', {
                         if (!me.collapsing && me.isExpanded()) {
                             me.fireEvent('beforecollapse', me, function() {
                                 me.set('expanded', false);
-                                me.fireEvent('collapse', me, me.childNodes, false);
+                                if (me.hasListeners.collapse) {
+                                    me.fireEvent('collapse', me, me.childNodes, false);
+                                }
 
                                 // Call the collapseChildren method if recursive was set to true
                                 if (recursive) {

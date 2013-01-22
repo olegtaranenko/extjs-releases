@@ -205,9 +205,9 @@ Ext.define('Ext.window.Window', {
     /**
      * @cfg
      * @inheritdoc
-     * Windows hide using visibility.
+     * Windows hide using offsets in order to preserve the scroll positions of their descendants.
      */
-    hideMode: 'visibility',
+    hideMode: 'offsets',
 
     /**
      * @cfg
@@ -223,9 +223,11 @@ Ext.define('Ext.window.Window', {
 
     ignoreHeaderBorderManagement: true,
 
+    //frame: true,
+
     /**
      * @property {Boolean} isWindow
-     * `true` in this class to identify an objact as an instantiated Window, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Window, or subclass thereof.
      */
     isWindow: true,
 
@@ -293,27 +295,26 @@ Ext.define('Ext.window.Window', {
                 scope: me
             });
         }
+
+        // Only set frame to true after the protoEl has been set up with the UI classes attached.
+        // Generated CSS classes for elements within Window's structure
+        // do not expect to use the "framed" UI.
+        me.frame = true;
+
+        me.addStateEvents(['maximize', 'restore', 'resize', 'dragend']);
     },
 
     getElConfig: function () {
-        var config = this.callParent();
-        config.tabIndex = -1;
-        return config;
+        var me = this,
+            elConfig;
+
+        elConfig = me.callParent();
+        elConfig.tabIndex = -1;
+        return elConfig;
     },
 
     // State Management
     // private
-
-    initStateEvents: function(){
-        var events = this.stateEvents;
-        // push on stateEvents if they don't exist
-        Ext.each(['maximize', 'restore', 'resize', 'dragend'], function(event){
-            if (Ext.Array.indexOf(events, event) === -1) {
-                events.push(event);
-            }
-        });
-        this.callParent();
-    },
 
     getState: function() {
         var me = this,
@@ -369,11 +370,8 @@ Ext.define('Ext.window.Window', {
         // Double clicking a header will toggleMaximize
         if (me.maximizable) {
             me.header.on({
-                dblclick: {
-                    fn: me.toggleMaximize,
-                    element: 'el',
-                    scope: me
-                }
+                scope: me,
+                dblclick: me.toggleMaximize
             });
         }
     },
@@ -416,7 +414,7 @@ Ext.define('Ext.window.Window', {
 
         /*
          * Check the header here again. If for whatever reason it wasn't created in
-         * updateHeader (preventHeader) then we'll just ignore the rest since the
+         * updateHeader (we were configured with header: false) then we'll just ignore the rest since the
          * header acts as the drag handle.
          */
         if (me.header) {
@@ -500,25 +498,44 @@ Ext.define('Ext.window.Window', {
     },
 
     /**
+     * @private
+     * Returns the focus holder element associated with this Window. By default, this is the Window's element.
+     * @returns {Ext.Element/Ext.Component} the focus holding element or Component.
+     */
+    getFocusEl: function() {
+        return this.getDefaultFocus();
+    },
+
+    /**
      * Gets the configured default focus item.  If a {@link #defaultFocus} is set, it will
      * receive focus when the Window's <code>focus</code> method is called, otherwise the
      * Window itself will receive focus.
      */
     getDefaultFocus: function() {
         var me = this,
-            f = me.focusEl,
-            defaultComp = me.defaultButton || me.defaultFocus;
+            result,
+            defaultComp = me.defaultButton || me.defaultFocus,
+            selector;
 
-        if (Ext.isDefined(defaultComp)) {
+        if (defaultComp !== undefined) {
+            // Number is index of Button
             if (Ext.isNumber(defaultComp)) {
-                f = me.query('button')[defaultComp];
-            } else if (Ext.isString(defaultComp)) {
-                f = me.down('#' + defaultComp);
-            } else {
-                f = defaultComp;
+                result = me.query('button')[defaultComp];
+            }
+            // String is ID or CQ selector
+            else if (Ext.isString(defaultComp)) {
+                selector = defaultComp;
+                if (selector.substr(0, 1) !== '#') {
+                    selector = '#' + selector;
+                }
+                result = me.down(selector);
+            }
+            // Otherwise, if it's got a focus method, use it
+            else if (defaultComp.focus) {
+                result = defaultComp;
             }
         }
-        return f || me;
+        return result || me.el;
     },
 
     /**
@@ -540,20 +557,13 @@ Ext.define('Ext.window.Window', {
     },
 
     // private
-    beforeShow: function() {
-        this.callParent();
-
-        if (this.expandOnShow) {
-            this.expand(false);
-        }
-    },
-
-    // private
     afterShow: function(animateTarget) {
         var me = this,
             animating = animateTarget || me.animateTarget;
 
-
+        if (this.expandOnShow) {
+            this.expand(false);
+        }
         // No constraining code needs to go here.
         // Component.onShow constrains the Component. *If the constrain config is true*
 

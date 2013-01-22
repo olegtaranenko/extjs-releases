@@ -8,7 +8,7 @@ Ext.define('Ext.grid.feature.RowWrap', {
     // turn off feature events.
     hasFeatureEvent: false,
 
-    init: function(){
+    init: function() {
         if (!this.disabled) {
             this.enable();
         }

@@ -3,7 +3,7 @@
  * This class manages a set of captured properties from an object. These captured properties
  * can later be restored to an object.
  */
-Ext.define('Ext.util.Memento', function () {
+Ext.define('Ext.util.Memento', (function () {
 
     function captureOne (src, target, prop, prefix) {
         src[prefix ? prefix + prop : prop] = target[prop];
@@ -33,9 +33,10 @@ Ext.define('Ext.util.Memento', function () {
     function doMany (doOne, src, target, props, prefix) {
         if (src) {
             if (Ext.isArray(props)) {
-                Ext.each(props, function (prop) {
-                    doOne(src, target, prop, prefix);
-                });
+                var p, pLen = props.length;
+                for (p = 0; p < pLen; p++) {
+                    doOne(src, target, props[p], prefix);
+                }
             } else {
                 doOne(src, target, props, prefix);
             }
@@ -111,16 +112,20 @@ Ext.define('Ext.util.Memento', function () {
          * @param {Object} target The object to which to restore properties.
          */
         restoreAll: function (clear, target) {
-            var me = this,
-                t = target || this.target;
+            var me   = this,
+                t    = target || this.target,
+                data = me.data,
+                prop;
 
-            Ext.Object.each(me.data, function (prop, value) {
-                restoreValue(t, prop, value);
-            });
+            for (prop in data) {
+                if (data.hasOwnProperty(prop)) {
+                    restoreValue(t, prop, data[prop]);
+                }
+            }
 
             if (clear !== false) {
                 delete me.data;
             }
         }
     };
-}());
+}()));

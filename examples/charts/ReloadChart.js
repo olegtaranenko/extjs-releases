@@ -1,20 +1,9 @@
 Ext.require('Ext.chart.*');
-Ext.require('Ext.layout.container.Fit');
+Ext.require(['Ext.layout.container.Fit', 'Ext.window.MessageBox']);
 
 Ext.onReady(function () {
-    var panel1 = Ext.create('widget.panel', {
-        width: 800,
-        height: 400,
-        title: 'Column Chart with Reload - Hits per Month',
-        renderTo: Ext.getBody(),
-        layout: 'fit',
-        tbar: [{
-            text: 'Reload Data',
-            handler: function() {
-                store1.loadData(generateData());
-            }
-        }],
-        items: {
+
+    var chart = Ext.create('Ext.chart.Chart', {
             xtype: 'chart',
             animate: true,
             shadow: true,
@@ -57,6 +46,32 @@ Ext.onReady(function () {
                     fill: '#38B8BF'
                 }
             }]
-        }
+        });
+
+
+    var panel1 = Ext.create('widget.panel', {
+        width: 800,
+        height: 400,
+        title: 'Column Chart with Reload - Hits per Month',
+        renderTo: Ext.getBody(),
+        layout: 'fit',
+        tbar: [{
+            text: 'Save Chart',
+            handler: function() {
+                Ext.MessageBox.confirm('Confirm Download', 'Would you like to download the chart as an image?', function(choice){
+                    if(choice == 'yes'){
+                        chart.save({
+                            type: 'image/png'
+                        });
+                    }
+                });
+            }
+        }, {
+            text: 'Reload Data',
+            handler: function() {
+                store1.loadData(generateData());
+            }
+        }],
+        items: chart
     });
 });

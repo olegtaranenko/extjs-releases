@@ -6,31 +6,13 @@ Ext.define('Ext.ShadowPool', {
     singleton: true,
     requires: ['Ext.DomHelper'],
 
-    markup: function() {
-        if (Ext.supports.CSS3BoxShadow) {
-            return '<div class="' + Ext.baseCSSPrefix + 'css-shadow" role="presentation"></div>';
-        } else if (Ext.isIE) {
-            return '<div class="' + Ext.baseCSSPrefix + 'ie-shadow" role="presentation"></div>';
-        } else {
-            return '<div class="' + Ext.baseCSSPrefix + 'frame-shadow" role="presentation">' +
-                '<div class="xst" role="presentation">' +
-                    '<div class="xstl" role="presentation"></div>' +
-                    '<div class="xstc" role="presentation"></div>' +
-                    '<div class="xstr" role="presentation"></div>' +
-                '</div>' +
-                '<div class="xsc" role="presentation">' +
-                    '<div class="xsml" role="presentation"></div>' +
-                    '<div class="xsmc" role="presentation"></div>' +
-                    '<div class="xsmr" role="presentation"></div>' +
-                '</div>' +
-                '<div class="xsb" role="presentation">' +
-                    '<div class="xsbl" role="presentation"></div>' +
-                    '<div class="xsbc" role="presentation"></div>' +
-                    '<div class="xsbr" role="presentation"></div>' +
-                '</div>' +
-            '</div>';
-        }
-    }(),
+    markup: (function() {
+        return Ext.String.format(
+            '<div class="{0}{1}-shadow" role="presentation"></div>',
+            Ext.baseCSSPrefix,
+            Ext.isIE && !Ext.supports.CSS3BoxShadow ? 'ie' : 'css'
+        );
+    }()),
 
     shadows: [],
 
@@ -48,9 +30,14 @@ Ext.define('Ext.ShadowPool', {
     },
     
     reset: function() {
-        Ext.Array.each(this.shadows, function(shadow) {
-            shadow.remove();
-        });
+        var shadows = [].concat(this.shadows),
+            s,
+            sLen    = shadows.length;
+
+        for (s = 0; s < sLen; s++) {
+            shadows[s].remove();
+        }
+
         this.shadows = [];
     }
 });

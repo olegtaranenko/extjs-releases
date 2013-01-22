@@ -5,27 +5,32 @@
 Ext.define('Ext.grid.feature.AbstractSummary', {
     
     /* Begin Definitions */
-   
+
     extend: 'Ext.grid.feature.Feature',
     
     alias: 'feature.abstractsummary',
-   
+
     /* End Definitions */
-   
+
    /**
     * @cfg
     * True to show the summary row.
     */
     showSummaryRow: true,
-    
+
     // @private
     nestedIdRe: /\{\{id\}([\w\-]*)\}/g,
 
     // Listen for store updates. Eg, from an Editor.
     init: function() {
-        this.view.mon(this.view.store, {
-            update: this.onStoreUpdate,
-            scope: this
+        var me = this;
+
+        // Summary rows must be kept in column order, so view must be refreshed on column move
+        me.grid.optimizedColumnMove = false;
+
+        me.view.mon(me.view.store, {
+            update: me.onStoreUpdate,
+            scope: me
         });
     },
 
@@ -38,7 +43,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
             v.restoreScrollState();
         }
     },
-    
+
     /**
      * Toggle whether or not to show the summary row.
      * @param {Boolean} visible True to show the summary row
@@ -46,7 +51,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     toggleSummaryRow: function(visible){
         this.showSummaryRow = !!visible;
     },
-    
+
     /**
      * Gets any fragments to be used in the tpl
      * @private
@@ -61,7 +66,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         }
         return fragments;
     },
-    
+
     /**
      * Prints a summary row
      * @private
@@ -71,7 +76,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     printSummaryRow: function(index){
         var inner = this.view.getTableChunker().metaRowTpl.join(''),
             prefix = Ext.baseCSSPrefix;
-        
+
         inner = inner.replace(prefix + 'grid-row', prefix + 'grid-row-summary');
         inner = inner.replace('{{id}}', '{gridSummaryValue}');
         inner = inner.replace(this.nestedIdRe, '{id$1}');  
@@ -80,12 +85,12 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         inner = new Ext.XTemplate(inner, {
             firstOrLastCls: Ext.view.TableChunker.firstOrLastCls
         });
-        
+
         return inner.applyTemplate({
             columns: this.getPrintData(index)
         });
     },
-    
+
     /**
      * Gets the value for the column from the attached data.
      * @param {Ext.grid.column.Column} column The header
@@ -94,7 +99,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
      */
     getColumnValue: function(column, summaryData){
         var comp     = Ext.getCmp(column.id),
-            value    = summaryData[column.id],
+            value    = summaryData[column.id] || '\u00a0',
             renderer = comp.summaryRenderer;
 
         if (renderer) {
@@ -107,7 +112,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         }
         return value;
     },
-    
+
     /**
      * Get the summary data for a field.
      * @private
@@ -123,7 +128,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
             if (Ext.isFunction(type)) {
                 return store.aggregate(type, null, group);
             }
-            
+
             switch (type) {
                 case 'count':
                     return store.count(group);
@@ -141,5 +146,5 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
             }
         }
     }
-    
+
 });

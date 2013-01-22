@@ -22,6 +22,7 @@
  *
  * ## Example usage:
  *
+ *     @example
  *     Ext.create('Ext.form.Panel', {
  *         title: 'Basic Form',
  *         renderTo: Ext.getBody(),
@@ -35,6 +36,7 @@
  *         url: 'save-form.php',
  *
  *         items: [{
+ *             xtype: 'textfield',
  *             fieldLabel: 'Field',
  *             name: 'theField'
  *         }],
@@ -51,7 +53,7 @@
  *                            Ext.Msg.alert('Success', action.result.msg);
  *                         },
  *                         failure: function(form, action) {
- *                             Ext.Msg.alert('Failed', action.result.msg);
+ *                             Ext.Msg.alert('Failed', action.result ? action.result.msg : 'No response');
  *                         }
  *                     });
  *                 }
@@ -425,13 +427,20 @@ Ext.define('Ext.form.Basic', {
      * @param {Boolean} valid
      */
     onValidityChange: function(valid) {
-        var boundItems = this.getBoundItems();
+        var boundItems = this.getBoundItems(),
+            items, i, iLen, cmp;
+
         if (boundItems) {
-            boundItems.each(function(cmp) {
+            items = boundItems.items;
+            iLen  = items.length;
+
+            for (i = 0; i < iLen; i++) {
+                cmp = items[i];
+
                 if (cmp.disabled === valid) {
                     cmp.setDisabled(!valid);
                 }
-            });
+            }
         }
     },
 
@@ -630,21 +639,31 @@ Ext.define('Ext.form.Basic', {
 
     /**
      * Persists the values in this form into the passed {@link Ext.data.Model} object in a beginEdit/endEdit block.
-     * @param {Ext.data.Model} record The record to edit
+     * If the record is not specified, it will attempt to update (if it exists) the record provided to loadRecord.
+     * @param {Ext.data.Model} [record] The record to edit
      * @return {Ext.form.Basic} this
      */
     updateRecord: function(record) {
-        var fields = record.fields,
+        record = record || this._record;
+        //<debug>
+        if (!record) {
+            Ext.Error.raise("A record is required.");
+        }
+        //</debug>
+        var fields = record.fields.items,
             values = this.getFieldValues(),
-            name,
-            obj = {};
+            obj = {},
+            i = 0,
+            len = fields.length,
+            name;
 
-        fields.each(function(f) {
-            name = f.name;
-            if (name in values) {
+        for (; i < len; ++i) {
+            name  = fields[i].name;
+
+            if (values.hasOwnProperty(name)) {
                 obj[name] = values[name];
             }
-        });
+        }
 
         record.beginEdit();
         record.set(obj);
@@ -681,14 +700,19 @@ Ext.define('Ext.form.Basic', {
     beforeAction: function(action) {
         var waitMsg = action.waitMsg,
             maskCls = Ext.baseCSSPrefix + 'mask-loading',
-            waitMsgTarget;
+            fields  = this.getFields().items,
+            f,
+            fLen    = fields.length,
+            field, waitMsgTarget;
 
         // Call HtmlEditor's syncValue before actions
-        this.getFields().each(function(f) {
-            if (f.isFormField && f.syncValue) {
-                f.syncValue();
+        for (f = 0; f < fLen; f++) {
+            field = fields[f];
+
+            if (field.isFormField && field.syncValue) {
+                field.syncValue();
             }
-        });
+        }
 
         if (waitMsg) {
             waitMsgTarget = this.waitMsgTarget;
@@ -756,7 +780,9 @@ Ext.define('Ext.form.Basic', {
      * @return {Ext.form.Basic} this
      */
     markInvalid: function(errors) {
-        var me = this;
+        var me = this,
+            e, eLen, error, value,
+            key;
 
         function mark(fieldId, msg) {
             var field = me.findField(fieldId);
@@ -766,17 +792,26 @@ Ext.define('Ext.form.Basic', {
         }
 
         if (Ext.isArray(errors)) {
-            Ext.each(errors, function(err) {
-                mark(err.id, err.msg);
-            });
-        }
-        else if (errors instanceof Ext.data.Errors) {
-            errors.each(function(err) {
-                mark(err.field, err.message);
-            });
-        }
-        else {
-            Ext.iterate(errors, mark);
+            eLen = errors.length;
+
+            for (e = 0; e < eLen; e++) {
+                error = errors[e];
+                mark(error.id, error.msg);
+            }
+        } else if (errors instanceof Ext.data.Errors) {
+            eLen  = errors.items.length;
+            for (e = 0; e < eLen; e++) {
+                error = errors.items[e];
+
+                mark(error.field, error.message);
+            }
+        } else {
+            for (key in errors) {
+                if (errors.hasOwnProperty(key)) {
+                    value = errors[key];
+                    mark(key, value, errors);
+                }
+            }
         }
         return this;
     },
@@ -801,7 +836,8 @@ Ext.define('Ext.form.Basic', {
      * @return {Ext.form.Basic} this
      */
     setValues: function(values) {
-        var me = this;
+        var me = this,
+            v, vLen, val, field;
 
         function setVal(fieldId, val) {
             var field = me.findField(fieldId);
@@ -815,9 +851,13 @@ Ext.define('Ext.form.Basic', {
 
         if (Ext.isArray(values)) {
             // array of objects
-            Ext.each(values, function(val) {
+            vLen = values.length;
+
+            for (v = 0; v < vLen; v++) {
+                val = values[v];
+
                 setVal(val.id, val.value);
-            });
+            }
         } else {
             // object hash
             Ext.iterate(values, setVal);
@@ -839,34 +879,48 @@ Ext.define('Ext.form.Basic', {
      * @return {String/Object}
      */
     getValues: function(asString, dirtyOnly, includeEmptyText, useDataValues) {
-        var values = {};
+        var values  = {},
+            fields  = this.getFields().items,
+            f,
+            fLen    = fields.length,
+            isArray = Ext.isArray,
+            field, data, val, bucket, name;
 
-        this.getFields().each(function(field) {
+        for (f = 0; f < fLen; f++) {
+            field = fields[f];
+
             if (!dirtyOnly || field.isDirty()) {
-                var data = field[useDataValues ? 'getModelData' : 'getSubmitData'](includeEmptyText);
+                data = field[useDataValues ? 'getModelData' : 'getSubmitData'](includeEmptyText);
+
                 if (Ext.isObject(data)) {
-                    Ext.iterate(data, function(name, val) {
-                        if (includeEmptyText && val === '') {
-                            val = field.emptyText || '';
-                        }
-                        if (name in values) {
-                            var bucket = values[name],
-                                isArray = Ext.isArray;
-                            if (!isArray(bucket)) {
-                                bucket = values[name] = [bucket];
+                    for (name in data) {
+                        if (data.hasOwnProperty(name)) {
+                            val = data[name];
+
+                            if (includeEmptyText && val === '') {
+                                val = field.emptyText || '';
                             }
-                            if (isArray(val)) {
-                                values[name] = bucket.concat(val);
+
+                            if (values.hasOwnProperty(name)) {
+                                bucket = values[name];
+
+                                if (!isArray(bucket)) {
+                                    bucket = values[name] = [bucket];
+                                }
+
+                                if (isArray(val)) {
+                                    values[name] = values[name] = bucket.concat(val);
+                                } else {
+                                    bucket.push(val);
+                                }
                             } else {
-                                bucket.push(val);
+                                values[name] = val;
                             }
-                        } else {
-                            values[name] = val;
                         }
-                    });
+                    }
                 }
             }
-        });
+        }
 
         if (asString) {
             values = Ext.Object.toQueryString(values);
@@ -893,11 +947,17 @@ Ext.define('Ext.form.Basic', {
      * @return {Ext.form.Basic} this
      */
     clearInvalid: function() {
-        var me = this;
         Ext.suspendLayouts();
-        me.getFields().each(function(f) {
-            f.clearInvalid();
-        });
+
+        var me     = this,
+            fields = me.getFields().items,
+            f,
+            fLen   = fields.length;
+
+        for (f = 0; f < fLen; f++) {
+            fields[f].clearInvalid();
+        }
+
         Ext.resumeLayouts(true);
         return me;
     },
@@ -907,11 +967,17 @@ Ext.define('Ext.form.Basic', {
      * @return {Ext.form.Basic} this
      */
     reset: function() {
-        var me = this;
         Ext.suspendLayouts();
-        me.getFields().each(function(f) {
-            f.reset();
-        });
+
+        var me     = this,
+            fields = me.getFields().items,
+            f,
+            fLen   = fields.length;
+
+        for (f = 0; f < fLen; f++) {
+            fields[f].reset();
+        }
+
         Ext.resumeLayouts(true);
         return me;
     },
@@ -922,9 +988,14 @@ Ext.define('Ext.form.Basic', {
      * @return {Ext.form.Basic} this
      */
     applyToFields: function(obj) {
-        this.getFields().each(function(f) {
-            Ext.apply(f, obj);
-        });
+        var fields = this.getFields().items,
+            f,
+            fLen   = fields.length;
+
+        for (f = 0; f < fLen; f++) {
+            Ext.apply(fields[f], obj);
+        }
+
         return this;
     },
 
@@ -934,9 +1005,14 @@ Ext.define('Ext.form.Basic', {
      * @return {Ext.form.Basic} this
      */
     applyIfToFields: function(obj) {
-        this.getFields().each(function(f) {
-            Ext.applyIf(f, obj);
-        });
+        var fields = this.getFields().items,
+            f,
+            fLen   = fields.length;
+
+        for (f = 0; f < fLen; f++) {
+            Ext.applyIf(fields[f], obj);
+        }
+
         return this;
     }
 });

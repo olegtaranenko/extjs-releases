@@ -5,7 +5,7 @@
  * http://www.json.org/js.html
  * @singleton
  */
-Ext.JSON = new(function() {
+Ext.JSON = (new(function() {
     var me = this,
     encodingFunction,
     decodingFunction,
@@ -31,6 +31,11 @@ Ext.JSON = new(function() {
             return Ext.JSON.encodeDate(o);
         } else if (Ext.isString(o)) {
             return encodeString(o);
+        } else if (typeof o == "number") {
+            //don't use isNumber here, since finite checks happen inside isNumber
+            return isFinite(o) ? String(o) : "null";
+        } else if (Ext.isBoolean(o)) {
+            return String(o);
         }
         // Allow custom zerialization by adding a toJSON method to any object type.
         // Date/String have a toJSON in some environments, so check these first.
@@ -38,11 +43,6 @@ Ext.JSON = new(function() {
             return o.toJSON();
         } else if (Ext.isArray(o)) {
             return encodeArray(o, newline);
-        } else if (typeof o == "number") {
-            //don't use isNumber here, since finite checks happen inside isNumber
-            return isFinite(o) ? String(o) : "null";
-        } else if (Ext.isBoolean(o)) {
-            return String(o);
         } else if (Ext.isObject(o)) {
             return encodeObject(o, newline);
         } else if (typeof o === "function") {
@@ -219,7 +219,7 @@ Ext.JSON = new(function() {
             });
         }
     };
-})();
+})());
 /**
  * Shorthand for {@link Ext.JSON#encode}
  * @member Ext
@@ -287,7 +287,38 @@ Ext.apply(Ext, {
      * True to automatically purge event listeners during garbageCollection.
      */
     enableListenerCollection: true,
-    
+
+    addCacheEntry: function(id, el, dom) {
+        dom = dom || el.dom;
+
+        //<debug>
+        if (!dom) {
+            // Without the DOM node we can't GC the entry
+            Ext.Error.raise('Cannot add an entry to the element cache without the DOM node');
+        }
+        //</debug>
+
+        var key = id || (el && el.id) || dom.id,
+            entry = Ext.cache[key] || (Ext.cache[key] = {
+                data: {},
+                events: {},
+
+                dom: dom,
+
+                // Skip garbage collection for special elements (window, document, iframes)
+                skipGarbageCollection: !!(dom.getElementById || dom.navigator)
+            });
+
+        if (el) {
+            el.$cache = entry;
+            // Inject the back link from the cache in case the cache entry
+            // had already been created by Ext.fly. Ext.fly creates a cache entry with no el link.
+            entry.el = el;
+        }
+
+        return entry;
+    },
+
     /**
      * Generates unique ids. If the element already has an id, it is unchanged
      * @param {HTMLElement/Ext.Element} [el] The element to generate an id for
@@ -313,39 +344,53 @@ Ext.apply(Ext, {
         return el.id;
     },
 
+    escapeId: (function(){
+        var validIdRe = /^[a-zA-Z_][a-zA-Z0-9_\-]*$/i,
+            escapeRx = /([\W]{1})/g,
+            escapeFn = function(match, capture){
+                return "\\" + capture;
+            };
+
+        return function(id) {
+            return validIdRe.test(id)
+                ? id
+                : id.replace(escapeRx, escapeFn);
+        };
+    }()),
+
     /**
      * Returns the current document body as an {@link Ext.Element}.
      * @return Ext.Element The document body
      */
-    getBody: function() {
+    getBody: (function() {
         var body;
         return function() {
             return body || (body = Ext.get(document.body));
         };
-    }(),
+    }()),
 
     /**
      * Returns the current document head as an {@link Ext.Element}.
      * @return Ext.Element The document head
      * @method
      */
-    getHead: function() {
+    getHead: (function() {
         var head;
         return function() {
             return head || (head = Ext.get(document.getElementsByTagName("head")[0]));
         };
-    }(),
+    }()),
 
     /**
      * Returns the current HTML document object as an {@link Ext.Element}.
      * @return Ext.Element The document
      */
-    getDoc: function() {
+    getDoc: (function() {
         var doc;
         return function() {
             return doc || (doc = Ext.get(document));
         };
-    }(),
+    }()),
 
     /**
      * This is shorthand reference to {@link Ext.ComponentManager#get}.
@@ -490,6 +535,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
         isSafari2 = isSafari && check(/applewebkit\/4/), // unique to Safari 2
         isSafari3 = isSafari && check(/version\/3/),
         isSafari4 = isSafari && check(/version\/4/),
+        isSafari5_0 = isSafari && check(/version\/5\.0/),
         isSafari5 = isSafari && check(/version\/5/),
         isIE = !isOpera && check(/msie/),
         isIE7 = isIE && ((check(/msie 7/) && docMode != 8 && docMode != 9) || docMode == 7),
@@ -500,6 +546,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
         isGecko3 = isGecko && check(/rv:1\.9/),
         isGecko4 = isGecko && check(/rv:2\.0/),
         isGecko5 = isGecko && check(/rv:5\./),
+        isGecko10 = isGecko && check(/rv:10\./),
         isFF3_0 = isGecko3 && check(/rv:1\.9\.0/),
         isFF3_5 = isGecko3 && check(/rv:1\.9\.1/),
         isFF3_6 = isGecko3 && check(/rv:1\.9\.2/),
@@ -513,7 +560,8 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
         operaVersion = version(isOpera, /version\/(\d+\.\d+)/),
         safariVersion = version(isSafari, /version\/(\d+\.\d+)/),
         webKitVersion = version(isWebKit, /webkit\/(\d+\.\d+)/),
-        isSecure = /^https/i.test(window.location.protocol);
+        isSecure = /^https/i.test(window.location.protocol),
+        nullLog;
 
     // remove css image flicker
     try {
@@ -524,30 +572,34 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
     //<debug>
     var primitiveRe = /string|number|boolean/;
     function dumpObject (object) {
-        var member, type,
+        var member, type, value, name,
             members = [];
 
         // Cannot use Ext.encode since it can recurse endlessly (if we're lucky)
         // ...and the data could be prettier!
-        Ext.Object.each(object, function (name, value) {
-            type = typeof value;
-            if (type == "function") {
-                return;
-            }
+        for (name in object) {
+            if (object.hasOwnProperty(name)) {
+                value = object[name];
 
-            if (type == 'undefined') {
-                member = type;
-            } else if (value === null || primitiveRe.test(type) || Ext.isDate(value)) {
-                member = Ext.encode(value);
-            } else if (Ext.isArray(value)) {
-                member = '[ ]';
-            } else if (Ext.isObject(value)) {
-                member = '{ }';
-            } else {
-                member = type;
+                type = typeof value;
+                if (type == "function") {
+                    continue;
+                }
+
+                if (type == 'undefined') {
+                    member = type;
+                } else if (value === null || primitiveRe.test(type) || Ext.isDate(value)) {
+                    member = Ext.encode(value);
+                } else if (Ext.isArray(value)) {
+                    member = '[ ]';
+                } else if (Ext.isObject(value)) {
+                    member = '{ }';
+                } else {
+                    member = type;
+                }
+                members.push(Ext.encode(name) + ': ' + member);
             }
-            members.push(Ext.encode(name) + ': ' + member);
-        });
+        }
 
         if (members.length) {
             return ' \nData: {\n  ' + members.join(',\n  ') + '\n}';
@@ -560,7 +612,9 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
             con = Ext.global.console,
             level = 'log',
             indent = log.indent || 0,
-            stack;
+            stack,
+            out,
+            max;
 
         log.indent = indent;
 
@@ -617,8 +671,8 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
             if (Ext.isOpera) {
                 opera.postError(message);
             } else {
-                var out = log.out,
-                    max = log.max;
+                out = log.out;
+                max = log.max;
 
                 if (out.length >= max) {
                     // this formula allows out.max to change (via debugger), where the
@@ -645,13 +699,13 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
 
     log.error = function () {
         logx('error', Array.prototype.slice.call(arguments));
-    }
+    };
     log.info = function () {
         logx('info', Array.prototype.slice.call(arguments));
-    }
+    };
     log.warn = function () {
         logx('warn', Array.prototype.slice.call(arguments));
-    }
+    };
 
     log.count = 0;
     log.counters = { error: 0, warn: 0, info: 0, log: 0 };
@@ -677,7 +731,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
     };
     //</debug>
 
-    var nullLog = function () {};
+    nullLog = function () {};
     nullLog.info = nullLog.warn = nullLog.error = Ext.emptyFn;
 
     Ext.setVersion('extjs', '4.1.0');
@@ -790,24 +844,33 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * @param {HTMLElement} node The node to remove
          * @method
          */
-        removeNode : isIE6 || isIE7 ? function() {
-            var d;
-            return function(n){
-                if(n && n.tagName != 'BODY'){
+        removeNode : isIE6 || isIE7 || isIE8
+            ? (function() {
+                var d;
+                return function(n){
+                    if(n && n.tagName != 'BODY'){
+                        (Ext.enableNestedListenerRemoval) ? Ext.EventManager.purgeElement(n) : Ext.EventManager.removeAll(n);
+                        // removing an iframe this way can cause severe leaks
+                        // fixes leak issue with htmleditor in themes example
+                        if (n.tagName != 'IFRAME') {
+                            if (isIE8 && n.parentNode) {
+                                n.parentNode.removeChild(n);
+                            }
+                            d = d || document.createElement('div');
+                            d.appendChild(n);
+                            d.innerHTML = '';
+                        }
+                        delete Ext.cache[n.id];
+                    }
+                };
+            }())
+            : function(n) {
+                if (n && n.parentNode && n.tagName != 'BODY') {
                     (Ext.enableNestedListenerRemoval) ? Ext.EventManager.purgeElement(n) : Ext.EventManager.removeAll(n);
-                    d = d || document.createElement('div');
-                    d.appendChild(n);
-                    d.innerHTML = '';
+                    n.parentNode.removeChild(n);
                     delete Ext.cache[n.id];
                 }
-            };
-        }() : function(n) {
-            if (n && n.parentNode && n.tagName != 'BODY') {
-                (Ext.enableNestedListenerRemoval) ? Ext.EventManager.purgeElement(n) : Ext.EventManager.removeAll(n);
-                n.parentNode.removeChild(n);
-                delete Ext.cache[n.id];
-            }
-        },
+            },
 
         isStrict: isStrict,
 
@@ -860,6 +923,13 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * @type Boolean
          */
         isSafari5 : isSafari5,
+
+        /**
+         * True if the detected browser is Safari 5.0.x.
+         * @type Boolean
+         */
+        isSafari5_0 : isSafari5_0,
+
 
         /**
          * True if the detected browser is Safari 2.x.
@@ -922,6 +992,12 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
         isGecko5 : isGecko5,
 
         /**
+         * True if the detected browser uses a Gecko 5.0+ layout engine (e.g. Firefox 5.x).
+         * @type Boolean
+         */
+        isGecko10 : isGecko10,
+
+        /**
          * True if the detected browser uses FireFox 3.0
          * @type Boolean
          */
@@ -950,6 +1026,12 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * @type Boolean
          */
         isFF5 : 5 <= firefoxVersion && firefoxVersion < 6,
+
+        /**
+         * True if the detected browser uses FireFox 10
+         * @type Boolean
+         */
+        isFF10 : 10 <= firefoxVersion && firefoxVersion < 11,
 
         /**
          * True if the detected platform is Linux.
@@ -1052,7 +1134,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * @deprecated 4.0.0 Use {@link Ext.String#escapeRegex} instead
          */
         escapeRe : function(s) {
-            return s.replace(/([-.*+?^${}()|[\]\/\\])/g, "\\$1");
+            return s.replace(/([-.*+?\^${}()|\[\]\/\\])/g, "\\$1");
         },
 
         /**
@@ -1064,7 +1146,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          *         '#foo a@click' : function(e, t){
          *             // do something
          *         },
-         *      
+         *
          *         // add the same listener to multiple selectors (separated by comma BEFORE the @)
          *         '#foo a, #bar span.some-class@mouseover' : function(){
          *             // do something
@@ -1173,11 +1255,19 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
             if(typeof names == 'string'){
                 names = names.split(/[,;\s]/);
             }
-            Ext.each(names, function(name){
+
+            var n,
+                nLen = names.length,
+                name;
+
+            for(n = 0; n < nLen; n++) {
+                name = names[n];
+
                 if(usePrototypeKeys || source.hasOwnProperty(name)){
                     dest[name] = source[name];
                 }
-            }, this);
+            }
+
             return dest;
         },
 
@@ -1261,10 +1351,15 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * @deprecated 4.0.0 Will be removed in the next major version
          */
         partition : function(arr, truth){
-            var ret = [[],[]];
-            Ext.each(arr, function(v, i, a) {
-                ret[ (truth && truth(v, i, a)) || (!truth && v) ? 0 : 1].push(v);
-            });
+            var ret = [[],[]],
+                a, v,
+                aLen = arr.length;
+
+            for (a = 0; a < aLen; a++) {
+                v = arr[a];
+                ret[ (truth && truth(v, a, arr)) || (!truth && v) ? 0 : 1].push(v);
+            }
+
             return ret;
         },
 
@@ -1283,15 +1378,21 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * @deprecated 4.0.0 Will be removed in the next major version
          */
         invoke : function(arr, methodName){
-            var ret = [],
-                args = Array.prototype.slice.call(arguments, 2);
-            Ext.each(arr, function(v,i) {
+            var ret  = [],
+                args = Array.prototype.slice.call(arguments, 2),
+                a, v,
+                aLen = arr.length;
+
+            for (a = 0; a < aLen; a++) {
+                v = arr[a];
+
                 if (v && typeof v[methodName] == 'function') {
                     ret.push(v[methodName].apply(v, args));
                 } else {
                     ret.push(undefined);
                 }
-            });
+            }
+
             return ret;
         },
 
@@ -1325,14 +1426,17 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
                 arrs = parts[0],
                 fn = parts[1][0],
                 len = Ext.max(Ext.pluck(arrs, "length")),
-                ret = [];
+                ret = [],
+                i,
+                j,
+                aLen;
 
-            for (var i = 0; i < len; i++) {
+            for (i = 0; i < len; i++) {
                 ret[i] = [];
                 if(fn){
                     ret[i] = fn.apply(fn, Ext.pluck(arrs, i));
                 }else{
-                    for (var j = 0, aLen = arrs.length; j < aLen; j++){
+                    for (j = 0, aLen = arrs.length; j < aLen; j++){
                         ret[i].push( arrs[j][i] );
                     }
                 }
@@ -1342,10 +1446,10 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
 
         /**
          * Turns an array into a sentence, joined by a specified connector - e.g.:
-         * 
+         *
          *     Ext.toSentence(['Adama', 'Tigh', 'Roslin']); //'Adama, Tigh and Roslin'
          *     Ext.toSentence(['Adama', 'Tigh', 'Roslin'], 'or'); //'Adama, Tigh or Roslin'
-         * 
+         *
          * @param {String[]} items The array to create a sentence from
          * @param {String} connector The string to use to connect the last two words.
          * Usually 'and' or 'or' - defaults to 'and'.
@@ -1353,13 +1457,15 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          * @deprecated 4.0.0 Will be removed in the next major version
          */
         toSentence: function(items, connector) {
-            var length = items.length;
+            var length = items.length,
+                head,
+                tail;
 
             if (length <= 1) {
                 return items[0];
             } else {
-                var head = items.slice(0, length - 1),
-                    tail = items[length - 1];
+                head = items.slice(0, length - 1);
+                tail = items[length - 1];
 
                 return Ext.util.Format.format("{0} {1} {2}", head.join(", "), connector || 'and', tail);
             }
@@ -1372,7 +1478,7 @@ Opera 11.11 - Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11
          */
         useShims: isIE6
     });
-})();
+}());
 
 /**
  * Loads Ext.app.Application class and starts it up with given configuration after the page is ready.
@@ -1389,7 +1495,6 @@ Ext.application = function(config) {
     });
 };
 
-//<localeInfo useApply="true" />
 /**
  * @class Ext.util.Format
 
@@ -1528,7 +1633,14 @@ XTemplates can also directly use Ext.util.Format functions:
          * @param {Number} length The length of the substring
          * @return {String} The substring
          */
-        substr : function(value, start, length) {
+        substr : 'ab'.substr(-1) != 'b'
+        ? function (value, start, length) {
+            var str = String(value);
+            return (start < 0)
+                ? str.substr(Math.max(str.length + start, 0), length)
+                : str.substr(start, length);
+        }
+        : function(value, start, length) {
             return String(value).substr(start, length);
         },
 
@@ -1657,7 +1769,7 @@ XTemplates can also directly use Ext.util.Format functions:
          * @return {Function} A function that operates on the passed value.
          * @method
          */
-        math : function(){
+        math : (function(){
             var fns = {};
 
             return function(v, a){
@@ -1666,7 +1778,7 @@ XTemplates can also directly use Ext.util.Format functions:
                 }
                 return fns[a](v);
             };
-        }(),
+        }()),
 
         /**
          * Rounds the passed number to the required decimal precision.
@@ -1712,7 +1824,7 @@ XTemplates can also directly use Ext.util.Format functions:
          * @param {String} format The way you would like to format this text.
          * @return {String} The formatted number.
          */
-        number: function(v, formatString) {
+        number : function(v, formatString) {
             if (!formatString) {
                 return v;
             }
@@ -1725,7 +1837,14 @@ XTemplates can also directly use Ext.util.Format functions:
                 i18n  = false,
                 neg   = v < 0,
                 hasComma,
-                psplit;
+                psplit,
+                fnum,
+                cnum,
+                parr,
+                j,
+                m,
+                n,
+                i;
 
             v = Math.abs(v);
 
@@ -1746,9 +1865,7 @@ XTemplates can also directly use Ext.util.Format functions:
                 psplit = formatString.replace(formatCleanRe, '').split('.');
             }
 
-            if (1 < psplit.length) {
-                v = Ext.Number.toFixed(v, psplit[1].length);
-            } else if(2 < psplit.length) {
+            if (psplit.length > 2) {
                 //<debug>
                 Ext.Error.raise({
                     sourceClass: "Ext.util.Format",
@@ -1758,21 +1875,22 @@ XTemplates can also directly use Ext.util.Format functions:
                     msg: "Invalid number format, should have no more than 1 decimal"
                 });
                 //</debug>
+            } else if (psplit.length > 1) {
+                v = Ext.Number.toFixed(v, psplit[1].length);
             } else {
                 v = Ext.Number.toFixed(v, 0);
             }
 
-            var fnum = v.toString();
+            fnum = v.toString();
 
             psplit = fnum.split('.');
 
             if (hasComma) {
-                var cnum = psplit[0],
-                    parr = [],
-                    j    = cnum.length,
-                    m    = Math.floor(j / 3),
-                    n    = cnum.length % 3 || 3,
-                    i;
+                cnum = psplit[0];
+                parr = [];
+                j = cnum.length;
+                m = Math.floor(j / 3);
+                n = cnum.length % 3 || 3;
 
                 for (i = 0; i < j; i += n) {
                     if (i !== 0) {
@@ -1892,6 +2010,7 @@ XTemplates can also directly use Ext.util.Format functions:
          * @return {Object} An object with margin sizes for top, right, bottom and left
          */
         parseBox : function(box) {
+          box = Ext.isEmpty(box) ? '' : box;
             if (Ext.isNumber(box)) {
                 box = box.toString();
             }
@@ -1926,219 +2045,469 @@ XTemplates can also directly use Ext.util.Format functions:
             return s.replace(/([\-.*+?\^${}()|\[\]\/\\])/g, "\\$1");
         }
     });
-})();
+}());
 
 /**
- * @class Ext.util.TaskRunner
- * Provides the ability to execute one or more arbitrary tasks in a multithreaded
- * manner.  Generally, you can use the singleton {@link Ext.TaskManager} instead, but
- * if needed, you can create separate instances of TaskRunner.  Any number of
- * separate tasks can be started at any time and will run independently of each
- * other. Example usage:
- * <pre><code>
-// Start a simple clock task that updates a div once per second
-var updateClock = function(){
-    Ext.fly('clock').update(new Date().format('g:i:s A'));
-} 
-var task = {
-    run: updateClock,
-    interval: 1000 //1 second
-}
-var runner = new Ext.util.TaskRunner();
-runner.start(task);
-
-// equivalent using TaskManager
-Ext.TaskManager.start({
-    run: updateClock,
-    interval: 1000
-});
-
- * </code></pre>
- * <p>See the {@link #start} method for details about how to configure a task object.</p>
+ * Provides the ability to execute one or more arbitrary tasks in a asynchronous manner.
+ * Generally, you can use the singleton {@link Ext.TaskManager} instead, but if needed,
+ * you can create separate instances of TaskRunner. Any number of separate tasks can be
+ * started at any time and will run independently of each other.
+ * 
+ * Example usage:
+ *
+ *      // Start a simple clock task that updates a div once per second
+ *      var updateClock = function () {
+ *          Ext.fly('clock').update(new Date().format('g:i:s A'));
+ *      }
+ *
+ *      var runner = new Ext.util.TaskRunner();
+ *      var task = runner.start({
+ *          run: updateClock,
+ *          interval: 1000
+ *      }
+ *
+ * The equivalent using TaskManager:
+ *
+ *      var task = Ext.TaskManager.start({
+ *          run: updateClock,
+ *          interval: 1000
+ *      });
+ *
+ * To end a running task:
+ * 
+ *      task.destroy();
+ *
+ * If a task needs to be started and stopped repeated over time, you can create a
+ * {@link Ext.util.TaskRunner.Task Task} instance.
+ *
+ *      var task = runner.newTask({
+ *          run: function () {
+ *              // useful code
+ *          },
+ *          interval: 1000
+ *      });
+ *      
+ *      task.start();
+ *      
+ *      // ...
+ *      
+ *      task.stop();
+ *      
+ *      // ...
+ *      
+ *      task.start();
+ *
+ * A re-usable, one-shot task can be managed similar to the above:
+ *
+ *      var task = runner.newTask({
+ *          run: function () {
+ *              // useful code to run once
+ *          },
+ *          repeat: 1
+ *      });
+ *      
+ *      task.start();
+ *      
+ *      // ...
+ *      
+ *      task.start();
+ *
+ * See the {@link #start} method for details about how to configure a task object.
+ *
  * Also see {@link Ext.util.DelayedTask}. 
  * 
  * @constructor
- * @param {Number} [interval=10] The minimum precision in milliseconds supported by this TaskRunner instance
+ * @param {Number/Object} [interval=10] The minimum precision in milliseconds supported by this
+ * TaskRunner instance. Alternatively, a config object to apply to the new instance.
  */
-Ext.ns('Ext.util');
+Ext.define('Ext.util.TaskRunner', {
+    /**
+     * @cfg interval
+     * The timer resolution.
+     */
+    interval: 10,
 
-Ext.util.TaskRunner = function(interval) {
-    interval = interval || 10;
-    var tasks = [],
-    removeQueue = [],
-    id = 0,
-    running = false,
+    /**
+     * @property timerId
+     * The id of the current timer.
+     * @private
+     */
+    timerId: null,
 
-    // private
-    stopThread = function() {
-        running = false;
-        clearInterval(id);
-        id = 0;
+    constructor: function (interval) {
+        var me = this;
+
+        if (typeof interval == 'number') {
+            me.interval = interval;
+        } else if (interval) {
+            Ext.apply(me, interval);
+        }
+
+        me.tasks = [];
+        me.timerFn = Ext.Function.bind(me.onTick, me);
     },
 
-    // private
-    startThread = function() {
-        if (!running) {
-            running = true;
-            id = setInterval(runTasks, interval);
-        }
+    /**
+     * Creates a new {@link Ext.util.TaskRunner.Task Task} instance. These instances can
+     * be easily started and stopped.
+     * @param {Object} config The config object. For details on the supported properties,
+     * see {@link #start}.
+     */
+    newTask: function (config) {
+        var task = new Ext.util.TaskRunner.Task(config);
+        task.manager = this;
+        return task;
     },
-
-    // private
-    removeTask = function(t) {
-        removeQueue.push(t);
-        if (t.onStop) {
-            t.onStop.apply(t.scope || t);
-        }
-    },
-
-    // private
-    runTasks = function() {
-        var rqLen = removeQueue.length,
-            now = new Date().getTime(),
-            i;
-
-        if (rqLen > 0) {
-            for (i = 0; i < rqLen; i++) {
-                Ext.Array.remove(tasks, removeQueue[i]);
-            }
-            removeQueue = [];
-            if (tasks.length < 1) {
-                stopThread();
-                return;
-            }
-        }
-        i = 0;
-        var t,
-            itime,
-            rt,
-            len = tasks.length;
-        for (; i < len; ++i) {
-            t = tasks[i];
-            itime = now - t.taskRunTime;
-            if (t.interval <= itime) {
-                rt = t.run.apply(t.scope || t, t.args || [++t.taskRunCount]);
-                t.taskRunTime = now;
-                if (rt === false || t.taskRunCount === t.repeat) {
-                    removeTask(t);
-                    return;
-                }
-            }
-            if (t.duration && t.duration <= (now - t.taskStartTime)) {
-                removeTask(t);
-            }
-        }
-    };
 
     /**
      * Starts a new task.
-     * @method start
-     * @param {Object} task <p>A config object that supports the following properties:<ul>
-     * <li><code>run</code> : Function<div class="sub-desc"><p>The function to execute each time the task is invoked. The
-     * function will be called at each interval and passed the <code>args</code> argument if specified, and the
-     * current invocation count if not.</p>
-     * <p>If a particular scope (<code>this</code> reference) is required, be sure to specify it using the <code>scope</code> argument.</p>
-     * <p>Return <code>false</code> from this function to terminate the task.</p></div></li>
-     * <li><code>interval</code> : Number<div class="sub-desc">The frequency in milliseconds with which the task
-     * should be invoked.</div></li>
-     * <li><code>args</code> : Array<div class="sub-desc">(optional) An array of arguments to be passed to the function
-     * specified by <code>run</code>. If not specified, the current invocation count is passed.</div></li>
-     * <li><code>scope</code> : Object<div class="sub-desc">(optional) The scope (<tt>this</tt> reference) in which to execute the
-     * <code>run</code> function. Defaults to the task config object.</div></li>
-     * <li><code>duration</code> : Number<div class="sub-desc">(optional) The length of time in milliseconds to invoke
-     * the task before stopping automatically (defaults to indefinite).</div></li>
-     * <li><code>repeat</code> : Number<div class="sub-desc">(optional) The number of times to invoke the task before
-     * stopping automatically (defaults to indefinite).</div></li>
-     * </ul></p>
-     * <p>Before each invocation, Ext injects the property <code>taskRunCount</code> into the task object so
-     * that calculations based on the repeat count can be performed.</p>
+     *
+     * Before each invocation, Ext injects the property `taskRunCount` into the task object
+     * so that calculations based on the repeat count can be performed.
+     * 
+     * The returned task will contain a `destroy` method that can be used to destroy the
+     * task and cancel further calls. This is equivalent to the {@link #stop} method.
+     *
+     * @param {Object} task A config object that supports the following properties:
+     * @param {Function} task.run The function to execute each time the task is invoked. The
+     * function will be called at each interval and passed the `args` argument if specified,
+     * and the current invocation count if not.
+     * 
+     * If a particular scope (`this` reference) is required, be sure to specify it using
+     * the `scope` argument.
+     * 
+     * @param {Function} task.onError The function to execute in case of unhandled
+     * error on task.run.
+     *
+     * @param {Boolean} task.run.return `false` from this function to terminate the task.
+     *
+     * @param {Number} task.interval The frequency in milliseconds with which the task
+     * should be invoked.
+     *
+     * @param {Object[]} task.args An array of arguments to be passed to the function
+     * specified by `run`. If not specified, the current invocation count is passed.
+     *
+     * @param {Object} task.scope The scope (`this` reference) in which to execute the
+     * `run` function. Defaults to the task config object.
+     *
+     * @param {Number} task.duration The length of time in milliseconds to invoke the task
+     * before stopping automatically (defaults to indefinite).
+     *
+     * @param {Number} task.repeat The number of times to invoke the task before stopping
+     * automatically (defaults to indefinite).
      * @return {Object} The task
      */
-    this.start = function(task) {
-        tasks.push(task);
-        task.taskStartTime = new Date().getTime();
-        task.taskRunTime = 0;
+    start: function(task) {
+        var me = this,
+            now = new Date().getTime();
+
+        if (!task.pending) {
+            me.tasks.push(task);
+            task.pending = true; // don't allow the task to be added to me.tasks again
+        }
+
+        task.stopped = false; // might have been previously stopped...
+        task.taskStartTime = now;
+        task.taskRunTime = task.fireOnStart !== false ? 0 : task.taskStartTime;
         task.taskRunCount = 0;
-        startThread();
+
+        if (!me.firing) {
+            if (task.fireOnStart !== false) {
+                me.startTimer(0, now);
+            } else {
+                me.startTimer(task.interval, now);
+            }
+        }
+
         return task;
-    };
+    },
 
     /**
      * Stops an existing running task.
-     * @method stop
      * @param {Object} task The task to stop
      * @return {Object} The task
      */
-    this.stop = function(task) {
-        removeTask(task);
+    stop: function(task) {
+        // NOTE: we don't attempt to remove the task from me.tasks at this point because
+        // this could be called from inside a task which would then corrupt the state of
+        // the loop in onTick
+        if (!task.stopped) {
+            task.stopped = true;
+
+            if (task.onStop) {
+                task.onStop.call(task.scope || task, task);
+            }
+        }
+
         return task;
-    };
+    },
 
     /**
      * Stops all tasks that are currently running.
-     * @method stopAll
      */
-    this.stopAll = function() {
-        stopThread();
-        for (var i = 0, len = tasks.length; i < len; i++) {
-            if (tasks[i].onStop) {
-                tasks[i].onStop();
+    stopAll: function() {
+        // onTick will take care of cleaning up the mess after this point...
+        Ext.each(this.tasks, this.stop, this);
+    },
+
+    //-------------------------------------------------------------------------
+
+    firing: false,
+
+    nextExpires: 1e99,
+
+    // private
+    onTick: function () {
+        var me = this,
+            tasks = me.tasks,
+            now = new Date().getTime(),
+            nextExpires = 1e99,
+            len = tasks.length,
+            expires, newTasks, i, task, rt, remove;
+
+        me.timerId = null;
+        me.firing = true; // ensure we don't startTimer during this loop...
+
+        // tasks.length can be > len if start is called during a task.run call... so we
+        // first check len to avoid tasks.length reference but eventually we need to also
+        // check tasks.length. we avoid repeating use of tasks.length by setting len at
+        // that time (to help the next loop)
+        for (i = 0; i < len || i < (len = tasks.length); ++i) {
+            task = tasks[i];
+
+            if (!(remove = task.stopped)) {
+                expires = task.taskRunTime + task.interval;
+
+                if (expires <= now) {
+                    rt = 1; // otherwise we have a stale "rt"
+                    try {
+                        rt = task.run.apply(task.scope || task, task.args || [++task.taskRunCount]);
+                    } catch (taskError) {
+                        try {
+                            if (task.onError) {
+                                rt = task.onError.call(task.scope || task, task, taskError);
+                            }
+                        } catch (ignore) { }
+                    }
+                    task.taskRunTime = now;
+                    if (rt === false || task.taskRunCount === task.repeat) {
+                        me.stop(task);
+                        remove = true;
+                    } else {
+                        remove = task.stopped; // in case stop was called by run
+                        expires = now + task.interval;
+                    }
+                }
+
+                if (!remove && task.duration && task.duration <= (now - task.taskStartTime)) {
+                    me.stop(task);
+                    remove = true;
+                }
+            }
+
+            if (remove) {
+                task.pending = false; // allow the task to be added to me.tasks again
+
+                // once we detect that a task needs to be removed, we copy the tasks that
+                // will carry forward into newTasks... this way we avoid O(N*N) to remove
+                // each task from the tasks array (and ripple the array down) and also the
+                // potentially wasted effort of making a new tasks[] even if all tasks are
+                // going into the next wave.
+                if (!newTasks) {
+                    newTasks = tasks.slice(0, i);
+                    // we don't set me.tasks here because callbacks can also start tasks,
+                    // which get added to me.tasks... so we will visit them in this loop
+                    // and account for their expirations in nextExpires...
+                }
+            } else {
+                if (newTasks) {
+                    newTasks.push(task); // we've cloned the tasks[], so keep this one...
+                }
+
+                if (nextExpires > expires) {
+                    nextExpires = expires; // track the nearest expiration time
+                }
             }
         }
-        tasks = [];
-        removeQueue = [];
-    };
-};
 
-/**
- * @class Ext.TaskManager
- * @extends Ext.util.TaskRunner
- * A static {@link Ext.util.TaskRunner} instance that can be used to start and stop arbitrary tasks.  See
- * {@link Ext.util.TaskRunner} for supported methods and task config properties.
- * <pre><code>
-// Start a simple clock task that updates a div once per second
-var task = {
-    run: function(){
-        Ext.fly('clock').update(new Date().format('g:i:s A'));
+        if (newTasks) {
+            // only now can we copy the newTasks to me.tasks since no user callbacks can
+            // take place
+            me.tasks = newTasks;
+        }
+
+        me.firing = false; // we're done, so allow startTimer afterwards
+
+        if (me.tasks.length) {
+            // we create a new Date here because all the callbacks could have taken a long
+            // time... we want to base the next timeout on the current time (after the
+            // callback storm):
+            me.startTimer(nextExpires - now, new Date().getTime());
+        }
     },
-    interval: 1000 //1 second
-}
-Ext.TaskManager.start(task);
-</code></pre>
- * <p>See the {@link #start} method for details about how to configure a task object.</p>
- * @singleton
- */
-Ext.TaskManager = new Ext.util.TaskRunner();
+
+    // private
+    startTimer: function (timeout, now) {
+        var me = this,
+            expires = now + timeout,
+            timerId = me.timerId;
+
+        // Check to see if this request is enough in advance of the current timer. If so,
+        // we reschedule the timer based on this new expiration.
+        if (timerId && me.nextExpires - expires > me.interval) {
+            clearTimeout(timerId);
+            timerId = null;
+        }
+
+        if (!timerId) {
+            if (timeout < me.interval) {
+                timeout = me.interval;
+            }
+
+            me.timerId = setTimeout(me.timerFn, timeout);
+            me.nextExpires = expires;
+        }
+    }
+},
+function () {
+    var me = this,
+        proto = me.prototype;
+
+    /**
+     * Destroys this instance, stopping all tasks that are currently running.
+     * @method destroy
+     */
+    proto.destroy = proto.stopAll;
+
+    /**
+    * @class Ext.TaskManager
+    * @extends Ext.util.TaskRunner
+    * @singleton
+    *
+    * A static {@link Ext.util.TaskRunner} instance that can be used to start and stop
+    * arbitrary tasks. See {@link Ext.util.TaskRunner} for supported methods and task
+    * config properties.
+    *
+    *    // Start a simple clock task that updates a div once per second
+    *    var task = {
+    *       run: function(){
+    *           Ext.fly('clock').update(new Date().format('g:i:s A'));
+    *       },
+    *       interval: 1000 //1 second
+    *    }
+    *
+    *    Ext.TaskManager.start(task);
+    *
+    * See the {@link #start} method for details about how to configure a task object.
+    */
+    Ext.util.TaskManager = Ext.TaskManager = new me();
+
+    /**
+     * Instances of this class are created by {@link Ext.util.TaskRunner#newTask} method.
+     * 
+     * For details on config properties, see {@link Ext.util.TaskRunner#start}.
+     * @class Ext.util.TaskRunner.Task
+     */
+    me.Task = new Ext.Class({
+        isTask: true,
+
+        /**
+         * This flag is set to `true` by {@link #stop}.
+         * @private
+         */
+        stopped: true, // this avoids the odd combination of !stopped && !pending
+
+        /**
+         * Override default behavior
+         */
+        fireOnStart: false,
+
+        constructor: function (config) {
+            Ext.apply(this, config);
+        },
+
+        /**
+         * Restarts this task, clearing it duration, expiration and run count.
+         * @param {Number} [interval] Optionally reset this task's interval.
+         */
+        restart: function (interval) {
+            if (interval !== undefined) {
+                this.interval = interval;
+            }
+
+            this.manager.start(this);
+        },
+
+        /**
+         * Starts this task if it is not already started.
+         * @param {Number} [interval] Optionally reset this task's interval.
+         */
+        start: function (interval) {
+            if (this.stopped) {
+                this.restart(interval);
+            }
+        },
+
+        /**
+         * Stops this task.
+         */
+        stop: function () {
+            this.manager.stop(this);
+        }
+    });
+
+    proto = me.Task.prototype;
+
+    /**
+     * Destroys this instance, stopping this task's execution.
+     * @method destroy
+     */
+    proto.destroy = proto.stop;
+});
 
 /**
  * @class Ext.perf.Accumulator
  * @private
  */
-Ext.define('Ext.perf.Accumulator', function () {
+Ext.define('Ext.perf.Accumulator', (function () {
     var currentFrame = null,
-        formatTpl;
-
-    // lazy init on first request for timestamp (avoids infobar in IE until needed)
-    var getTimestamp = function () {
+        khrome = Ext.global['chrome'],
+        formatTpl,
+        // lazy init on first request for timestamp (avoids infobar in IE until needed)
+        // Also avoids kicking off Chrome's microsecond timer until first needed
         getTimestamp = function () {
-            return new Date().getTime();
-        }
 
-        if (window.ActiveXObject) {
-            try {
-                // the above technique is not very accurate for small intervals...
-                var toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
+            getTimestamp = function () {
+                return new Date().getTime();
+            };
+            
+            var interval, toolbox;
+
+            // If Chrome is started with the --enable-benchmarking switch
+            if (Ext.isChrome && khrome && khrome.Interval) {
+                interval = new khrome.Interval();
+                interval.start();
                 getTimestamp = function () {
-                    return toolbox.milliseconds;
+                    return interval.microseconds() / 1000;
                 };
-            } catch (e) {
-                // ignore
+            } else if (window.ActiveXObject) {
+                try {
+                    // the above technique is not very accurate for small intervals...
+                    toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
+                    Ext.senchaToolbox = toolbox; // export for other uses
+                    getTimestamp = function () {
+                        return toolbox.milliseconds;
+                    };
+                } catch (e) {
+                    // ignore
+                }
+            } else if (Date.now) {
+                getTimestamp = Date.now;
             }
-        }
 
-        Ext.perf.getTimestamp = Ext.perf.Accumulator.getTimestamp = getTimestamp;
-        return getTimestamp();
-    };
+            Ext.perf.getTimestamp = Ext.perf.Accumulator.getTimestamp = getTimestamp;
+            return getTimestamp();
+        };
 
     function adjustSet (set, time) {
         set.sum += time;
@@ -2169,7 +2538,7 @@ Ext.define('Ext.perf.Accumulator', function () {
             min: Number.MAX_VALUE,
             max: 0,
             sum: 0
-        }
+        };
     }
 
     function makeTap (me, fn) {
@@ -2301,9 +2670,10 @@ Ext.define('Ext.perf.Accumulator', function () {
         tap: function (className, methodName) {
             var me = this,
                 methods = typeof methodName == 'string' ? [methodName] : methodName,
-                klass, statik, i, parts, length, name, src;
+                klass, statik, i, parts, length, name, src,
+                tapFunc;
 
-            var tapFunc = function(){
+            tapFunc = function(){
                 if (typeof className == 'string') {
                     klass = Ext.global;
                     parts = className.split('.');
@@ -2334,7 +2704,7 @@ Ext.define('Ext.perf.Accumulator', function () {
             return me;
         }
     };
-}(),
+}()),
 
 function () {
     Ext.perf.getTimestamp = this.getTimestamp;
@@ -2403,17 +2773,18 @@ Ext.define('Ext.perf.Monitor', {
     report: function () {
         var me = this,
             accumulators = me.accumulators,
-            calibration = me.calibrate(),
-            report = ['Calibration: ' + Math.round(calibration * 100) / 100 + ' msec/sample'];
+            calibration = me.calibrate();
 
         accumulators.sort(function (a, b) {
             return (a.name < b.name) ? -1 : ((b.name < a.name) ? 1 : 0);
         });
 
+        me.updateGC();
+
+        Ext.log('Calibration: ' + Math.round(calibration * 100) / 100 + ' msec/sample');
         Ext.each(accumulators, function (accum) {
-            report.push(accum.format(calibration));
+            Ext.log(accum.format(calibration));
         });
-        Ext.log(report.join('\n'));
     },
 
     getData: function (all) {
@@ -2427,6 +2798,35 @@ Ext.define('Ext.perf.Monitor', {
         });
 
         return ret;
+    },
+
+    updateGC: function () {
+        var accumGC = this.accumulatorsByName.GC,
+            toolbox = Ext.senchaToolbox,
+            bucket;
+
+        if (accumGC) {
+            accumGC.count = toolbox.garbageCollectionCounter || 0;
+
+            if (accumGC.count) {
+                bucket = accumGC.pure;
+                accumGC.total.sum = bucket.sum = toolbox.garbageCollectionMilliseconds;
+                bucket.min = bucket.max = bucket.sum / accumGC.count;
+                bucket = accumGC.total;
+                bucket.min = bucket.max = bucket.sum / accumGC.count;
+            }
+        }
+    },
+
+    watchGC: function () {
+        Ext.perf.getTimestamp(); // initializes SenchaToolbox (if available)
+
+        var toolbox = Ext.senchaToolbox;
+
+        if (toolbox) {
+            this.get("GC");
+            toolbox.watchGarbageCollector(false); // no logging, just totals
+        }
     },
 
     setup: function (config) {
@@ -2488,13 +2888,23 @@ Ext.define('Ext.perf.Monitor', {
 
         this.currentConfig = config;
 
-        Ext.Object.each(config, function (accumName, taps) {
-            var accum = Ext.Perf.get(accumName);
+        var key, prop,
+            accum, className, methods;
+        for (key in config) {
+            if (config.hasOwnProperty(key)) {
+                prop = config[key];
+                accum = Ext.Perf.get(key);
 
-            Ext.Object.each(taps, function (className, methods) {
-                accum.tap(className, methods);
-            });
-        });
+                for (className in prop) {
+                    if (prop.hasOwnProperty(className)) {
+                        methods = prop[className];
+                        accum.tap(className, methods);
+                    }
+                }
+            }
+        }
+
+        this.watchGC();
     }
 });
 
@@ -2635,13 +3045,24 @@ Ext.is.init();
  * 
  * @singleton
  */
+(function(){
+
+    // this is a local copy of certain logic from (Abstract)Element.getStyle
+    // to break a dependancy between the supports mechanism and Element
+    // use this instead of element references to check for styling info
+    var getStyle = function(element, styleName){
+        var view = element.ownerDocument.defaultView,
+            style = (view ? view.getComputedStyle(element, null) : element.currentStyle) || element.style;
+        return style[styleName];
+    };
+
 Ext.supports = {
     /**
      * Runs feature detection routines and sets the various flags. This is called when
      * the scripts loads (very early) and again at {@link Ext#onReady}. Some detections
      * are flagged as `early` and run immediately. Others that require the document body
      * will not run until ready.
-     * 
+     *
      * Each test is run only once, so calling this method from an onReady function is safe
      * and ensures that all flags have been set.
      * @markdown
@@ -2696,7 +3117,7 @@ Ext.supports = {
      * @property CSS3BoxShadow True if document environment supports the CSS3 box-shadow style.
      * @type {Boolean}
      */
-    CSS3BoxShadow: 'boxShadow' in document.documentElement.style,
+    CSS3BoxShadow: 'boxShadow' in document.documentElement.style || 'WebkitBoxShadow' in document.documentElement.style || 'MozBoxShadow' in document.documentElement.style,
 
     /**
      * @property ClassList True if document environment supports the HTML5 classList API.
@@ -2709,13 +3130,13 @@ Ext.supports = {
      * @type {Boolean}
      */
     OrientationChange: ((typeof window.orientation != 'undefined') && ('onorientationchange' in window)),
-    
+
     /**
      * @property DeviceMotion True if the device supports device motion (acceleration and rotation rate)
      * @type {Boolean}
      */
     DeviceMotion: ('ondevicemotion' in window),
-    
+
     /**
      * @property Touch True if the device supports touch
      * @type {Boolean}
@@ -2723,6 +3144,17 @@ Ext.supports = {
     // is.Desktop is needed due to the bug in Chrome 5.0.375, Safari 3.1.2
     // and Safari 4.0 (they all have 'ontouchstart' in the window object).
     Touch: ('ontouchstart' in window) && (!Ext.is.Desktop),
+
+    /**
+     * @property TimeoutActualLateness True if the browser passes the "actualLateness" parameter to
+     * setTimeout. See: https://developer.mozilla.org/en/DOM/window.setTimeout
+     * @type {Boolean}
+     */
+    TimeoutActualLateness: (function(){
+        setTimeout(function(){
+            Ext.supports.TimeoutActualLateness = arguments.length !== 0;
+        }, 0);
+    }()),
 
     tests: [
         /**
@@ -2750,9 +3182,9 @@ Ext.supports = {
                     ln = prefix.length,
                     i = 0,
                     out = false;
-                div = Ext.get(div);
+
                 for (; i < ln; i++) {
-                    if (div.getStyle(prefix[i] + "TransitionProperty")) {
+                    if (getStyle(div, prefix[i] + "TransitionProperty")) {
                         Ext.supports.CSS3Prefix = prefix[i];
                         Ext.supports.CSS3TransitionEnd = transitionEndName[i];
                         out = true;
@@ -2762,7 +3194,7 @@ Ext.supports = {
                 return out;
             }
         },
-        
+
         /**
          * @property RightMargin True if the device supports right margin.
          * See https://bugs.webkit.org/show_bug.cgi?id=13343 for why this is needed.
@@ -2780,7 +3212,7 @@ Ext.supports = {
          * @property DisplayChangeInputSelectionBug True if INPUT elements lose their
          * selection when their display style is changed. Essentially, if a text input
          * has focus and its display style is changed, the I-beam disappears.
-         * 
+         *
          * This bug is encountered due to the work around in place for the {@link #RightMargin}
          * bug. This has been observed in Safari 4.0.4 and older, and appears to be fixed
          * in Safari 5. It's not clear if Safari 4.1 has the bug, but it has the same WebKit
@@ -2854,7 +3286,7 @@ Ext.supports = {
                 return view && view.getComputedStyle;
             }
         },
-        
+
         /**
          * @property SVG True if the device supports SVG
          * @type {Boolean}
@@ -2865,7 +3297,7 @@ Ext.supports = {
                 return !!doc.createElementNS && !!doc.createElementNS( "http:/" + "/www.w3.org/2000/svg", "svg").createSVGRect;
             }
         },
-    
+
         /**
          * @property Canvas True if the device supports Canvas
          * @type {Boolean}
@@ -2876,7 +3308,7 @@ Ext.supports = {
                 return !!doc.createElement('canvas').getContext;
             }
         },
-        
+
         /**
          * @property VML True if the device supports VML
          * @type {Boolean}
@@ -2889,7 +3321,7 @@ Ext.supports = {
                 return (d.childNodes.length == 2);
             }
         },
-        
+
         /**
          * @property Float True if the device supports CSS float
          * @type {Boolean}
@@ -2900,7 +3332,7 @@ Ext.supports = {
                 return !!div.lastChild.style.cssFloat;
             }
         },
-        
+
         /**
          * @property AudioTag True if the device supports the HTML5 audio tag
          * @type {Boolean}
@@ -2911,7 +3343,7 @@ Ext.supports = {
                 return !!doc.createElement('audio').canPlayType;
             }
         },
-        
+
         /**
          * @property History True if the device supports HTML5 history
          * @type {Boolean}
@@ -2923,7 +3355,7 @@ Ext.supports = {
                 return !!(history && history.pushState);
             }
         },
-        
+
         /**
          * @property CSS3DTransform True if the device supports CSS3DTransform
          * @type {Boolean}
@@ -2946,14 +3378,15 @@ Ext.supports = {
                     webkit   = '-webkit-gradient(linear, left top, right bottom, from(black), to(white))',
                     w3c      = 'linear-gradient(left top, black, white)',
                     moz      = '-moz-' + w3c,
-                    options  = [property + webkit, property + w3c, property + moz];
-                
+                    opera    = '-o-' + w3c,
+                    options  = [property + webkit, property + w3c, property + moz, property + opera];
+
                 div.style.cssText = options.join(';');
-                
+
                 return ("" + div.style.backgroundImage).indexOf('gradient') !== -1;
             }
         },
-        
+
         /**
          * @property CSS3BorderRadius True if the device supports CSS3 border radius
          * @type {Boolean}
@@ -2972,7 +3405,7 @@ Ext.supports = {
                 return pass;
             }
         },
-        
+
         /**
          * @property GeoLocation True if the device supports GeoLocation
          * @type {Boolean}
@@ -3028,9 +3461,9 @@ Ext.supports = {
                 return 'placeholder' in doc.createElement('input');
             }
         },
-        
+
         /**
-         * @property Direct2DBug True if when asking for an element's dimension via offsetWidth or offsetHeight, 
+         * @property Direct2DBug True if when asking for an element's dimension via offsetWidth or offsetHeight,
          * getBoundingClientRect, etc. the browser returns the subpixel width rounded to the nearest pixel.
          * @type {Boolean}
          */
@@ -3053,18 +3486,16 @@ Ext.supports = {
         {
             identity: 'IncludePaddingInWidthCalculation',
             fn: function(doc, div){
-                var el = Ext.get(div.childNodes[1].firstChild);
-                return el.getWidth() == 210;
+                return div.childNodes[1].firstChild.offsetWidth == 210;
             }
         },
         {
             identity: 'IncludePaddingInHeightCalculation',
             fn: function(doc, div){
-                var el = Ext.get(div.childNodes[1].firstChild);
-                return el.getHeight() == 210;
+                return div.childNodes[1].firstChild.offsetHeight == 210;
             }
         },
-        
+
         /**
          * @property ArraySort True if the Array sort native method isn't bugged.
          * @type {Boolean}
@@ -3094,7 +3525,7 @@ Ext.supports = {
             identity: 'CreateContextualFragment',
             fn: function() {
                 var range = Ext.supports.Range ? document.createRange() : false;
-                
+
                 return range && !!range.createContextualFragment;
             }
         },
@@ -3110,7 +3541,7 @@ Ext.supports = {
                 return Ext.isIE || Ext.isGecko || Ext.webKitVersion >= 534.16; // Chrome 10+
             }
         },
-        
+
         /**
          * @property TextAreaMaxLength True if the browser supports maxlength on textareas.
          * @type {Boolean}
@@ -3123,7 +3554,7 @@ Ext.supports = {
             }
         },
         /**
-         * @property GetPositionPercentage True if the browser will return the left/top/right/bottom 
+         * @property GetPositionPercentage True if the browser will return the left/top/right/bottom
          * position as a percentage when explicitly set as a percentage value.
          * @type {Boolean}
          */
@@ -3131,11 +3562,12 @@ Ext.supports = {
         {
             identity: 'GetPositionPercentage',
             fn: function(doc, div){
-                return Ext.get(div.childNodes[2]).getStyle('left') == '10%';
+               return getStyle(div.childNodes[2], 'left') == '10%';
             }
         }
     ]
 };
+}());
 
 Ext.supports.init(); // run the "early" detections now
 

@@ -47,7 +47,18 @@ Ext.define('Ext.container.DockingContainer', {
         bottom: { render: 7, visual: 3 }
     },
 
-    /**
+    // @private
+    // Values to decide which side of the body element docked items must go
+    // This overides any weight. A left/top will *always* sort before a right/bottom
+    // regardless of any weight value. Weights sort at either side of the "body" dividing point.
+    dockOrder: {
+        top: -1,
+        left: -1,
+        right: 1,
+        bottom: 1
+    },
+
+/**
      * Adds docked item(s) to the container.
      * @param {Object/Object[]} component The Component or array of components to add. The components
      * must include a 'dock' parameter on each component to indicate where it should be docked ('top', 'right',
@@ -66,18 +77,17 @@ Ext.define('Ext.container.DockingContainer', {
             item = items[i];
             item.dock = item.dock || 'top';
 
-            // Allow older browsers to target docked items to style without borders
-            if (me.border === false) {
-                // item.cls = item.cls || '' + ' ' + me.baseCls + '-noborder-docked-' + item.dock;
-            }
-
             if (pos !== undefined) {
                 me.dockedItems.insert(pos + i, item);
             } else {
                 me.dockedItems.add(item);
             }
-            item.onAdded(me, i);
-            me.onDockedAdd(item);
+            if (item.onAdded !== Ext.emptyFn) {
+                item.onAdded(me, i);
+            }
+            if (me.onDockedAdd !== Ext.emptyFn) {
+                me.onDockedAdd(item);
+            }
         }
 
         if (me.rendered && !me.suspendLayout) {
@@ -107,11 +117,13 @@ Ext.define('Ext.container.DockingContainer', {
         // sets "$skipDockedItems" on the renderTpl's renderData.
         //
         var me = renderData.$comp,
-            layout = me.componentLayout;
+            layout = me.componentLayout,
+            items,
+            tree;
 
         if (layout.getDockedItems && !renderData.$skipDockedItems) {
-            var items = layout.getDockedItems('render', !after),
-                tree = items && layout.getItemsRenderTree(items);
+            items = layout.getDockedItems('render', !after);
+            tree = items && layout.getItemsRenderTree(items);
 
             if (tree) {
                 Ext.DomHelper.generateMarkup(tree, out);
@@ -241,7 +253,7 @@ Ext.define('Ext.container.DockingContainer', {
         }
 
         if (!me.destroying && !me.suspendLayout) {
-            me.doComponentLayout();
+            me.updateLayout();
         }
 
         return item;

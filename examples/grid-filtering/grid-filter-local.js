@@ -4,7 +4,9 @@ Ext.require([
     'Ext.grid.*',
     'Ext.data.*',
     'Ext.ux.grid.FiltersFeature',
-    'Ext.toolbar.Paging'
+    'Ext.toolbar.Paging',
+    'Ext.ux.ajax.JsonSimlet',
+    'Ext.ux.ajax.SimManager'
 ]);
 
 Ext.define('Product', {
@@ -30,6 +32,30 @@ Ext.define('Product', {
 });
 
 Ext.onReady(function(){
+
+    Ext.ux.ajax.SimManager.init({
+        delay: 300,
+        defaultSimlet: null
+    }).register({
+        'myData': {
+            data: [
+                ['small', 'small'],
+                ['medium', 'medium'],
+                ['large', 'large'],
+                ['extra large', 'extra large']
+            ],
+            stype: 'json'
+        }
+    });
+
+    var optionsStore = Ext.create('Ext.data.Store', {
+        fields: ['id', 'text'],
+        proxy: {
+            type: 'ajax',
+            url: 'myData',
+            reader: 'array'
+        }
+    });
 
     Ext.QuickTips.init();
 
@@ -75,12 +101,10 @@ Ext.onReady(function(){
 
         // Filters are most naturally placed in the column definition, but can also be
         // added here.
-        filters: [
-            {
-                type: 'boolean',
-                dataIndex: 'visible'
-            }
-        ]
+        filters: [{
+            type: 'boolean',
+            dataIndex: 'visible'
+        }]
     };
 
     // use a factory method to reduce code while demonstrating
@@ -120,7 +144,7 @@ Ext.onReady(function(){
             text: 'Size',
             filter: {
                 type: 'list',
-                options: ['small', 'medium', 'large', 'extra large']
+                store: optionsStore
                 //,phpMode: true
             }
         }, {
@@ -146,7 +170,8 @@ Ext.onReady(function(){
         dockedItems: [Ext.create('Ext.toolbar.Paging', {
             dock: 'bottom',
             store: store
-        })]
+        })],
+        emptyText: 'No Matching Records'
     });
 
     // add some buttons to bottom toolbar just for demonstration purposes

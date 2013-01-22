@@ -57,19 +57,22 @@ Ext.define('Ext.diag.layout.Context', {
     },
 
     checkRemainingLayouts: function () {
-        var me = this,
-            expected = 0;
+        var me       = this,
+            expected = 0,
+            key, layout;
 
-        Ext.Object.each(me.layouts, function (id, layout) {
-            if (layout.running) {
+        for (key in me.layouts) {
+            layout = me.layouts[key];
+
+            if (me.layouts.hasOwnProperty(key) && layout.running) {
                 ++expected;
             }
-        });
+        }
 
         if (me.remainingLayouts != expected) {
             Ext.Error.raise({
                 msg: 'Bookkeeping error me.remainingLayouts'
-            })
+            });
         }
     },
 
@@ -146,16 +149,21 @@ Ext.define('Ext.diag.layout.Context', {
         var me = this;
 
         function hasFailure (lo) {
-            var failure = !lo.done;
+            var failure = !lo.done,
+                key, childLayout;
 
             if (lo.done) {
-                Ext.Object.each(me.layouts, function (id, childLayout) {
-                    if (childLayout.owner.ownerLayout === lo) {
-                        if (hasFailure(childLayout)) {
-                            failure = true;
+                for (key in me.layouts) {
+                    if (me.layouts.hasOwnProperty(key)) {
+                        childLayout = me.layouts[key];
+
+                        if (childLayout.owner.ownerLayout === lo) {
+                            if (hasFailure(childLayout)) {
+                                failure = true;
+                            }
                         }
                     }
-                });
+                }
             }
 
             return failure;
@@ -166,13 +174,19 @@ Ext.define('Ext.diag.layout.Context', {
         }
 
         function markReported (lo) {
+            var key, childLayout;
+
             reported[lo.id] = 1;
 
-            Ext.Object.each(me.layouts, function (id, childLayout) {
-                if (childLayout.owner.ownerLayout === lo) {
-                    markReported(childLayout);
+            for (key in me.layouts) {
+                if (me.layouts.hasOwnProperty(key)) {
+                    childLayout = me.layouts[key];
+
+                    if (childLayout.owner.ownerLayout === lo) {
+                        markReported(childLayout);
+                    }
                 }
-            });
+            }
         }
 
         markReported(layout);
@@ -192,21 +206,29 @@ Ext.define('Ext.diag.layout.Context', {
     },
 
     reportLayoutResult: function (layout, reported) {
-        var me = this,
-            owner = layout.owner,
+        var me           = this,
+            owner        = layout.owner,
             ownerContext = me.getCmp(owner),
-            blockedBy = [], triggeredBy = [];
+            blockedBy    = [],
+            triggeredBy  = [],
+            key, value, i, length, childLayout,
+            item, setBy, info;
 
         reported[layout.id] = 1;
 
-        Ext.Object.each(layout.blockedBy, function (t) {
-            blockedBy.push(t);
-        });
+        for (key in layout.blockedBy) {
+            if (layout.blockedBy.hasOwnProperty(key)) {
+                blockedBy.push(layout.blockedBy[key]);
+            }
+        }
         blockedBy.sort();
 
-        Ext.Object.each(me.triggersByLayoutId[layout.id], function (name, info) {
-            triggeredBy.push({ name: name, info: info });
-        });
+        for (key in me.triggersByLayoutId[layout.id]) {
+            if (me.triggersByLayoutId[layout.id].hasOwnProperty(key)) {
+                value = me.triggersByLayoutId[layout.id][key];
+                triggeredBy.push({ name: key, info: value });
+            }
+        }
         triggeredBy.sort(function (a, b) {
             return a.name < b.name ? -1 : (b.name < a.name ? 1 : 0);
         });
@@ -221,36 +243,60 @@ Ext.define('Ext.diag.layout.Context', {
             if (blockedBy.length) {
                 ++Ext.log.indent;
                 Ext.log({indent: 1}, 'blockedBy:  count=',layout.blockCount);
-                Ext.each(blockedBy, function (s) {
-                    Ext.log(s);
-                });
+
+                length = blockedBy.length;
+                for (i = 0; i < length; i++) {
+                    Ext.log(blockedBy[i]);
+                }
+
                 Ext.log.indent -= 2;
             }
             if (triggeredBy.length) {
                 ++Ext.log.indent;
                 Ext.log({indent: 1}, 'triggeredBy: count='+layout.triggerCount);
-                Ext.each(triggeredBy, function (t) {
-                    var item = t.info.item,
-                        setBy = (item.setBy && item.setBy[t.info.name]) || '?';
 
-                    Ext.log(t.name,' (',
-                        item.props[t.info.name], ') dirty: ', (item.dirty ? !!item.dirty[t.info.name] : false), ', setBy: ', setBy);
-                });
+                length = triggeredBy.length;
+                for (i = 0; i < length; i++) {
+                    info = value.info || value;
+                    item  = info.item;
+                    setBy = (item.setBy && item.setBy[info.name]) || '?';
+
+                    value = triggeredBy[i];
+
+                    Ext.log(
+                        value.name,
+                        ' (',
+                        item.props[info.name],
+                        ') dirty: ',
+                        (item.dirty ? !!item.dirty[info.name] : false),
+                        ', setBy: ',
+                        setBy
+                    );
+                }
+
                 Ext.log.indent -= 2;
             }
         }
 
-        Ext.Object.each(me.layouts, function (id, childLayout) {
-            if (!childLayout.done && childLayout.owner.ownerLayout === layout) {
-                me.reportLayoutResult(childLayout, reported);
-            }
-        });
+        for (key in me.layouts) {
+            if (me.layouts.hasOwnProperty(key)) {
+                childLayout = me.layouts[key];
 
-        Ext.Object.each(me.layouts, function (id, childLayout) {
-            if (childLayout.done && childLayout.owner.ownerLayout === layout) {
-                me.reportLayoutResult(childLayout, reported);
+                if (!childLayout.done && childLayout.owner.ownerLayout === layout) {
+                    me.reportLayoutResult(childLayout, reported);
+                }
             }
-        });
+        }
+
+        for (key in me.layouts) {
+            if (me.layouts.hasOwnProperty(key)) {
+                childLayout = me.layouts[key];
+
+                if (childLayout.done && childLayout.owner.ownerLayout === layout) {
+                    me.reportLayoutResult(childLayout, reported);
+                }
+            }
+        }
 
         --Ext.log.indent;
     },
@@ -259,7 +305,8 @@ Ext.define('Ext.diag.layout.Context', {
         var me = this,
             type = layout.type,
             name = me.getLayoutName(layout),
-            accum = me.accumByType[type];
+            accum = me.accumByType[type],
+            frame;
 
         if (me.logOn.resetLayout) {
             Ext.log('resetLayout: ', name, ' ( ', me.remainingLayouts, ' running)');
@@ -272,7 +319,7 @@ Ext.define('Ext.diag.layout.Context', {
             me.numByType[type] = (me.numByType[type] || 0) + 1;
         }
 
-        var frame = accum && accum.enter();
+        frame = accum && accum.enter();
         me.callParent(arguments);
         if (accum) {
             frame.leave();
@@ -287,7 +334,11 @@ Ext.define('Ext.diag.layout.Context', {
 
     run: function () {
         var me = this,
-            ret, time;
+            ret, time, key, value, i, layout,
+            boxParent, children, n,
+            reported, unreported,
+            calcs, total,
+            calcsLength, calc;
 
         me.accumByType = {};
         me.calcsByType = {};
@@ -303,52 +354,72 @@ Ext.define('Ext.diag.layout.Context', {
         time = Ext.perf.getTimestamp() - time;
 
         if (me.logOn.boxParent && me.boxParents) {
-            me.boxParents.each(function (boxParent) {
-                Ext.log('boxParent: ', boxParent.id);
-                for (var i = 0, children = boxParent.boxChildren, n = children.length; i < n; ++i) {
-                    Ext.log(' --> ', children[i].id);
+            for (key in me.boxParents) {
+                if (me.boxParents.hasOwnProperty(key)) {
+                    boxParent = me.boxParents[key];
+                    children  = boxParent.boxChildren;
+                    n         = children.length;
+
+                    Ext.log('boxParent: ', boxParent.id);
+                    for (i = 0; i < n; ++i) {
+                        Ext.log(' --> ', children[i].id);
+                    }
                 }
-            });
+            }
         }
 
         if (ret) {
             Ext.log('----------------- SUCCESS -----------------');
         } else {
-            Ext.log({level: 'error' },
-                '----------------- FAILURE -----------------');
+            Ext.log(
+                {level: 'error' },
+                '----------------- FAILURE -----------------'
+            );
         }
 
-        Ext.Object.each(me.layouts, function (id, layout) {
-            if (layout.running) {
-                Ext.log.error('Layout left running: ', me.getLayoutName(layout));
+        for (key in me.layouts) {
+            if (me.layouts.hasOwnProperty(key)) {
+                layout = me.layouts[key];
+
+                if (layout.running) {
+                    Ext.log.error('Layout left running: ', me.getLayoutName(layout));
+                }
+                if (layout.ownerContext) {
+                    Ext.log.error('Layout left connected: ', me.getLayoutName(layout));
+                }
             }
-            if (layout.ownerContext) {
-                Ext.log.error('Layout left connected: ', me.getLayoutName(layout));
-            }
-        });
+        }
 
         if (!ret || me.reportOnSuccess) {
-            var reported = {},
-                unreported = 0;
+            reported = {};
+            unreported = 0;
 
-            Ext.Object.each(me.layouts, function (id, layout) {
-                if (me.items[layout.owner.el.id].isTopLevel) {
-                    if (me.reportOnSuccess || me.layoutTreeHasFailures(layout, reported)) {
+            for (key in me.layouts) {
+                if (me.layouts.hasOwnProperty(key)) {
+                    layout = me.layouts[key];
+
+                    if (me.items[layout.owner.el.id].isTopLevel) {
+                        if (me.reportOnSuccess || me.layoutTreeHasFailures(layout, reported)) {
+                            me.reportLayoutResult(layout, reported);
+                        }
+                    }
+                }
+            }
+
+            // Just in case we missed any layouts...
+            for (key in me.layouts) {
+                if (me.layouts.hasOwnProperty(key)) {
+                    layout = me.layouts[key];
+
+                    if (!reported[layout.id]) {
+                        if (!unreported) {
+                            Ext.log('----- Unreported!! -----');
+                        }
+                        ++unreported;
                         me.reportLayoutResult(layout, reported);
                     }
                 }
-            });
-
-            // Just in case we missed any layouts...
-            Ext.Object.each(me.layouts, function (id, layout) {
-                if (!reported[layout.id]) {
-                    if (!unreported) {
-                        Ext.log('----- Unreported!! -----');
-                    }
-                    ++unreported;
-                    me.reportLayoutResult(layout, reported);
-                }
-            });
+            }
         }
 
         Ext.log('Cycles: ', me.cycleCount, ', Flushes: ', me.flushCount,
@@ -361,24 +432,47 @@ Ext.define('Ext.diag.layout.Context', {
                 me.round(me.timesByType[type]), ' msec (avg ',
                 me.round(me.timesByType[type] / me.calcsByType[type]), ' msec)');
         });*/
-        var calcs = [];
-        Ext.Object.each(me.numByType, function (type, total) {
-            calcs.push({
-                    type: type,
-                    total: total,
-                    calcs: me.calcsByType[type],
-                    multiple: Math.round(me.calcsByType[type] / total * 10) / 10,
-                    calcTime: me.round(me.timesByType[type]),
-                    avgCalcTime: me.round(me.timesByType[type] / me.calcsByType[type])
-                });
-        });
+        calcs = [];
+        for (key in me.numByType) {
+            if (me.numByType.hasOwnProperty(key)) {
+                total = me.numByType[key];
+
+                calcs.push({
+                        type       : key,
+                        total      : total,
+                        calcs      : me.calcsByType[key],
+                        multiple   : Math.round(me.calcsByType[key] / total * 10) / 10,
+                        calcTime   : me.round(me.timesByType[key]),
+                        avgCalcTime: me.round(me.timesByType[key] / me.calcsByType[key])
+                    });
+            }
+        }
+
+
         calcs.sort(function (a,b) {
             return b.calcTime - a.calcTime;
         });
-        Ext.each(calcs, function (calc) {
-            Ext.log(calc.type, ': ', calc.total, ' in ', calc.calcs, ' tries (',
-                calc.multiple, 'x) at ', calc.calcTime, ' msec (avg ', calc.avgCalcTime, ' msec)');
-        });
+
+        calcsLength = calcs.length;
+        for (i=0; i<calcsLength; i++) {
+            calc = calcs[i];
+
+            Ext.log(
+                calc.type,
+                ': ',
+                calc.total,
+                ' in ',
+                calc.calcs,
+                ' tries (',
+                calc.multiple,
+                'x) at ',
+                calc.calcTime,
+                ' msec (avg ',
+                calc.avgCalcTime,
+                ' msec)'
+            );
+        }
+
         return ret;
     },
 
@@ -422,7 +516,7 @@ Ext.define('Ext.diag.layout.Context', {
             } else {
                 Ext.log('complete ', layout.owner.id, ':', type, ' cw=',props.contentWidth, ' ch=', props.contentHeight);
             }
-        }/**/
+        }**/
 
         return ret;
     }

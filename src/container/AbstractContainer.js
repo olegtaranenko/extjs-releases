@@ -217,7 +217,7 @@ Ext.define('Ext.container.AbstractContainer', {
 
     /*
      * @property {Boolean} isContainer
-     * `true` in this class to identify an objact as an instantiated Container, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Container, or subclass thereof.
      */
     isContainer : true,
 
@@ -319,7 +319,7 @@ Ext.define('Ext.container.AbstractContainer', {
      * @private
      * Returns the focus holder element associated with this Container. By default, this is the Container's target
      * element. Subclasses which use embedded focusable elements (such as Window and Button) should override this for use
-     * by the {@link #focus} method.
+     * by the {@link #method-focus} method.
      * @returns {Ext.Element} the focus holding element.
      */
     getFocusEl: function() {
@@ -388,34 +388,8 @@ Ext.define('Ext.container.AbstractContainer', {
      * @return {Ext.container.Container} this
      */
     doLayout : function() {
-        var me = this,
-            layout = me.getLayout();
-
-        if (me.rendered && layout && !me.suspendLayout && !me.layoutSuspendCount) {
-            /*
-            // If either dimension is being auto-set, then it requires a ComponentLayout to be run.
-            if (!me.isFixedWidth() || !me.isFixedHeight()) {
-                // Only run the ComponentLayout if it is not already in progress
-                if (me.componentLayout.layoutBusy !== true) {
-                    me.doComponentLayout();
-                    if (me.componentLayout.layoutCancelled === true) {
-                        layout.layout();
-                    }
-                }
-            }
-            // Both dimensions set, either by configuration, or by an owning layout, run a ContainerLayout
-            else {
-                // Only run the ContainerLayout if it is not already in progress
-                if (layout.layoutBusy !== true) {
-                    layout.layout();
-                }
-            }
-            */
-           me.updateLayout();
-           // TODO - since we may change size, we really need to bubble this up...
-        }
-
-        return me;
+        this.updateLayout();
+        return this;
     },
 
     /**
@@ -428,13 +402,15 @@ Ext.define('Ext.container.AbstractContainer', {
      * @protected
      */
     afterLayout : function(layout) {
-        ++this.layoutCounter;
-        this.fireEvent('afterlayout', this, layout);
+        var me = this;
+        ++me.layoutCounter;
+        if (me.hasListeners.afterlayout) {
+            me.fireEvent('afterlayout', me, layout);
+        }
     },
 
     // @private
     prepareItems : function(items, applyDefaults) {
-
         // Create an Array which does not refer to the passed array.
         // The passed array is a reference to a user's config object and MUST NOT be mutated.
         if (Ext.isArray(items)) {
@@ -450,11 +426,18 @@ Ext.define('Ext.container.AbstractContainer', {
 
         for (; i < len; i++) {
             item = items[i];
-            if (applyDefaults) {
-                item = this.applyDefaults(item);
+            if (item == null) {
+                Ext.Array.erase(items, i, 1);
+                --i;
+                --len;
+            } else {
+                if (applyDefaults) {
+                    item = this.applyDefaults(item);
+                }
+                items[i] = this.lookupComponent(item);
             }
-            items[i] = this.lookupComponent(item);
         }
+
         return items;
     },
 
@@ -549,7 +532,7 @@ Ext.define('Ext.container.AbstractContainer', {
         length = items.length;
 
         if (me.rendered) {
-            me.suspendLayouts(); // suspend layouts while adding items...
+            Ext.suspendLayouts(); // suspend layouts while adding items...
         }
 
         if (!addingArray && length == 1) { // an array of 1 should still return an array...
@@ -572,19 +555,22 @@ Ext.define('Ext.container.AbstractContainer', {
             // up to their z-index parent.
             if (item.floating) {
                 item.onAdded(me, pos);
-            } else if (me.fireEvent('beforeadd', me, item, pos) !== false &&
-                       me.onBeforeAdd(item) !== false) {
+            } else if ((!me.hasListeners.beforeadd || me.fireEvent('beforeadd', me, item, pos) !== false) && me.onBeforeAdd(item) !== false) {
                 me.items.insert(pos, item);
                 item.onAdded(me, pos);
                 me.onAdd(item, pos);
                 layout.onAdd(item, pos);
 
-                me.fireEvent('add', me, item, pos);
+                if (me.hasListeners.add) {
+                    me.fireEvent('add', me, item, pos);
+                }
             }
         }
 
+        // We need to update our layout after adding all passed items
+        me.updateLayout();
         if (me.rendered) {
-            me.resumeLayouts(true);
+            Ext.resumeLayouts(true);
         }
 
         return ret;
@@ -712,9 +698,11 @@ Ext.define('Ext.container.AbstractContainer', {
             }
         //</debug>
 
-        if (c && me.fireEvent('beforeremove', me, c) !== false) {
+        if (c && (!me.hasListeners.beforeremove || me.fireEvent('beforeremove', me, c) !== false)) {
             me.doRemove(c, autoDestroy);
-            me.fireEvent('remove', me, c);
+            if (me.hasListeners.remove) {
+                me.fireEvent('remove', me, c);
+            }
 
             if (!me.destroying) {
                 me.doLayout();
@@ -843,7 +831,7 @@ Ext.define('Ext.container.AbstractContainer', {
             componentIndex = args.length - 1;
 
         if (fn.apply(scope || me, args) !== false) {
-            for(; i < len; i++){
+            for (; i < len; i++){
                 c = cs[i];
                 if (c.cascade) {
                     c.cascade(fn, scope, origArgs);
@@ -999,11 +987,18 @@ Ext.define('Ext.container.AbstractContainer', {
     // Override enable because onEnable only gets called when rendered
     enable: function() {
         this.callParent(arguments);
-        Ext.Array.forEach(this.getChildItemsToDisable(), function(item) {
+
+        var itemsToDisable = this.getChildItemsToDisable(),
+            length         = itemsToDisable.length,
+            item, i;
+
+        for (i = 0; i < length; i++) {
+            item = itemsToDisable[i];
+
             if (item.resetDisable) {
                 item.enable();
             }
-        });
+        }
     },
 
     // Inherit docs
@@ -1011,12 +1006,19 @@ Ext.define('Ext.container.AbstractContainer', {
     // Override disable because onDisable only gets called when rendered
     disable: function() {
         this.callParent(arguments);
-        Ext.Array.forEach(this.getChildItemsToDisable(), function(item) {
+
+        var itemsToDisable = this.getChildItemsToDisable(),
+            length         = itemsToDisable.length,
+            item, i;
+
+        for (i = 0; i < length; i++) {
+            item = itemsToDisable[i];
+
             if (item.resetDisable !== false && !item.disabled) {
                 item.disable();
                 item.resetDisable = true;
             }
-        });
+        }
     },
     
     /**
@@ -1026,7 +1028,7 @@ Ext.define('Ext.container.AbstractContainer', {
      * @return {Ext.Component[]} Items to be enabled/disabled
      */
     getChildItemsToDisable: function(){
-        return this.query('[isFormField]');
+        return this.query('[isFormField],button');
     },
 
     /**

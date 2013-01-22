@@ -78,7 +78,7 @@ Ext.define('Ext.AbstractComponent', {
                 me.pendingLayouts = null;
                 me.runningLayoutContext = context;
 
-                context.hookMethods({
+                Ext.override(context, {
                     runComplete: function () {
                         // we need to release the layout queue before running any of the
                         // finishedLayout calls because they call afterComponentLayout
@@ -127,11 +127,15 @@ Ext.define('Ext.AbstractComponent', {
 
 <span id='Ext-AbstractComponent-property-isComponent'>    /**
 </span>     * @property {Boolean} isComponent
-     * `true` in this class to identify an objact as an instantiated Component, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Component, or subclass thereof.
      */
     isComponent: true,
 
+<span id='Ext-AbstractComponent-method-getAutoId'>     /**
+</span>     * @private
+     */
     getAutoId: function() {
+        this.autoGenId = true;
         return ++Ext.AbstractComponent.AUTO_ID;
     },
 
@@ -159,6 +163,13 @@ Ext.define('Ext.AbstractComponent', {
      *
      * Defaults to an {@link #getId auto-assigned id}.
      */
+
+<span id='Ext-AbstractComponent-property-autoGenId'>     /**
+</span>     * @property {Boolean} autoGenId
+     * `true` indicates an id was auto-generated rather than provided by configuration.
+     * @private
+     */
+    autoGenId: false,
 
 <span id='Ext-AbstractComponent-cfg-itemId'>    /**
 </span>     * @cfg {String} itemId
@@ -380,11 +391,14 @@ Ext.define('Ext.AbstractComponent', {
      * This is an object containing the frame width in pixels for all four sides of the Component containing the
      * following properties:
      *
-     * @property {Number} frameSize.top The width of the top framing element in pixels.
-     * @property {Number} frameSize.right The width of the right framing element in pixels.
-     * @property {Number} frameSize.bottom The width of the bottom framing element in pixels.
-     * @property {Number} frameSize.left The width of the left framing element in pixels.
+     * @property {Number} [frameSize.top=0] The width of the top framing element in pixels.
+     * @property {Number} [frameSize.right=0] The width of the right framing element in pixels.
+     * @property {Number} [frameSize.bottom=0] The width of the bottom framing element in pixels.
+     * @property {Number} [frameSize.left=0] The width of the left framing element in pixels.
+     * @property {Number} [frameSize.width=0] The total width of the left and right framing elements in pixels.
+     * @property {Number} [frameSize.height=0] The total height of the top and right bottom elements in pixels.
      */
+    frameSize: { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 },
 
 <span id='Ext-AbstractComponent-cfg-componentLayout'>    /**
 </span>     * @cfg {String/Object} componentLayout
@@ -820,8 +834,8 @@ Ext.define('Ext.AbstractComponent', {
 
             xhooks = me.xhooks;
             if (xhooks) {
-                me.hookMethods(xhooks);
                 delete me.xhooks;
+                Ext.override(me, xhooks);
             }
         } else {
             config = {};
@@ -934,6 +948,14 @@ Ext.define('Ext.AbstractComponent', {
              * @param {Ext.Component} this
              */
             'afterrender',
+<span id='Ext-AbstractComponent-event-boxready'>            /**
+</span>             * @event boxready
+             * Fires *one time* - after the component has been layed out for the first time at its initial size.
+             * @param {Ext.Component} this
+             * @param {Number} width The initial width
+             * @param {Number} height The initial height
+             */
+            'boxready',
 <span id='Ext-AbstractComponent-event-beforedestroy'>            /**
 </span>             * @event beforedestroy
              * Fires before the component is {@link #method-destroy}ed. Return false from an event handler to stop the
@@ -949,7 +971,8 @@ Ext.define('Ext.AbstractComponent', {
             'destroy',
 <span id='Ext-AbstractComponent-event-resize'>            /**
 </span>             * @event resize
-             * Fires after the component is resized.
+             * Fires after the component is resized. Note that this does *not* fire when the component is first layed out at its initial
+             * size. To hook that point in the lifecycle, use the {@link #boxready} event.
              * @param {Ext.Component} this
              * @param {Number} width The new width that was set
              * @param {Number} height The new height that was set
@@ -984,7 +1007,7 @@ Ext.define('Ext.AbstractComponent', {
         me.getId();
 
         me.setupProtoEl();
-        
+
         // initComponent, beforeRender, or event handlers may have set the style or cls property since the protoEl was set up
         // so we must apply styles and classes here too.
         if (me.cls) {
@@ -1003,6 +1026,11 @@ Ext.define('Ext.AbstractComponent', {
         if (me.plugins) {
             me.plugins = [].concat(me.plugins);
             me.constructPlugins();
+        }
+
+        // we need this before we call initComponent
+        if (!me.hasListeners) {
+            me.hasListeners = new me.HasListeners();
         }
 
         me.initComponent();
@@ -1102,7 +1130,7 @@ Ext.define('Ext.AbstractComponent', {
     addPropertyToState: function (state, propName, value) {
         var me = this,
             len = arguments.length;
-        
+
         // If the property is inherited, it is a default and we don't want to save it to
         // the state, however if we explicitly specify a value, always save it
         if (len == 3 || me.hasOwnProperty(propName)) {
@@ -1129,8 +1157,9 @@ Ext.define('Ext.AbstractComponent', {
             toHeight,
             toWidth,
             to,
-            clearsWidth,
-            clearsHeight;
+            clearWidth,
+            clearHeight,
+            curWidth, w, curHeight, h, needsResize;
 
         animObj = animObj || {};
         to = animObj.to || {};
@@ -1138,24 +1167,24 @@ Ext.define('Ext.AbstractComponent', {
         if (Ext.fx.Manager.hasFxBlock(me.id)) {
             return me;
         }
-        
+
         hasToWidth = Ext.isDefined(to.width);
         if (hasToWidth) {
             toWidth = Ext.Number.constrain(to.width, me.minWidth, me.maxWidth);
         }
-        
+
         hasToHeight = Ext.isDefined(to.height);
         if (hasToHeight) {
             toHeight = Ext.Number.constrain(to.height, me.minHeight, me.maxHeight);
         }
-        
+
         // Special processing for animating Component dimensions.
         if (!animObj.dynamic &amp;&amp; (hasToWidth || hasToHeight)) {
-            var curWidth = (animObj.from ? animObj.from.width : undefined) || me.getWidth(),
-                w = curWidth,
-                curHeight = (animObj.from ? animObj.from.height : undefined) || me.getHeight(),
-                h = curHeight,
-                needsResize = false;
+            curWidth = (animObj.from ? animObj.from.width : undefined) || me.getWidth();
+            w = curWidth;
+            curHeight = (animObj.from ? animObj.from.height : undefined) || me.getHeight();
+            h = curHeight;
+            needsResize = false;
 
             if (hasToHeight &amp;&amp; toHeight &gt; curHeight) {
                 h = toHeight;
@@ -1173,7 +1202,7 @@ Ext.define('Ext.AbstractComponent', {
                 clearWidth = !Ext.isNumber(me.width);
                 clearHeight = !Ext.isNumber(me.height);
 
-                me.setSize(w, h, me.ownerCt);
+                me.setSize(w, h);
                 me.el.setSize(curWidth, curHeight);
                 if (clearWidth) {
                     delete me.width;
@@ -1185,7 +1214,7 @@ Ext.define('Ext.AbstractComponent', {
             if (hasToWidth) {
                 to.width = toWidth;
             }
-            
+
             if (hasToHeight) {
                 to.height = toHeight;
             }
@@ -1331,7 +1360,7 @@ Ext.define('Ext.AbstractComponent', {
             cls,
             i;
 
-        //loop through all exisiting uiCls and update the ui in them
+        //loop through all existing uiCls and update the ui in them
         for (i = 0; i &lt; oldUICls.length; i++) {
             cls = oldUICls[i];
 
@@ -1349,10 +1378,10 @@ Ext.define('Ext.AbstractComponent', {
         //set the UI
         me.ui = ui;
 
-        //add the new UI to the elemend
+        //add the new UI to the element
         me.addUIToElement();
 
-        //loop through all exisiting uiCls and update the ui in them
+        //loop through all existing uiCls and update the ui in them
         classes = [];
         for (i = 0; i &lt; newUICls.length; i++) {
             cls = newUICls[i];
@@ -1361,6 +1390,13 @@ Ext.define('Ext.AbstractComponent', {
 
         if (classes.length) {
             me.addCls(classes);
+        }
+
+        // Changing the ui can lead to significant changes to a component's appearance, so the layout needs to be
+        // updated. Internally most calls to setUI are pre-render. Buttons are a notable exception as setScale changes
+        // the ui and often requires the layout to be updated.
+        if (me.rendered) {
+            me.updateLayout();
         }
     },
 
@@ -1450,18 +1486,18 @@ Ext.define('Ext.AbstractComponent', {
      * than just the components element.
      * @param {String} ui The UI to remove from the element
      */
-    addUIClsToElement: function(cls, force) {
+    addUIClsToElement: function(cls) {
         var me = this,
             baseClsUi = me.baseCls + '-' + me.ui + '-' + cls,
             result = [Ext.baseCSSPrefix + cls, me.baseCls + '-' + cls, baseClsUi],
-            frameElementCls = me.frameElementCls;
+            frameElementCls = me.frameElementCls,
+            frameElementsArray, frameElementsLength, i, el, frameElement, c;
 
-        if (!force &amp;&amp; me.frame &amp;&amp; !Ext.supports.CSS3BorderRadius) {
+        if (me.frame &amp;&amp; !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
-            var frameElementsArray = me.frameElementsArray,
-                frameElementsLength = frameElementsArray.length,
-                i = 0,
-                el, frameElement, c;
+            frameElementsArray = me.frameElementsArray;
+            frameElementsLength = frameElementsArray.length;
+            i = 0;
 
             // loop through each of them, and if they are defined add the ui
             for (; i &lt; frameElementsLength; i++) {
@@ -1486,18 +1522,18 @@ Ext.define('Ext.AbstractComponent', {
      * will be: `this.baseCls + '-' + ui`
      * @param {String} ui The UI to add to the element
      */
-    removeUIClsFromElement: function(cls, force) {
+    removeUIClsFromElement: function(cls) {
         var me = this,
             baseClsUi = me.baseCls + '-' + me.ui + '-' + cls,
             result = [Ext.baseCSSPrefix + cls, me.baseCls + '-' + cls, baseClsUi],
-            frameElementCls = me.frameElementCls;
+            frameElementCls = me.frameElementCls,
+            frameElementsArray, frameElementsLength, i, el, frameElement, c;
 
-        if (!force &amp;&amp; me.frame &amp;&amp; !Ext.supports.CSS3BorderRadius) {
+        if (me.frame &amp;&amp; !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
-            var frameElementsArray = me.frameElementsArray,
-                frameElementsLength = frameElementsArray.length,
-                i = 0,
-                el, frameElement, c;
+            frameElementsArray = me.frameElementsArray;
+            frameElementsLength = frameElementsArray.length;
+            i = 0;
 
             // loop through each of them, and if they are defined add the ui
             for (; i &lt; frameElementsLength; i++) {
@@ -1524,16 +1560,16 @@ Ext.define('Ext.AbstractComponent', {
     addUIToElement: function() {
         var me = this,
             baseClsUI = me.baseCls + '-' + me.ui,
-            frameElementCls = me.frameElementCls;
+            frameElementCls = me.frameElementCls,
+            frameElementsArray, frameElementsLength, i, el, frameElement, c;
 
         me.addCls(baseClsUI);
 
         if (me.frame &amp;&amp; !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
-            var frameElementsArray = me.frameElementsArray,
-                frameElementsLength = frameElementsArray.length,
-                i = 0,
-                el, frameElement, c;
+            frameElementsArray = me.frameElementsArray;
+            frameElementsLength = frameElementsArray.length;
+            i = 0;
 
             // loop through each of them, and if they are defined add the ui
             for (; i &lt; frameElementsLength; i++) {
@@ -1558,16 +1594,16 @@ Ext.define('Ext.AbstractComponent', {
     removeUIFromElement: function() {
         var me = this,
             baseClsUI = me.baseCls + '-' + me.ui,
-            frameElementCls = me.frameElementCls;
+            frameElementCls = me.frameElementCls,
+            frameElementsArray, frameElementsLength, i, el, frameElement, c;
 
         me.removeCls(baseClsUI);
 
         if (me.frame &amp;&amp; !Ext.supports.CSS3BorderRadius) {
             // define each element of the frame
-            var frameElementsArray = me.frameElementsArray,
-                frameElementsLength = frameElementsArray.length,
-                i = 0,
-                el, frameElement, c;
+            frameElementsArray = me.frameElementsArray;
+            frameElementsLength = frameElementsArray.length;
+            i = 0;
 
             for (; i &lt; frameElementsLength; i++) {
                 frameElement = frameElementsArray[i];
@@ -1612,7 +1648,7 @@ Ext.define('Ext.AbstractComponent', {
         if (margin !== undefined) {
             targetEl.setStyle('margin', Element.unitizeBox((margin === true) ? 5 : margin));
         }
-        
+
         if (me.border !== undefined) {
             me.setBorder(me.border, targetEl);
         }
@@ -1646,11 +1682,11 @@ Ext.define('Ext.AbstractComponent', {
 
             // framed components need their width/height to apply to the frame, which is
             // best handled in layout at present
-            if (typeof width == 'number') {
-                targetEl.setStyle('width', width + 'px');
+            if (width !== undefined) {
+                targetEl.setStyle('width', (typeof width === 'number') ? width + 'px' : width);
             }
-            if (typeof height == 'number') {
-                targetEl.setStyle('height', height + 'px');
+            if (height !== undefined) {
+                targetEl.setStyle('height', (typeof height === 'number') ? height + 'px' : height);
             }
         }
     },
@@ -1681,7 +1717,7 @@ Ext.define('Ext.AbstractComponent', {
         // the FocusManager can track and highlight focus.
         me.addFocusListener();
     },
-    
+
 <span id='Ext-AbstractComponent-method-addFocusListener'>    /**
 </span>     * @private
      * &lt;p&gt;Sets up the focus listener on this Component's {@link #getFocusEl focusEl} if it has one.&lt;/p&gt;
@@ -1735,7 +1771,7 @@ Ext.define('Ext.AbstractComponent', {
      * &lt;p&gt;Returns the focus holder element associated with this Component. At the Component base class level, this function returns &lt;code&gt;undefined&lt;/code&gt;.&lt;/p&gt;
      * &lt;p&gt;Subclasses which use embedded focusable elements (such as Window, Field and Button) should override this for use by the {@link #focus} method.&lt;/p&gt;
      * &lt;p&gt;Containers which need to participate in the {@link Ext.FocusManager FocusManager}'s navigation and Container focusing scheme also
-     * need to return a focusEl, although focus is only listened for in this case if the {@link Ext.FocusManager FocusManager} is {@link Ext.FocusManager#enable enable}d.&lt;/p&gt;
+     * need to return a focusEl, although focus is only listened for in this case if the {@link Ext.FocusManager FocusManager} is {@link Ext.FocusManager#method-enable enable}d.&lt;/p&gt;
      * @returns {undefined} &lt;code&gt;undefined&lt;/code&gt; because raw Components cannot by default hold focus.
      */
     getFocusEl: Ext.emptyFn,
@@ -2135,7 +2171,7 @@ Ext.define('Ext.AbstractComponent', {
         }
 
         if (me.rendered) {
-            me.doComponentLayout();
+            me.updateLayout();
         }
     },
 
@@ -2190,14 +2226,17 @@ Ext.define('Ext.AbstractComponent', {
         }
         return visible;
     },
-    
+
     onBoxReady: function(){
         var me = this;
-        
+
         if (me.disableOnBoxReady) {
             me.onDisable();
         } else if (me.enableOnBoxReady) {
             me.onEnable();
+        }
+        if (me.resizable) {
+            me.initResizable(me.resizable);
         }
     },
 
@@ -2294,9 +2333,9 @@ Ext.define('Ext.AbstractComponent', {
     unmask: function() {
         this.getMaskTarget().unmask();
     },
-    
+
     getMaskTarget: function(){
-        return this.el
+        return this.el;
     },
 
 <span id='Ext-AbstractComponent-method-isDisabled'>    /**
@@ -2501,8 +2540,11 @@ Ext.define('Ext.AbstractComponent', {
      * @protected
      */
     onAdded : function(container, pos) {
-        this.ownerCt = container;
-        this.fireEvent('added', this, container, pos);
+        var me = this;
+        me.ownerCt = container;
+        if (me.hasListeners.added) {
+            me.fireEvent('added', me, container, pos);
+        }
     },
 
 <span id='Ext-AbstractComponent-method-onRemoved'>    /**
@@ -2526,9 +2568,11 @@ Ext.define('Ext.AbstractComponent', {
      */
     onRemoved : function(destroying) {
         var me = this;
-
-        me.fireEvent('removed', me, me.ownerCt);
+        if (me.hasListeners.removed) {
+            me.fireEvent('removed', me, me.ownerCt);
+        }
         delete me.ownerCt;
+        delete me.ownerLayout;
     },
 
 <span id='Ext-AbstractComponent-method-beforeDestroy'>    /**
@@ -2583,9 +2627,14 @@ Ext.define('Ext.AbstractComponent', {
         // Constrain within configured maxima
         if (typeof width == 'number') {
             me.width = Ext.Number.constrain(width, me.minWidth, me.maxWidth);
+        } else if (width === null) {
+            delete me.width;
         }
+        
         if (typeof height == 'number') {
             me.height = Ext.Number.constrain(height, me.minHeight, me.maxHeight);
+        } else if (height === null) {
+            delete me.height;
         }
 
         // If not rendered, all we need to is set the properties.
@@ -2696,69 +2745,70 @@ Ext.define('Ext.AbstractComponent', {
     },
 
 <span id='Ext-AbstractComponent-method-getSizeModel'>    /**
-</span>     * Returns an object that describes how this component's width and height is managed. These
-     * objects are shared and should not be modified.
+</span>     * Returns an object that describes how this component's width and height are managed.
+     * These objects are shared and should not be modified.
      *
      * @return {Object} The size model for this component.
-     * @return {Object} return.width The width aspect of this component's size model.
-     * @return {Boolean} return.width.auto True if width is either natural or shrinkWrap (not fixed).
-     * @return {Boolean} return.width.calculated True if width is calculated by a layout.
-     * @return {Boolean} return.width.configured True if width is specified on this component.
-     * @return {Boolean} return.width.fixed True if width is either calculated or configured.
-     * @return {Boolean} return.width.natural True if width is determined by CSS and does not depend on content.
-     * @return {Boolean} return.width.shrinkWrap True if width is determined by content.
-     * @return {Object} return.height The height aspect of this component's size model.
-     * @return {Boolean} return.height.auto True if height is either natural or shrinkWrap (not fixed).
-     * @return {Boolean} return.height.calculated True if height is calculated by a layout.
-     * @return {Boolean} return.height.configured True if height is specified on this component.
-     * @return {Boolean} return.height.fixed True if height is either calculated or configured.
-     * @return {Boolean} return.height.natural True if height is determined by CSS and does not depend on content.
-     * @return {Boolean} return.height.shrinkWrap True if height is determined by content.
+     * @return {Ext.layout.SizeModel} return.width The {@link Ext.layout.SizeModel size model} for the width.
+     * @return {Ext.layout.SizeModel} return.height The {@link Ext.layout.SizeModel size model} for the height.
      */
     getSizeModel: function (ownerCtSizeModel) {
         var me = this,
-            Layout = Ext.layout.Layout.prototype,
-            models = Layout.sizeModels,
-            heightModel, ownerLayout, policy, shrinkWrap, widthModel;
+            models = Ext.layout.SizeModel,
+            ownerCtx = me.componentLayout.ownerContext,
+            hasWidth, hasHeight, heightModel, ownerLayout, policy, shrinkWrap, widthModel;
 
-        if (typeof me.width == 'number') {
-            widthModel = models.configured;
-        }
-        if (typeof me.height == 'number') {
-            heightModel = models.configured;
+        if (ownerCtx) {
+            widthModel = ownerCtx.widthModel;
+            heightModel = ownerCtx.heightModel;
         }
 
         if (!widthModel || !heightModel) {
-            if (me.floating) {
-                policy = Layout.autoSizePolicy;
-                shrinkWrap = 3;
-            } else {
-                if (!(ownerLayout = me.ownerLayout)) {
-                    policy = Layout.autoSizePolicy;
-                    shrinkWrap = me.shrinkWrap;
-                } else {
-                    policy = ownerLayout.getItemSizePolicy(me);
-                    shrinkWrap = ownerLayout.isItemShrinkWrap(me);
+            hasWidth = (typeof me.width == 'number');
+            hasHeight = (typeof me.height == 'number');
+
+            // Floating or no owner layout, e.g. rendered using renderTo
+            if (me.floating || !(ownerLayout = me.ownerLayout)) {
+                if (hasWidth) {
+                    widthModel = models.configured;
                 }
-                
-                shrinkWrap = (shrinkWrap === true) ? 3 : (shrinkWrap || 0); // false-&gt;0, true-&gt;3
-                
-                if (shrinkWrap !== 3) {
-                    if (!ownerCtSizeModel) {
-                        ownerCtSizeModel = me.ownerCt &amp;&amp; me.ownerCt.getSizeModel();
-                    }
-                    if (ownerCtSizeModel) {
-                        shrinkWrap |= (ownerCtSizeModel.width.shrinkWrap ? 1 : 0) | (ownerCtSizeModel.height.shrinkWrap ? 2 : 0);
-                    }
+                if (hasHeight) {
+                    heightModel = models.configured;
+                }
+
+                policy = Ext.layout.Layout.prototype.autoSizePolicy;
+                shrinkWrap = me.floating ? 3 : me.shrinkWrap;
+            } else {
+                policy = ownerLayout.getItemSizePolicy(me);
+                shrinkWrap = ownerLayout.isItemShrinkWrap(me);
+            }
+
+            shrinkWrap = (shrinkWrap === true) ? 3 : (shrinkWrap || 0); // false-&gt;0, true-&gt;3
+
+            if (shrinkWrap !== 3) {
+                if (!ownerCtSizeModel) {
+                    ownerCtSizeModel = me.ownerCt &amp;&amp; me.ownerCt.getSizeModel();
+                }
+
+                if (ownerCtSizeModel) {
+                    shrinkWrap |= (ownerCtSizeModel.width.shrinkWrap ? 1 : 0) | (ownerCtSizeModel.height.shrinkWrap ? 2 : 0);
                 }
             }
 
             if (!widthModel) {
                 if (!policy.setsWidth) {
-                    widthModel = (shrinkWrap &amp; 1) ? models.shrinkWrap : models.natural;
+                    if (hasWidth) {
+                        widthModel = models.configured;
+                    } else {
+                        widthModel = (shrinkWrap &amp; 1) ? models.shrinkWrap : models.natural;
+                    }
                 } else if (policy.readsWidth) {
-                    widthModel = (shrinkWrap &amp; 1) ? models.calculatedFromShrinkWrap : 
+                    if (hasWidth) {
+                        widthModel = models.calculatedFromConfigured;
+                    } else {
+                        widthModel = (shrinkWrap &amp; 1) ? models.calculatedFromShrinkWrap :
                                     models.calculatedFromNatural;
+                    }
                 } else {
                     widthModel = models.calculated;
                 }
@@ -2766,10 +2816,18 @@ Ext.define('Ext.AbstractComponent', {
 
             if (!heightModel) {
                 if (!policy.setsHeight) {
-                    heightModel = (shrinkWrap &amp; 2) ? models.shrinkWrap : models.natural;
+                    if (hasHeight) {
+                        heightModel = models.configured;
+                    } else {
+                        heightModel = (shrinkWrap &amp; 2) ? models.shrinkWrap : models.natural;
+                    }
                 } else if (policy.readsHeight) {
-                    heightModel = (shrinkWrap &amp; 2) ? models.calculatedFromShrinkWrap : 
+                    if (hasHeight) {
+                        heightModel = models.calculatedFromConfigured;
+                    } else {
+                        heightModel = (shrinkWrap &amp; 2) ? models.calculatedFromShrinkWrap :
                                     models.calculatedFromNatural;
+                    }
                 } else {
                     heightModel = models.calculated;
                 }
@@ -2805,9 +2863,10 @@ Ext.define('Ext.AbstractComponent', {
 
 <span id='Ext-AbstractComponent-method-forceComponentLayout'>    /**
 </span>     * Forces this component to redo its componentLayout.
+     * @deprecated 4.1.0 Use {@link #updateLayout} instead.
      */
     forceComponentLayout: function () {
-        this.doComponentLayout();
+        this.updateLayout();
     },
 
     // @private
@@ -2841,11 +2900,12 @@ Ext.define('Ext.AbstractComponent', {
      * @protected
      */
     afterComponentLayout: function(width, height, oldWidth, oldHeight) {
-        if (++this.componentLayoutCounter === 1) {
-            this.afterFirstLayout();
+        var me = this;
+        if (++me.componentLayoutCounter === 1) {
+            me.afterFirstLayout(width, height);
         }
-        if (width !== oldWidth || height !== oldHeight) {
-            this.fireEvent('resize', this, width, height, oldWidth, oldHeight);
+        if (me.hasListeners.resize &amp;&amp; (width !== oldWidth || height !== oldHeight)) {
+            me.fireEvent('resize', me, width, height, oldWidth, oldHeight);
         }
     },
 
@@ -2940,8 +3000,11 @@ Ext.define('Ext.AbstractComponent', {
      * @protected
      */
     afterSetPosition: function(x, y) {
-        this.onPosition(x, y);
-        this.fireEvent('move', this, x, y);
+        var me = this;
+        me.onPosition(x, y);
+        if (me.hasListeners.move) {
+            me.fireEvent('move', me, x, y);
+        }
     },
 
 <span id='Ext-AbstractComponent-method-convertPosition'>    /**
@@ -3065,25 +3128,25 @@ Ext.define('Ext.AbstractComponent', {
 
         me.dock = dock;
         if (layoutParent &amp;&amp; me.ownerCt &amp;&amp; me.rendered) {
-            me.ownerCt.doComponentLayout();
+            me.ownerCt.updateLayout();
         }
         return me;
     },
-    
+
 <span id='Ext-AbstractComponent-method-setBorder'>    /**
-</span>     * 
+</span>     *
      * @param {String/Number} border The border, see {@link #border}. If a falsey value is passed
      * the border will be removed.
      */
     setBorder: function(border, /* private */ targetEl) {
         var me = this,
             initial = !!targetEl;
-            
+
         if (me.rendered || initial) {
             if (!initial) {
                 targetEl = me.el;
             }
-            
+
             if (!border) {
                 border = 0;
             } else {
@@ -3122,7 +3185,7 @@ Ext.define('Ext.AbstractComponent', {
             el;
 
         if (!me.isDestroyed) {
-            if (me.fireEvent('beforedestroy', me) !== false) {
+            if (!me.hasListeners.beforedestroy || me.fireEvent('beforedestroy', me) !== false) {
                 me.destroying = true;
                 me.beforeDestroy();
 
@@ -3142,7 +3205,9 @@ Ext.define('Ext.AbstractComponent', {
                 // Attempt to destroy all plugins
                 Ext.destroy(me.plugins);
 
-                me.fireEvent('destroy', me);
+                if (me.hasListeners.destroy) {
+                    me.fireEvent('destroy', me);
+                }
                 Ext.ComponentManager.unregister(me);
 
                 me.mixins.state.destroy.call(me);
@@ -3153,14 +3218,18 @@ Ext.define('Ext.AbstractComponent', {
                     // In case we are queued for a layout.
                     Ext.AbstractComponent.cancelLayout(me);
 
-                    me.el.remove();
+                    if (!me.preserveElOnDestroy) {
+                        me.el.remove();
+                    }
                     me.mixins.elementCt.destroy.call(me); // removes childEls
                     if (selectors) {
                         for (selector in selectors) {
                             if (selectors.hasOwnProperty(selector)) {
                                 el = me[selector];
-                                delete me[selector];
-                                el.remove();
+                                if (el) { // in case any other code may have already removed it
+                                    delete me[selector];
+                                    el.remove();
+                                }
                             }
                         }
                     }
@@ -3218,9 +3287,9 @@ Ext.define('Ext.AbstractComponent', {
     Ext.suspendLayouts = function () {
         abstractComponent.suspendLayouts();
     };
-    
+
 <span id='Ext-AbstractComponent-method-batchLayouts'>    /**
-</span>     * 
+</span>     *
      * Utility wrapper that suspends layouts of all components for the duration of a given function.
      * @param {Function} fn The function to execute.
      * @param {Object} scope (Optional) The scope (`this` reference) in which the specified function is executed.

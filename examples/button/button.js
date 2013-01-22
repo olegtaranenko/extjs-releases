@@ -136,4 +136,9 @@ Ext.onReady(function() {
         textAlign: 'right',
         width: 200
     });
+
+    renderButtons('Link Buttons', genericConfig, {
+        cls: 'floater',
+        href: 'http://www.sencha.com/'
+    });
 });

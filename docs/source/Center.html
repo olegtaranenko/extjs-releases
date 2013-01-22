@@ -63,6 +63,14 @@ Ext.define('Ext.ux.layout.Center', {
         this.owner.addCls('ux-layout-center');
     },
 
+    getItemSizePolicy: function (item) {
+        var policy = this.callParent(arguments);
+        if (typeof item.width == 'number') {
+            policy = this.sizePolicies[policy.setsHeight ? 2 : 0];
+        }
+        return policy;
+    },
+
     getPos: function (itemContext, info, dimension) {
         var size = itemContext.props[dimension] + info.margins[dimension],
             pos = Math.round((info.targetSize[dimension] - size) / 2);

@@ -45,9 +45,8 @@ Ext.define('Ext.grid.column.Number', {
     //<locale>
     format : '0,000.00',
     //</locale>
-
-    constructor: function(cfg) {
-        this.callParent(arguments);
-        this.renderer = Ext.util.Format.numberRenderer(this.format);
+    
+    defaultRenderer: function(value){
+        return Ext.util.Format.number(value, this.format);
     }
 });

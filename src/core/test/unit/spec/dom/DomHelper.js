@@ -1,5 +1,6 @@
 xdescribe("Ext.core.DomHelper", function(){
-    
+    // TODO this spec is just unmaintanable, because of subtleGradient magic...
+    // no dynamic spec generation !
     var TestHelper = {
         dom:{
             cleanBody: function(){
@@ -46,11 +47,12 @@ xdescribe("Ext.core.DomHelper", function(){
             }
         }
     };    
-    describe('useDom = false', function(){
+    
+    xdescribe('useDom = false', function(){
         beforeEach(function(){
             Ext.core.DomHelper.useDom = false;
         });
-        Ext_core_DomHelper_Tests.apply(this, arguments);
+        //Ext_core_DomHelper_Tests.apply(this, arguments);
     });
     
     xdescribe('useDom = true', function(){
@@ -60,7 +62,7 @@ xdescribe("Ext.core.DomHelper", function(){
         afterEach(function(){
             Ext.core.DomHelper.useDom = true;
         });
-        Ext_core_DomHelper_Tests.apply(this, arguments);
+        //Ext_core_DomHelper_Tests.apply(this, arguments);
     });
    
    

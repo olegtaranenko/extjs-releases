@@ -322,6 +322,8 @@ Ext.define('Ext.layout.Context', {
         me.finishQueue = me.newQueue();
         me.flushQueue = me.newQueue();
 
+        me.invalidateData = {};
+
         /**
          * @property {Ext.util.Queue} layoutQueue
          * List of layouts to perform.
@@ -331,6 +333,17 @@ Ext.define('Ext.layout.Context', {
         // this collection is special because we ensure that there are no parent/child pairs
         // present, only distinct top-level components
         me.invalidQueue = [];
+
+        me.triggers = {
+            data: {
+                /*
+                layoutId: [
+                    { item: contextItem, prop: propertyName }
+                ]
+                */
+            },
+            dom: {}
+        };
     },
 
     callLayout: function (layout, methodName) {
@@ -404,6 +417,36 @@ Ext.define('Ext.layout.Context', {
         layout.ownerContext = null;
     },
 
+    clearTriggers: function (layout, inDom) {
+        var id = layout.id,
+            triggers = this.triggers[inDom ? 'dom' : 'data'][id],
+            length = (triggers && triggers.length) || 0,
+            collection, i, item, trigger;
+
+        for (i = 0; i < length; ++i) {
+            trigger = triggers[i];
+            item = trigger.item;
+
+            collection = inDom ? item.domTriggers : item.triggers;
+            delete collection[trigger.prop][id];
+        }
+    },
+
+    finishInvalidate: function (options, item, name) {
+        // When calling a callback, the currentLayout needs to be adjusted so
+        // that whichever layout caused the invalidate is the currentLayout...
+        if (options[name]) {
+            var me = this,
+                currentLayout = me.currentLayout;
+
+            me.currentLayout = options.layout || null;
+
+            options[name](item, options);
+
+            me.currentLayout = currentLayout;
+        }
+    },
+
     /**
      * Flushes any pending writes to the DOM by calling each ContextItem in the flushQueue.
      */
@@ -447,7 +490,7 @@ Ext.define('Ext.layout.Context', {
         var me = this,
             queue = me.invalidQueue,
             length = queue && queue.length,
-            comp, components, currentLayout, entry, i, state, options, optionQueue;
+            comp, components, entry, i;
 
         me.invalidQueue = [];
 
@@ -463,34 +506,12 @@ Ext.define('Ext.layout.Context', {
                     components.push(comp);
 
                     if (entry.options) {
-                        // we can avoid 2 passes unless something has an "options" property...
-                        (optionQueue || (optionQueue = [])).push(entry);
+                        me.invalidateData[comp.id] = entry.options;
                     }
                 }
             }
 
             me.invalidate(components, null);
-
-            if (optionQueue) {
-                length = optionQueue.length;
-                for (i = 0; i < length; ++i) {
-                    options = (entry = optionQueue[i]).options;
-                    state = options.state;
-                    if (state) {
-                        Ext.apply(entry.item.state, state);
-                    }
-
-                    // When calling a callback, the currentLayout needs to be adjusted so
-                    // that whichever layout caused the invalidate is the currentLayout...
-                    if (options.callback) {
-                        currentLayout = me.currentLayout;
-                        me.currentLayout = options.layout || null;
-                        // any scope was burned in by queueInvalidate via Ext.Function.bind
-                        options.callback(options, entry.item);
-                        me.currentLayout = currentLayout;
-                    }
-                }
-            }
         }
     },
 
@@ -561,10 +582,22 @@ Ext.define('Ext.layout.Context', {
         // This method should never be called, but is need when layouts fail (hence the
         // "should never"). We just disconnect any of the layouts from the run and return
         // them to the state they would be in had the layout completed properly.
-        Ext.Object.each(this.layouts, function (id, layout) {
-            layout.running = false;
-            layout.ownerContext = null;
-        });
+        var layouts = this.layouts,
+            layout, key;
+
+        Ext.failedLayouts = (Ext.failedLayouts || 0) + 1;
+        //<debug>
+        Ext.log('Layout run failed');
+        //</debug>
+
+        for (key in layouts) {
+            layout = layouts[key];
+
+            if (layouts.hasOwnProperty(key)) {
+                layout.running      = false;
+                layout.ownerContext = null;
+            }
+        }
     },
 
     /**
@@ -586,7 +619,8 @@ Ext.define('Ext.layout.Context', {
             running = me.state > 0,
             previousOwnerCtContext = me.currentOwnerCtContext,
             componentChildrenDone, containerChildrenDone, containerLayoutDone, ownerCt,
-            firstTime, i, k, comp, item, items, length, componentLayout, layout, props;
+            firstTime, i, k, comp, item, items, length, componentLayout, layout, props,
+            invalidateData;
 
         me.currentOwnerCtContext = ownerCtContext;
 
@@ -650,7 +684,19 @@ Ext.define('Ext.layout.Context', {
                     layout = null;
                 }
 
-                if (!firstTime) {
+                if (firstTime){
+                    item.hasRawContent = true;
+
+                    // we need to know how we will determine content size: containers can look at
+                    // the results of their items but non-containers or item-less containers with
+                    // raw markup need to be measured in the DOM:
+                    if (item.target.isContainer) {
+                        if (item.target.items.items.length || !item.target.getTargetEl().dom.firstChild) {
+                            item.hasRawContent = false;
+                        }
+                    }
+
+                } else {
                     item.doInvalidate(full);
 
                     // invalidate the elements owned by the component:
@@ -675,9 +721,22 @@ Ext.define('Ext.layout.Context', {
                     props.containerLayoutDone = true;
                 }
 
+                invalidateData = me.invalidateData[item.id];
+                if (invalidateData) {
+                    delete me.invalidateData[item.id];
+                    if (invalidateData.state) {
+                        Ext.apply(item.state, invalidateData.state);
+                    }
+                    me.finishInvalidate(invalidateData, item, 'before');
+                }
+
                 me.resetLayout(componentLayout, item, firstTime);
                 if (layout) {
                     me.resetLayout(layout, item, firstTime);
+                }
+
+                if (invalidateData) {
+                    me.finishInvalidate(invalidateData, item, 'after');
                 }
 
                 if (item.boxChildren && item.widthModel.shrinkWrap) {
@@ -782,6 +841,20 @@ Ext.define('Ext.layout.Context', {
         this.flushQueue.add(item);
     },
 
+    chainFns: function (oldOptions, newOptions, funcName) {
+        var oldFn = oldOptions[funcName],
+            newFn = newOptions[funcName];
+
+        // Call newFn last so it can get the final word on things... also, the "this"
+        // pointer will be passed correctly by createSequence with oldFn first.
+        return function (contextItem) {
+            if (oldFn) {
+                oldFn.call(oldOptions.scope || oldOptions, contextItem, oldOptions);
+            }
+            newFn.call(newOptions.scope || newOptions, contextItem, newOptions);
+        };
+    },
+
     /**
      * Queue a component (and its tree) to be invalidated on the next cycle.
      *
@@ -794,22 +867,13 @@ Ext.define('Ext.layout.Context', {
         var me = this,
             newQueue = [],
             oldQueue = me.invalidQueue,
-            opt = options || {},
             index = oldQueue.length,
-            callback = opt.callback,
-            scope = opt.scope,
-            Func = Ext.Function,
-            comp, old, oldCallback, oldComp, oldOptions, oldState,
-            newState = opt.state;
+            comp, old, oldComp, oldOptions, oldState;
 
         if (item.isComponent) {
             item = me.getCmp(comp = item);
         } else {
             comp = item.target;
-        }
-
-        if (callback && scope) {
-            opt.callback = callback = Func.bind(callback, scope);
         }
 
         // See if comp is contained by any component already in the queue (ignore comp if
@@ -825,22 +889,20 @@ Ext.define('Ext.layout.Context', {
 
             if (oldComp == comp) {
                 // if already in the queue, update the options...
+                if (!(oldOptions = old.options)) {
+                    old.options = options;
+                } else if (options) {
+                    if (!(oldState = oldOptions.state)) {
+                        oldOptions.state = options.state;
+                    } else if (options.state) {
+                        Ext.apply(oldState, options.state);
+                    }
 
-                // merge any new state w/state from earlier call(s):
-                oldState = (oldOptions = old.options).state;
-                if (oldState) {
-                    Ext.apply(oldState, newState);
-                } else {
-                    oldOptions.state = newState;
-                }
-
-                // if the new options have a callback, call old one first so newer ones get
-                // the last say...
-                if (callback) {
-                    if (!(oldCallback = oldOptions.callback)) {
-                        oldOptions.callback = callback;
-                    } else {
-                        oldOptions.callback = Func.createSequence(oldCallback, callback);
+                    if (options.before) {
+                        oldOptions.before = me.chainFns(oldOptions, options, 'before');
+                    }
+                    if (options.after) {
+                        oldOptions.after = me.chainFns(oldOptions, options, 'after');
                     }
                 }
 
@@ -857,7 +919,7 @@ Ext.define('Ext.layout.Context', {
 
         // to get here, comp must not be a child of anything already in the queue, so it
         // needs to be added along with its "options":
-        newQueue.push({ item: item, options: opt });
+        newQueue.push({ item: item, options: options });
 
         me.invalidQueue = newQueue;
     },
@@ -866,12 +928,12 @@ Ext.define('Ext.layout.Context', {
         var comp = item.isComponent ? item : item.target,
             layout = comp.componentLayout;
 
-        if (!layout.pending && !layout.done) {
+        if (!layout.pending && !layout.invalid && !layout.done) {
             this.queueLayout(layout);
         }
 
         layout = comp.layout;
-        if (layout && !layout.pending && !layout.done) {
+        if (layout && !layout.pending && !layout.invalid && !layout.done) {
             this.queueLayout(layout);
         }
     },
@@ -1125,7 +1187,7 @@ Ext.define('Ext.layout.Context', {
             if (layout.finalizeLayout) {
                 me.queueFinalize(layout);
             }
-        } else if (!layout.pending && !(layout.blockCount + layout.triggerCount - layout.firedTriggers)) {
+        } else if (!layout.pending && !layout.invalid && !(layout.blockCount + layout.triggerCount - layout.firedTriggers)) {
             // A layout that is not done and has no blocks or triggers that will queue it
             // automatically, must be queued now:
             me.queueLayout(layout);

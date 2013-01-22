@@ -183,11 +183,12 @@ Ext.define('Ext.form.field.Date', {
      */
     
     /**
-     * @cfg {Boolean} [useStrict=false]
+     * @cfg {Boolean} useStrict
      * True to enforce strict date parsing to prevent the default Javascript "date rollover".
+     * Defaults to the useStrict parameter set on Ext.Date
      * See {@link Ext.Date#parse}.
      */
-    useStrict: false,
+    useStrict: undefined,
 
     // in the absence of a time value, a default value of 12 noon will be used
     // (note: 12 noon was chosen because it steers well clear of all DST timezone changes)
@@ -240,16 +241,22 @@ Ext.define('Ext.form.field.Date', {
     // private
     initDisabledDays : function(){
         if(this.disabledDates){
-            var dd = this.disabledDates,
-                len = dd.length - 1,
-                re = "(?:";
+            var dd   = this.disabledDates,
+                len  = dd.length - 1,
+                re   = "(?:",
+                d,
+                dLen = dd.length,
+                date;
 
-            Ext.each(dd, function(d, i){
-                re += Ext.isDate(d) ? '^' + Ext.String.escapeRegex(d.dateFormat(this.format)) + '$' : dd[i];
-                if (i !== len) {
+            for (d = 0; d < dLen; d++) {
+                date = dd[d];
+
+                re += Ext.isDate(date) ? '^' + Ext.String.escapeRegex(date.dateFormat(this.format)) + '$' : date;
+                if (d !== len) {
                     re += '|';
                 }
-            }, this);
+            }
+
             this.disabledDatesRE = new RegExp(re + ')');
         }
     },
@@ -349,7 +356,7 @@ Ext.define('Ext.form.field.Date', {
         svalue = value;
         value = me.parseDate(value);
         if (!value) {
-            errors.push(format(me.invalidText, svalue, me.format));
+            errors.push(format(me.invalidText, svalue, Ext.Date.unescapeFormat(me.format)));
             return errors;
         }
 

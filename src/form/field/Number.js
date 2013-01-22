@@ -307,7 +307,7 @@ Ext.define('Ext.form.field.Number', {
     
     toggleSpinners: function(){
         var me = this,
-            value = me.getValue();
+            value = me.getValue(),
             valueIsNull = value === null;
             
         me.setSpinUpEnabled(valueIsNull || value < me.maxValue);

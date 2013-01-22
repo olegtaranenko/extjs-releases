@@ -22,15 +22,17 @@ Ext.Number = new function() {
          * @return {Number} The constrained value if outside the range, otherwise the current value
          */
         constrain: function(number, min, max) {
-            number = parseFloat(number);
+            var x = parseFloat(number);
 
-            if (!isNaN(min)) {
-                number = math.max(number, min);
-            }
-            if (!isNaN(max)) {
-                number = math.min(number, max);
-            }
-            return number;
+            // Watch out for NaN in Chrome 18
+            // V8bug: http://code.google.com/p/v8/issues/detail?id=2056
+
+            // Operators are faster than Math.min/max. See http://jsperf.com/number-constrain
+            // ... and (x < Nan) || (x < undefined) == false
+            // ... same for (x > NaN) || (x > undefined)
+            // so if min or max are undefined or NaN, we never return them... sadly, this
+            // is not true of null (but even Math.max(-1,null)==0 and isNaN(null)==false)
+            return (x < min) ? min : ((x > max) ? max : x);
         },
 
         /**
@@ -105,8 +107,6 @@ Ext.Number = new function() {
                 tween *= 2;
                 if (tween >= increment) {
                     value += increment;
-                } else if (tween < -increment) {
-                    value -= increment;
                 }
             }
 
@@ -125,13 +125,11 @@ Ext.Number = new function() {
          * @param {Number} value The number to format
          * @param {Number} precision The number of digits to show after the decimal point
          */
-        toFixed: function(value, precision) {
-            if (isToFixedBroken) {
-                precision = precision || 0;
-                var pow = math.pow(10, precision);
-                return (math.round(value * pow) / pow).toFixed(precision);
-            }
-
+        toFixed: isToFixedBroken ? function(value, precision) {
+            precision = precision || 0;
+            var pow = math.pow(10, precision);
+            return (math.round(value * pow) / pow).toFixed(precision);
+        } : function(value, precision) {
             return value.toFixed(precision);
         },
 

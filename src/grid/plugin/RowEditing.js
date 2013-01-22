@@ -109,19 +109,17 @@ Ext.define('Ext.grid.plugin.RowEditing', {
      * Starts editing the specified record, using the specified Column definition to define which field is being edited.
      * @param {Ext.data.Model} record The Store data record which backs the row to be edited.
      * @param {Ext.data.Model} columnHeader The Column object defining the column to be edited.
+     * @return `true` if editing was started, `false` otherwise.
      */
     startEdit: function(record, columnHeader) {
         var me = this,
             editor = me.getEditor();
 
-        if (me.callParent(arguments) === false) {
-            return false;
-        }
-
-        // Fire off our editor
-        if (editor.beforeEdit() !== false) {
+        if ((me.callParent(arguments) !== false) && (editor.beforeEdit() !== false)) {
             editor.startEdit(me.context.record, me.context.column);
+            return true;
         }
+        return false;
     },
 
     // private
@@ -152,14 +150,18 @@ Ext.define('Ext.grid.plugin.RowEditing', {
             record         = context.record,
             newValues      = {},
             originalValues = {},
-            name;
+            editors        = editor.items.items,
+            e,
+            eLen           = editors.length,
+            name, item;
 
-        editor.items.each(function(item) {
+        for (e = 0; e < eLen; e++) {
+            item = editors[e];
             name = item.name;
 
             newValues[name]      = item.getValue();
             originalValues[name] = record.get(name);
-        });
+        }
 
         Ext.apply(context, {
             newValues      : newValues,
@@ -181,11 +183,14 @@ Ext.define('Ext.grid.plugin.RowEditing', {
 
     // private
     initEditor: function() {
-        var me = this,
-            grid = me.grid,
-            view = me.view,
+        var me       = this,
+            grid     = me.grid,
+            view     = me.view,
             headerCt = grid.headerCt,
-            cfg = {
+            btns     = ['saveBtnText', 'cancelBtnText', 'errorsText', 'dirtyText'],
+            b,
+            bLen     = btns.length,
+            cfg      = {
                 autoCancel: me.autoCancel,
                 errorSummary: me.errorSummary,
                 fields: headerCt.getGridColumns(),
@@ -194,13 +199,16 @@ Ext.define('Ext.grid.plugin.RowEditing', {
                 // keep a reference..
                 editingPlugin: me,
                 renderTo: view.el
-            };
+            },
+            item;
 
-        Ext.Array.forEach(['saveBtnText', 'cancelBtnText', 'errorsText', 'dirtyText'], function(item){
+        for (b = 0; b < bLen; b++) {
+            item = btns[b];
+
             if (Ext.isDefined(me[item])) {
                 cfg[item] = me[item];
-            }    
-        });
+            }
+        }
 
         return Ext.create('Ext.grid.RowEditor', cfg);
     },
@@ -208,15 +216,12 @@ Ext.define('Ext.grid.plugin.RowEditing', {
     // private
     initEditTriggers: function() {
         var me = this,
-            grid = me.grid,
-            view = me.view,
-            headerCt = grid.headerCt,
             moveEditorEvent = me.clicksToMoveEditor === 1 ? 'click' : 'dblclick';
 
         me.callParent(arguments);
 
         if (me.clicksToMoveEditor !== me.clicksToEdit) {
-            me.mon(view, 'cell' + moveEditorEvent, me.moveEditorByClick, me);
+            me.mon(me.view, 'cell' + moveEditorEvent, me.moveEditorByClick, me);
         }
     },
     
@@ -243,7 +248,7 @@ Ext.define('Ext.grid.plugin.RowEditing', {
     moveEditorByClick: function() {
         var me = this;
         if (me.editing) {
-            me.superclass.startEditByClick.apply(me, arguments);
+            me.superclass.onCellClick.apply(me, arguments);
         }
     },
     

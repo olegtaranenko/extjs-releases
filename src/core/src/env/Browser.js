@@ -114,14 +114,15 @@ Ext.define('Ext.env.Browser', {
     engineVersion: null,
 
     constructor: function() {
-        var userAgent = this.userAgent = Ext.global.navigator.userAgent,
-            selfClass = this.statics(),
-            browserMatch = userAgent.match(new RegExp('((?:' + Ext.Object.getValues(selfClass.browserPrefixes).join(')|(?:') + '))([\\d\\._]+)')),
-            engineMatch = userAgent.match(new RegExp('((?:' + Ext.Object.getValues(selfClass.enginePrefixes).join(')|(?:') + '))([\\d\\._]+)')),
-            browserName = selfClass.browserNames.other,
+        var userAgent      = this.userAgent = Ext.global.navigator.userAgent,
+            selfClass      = this.statics(),
+            browserMatch   = userAgent.match(new RegExp('((?:' + Ext.Object.getValues(selfClass.browserPrefixes).join(')|(?:') + '))([\\d\\._]+)')),
+            engineMatch    = userAgent.match(new RegExp('((?:' + Ext.Object.getValues(selfClass.enginePrefixes).join(')|(?:') + '))([\\d\\._]+)')),
+            browserName    = selfClass.browserNames.other,
             browserVersion = '',
-            engineName = selfClass.engineNames.other,
-            engineVersion = '';
+            engineName     = selfClass.engineNames.other,
+            engineVersion  = '',
+            key, value;
 
         this.is = function(name) {
             return this.is[name] === true;
@@ -147,17 +148,24 @@ Ext.define('Ext.env.Browser', {
         this.is[this.name] = true;
         this.is[this.name + (this.version.getMajor() || '')] = true;
         this.is[this.name + this.version.getShortVersion()] = true;
-        Ext.Object.each(selfClass.browserNames, function(key, name) {
-            this.is[name] = (this.name === name);
-        }, this);
+
+        for (key in selfClass.browserNames) {
+            if (selfClass.browserNames.hasOwnProperty(key)) {
+                value = selfClass.browserNames[key];
+                this.is[value] = (this.name === value);
+            }
+        }
 
         this.is[this.name] = true;
         this.is[this.engineName + (this.engineVersion.getMajor() || '')] = true;
         this.is[this.engineName + this.engineVersion.getShortVersion()] = true;
-        Ext.Object.each(selfClass.engineNames, function(key, name) {
-            this.is[name] = (this.engineName === name);
-        }, this);
 
+        for (key in selfClass.engineNames) {
+            if (selfClass.engineNames.hasOwnProperty(key)) {
+                value = selfClass.engineNames[key];
+                this.is[value] = (this.engineNames === value);
+            }
+        }
 
         this.isSecure = /^https/i.test(Ext.global.location.protocol);
 

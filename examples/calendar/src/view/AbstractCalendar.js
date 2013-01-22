@@ -467,15 +467,17 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
 
     // private
     onCalendarEndDrag: function(start, end, onComplete) {
-        // set this flag for other event handlers that might conflict while we're waiting
-        this.dragPending = true;
+        if (start && end) {
+            // set this flag for other event handlers that might conflict while we're waiting
+            this.dragPending = true;
 
-        // have to wait for the user to save or cancel before finalizing the dd interation
-        var o = {};
-        o[Ext.calendar.data.EventMappings.StartDate.name] = start;
-        o[Ext.calendar.data.EventMappings.EndDate.name] = end;
+            // have to wait for the user to save or cancel before finalizing the dd interation
+            var o = {};
+            o[Ext.calendar.data.EventMappings.StartDate.name] = start;
+            o[Ext.calendar.data.EventMappings.EndDate.name] = end;
 
-        this.fireEvent('rangeselect', this, o, Ext.bind(this.onCalendarEndDragComplete, this, [onComplete]));
+            this.fireEvent('rangeselect', this, o, Ext.bind(this.onCalendarEndDragComplete, this, [onComplete]));
+        }
     },
 
     // private
@@ -585,11 +587,14 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
      */
     getEventIdFromEl: function(el) {
         el = Ext.get(el);
-        var id = el.id.split(this.eventElIdDelimiter)[1];
-        if (id.indexOf('-') > -1) {
+        var id = el.id.split(this.eventElIdDelimiter)[1],
+            lastHypen = id.lastIndexOf('-');
+
+        // MUST look for last hyphen because autogenned record IDs can contain hyphens
+        if (lastHypen > -1) {
             //This id has the index of the week it is rendered in as the suffix.
             //This allows events that span across weeks to still have reproducibly-unique DOM ids.
-            id = id.split('-')[0];
+            id = id.substr(0, lastHypen);
         }
         return id;
     },

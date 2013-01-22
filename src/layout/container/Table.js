@@ -190,6 +190,9 @@ Ext.define('Ext.layout.container.Table', {
             if (me.tdAttrs) {
                 tdEl.set(me.tdAttrs);
             }
+            if (item.tdAttrs) {
+                tdEl.set(item.tdAttrs);
+            }
             tdEl.set({
                 colSpan: item.colspan || 1,
                 rowSpan: item.rowspan || 1,
@@ -237,9 +240,16 @@ Ext.define('Ext.layout.container.Table', {
     finalizeLayout: function() {
         if (this.needsDivWrap()) {
             // set wrapper div width to match layed out item - see docs below
-            Ext.Array.forEach(this.getLayoutItems(), function(item) {
+            var items = this.getLayoutItems(),
+                i,
+                iLen  = items.length,
+                item;
+
+            for (i = 0; i < iLen; i++) {
+                item = items[i];
+
                 Ext.fly(item.el.dom.parentNode).setWidth(item.getWidth());
-            });
+            }
         }
         if (Ext.isIE6 || (Ext.isIEQuirks)) {
             // Fixes an issue where the table won't paint
@@ -379,12 +389,12 @@ Ext.define('Ext.layout.container.Table', {
 
         // If we were called with the 3 arg signature just check that the parent table of the item is within the render target
         if (arguments.length === 3) {
-            table = item.el.up('table').dom;
-            return table && table.parentNode === target.dom;
+            table = item.el.up('table');
+            return table && table.dom.parentNode === target.dom;
         }
         tbody = this.owner.getTargetEl().child('table', true).tBodies[0];
         correctCell = tbody.rows[rowIdx].cells[cellIdx];
-        return target.dom === correctCell;
+        return item.el.dom.parentNode === correctCell;
     },
 
     /**

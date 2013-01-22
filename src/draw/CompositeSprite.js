@@ -35,7 +35,8 @@ Ext.define('Ext.draw.CompositeSprite', {
     mixins: {
         animate: 'Ext.util.Animate'
     },
-
+    autoDestroy: false,
+    
     /* End Definitions */
     isCompositeSprite: true,
     constructor: function(config) {
@@ -283,13 +284,14 @@ Ext.define('Ext.draw.CompositeSprite', {
     destroy: function(){
         var me = this,
             surface = me.getSurface(),
+            destroySprites = me.autoDestroy,
             item;
             
         if (surface) {
             while (me.getCount() > 0) {
                 item = me.first();
                 me.remove(item);
-                surface.remove(item);
+                surface.remove(item, destroySprites);
             }
         }
         me.clearListeners();

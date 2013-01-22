@@ -27,9 +27,9 @@ Ext.define('Ext.layout.component.field.TextArea', {
             curWidth = inputEl.getWidth(true); //subtract border/padding to get the available width for the text
 
             // Get and normalize the field value for measurement
-            value = inputEl.dom.value || '&#160;';
+            value = Ext.util.Format.htmlEncode(inputEl.dom.value) || '&#160;';
             value += owner.growAppend;
-
+            
             // Translate newlines to <br> tags
             value = value.replace(/\n/g, '<br>');
 

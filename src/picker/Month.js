@@ -5,22 +5,27 @@
  */
 Ext.define('Ext.picker.Month', {
     extend: 'Ext.Component',
-    requires: ['Ext.XTemplate', 'Ext.util.ClickRepeater', 'Ext.Date', 'Ext.button.Button'],
+    requires: [
+        'Ext.XTemplate', 
+        'Ext.util.ClickRepeater', 
+        'Ext.Date', 
+        'Ext.button.Button'
+    ],
     alias: 'widget.monthpicker',
     alternateClassName: 'Ext.MonthPicker',
 
     childEls: [
-        'bodyEl', 'prevEl', 'nextEl', 'buttonsEl'
+        'bodyEl', 'prevEl', 'nextEl', 'buttonsEl', 'monthEl', 'yearEl'
     ],
 
     renderTpl: [
         '<div id="{id}-bodyEl" class="{baseCls}-body">',
-          '<div class="{baseCls}-months">',
+          '<div id="{id}-monthEl" class="{baseCls}-months">',
               '<tpl for="months">',
-                  '<div class="{parent.baseCls}-item {parent.baseCls}-month"><a href="#" hidefocus="on">{.}</a></div>',
+                  '<div style="{parent.monthStyle}" class="{parent.baseCls}-item {parent.baseCls}-month"><a href="#" hidefocus="on">{.}</a></div>',
               '</tpl>',
           '</div>',
-          '<div class="{baseCls}-years">',
+          '<div id="{id}-yearEl" class="{baseCls}-years">',
               '<div class="{baseCls}-yearnav">',
                   '<button id="{id}-prevEl" class="{baseCls}-yearnav-prev"></button>',
                   '<button id="{id}-nextEl" class="{baseCls}-yearnav-next"></button>',
@@ -68,7 +73,11 @@ Ext.define('Ext.picker.Month', {
     /**
      * @cfg {Date/Number[]} value The default value to set. See {@link #setValue}
      */
+    
+    
     width: 178,
+    measureWidth: 35,
+    measureMaxHeight: 20,
 
     // used when attached to date picker which isnt showing buttons
     smallCls: Ext.baseCSSPrefix + 'monthpicker-small',
@@ -153,18 +162,25 @@ Ext.define('Ext.picker.Month', {
             i = 0,
             months = [],
             shortName = Ext.Date.getShortMonthName,
-            monthLen = me.monthOffset;
+            monthLen = me.monthOffset,
+            margin = me.monthMargin,
+            style = '';
 
         me.callParent();
 
         for (; i < monthLen; ++i) {
             months.push(shortName(i), shortName(i + monthLen));
         }
+        
+        if (Ext.isDefined(margin)) {
+            style = 'margin: 0 ' + margin + 'px;';
+        }
 
         Ext.apply(me.renderData, {
             months: months,
             years: me.getYears(),
-            showButtons: me.showButtons
+            showButtons: me.showButtons,
+            monthStyle: style
         });
     },
 
@@ -208,6 +224,40 @@ Ext.define('Ext.picker.Month', {
         });
         me.nextEl.addClsOnOver(me.baseCls + '-yearnav-next-over');
         me.updateBody();
+        
+        if (!me.monthMargin) {
+            Ext.picker.Month.prototype.monthMargin = me.calculateMonthMargin();
+        }
+    },
+    
+    calculateMonthMargin: function(){
+        // We use this method for locales where the short month name
+        // may be longer than we see in English. For example in the 
+        // zh_TW locale the month ends up spanning lines, so we loosen
+        // the margins to get some extra space
+        var me = this,
+            monthEl = me.monthEl,
+            months = me.months,
+            first = months.first(),
+            itemMargin = first.getMargin('l');
+            
+        while (itemMargin && me.getLargest() > me.measureMaxHeight) {
+            --itemMargin;
+            months.setStyle('margin', '0 ' + itemMargin + 'px');
+        }
+        return itemMargin;
+    },
+    
+    getLargest: function(months){
+        var largest = 0;
+        this.months.each(function(item){
+            var h = item.getHeight();
+            if (h > largest) {
+                largest = h;
+            }
+        });
+        return largest;
+        
     },
 
     /**
@@ -297,18 +347,25 @@ Ext.define('Ext.picker.Month', {
             value = me.getYear(null),
             month = me.value[0],
             monthOffset = me.monthOffset,
-            year;
+            year,
+            yearItems, y, yLen, el;
 
         if (me.rendered) {
             years.removeCls(cls);
             months.removeCls(cls);
-            years.each(function(el, all, index){
-                year = yearNumbers[index];
+
+            yearItems = years.elements;
+            yLen      = yearItems.length;
+
+            for (y = 0; y < yLen; y++) {
+                el = Ext.fly(yearItems[y]);
+
+                year = yearNumbers[y];
                 el.dom.innerHTML = year;
                 if (year == value) {
                     el.dom.className = cls;
                 }
-            });
+            }
             if (month !== null) {
                 if (month < monthOffset) {
                     month = month * 2;

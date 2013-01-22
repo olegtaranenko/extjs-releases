@@ -5,6 +5,10 @@ Ext.define('Ext.tree.View', {
     extend: 'Ext.view.Table',
     alias: 'widget.treeview',
 
+    requires: [
+        'Ext.data.NodeStore'
+    ],
+
     loadingCls: Ext.baseCSSPrefix + 'grid-tree-loading',
     expandedCls: Ext.baseCSSPrefix + 'grid-tree-node-expanded',
     leafCls: Ext.baseCSSPrefix + 'grid-tree-node-leaf',
@@ -56,7 +60,6 @@ Ext.define('Ext.tree.View', {
         }
         
         me.store = new Ext.data.NodeStore({
-            autoLoad: treeStore.autoLoad,
             treeStore: treeStore,
             recursive: true,
             rootVisible: me.rootVisible,
@@ -229,17 +232,16 @@ Ext.define('Ext.tree.View', {
      * always pass `bubble: false` to be on the safe side.
      * 
      * If the passed parent has no wrap (or there is no valid ancestor wrap after bubbling), this function 
-     * will return null and the calling code should then call {@link createAnimWrap} if needed.
+     * will return null and the calling code should then call {@link #createAnimWrap} if needed.
      * 
-     * @return {Ext.Element} The wrapping element as created in {@link createAnimWrap}, or null
+     * @return {Ext.Element} The wrapping element as created in {@link #createAnimWrap}, or null
      */
     getAnimWrap: function(parent, bubble) {
         if (!this.animate) {
             return null;
         }
         
-        var parent = parent,
-            wraps = this.animWraps,
+        var wraps = this.animWraps,
             wrap = wraps[parent.internalId];
         
         if (bubble !== false) {
@@ -606,8 +608,8 @@ Ext.define('Ext.tree.View', {
         }
     },
     
-    shouldUpdateCell: function(changedFieldNames, fieldName){
-        return Ext.Array.contains(this.uiFields, fieldName) || this.callParent();
+    shouldUpdateCell: function(column, changedFieldNames){
+        return Ext.Array.contains(this.uiFields, column.dataIndex) || this.callParent(arguments);
     },
 
     /**

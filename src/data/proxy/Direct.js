@@ -119,8 +119,8 @@ Ext.define('Ext.data.proxy.Direct', {
             request = me.buildRequest(operation, callback, scope),
             fn = me.api[request.action]  || me.directFn,
             params = request.params,
-            method,
-            args;
+            args = [],
+            method;
 
         //<debug>
         if (!fn) {

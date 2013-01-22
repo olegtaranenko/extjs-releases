@@ -3,6 +3,7 @@ Ext.require('Ext.data.*');
 Ext.require('Ext.Window');
 Ext.require('Ext.layout.container.Fit');
 Ext.require('Ext.fx.target.Sprite');
+Ext.require('Ext.window.MessageBox');
 
 var jsonData = [
     {
@@ -246,18 +247,7 @@ Ext.onReady(function () {
         }
     });
 
-    var win = Ext.create('Ext.Window', {
-        width: 800,
-        height: 600,
-        minHeight: 400,
-        minWidth: 550,
-        hidden: false,
-        shadow: false,
-        maximizable: false,
-        title: 'What is the trend in Browser Usage?',
-        renderTo: Ext.getBody(),
-        layout: 'fit',
-        items: {
+    var chart = Ext.create('Ext.chart.Chart', {
             id: 'chartCmp',
             xtype: 'chart',
             style: 'background:#fff',
@@ -310,6 +300,32 @@ Ext.onReady(function () {
                     opacity: 0.86
                 }
             }]
-        }
+        });
+ 
+
+    var win = Ext.create('Ext.Window', {
+        width: 800,
+        height: 600,
+        minHeight: 400,
+        minWidth: 550,
+        hidden: false,
+        shadow: false,
+        maximizable: false,
+        title: 'What is the trend in Browser Usage?',
+        renderTo: Ext.getBody(),
+        layout: 'fit',
+        tbar: [{
+            text: 'Save Chart',
+            handler: function() {
+                Ext.MessageBox.confirm('Confirm Download', 'Would you like to download the chart as an image?', function(choice){
+                    if(choice == 'yes'){
+                        chart.save({
+                            type: 'image/png'
+                        });
+                    }
+                });
+            }
+        }],
+        items: chart
     });
 });

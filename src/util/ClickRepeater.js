@@ -14,12 +14,16 @@ Ext.define('Ext.util.ClickRepeater', {
      * @param {Object} [config] Config object.
      */
     constructor : function(el, config){
-        this.el = Ext.get(el);
-        this.el.unselectable();
+        var me = this;
 
-        Ext.apply(this, config);
+        me.el = Ext.get(el);
+        me.el.unselectable();
 
-        this.addEvents(
+        Ext.apply(me, config);
+
+        me.callParent();
+
+        me.addEvents(
         /**
          * @event mousedown
          * Fires when the mouse button is depressed.
@@ -43,17 +47,15 @@ Ext.define('Ext.util.ClickRepeater', {
         "mouseup"
         );
 
-        if(!this.disabled){
-            this.disabled = true;
-            this.enable();
+        if(!me.disabled){
+            me.disabled = true;
+            me.enable();
         }
 
         // allow inline handler
-        if(this.handler){
-            this.on("click", this.handler,  this.scope || this);
+        if(me.handler){
+            me.on("click", me.handler,  me.scope || me);
         }
-
-        this.callParent();
     },
 
     /**

@@ -1,4 +1,7 @@
-// private - DD implementation for Panels
+/**
+ * DD implementation for Panels.
+ * @private
+ */
 Ext.define('Ext.draw.SpriteDD', {
     extend: 'Ext.dd.DragSource',
 

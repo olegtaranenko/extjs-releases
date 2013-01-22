@@ -14,7 +14,8 @@ Ext.require([
 ]);
 
 Ext.onReady(function(){
-
+    Ext.QuickTips.init();
+ 
     function formatDate(value){
         return value ? Ext.Date.dateFormat(value, 'M d, Y') : '';
     }
@@ -119,7 +120,19 @@ Ext.onReady(function(){
             xtype: 'checkcolumn',
             header: 'Indoor?',
             dataIndex: 'indoor',
-            width: 55
+            width: 55,
+            stopSelection: false
+        }, {
+            xtype: 'actioncolumn',
+            width:30,
+            sortable: false,
+            items: [{
+                icon: '../shared/icons/fam/delete.gif',
+                tooltip: 'Delete Plant',
+                handler: function(grid, rowIndex, colIndex) {
+                    store.removeAt(rowIndex); 
+                }
+            }]
         }],
         selModel: {
             selType: 'cellmodel'

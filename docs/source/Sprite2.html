@@ -204,7 +204,7 @@ Ext.define('Ext.draw.Sprite', {
 
 <span id='Ext-draw-Sprite-property-isSprite'>    /**
 </span>     * @property {Boolean} isSprite
-     * `true` in this class to identify an objact as an instantiated Sprite, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Sprite, or subclass thereof.
      */
     isSprite: true,
     zIndex: 0,
@@ -264,14 +264,53 @@ Ext.define('Ext.draw.Sprite', {
         delete config.draggable;
         me.setAttributes(config);
         me.addEvents(
+<span id='Ext-draw-Sprite-event-beforedestroy'>            /**
+</span>             * @event
+             * Fires before the sprite is destroyed. Return false from an event handler to stop the destroy.
+             * @param {Ext.draw.Sprite} this
+             */
             'beforedestroy',
+<span id='Ext-draw-Sprite-event-destroy'>            /**
+</span>             * @event
+             * Fires after the sprite is destroyed.
+             * @param {Ext.draw.Sprite} this
+             */
             'destroy',
+<span id='Ext-draw-Sprite-event-render'>            /**
+</span>             * @event
+             * Fires after the sprite markup is rendered.
+             * @param {Ext.draw.Sprite} this
+             */
             'render',
+<span id='Ext-draw-Sprite-event-mousedown'>            /**
+</span>             * @event
+             * @inheritdoc Ext.dom.Element#mousedown
+             */
             'mousedown',
+<span id='Ext-draw-Sprite-event-mouseup'>            /**
+</span>             * @event
+             * @inheritdoc Ext.dom.Element#mouseup
+             */
             'mouseup',
+<span id='Ext-draw-Sprite-event-mouseover'>            /**
+</span>             * @event
+             * @inheritdoc Ext.dom.Element#mouseover
+             */
             'mouseover',
+<span id='Ext-draw-Sprite-event-mouseout'>            /**
+</span>             * @event
+             * @inheritdoc Ext.dom.Element#mouseout
+             */
             'mouseout',
+<span id='Ext-draw-Sprite-event-mousemove'>            /**
+</span>             * @event
+             * @inheritdoc Ext.dom.Element#mousemove
+             */
             'mousemove',
+<span id='Ext-draw-Sprite-event-click'>            /**
+</span>             * @event
+             * @inheritdoc Ext.dom.Element#click
+             */
             'click'
         );
         me.mixins.observable.constructor.apply(this, arguments);
@@ -313,7 +352,7 @@ Ext.define('Ext.draw.Sprite', {
             custom = hasSurface &amp;&amp; me.surface.customAttributes || {},
             spriteAttrs = me.attr,
             dirtyBBox = false,
-            attr, i, translate, translation, rotate, rotation, scale, scaling;
+            attr, i, newTranslation, translation, newRotate, rotation, newScaling, scaling;
 
         attrs = Ext.apply({}, attrs);
         for (attr in custom) {
@@ -357,51 +396,57 @@ Ext.define('Ext.draw.Sprite', {
             }
         }
 
-        translate = attrs.translate || attrs.translation;
+        newTranslation = attrs.translation || attrs.translate;
+        delete attrs.translate;
+        delete attrs.translation;
         translation = spriteAttrs.translation;
-        if (translate) {
-            if ((translate.x &amp;&amp; translate.x !== translation.x) ||
-                (translate.y &amp;&amp; translate.y !== translation.y)) {
+        if (newTranslation) {
+            if (('x' in newTranslation &amp;&amp; newTranslation.x !== translation.x) ||
+                ('y' in newTranslation &amp;&amp; newTranslation.y !== translation.y)) {
                 me.dirtyTransform = true;
-                Ext.apply(translation, translate);
+                translation.x = newTranslation.x;
+                translation.y = newTranslation.y;
             }
-            delete attrs.translate;
-            delete attrs.translation;
         }
 
-        rotate = attrs.rotate || attrs.rotation;
+        newRotate = attrs.rotation || attrs.rotate;
         rotation = spriteAttrs.rotation;
-        if (rotate) {
-            if ((rotate.x &amp;&amp; rotate.x !== rotation.x) ||
-                (rotate.y &amp;&amp; rotate.y !== rotation.y) ||
-                (rotate.degrees &amp;&amp; rotate.degrees !== rotation.degrees)) {
+        delete attrs.rotate;
+        delete attrs.rotation;
+        if (newRotate) {
+            if (('x' in newRotate &amp;&amp; newRotate.x !== rotation.x) ||
+                ('y' in newRotate &amp;&amp; newRotate.y !== rotation.y) ||
+                ('degrees' in newRotate &amp;&amp; newRotate.degrees !== rotation.degrees)) {
                 me.dirtyTransform = true;
-                Ext.apply(rotation, rotate);
+                rotation.x = newRotate.x;
+                rotation.y = newRotate.y;
+                rotation.degrees = newRotate.degrees;
             }
-            delete attrs.rotate;
-            delete attrs.rotation;
         }
 
-        scale = attrs.scale || attrs.scaling;
+        newScaling = attrs.scaling || attrs.scale;
         scaling = spriteAttrs.scaling;
-        if (scale) {
-            if ((scale.x &amp;&amp; scale.x !== scaling.x) ||
-                (scale.y &amp;&amp; scale.y !== scaling.y) ||
-                (scale.cx &amp;&amp; scale.cx !== scaling.cx) ||
-                (scale.cy &amp;&amp; scale.cy !== scaling.cy)) {
+        delete attrs.scale;
+        delete attrs.scaling;
+        if (newScaling) {
+            if (('x' in newScaling &amp;&amp; newScaling.x !== scaling.x) ||
+                ('y' in newScaling &amp;&amp; newScaling.y !== scaling.y) ||
+                ('cx' in newScaling &amp;&amp; newScaling.cx !== scaling.cx) ||
+                ('cy' in newScaling &amp;&amp; newScaling.cy !== scaling.cy)) {
                 me.dirtyTransform = true;
-                Ext.apply(scaling, scale);
+                scaling.x = newScaling.x;
+                scaling.y = newScaling.y;
+                scaling.cx = newScaling.cx;
+                scaling.cy = newScaling.cy;
             }
-            delete attrs.scale;
-            delete attrs.scaling;
         }
 
+        // If the bbox is changed, then the bbox based transforms should be invalidated.
         if (!me.dirtyTransform &amp;&amp; dirtyBBox) {
             if (spriteAttrs.scaling.x === null ||
                 spriteAttrs.scaling.y === null ||
                 spriteAttrs.rotation.y === null ||
                 spriteAttrs.rotation.y === null) {
-                // If the bbox is changed, then the bbox based transforms should be invalidated.
                 me.dirtyTransform = true;
             }
         }

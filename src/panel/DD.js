@@ -1,4 +1,7 @@
-// private - DD implementation for Panels
+/**
+ * DD implementation for Panels.
+ * @private
+ */
 Ext.define('Ext.panel.DD', {
     extend: 'Ext.dd.DragSource',
     requires: ['Ext.panel.Proxy'],
@@ -67,5 +70,30 @@ Ext.define('Ext.panel.DD', {
         x -= this.startPageX;
         y -= this.startPageY;
         this.setDelta(x, y);
+    },
+    
+    // Override this, we don't want to repair on an "invalid" drop, the panel
+    // should main it's position
+    onInvalidDrop: function(target, e, id) {
+        var me = this;
+        
+        me.beforeInvalidDrop(target, e, id);
+        if (me.cachedTarget) {
+            if(me.cachedTarget.isNotifyTarget){
+                me.cachedTarget.notifyOut(me, e, me.dragData);
+            }
+            me.cacheTarget = null;
+        }
+
+        if (me.afterInvalidDrop) {
+            /**
+             * An empty function by default, but provided so that you can perform a custom action
+             * after an invalid drop has occurred by providing an implementation.
+             * @param {Event} e The event object
+             * @param {String} id The id of the dropped element
+             * @method afterInvalidDrop
+             */
+            me.afterInvalidDrop(e, id);
+        }
     }
 });

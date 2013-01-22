@@ -189,7 +189,7 @@ Ext.define('Ext.data.Operation', {
                     clientRec = clientRecords[0];
                     serverRec = serverRecords[0];
                     // if the client record is not a phantom, make sure the ids match before replacing the client data with server data.
-                    if(clientRec.phantom || clientRec.getId() === serverRec.getId()) {
+                    if(serverRec && (clientRec.phantom || clientRec.getId() === serverRec.getId())) {
                         me.updateClientRecord(clientRec, serverRec);
                     }
                 }
@@ -214,11 +214,18 @@ Ext.define('Ext.data.Operation', {
     updateClientRecord: function(clientRecord, serverRecord) {
         if (clientRecord && serverRecord) {
             clientRecord.beginEdit();
-            clientRecord.fields.each(function(field) {
-                if(field.persist) {
+
+            var fields = clientRecord.fields.items,
+                fLen   = fields.length,
+                field, f;
+
+            for (f = 0; f < fLen; f++) {
+                field = fields[f];
+
+                if (field.persist) {
                     clientRecord.set(field.name, serverRecord.get(field.name));
                 }
-            });
+            }
             if(clientRecord.phantom) {
                 clientRecord.setId(serverRecord.getId());
             }

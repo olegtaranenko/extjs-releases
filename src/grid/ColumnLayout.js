@@ -16,8 +16,6 @@ Ext.define('Ext.grid.ColumnLayout', {
 
     reserveOffset: false,
 
-    shrinkToFit: false,
-
     firstHeaderCls: Ext.baseCSSPrefix + 'column-header-first',
     lastHeaderCls: Ext.baseCSSPrefix + 'column-header-last',
 
@@ -32,6 +30,17 @@ Ext.define('Ext.grid.ColumnLayout', {
             len = items.length,
             item;
 
+        // If we are one side of a locking grid, then if we are on the "normal" side, we have to grab the normal view
+        // for use in determining whether to subtract scrollbar width from available width.
+        // The locked side does not have scrollbars, so it should not look at the view.
+        if (grid.lockable) {
+            if (me.owner.up('tablepanel') === view.normalGrid) {
+                view = view.normalGrid.getView();
+            } else {
+                view = null;
+            }
+        }
+
         me.callParent(arguments);
 
         // Unstretch child items before the layout which stretches them.
@@ -43,7 +52,7 @@ Ext.define('Ext.grid.ColumnLayout', {
             });
             item.titleEl.setStyle({
                 height: 'auto',
-                paddingTop: '0'
+                paddingTop: ''  // reset back to default padding of the style
             });
         }
 
@@ -55,7 +64,8 @@ Ext.define('Ext.grid.ColumnLayout', {
 
         // If the owner is the grid's HeaderContainer, and the UI displays old fashioned scrollbars and there is a rendered View with data in it,
         // collect the View context to interrogate it for overflow, and possibly invalidate it if there is overflow
-        if (!me.owner.isHeader && Ext.getScrollbarSize().width && !grid.collapsed && view && view.rendered && (ownerContext.viewTable = view.el.child('table', true))) {
+        if (!me.owner.isHeader && Ext.getScrollbarSize().width && !grid.collapsed && view &&
+                view.rendered && (ownerContext.viewTable = view.el.child('table', true))) {
             ownerContext.viewContext = ownerContext.context.getCmp(view);
         }
     },
@@ -76,7 +86,8 @@ Ext.define('Ext.grid.ColumnLayout', {
 
         // If we've collected a viewContext, we will also have the table height
         // If there's overflow, the View must be narrower to accomodate the scrollbar
-        if (viewContext && !viewContext.heightModel.shrinkWrap) {
+        if (viewContext && !viewContext.heightModel.shrinkWrap &&
+                viewContext.target.componentLayout.ownerContext) { // if (its layout is running)
             viewHeight = viewContext.getProp('height');
             if (isNaN(viewHeight)) {
                 me.done = false;
@@ -153,14 +164,22 @@ Ext.define('Ext.grid.ColumnLayout', {
             i = 0,
             items,
             len,
-            headerHeight;
+            itemsHeight,
+            owner = me.owner,
+            titleEl = owner.titleEl;
 
         // Set up padding in items
         items = me.getVisibleItems();
         len = items.length;
-        headerHeight = me.getRenderTarget().getViewSize().height;
+        // header container's items take up the whole height
+        itemsHeight = owner.el.getViewSize().height;
+        if (titleEl) {
+            // if owner is a grouped column with children, we need to subtract the titleEl's height
+            // to determine the remaining available height for the child items
+            itemsHeight -= titleEl.getHeight();
+        }
         for (; i < len; i++) {
-            items[i].setPadding(headerHeight);
+            items[i].setPadding(itemsHeight);
         }
     },
 
@@ -169,11 +188,12 @@ Ext.define('Ext.grid.ColumnLayout', {
     publishInnerCtSize: function(ownerContext) {
         var me = this,
             plan = ownerContext.state.boxPlan,
-            size = plan.targetSize;
+            size = plan.targetSize,
+            cw = ownerContext.peek('contentWidth');
 
         // InnerCt MUST stretch to accommodate all columns so that left/right scrolling is enabled in the header container.
-        if (!me.owner.isHeader) {
-            size.width = ownerContext.getProp('contentWidth') + Ext.getScrollbarSize().width;
+        if ((cw != null) && !me.owner.isHeader) {
+            size.width = cw + Ext.getScrollbarSize().width;
         }
 
         return me.callParent(arguments);

@@ -142,23 +142,30 @@ Ext.define('Ext.app.Application', {
         config = config || {};
         Ext.apply(this, config);
 
-        var requires = config.requires || [];
+        var requires = config.requires || [],
+            controllers, ln, i, controller,
+            paths, path, ns;
 
         Ext.Loader.setPath(this.name, this.appFolder);
 
         if (this.paths) {
-            Ext.Object.each(this.paths, function(key, value) {
-                Ext.Loader.setPath(key, value);
-            });
+            paths = this.paths;
+
+            for (ns in paths) {
+                if (paths.hasOwnProperty(ns)) {
+                    path = paths[ns];
+
+                    Ext.Loader.setPath(ns, path);
+                }
+            }
         }
 
         this.callParent(arguments);
 
         this.eventbus = new Ext.app.EventBus;
 
-        var controllers = Ext.Array.from(this.controllers),
-            ln = controllers &amp;&amp; controllers.length,
-            i, controller;
+        controllers = Ext.Array.from(this.controllers);
+        ln = controllers &amp;&amp; controllers.length;
 
         this.controllers = new Ext.util.MixedCollection();
 
@@ -201,31 +208,39 @@ Ext.define('Ext.app.Application', {
 </span>     * @private
      */
     onBeforeLaunch: function() {
-        if (this.enableQuickTips) {
+        var me = this,
+            controllers, c, cLen, controller;
+
+        if (me.enableQuickTips) {
             Ext.tip.QuickTipManager.init();
         }
 
-        if (this.autoCreateViewport) {
-            this.getView('Viewport').create();
+        if (me.autoCreateViewport) {
+            me.getView('Viewport').create();
         }
 
-        this.launch.call(this.scope || this);
-        this.launched = true;
-        this.fireEvent('launch', this);
+        me.launch.call(this.scope || this);
+        me.launched = true;
+        me.fireEvent('launch', this);
 
-        this.controllers.each(function(controller) {
+        controllers = me.controllers.items;
+        cLen        = controllers.length;
+
+        for (c = 0; c &lt; cLen; c++) {
+            controller = controllers[c];
             controller.onLaunch(this);
-        }, this);
+        }
     },
 
-    getModuleClassName: function(name, type) {
-        var namespace = Ext.Loader.getPrefix(name);
-
-        if (namespace.length &gt; 0 &amp;&amp; namespace !== name) {
-            return name;
+    getModuleClassName: function(name, namespace) {
+        var appName = this.name;
+        
+        // we check name === appName to allow MyApp.profile.MyApp to exist
+        if (Ext.isString(name) &amp;&amp; (Ext.Loader.getPrefix(name) === &quot;&quot; || name === appName)) {
+            name = appName + '.' + namespace + '.' + name;
         }
-
-        return this.name + '.' + type + '.' + name;
+        
+        return name;
     },
 
     getController: function(name) {

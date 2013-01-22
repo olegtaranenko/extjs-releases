@@ -11,13 +11,13 @@
  *
  * # Values and Conversions
  *
- * Because BaseField implements the Field mixin, it has a main value that can be initialized with the
+ * Because Base implements the Field mixin, it has a main value that can be initialized with the
  * {@link #value} config and manipulated via the {@link #getValue} and {@link #setValue} methods. This main
  * value can be one of many data types appropriate to the current field, for instance a {@link Ext.form.field.Date Date}
  * field would use a JavaScript Date object as its value type. However, because the field is rendered as a HTML
  * input, this value data type can not always be directly used in the rendered field.
  *
- * Therefore BaseField introduces the concept of a "raw value". This is the value of the rendered HTML input field,
+ * Therefore Base introduces the concept of a "raw value". This is the value of the rendered HTML input field,
  * and is normally a String. The {@link #getRawValue} and {@link #setRawValue} methods can be used to directly
  * work with the raw value, though it is recommended to use getValue and setValue in most cases.
  *
@@ -34,7 +34,7 @@
  * # Example usage:
  *
  *     @example
- *     // A simple subclass of BaseField that creates a HTML5 search field. Redirects to the
+ *     // A simple subclass of Base that creates a HTML5 search field. Redirects to the
  *     // searchUrl when the Enter key is pressed.222
  *     Ext.define('Ext.form.SearchField', {
  *         extend: 'Ext.form.field.Base',
@@ -61,7 +61,7 @@
  *     });
  *     
  *     Ext.create('Ext.form.Panel', {
- *         title: 'BaseField Example',
+ *         title: 'Base Example',
  *         bodyPadding: 5,
  *         width: 250,
  *     
@@ -97,7 +97,7 @@ Ext.define('Ext.form.field.Base', {
         '<input id="{id}" type="{type}" {inputAttrTpl}',
             ' size="1"', // allows inputs to fully respect CSS widths across all browsers
             '<tpl if="name"> name="{name}"</tpl>',
-            '<tpl if="value"> value="{value}"</tpl>',
+            '<tpl if="value"> value="{[Ext.util.Format.htmlEncode(values.value)]}"</tpl>',
             '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
             '<tpl if="maxLength !== undefined"> maxlength="{maxLength}"</tpl>',
             '<tpl if="readOnly"> readonly="readonly"</tpl>',
@@ -135,7 +135,7 @@ Ext.define('Ext.form.field.Base', {
      *
      * The type 'password' must be used to render that field type currently -- there is no separate Ext component for
      * that. You can use {@link Ext.form.field.File} which creates a custom-rendered file upload field, but if you want
-     * a plain unstyled file input you can use a BaseField with inputType:'file'.
+     * a plain unstyled file input you can use a Base with inputType:'file'.
      */
     inputType: 'text',
 
@@ -310,6 +310,16 @@ Ext.define('Ext.form.field.Base', {
             me.name = me.getInputId();
         }
     },
+    
+    beforeRender: function(){
+        var me = this,
+            readOnly = this.readOnly;
+            
+        me.callParent(arguments);
+        if (readOnly) {
+            me.addCls(me.readOnlyCls);
+        }    
+    },
 
     /**
      * Returns the input id for this field. If none was specified via the {@link #inputId} config, then an id will be
@@ -328,25 +338,16 @@ Ext.define('Ext.form.field.Base', {
         var me = this,
             type = me.inputType,
             inputId = me.getInputId(),
-            cls = [],
             data;
-
-        if (me.cls) {
-            cls.push(me.cls);
-        }
-        if (me.readOnly) {
-            cls.push(me.readOnlyCls);
-        }
         
         data = Ext.apply({
             id         : inputId,
             cmpId      : me.id,
             name       : me.name || inputId,
             disabled   : me.disabled,
-            readOnly   : false,
+            readOnly   : me.readOnly,
             value      : me.getRawValue(),
             type       : type,
-            cls        : cls.join(' '),
             fieldCls   : me.fieldCls,
             fieldStyle : me.getFieldStyle(),
             tabIdx     : me.tabIndex,
@@ -650,7 +651,11 @@ Ext.define('Ext.form.field.Base', {
         var me = this,
             inputEl = me.inputEl,
             onChangeTask,
-            onChangeEvent;
+            onChangeEvent,
+            events = me.checkChangeEvents,
+            e,
+            eLen   = events.length,
+            event;
 
         // standardise buffer across all browsers + OS-es for consistent event order.
         // (the 10ms buffer for Editors fixes a weird FF/Win editor issue when changing OS window focus)
@@ -665,12 +670,16 @@ Ext.define('Ext.form.field.Base', {
             me.onChangeEvent = onChangeEvent = function() {
                 onChangeTask.delay(me.checkChangeBuffer);
             };
-            Ext.each(me.checkChangeEvents, function(eventName) {
-                if (eventName === 'propertychange') {
+
+            for (e = 0; e < eLen; e++) {
+                event = events[e];
+
+                if (event === 'propertychange') {
                     me.usesPropertychange = true;
                 }
-                me.mon(inputEl, eventName, onChangeEvent);
-            }, me);
+
+                me.mon(inputEl, event, onChangeEvent);
+            }
         }
         me.callParent();
     },

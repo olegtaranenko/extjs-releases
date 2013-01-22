@@ -32,14 +32,25 @@ Ext.define('Ext.layout.component.field.Trigger', {
         }
     },
 
-    beginLayoutFixed: function (ownerContext, width) {
-        var owner = ownerContext.target;
+    beginLayoutFixed: function (ownerContext, width, suffix) {
+        var me = this,
+            owner = ownerContext.target,
+            ieInputWidthAdjustment = me.ieInputWidthAdjustment,
+            inputWidth = '100%';
 
-        this.callParent(arguments);
+        me.callParent(arguments);
 
         owner.inputCell.setStyle('width', '100%');
-        owner.inputEl.setStyle('width', '100%');
-        owner.triggerWrap.setStyle('width', width);
+        if(ieInputWidthAdjustment) {
+            // adjust for IE 6/7 strict content-box model
+            // RTL: This might have to be padding-left unless the senses of the padding styles switch when in RTL mode.
+            owner.inputCell.setStyle('padding-right', ieInputWidthAdjustment + 'px');
+            if(suffix === 'px') {
+                inputWidth = width - ieInputWidthAdjustment - owner.getTriggerWidth();
+            }
+        }
+        owner.inputEl.setStyle('width', inputWidth);
+        owner.triggerWrap.setStyle('width', width + suffix);
         owner.triggerWrap.setStyle('table-layout', 'fixed');
     },
 
@@ -53,6 +64,43 @@ Ext.define('Ext.layout.component.field.Trigger', {
         owner.inputCell.setStyle('width', emptyString);
         owner.inputEl.setStyle('width', emptyString);
         owner.triggerWrap.setStyle('table-layout', 'auto');
+    },
+
+    getTextWidth: function () {
+        var me = this,
+            owner = me.owner,
+            inputEl = owner.inputEl,
+            value;
+
+        // Find the width that contains the whole text value
+        value = (inputEl.dom.value || (owner.hasFocus ? '' : owner.emptyText) || '') + owner.growAppend;
+        return inputEl.getTextWidth(value);
+    },
+
+    measureContentWidth: function (ownerContext) {
+        var me = this,
+            owner = me.owner,
+            width = me.callParent(arguments),
+            inputContext = ownerContext.inputContext,
+            calcWidth, max, min;
+
+        if (owner.grow && !ownerContext.state.growHandled) {
+            calcWidth = me.getTextWidth() + ownerContext.inputContext.getFrameInfo().width;
+
+            max = owner.growMax;
+            min = Math.min(max, width);
+            max = Math.max(owner.growMin, max, min);
+
+            // Constrain
+            calcWidth = Ext.Number.constrain(calcWidth, owner.growMin, max);
+            inputContext.setWidth(calcWidth);
+            ownerContext.state.growHandled = true;
+            
+            // Now that we've set the inputContext, we need to recalculate the width
+            inputContext.domBlock(me, 'width');
+            width = NaN;
+        }
+        return width;
     },
 
     updateEditState: function() {

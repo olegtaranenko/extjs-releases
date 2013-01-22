@@ -265,7 +265,8 @@ associations: [{
      */
     read: function(record, reader, associationData){
         var store = record[this.name](),
-            inverse;
+            inverse,
+            items, iLen, i;
     
         store.add(reader.read(associationData).records);
     
@@ -277,9 +278,12 @@ associations: [{
     
         //if the inverse association was found, set it now on each record we've just created
         if (inverse) {
-            store.data.each(function(associatedRecord){
-                associatedRecord[inverse.instanceName] = record;
-            });
+            items = store.data.items;
+            iLen  = items.length;
+
+            for (i = 0; i < iLen; i++) {
+                items[i][inverse.instanceName] = record;
+            }
         }
     }
 });

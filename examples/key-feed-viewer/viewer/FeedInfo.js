@@ -101,7 +101,8 @@ Ext.define('FeedViewer.FeedInfo', {
      * @return {Ext.Component} The panel matching the title. null if not found.
      */
     getTabByTitle: function(title) {
-        return this.down('[title=' + title + ']');    
+        var index = this.items.findIndex('title', title);
+        return (index < 0) ? null : this.items.getAt(index);
     },
     
     /**

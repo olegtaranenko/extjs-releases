@@ -185,7 +185,7 @@ Ext.define('Ext.slider.Thumb', {
         var me = this;
 
         me.el.addCls(Ext.baseCSSPrefix + 'slider-thumb-drag');
-        me.dragging = true;
+        me.dragging = me.slider.dragging = true;
         me.dragStartValue = me.value;
 
         me.slider.fireEvent('dragstart', me.slider, e, me);
@@ -229,7 +229,7 @@ Ext.define('Ext.slider.Thumb', {
 
         // If dragged out of range, value will be undefined
         if (trackPoint !== undefined) {
-            return Ext.util.Format.round(slider.reversePixelValue(trackPoint), slider.decimalPrecision);
+            return slider.reversePixelValue(trackPoint);
         }
     },
 
@@ -245,7 +245,7 @@ Ext.define('Ext.slider.Thumb', {
 
         me.el.removeCls(Ext.baseCSSPrefix + 'slider-thumb-drag');
 
-        me.dragging = false;
+        me.dragging = slider.dragging = false;
         slider.fireEvent('dragend', slider, e);
 
         if (me.dragStartValue != value) {

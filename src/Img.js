@@ -1,32 +1,32 @@
 /**
-* Simple helper class for easily creating image components. This renders an image tag to
-* the DOM with the configured src.
-*
-* {@img Ext.Img/Ext.Img.png Ext.Img component}
-*
-* ## Example usage:
-*
-* var changingImage = Ext.create('Ext.Img', {
-* src: 'http://www.sencha.com/img/20110215-feat-html5.png',
-* renderTo: Ext.getBody()
-* });
-*
-* // change the src of the image programmatically
-* changingImage.setSrc('http://www.sencha.com/img/20110215-feat-perf.png');
-*
-* By default, only an img element is rendered and that is this component's primary
-* {@link Ext.AbstractComponent#el element}. If the {@link AbstractComponent#autoEl} property
-* is other than 'img' (the default), the a child img element will be added to the primary
-* element. This can be used to create a wrapper element around the img.
-*
-* ## Wrapping the img in a div:
-*
-* var wrappedImage = Ext.create('Ext.Img', {
-* src: 'http://www.sencha.com/img/20110215-feat-html5.png',
-* autoEl: 'div', // wrap in a div
-* renderTo: Ext.getBody()
-* });
-*/
+ * Simple helper class for easily creating image components. This renders an image tag to
+ * the DOM with the configured src.
+ *
+ * {@img Ext.Img/Ext.Img.png Ext.Img component}
+ *
+ * ## Example usage:
+ *
+ *     var changingImage = Ext.create('Ext.Img', {
+ *         src: 'http://www.sencha.com/img/20110215-feat-html5.png',
+ *         renderTo: Ext.getBody()
+ *     });
+ *
+ *     // change the src of the image programmatically
+ *     changingImage.setSrc('http://www.sencha.com/img/20110215-feat-perf.png');
+ *
+ * By default, only an img element is rendered and that is this component's primary
+ * {@link Ext.AbstractComponent#getEl element}. If the {@link Ext.AbstractComponent#autoEl} property
+ * is other than 'img' (the default), the a child img element will be added to the primary
+ * element. This can be used to create a wrapper element around the img.
+ *
+ * ## Wrapping the img in a div:
+ *
+ *     var wrappedImage = Ext.create('Ext.Img', {
+ *         src: 'http://www.sencha.com/img/20110215-feat-html5.png',
+ *         autoEl: 'div', // wrap in a div
+ *         renderTo: Ext.getBody()
+ *     });
+ */
 Ext.define('Ext.Img', {
     extend: 'Ext.Component',
     alias: ['widget.image', 'widget.imagecomponent'],
@@ -34,21 +34,21 @@ Ext.define('Ext.Img', {
     autoEl: 'img',
 
     /**
-* @cfg {String} src
-* The image src.
-*/
+     * @cfg {String} src
+     * The image src.
+     */
     src: '',
 
     /**
-* @cfg {String} alt
-* The descriptive text for non-visual UI description.
-*/
+     * @cfg {String} alt
+     * The descriptive text for non-visual UI description.
+     */
     alt: '',
 
     /**
-* @cfg {String} imgCls
-* Optional CSS classes to add to the img element.
-*/
+     * @cfg {String} imgCls
+     * Optional CSS classes to add to the img element.
+     */
     imgCls: '',
 
     getElConfig: function() {
@@ -96,8 +96,8 @@ Ext.define('Ext.Img', {
     },
 
     /**
-* Updates the {@link #src} of the image.
-*/
+     * Updates the {@link #src} of the image.
+     */
     setSrc: function(src) {
         var me = this,
             imgEl = me.imgEl;

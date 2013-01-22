@@ -425,7 +425,7 @@ describe("Ext.ClassManager", function() {
         });
 
         describe("alternate", function() {
-            it("should create the alternate", function() {
+            it("should create the alternate with a string for alternateClassName property", function() {
                 Ext.define('Something.Cool', {
                     alternateClassName: 'Something.CoolAsWell',
 
@@ -440,7 +440,7 @@ describe("Ext.ClassManager", function() {
                 expect(Something.CoolAsWell).toBe(Something.Cool);
             });
 
-            it("should create the alternate", function() {
+            it("should create the alternate with an array for alternateClassName property", function() {
                 Ext.define('Something.Cool', {
                     alternateClassName: ['Something.CoolAsWell', 'Something.AlsoCool']
                 });

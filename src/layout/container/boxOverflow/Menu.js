@@ -231,11 +231,10 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
             i = 0,
             len   = items.length,
             item,
-            prev;
-
-        var needsSep = function(group, prev){
-            return group.isXType('buttongroup') && !(prev instanceof Ext.toolbar.Separator);
-        };
+            prev,
+            needsSep = function(group, prev){
+                return group.isXType('buttongroup') && !(prev instanceof Ext.toolbar.Separator);
+            };
 
         menu.suspendLayouts();
         me.clearMenu();
@@ -309,7 +308,9 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
      * @param {Ext.Component} component The component to add
      */
     addComponentToMenu : function(menu, component) {
-        var me = this;
+        var me = this,
+        i, items, iLen;
+        
         if (component instanceof Ext.toolbar.Separator) {
             menu.add('-');
         } else if (component.isComponent) {
@@ -320,9 +321,12 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
                 menu.add(me.createMenuConfig(component, !component.menu));
 
             } else if (component.isXType('buttongroup')) {
-                component.items.each(function(item){
-                     me.addComponentToMenu(menu, item);
-                });
+                items = component.items.items;
+                iLen  = items.length;
+
+                for (i = 0; i < iLen; i++) {
+                    me.addComponentToMenu(menu, items[i]);
+                }
             } else {
                 menu.add(Ext.create(Ext.getClassName(component), me.createMenuConfig(component)));
             }
@@ -335,13 +339,20 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
      * splitbuttons and buttongroups, where the Toolbar item cannot be represented by a single menu item
      */
     clearMenu : function() {
-        var menu = this.moreMenu;
+        var menu = this.moreMenu,
+        items, i, iLen, item;
+        
         if (menu && menu.items) {
-            menu.items.each(function(item) {
+            items = menu.items.items;
+            iLen  = items.length;
+            
+            for (i = 0; i < iLen; i++) {
+                item = items[i];
+
                 if (item.menu) {
                     delete item.menu;
                 }
-            });
+            }
         }
     },
 

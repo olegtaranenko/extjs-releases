@@ -94,35 +94,42 @@ Ext.define('Ext.data.writer.Writer', {
             writeAll = this.writeAllFields || isPhantom,
             nameProperty = this.nameProperty,
             fields = record.fields,
+            fieldItems = fields.items,
             data = {},
+            clientIdProperty = record.clientIdProperty,
             changes,
             name,
             field,
-            key;
+            key,
+            f, fLen;
         
         if (writeAll) {
-            fields.each(function(field){
+            fLen = fieldItems.length;
+
+            for (f = 0; f < fLen; f++) {
+                field = fieldItems[f];
+
                 if (field.persist) {
-                    name = field[nameProperty] || field.name;
+                    name       = field[nameProperty] || field.name;
                     data[name] = record.get(field.name);
                 }
-            });
+            }
         } else {
             // Only write the changes
             changes = record.getChanges();
             for (key in changes) {
                 if (changes.hasOwnProperty(key)) {
-                    field = fields.get(key);
-                    name = field[nameProperty] || field.name;
+                    field      = fields.get(key);
+                    name       = field[nameProperty] || field.name;
                     data[name] = changes[key];
                 }
             }
         }
         if(isPhantom) {
-            if(operation && operation.records.length > 1) {
+            if(clientIdProperty && operation && operation.records.length > 1) {
                 // include clientId for phantom records, if multiple records are being written to the server in one operation.
                 // The server can then return the clientId with each record so the operation can match the server records with the client records
-                data[record.clientIdProperty] = record.internalId;
+                data[clientIdProperty] = record.internalId;
             }
         } else {
             // always include the id for non phantoms

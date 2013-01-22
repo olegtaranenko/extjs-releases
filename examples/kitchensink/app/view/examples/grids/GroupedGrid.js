@@ -1,6 +1,10 @@
 Ext.define('KitchenSink.view.examples.grids.GroupedGrid', {
     extend: 'KitchenSink.view.examples.Example',
-    requires: ['KitchenSink.store.Restaurants', 'Ext.grid.feature.Grouping'],
+    requires: [
+        'Ext.grid.Panel',
+        'Ext.grid.feature.Grouping',
+        'KitchenSink.store.Restaurants'
+    ],
     
     items: [
         {
@@ -16,12 +20,11 @@ Ext.define('KitchenSink.view.examples.grids.GroupedGrid', {
                 { text: 'Cuisine', flex: 1, dataIndex: 'cuisine' }
             ],
             
-            features: [
-                Ext.create('Ext.grid.feature.Grouping',{
-                    hideGroupedHeader: true,
-                    groupHeaderTpl: 'Cuisine: {name} ({rows.length} Item{[values.rows.length > 1 ? "s" : ""]})'
-                })
-            ]
+            features: [{
+                ftype: 'grouping',
+                hideGroupedHeader: true,
+                groupHeaderTpl: 'Cuisine: {name} ({rows.length} Item{[values.rows.length > 1 ? "s" : ""]})'
+            }]
         }
     ]
 });

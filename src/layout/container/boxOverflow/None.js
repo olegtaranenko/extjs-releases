@@ -18,6 +18,7 @@ Ext.define('Ext.layout.container.boxOverflow.None', {
 
     beginLayout: Ext.emptyFn,
     beginLayoutCycle: Ext.emptyFn,
+    finishedLayout: Ext.emptyFn,
 
     completeLayout: function (ownerContext) {
         var me = this,

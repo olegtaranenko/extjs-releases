@@ -45,7 +45,9 @@ Ext.define('Ext.layout.component.field.HtmlEditor', {
     },
 
     getLayoutItems: function () {
-        return [ this.owner.getToolbar() ];
+        var toolbar = this.owner.getToolbar();
+        // The toolbar may not exist if we're destroying
+        return toolbar ? [toolbar] : [];
     },
 
     getRenderTarget: function() {

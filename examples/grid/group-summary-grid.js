@@ -98,7 +98,7 @@ Ext.onReady(function(){
             }
         }, {
             header: 'Project',
-            width: 20,
+            width: 180,
             sortable: true,
             dataIndex: 'project'
         }, {

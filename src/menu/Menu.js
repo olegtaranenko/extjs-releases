@@ -117,7 +117,7 @@ Ext.define('Ext.menu.Menu', {
 
     /**
      * @property {Boolean} isAction
-     * `true` in this class to identify an objact as an instantiated Menu, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Menu, or subclass thereof.
      */
     isMenu: true,
 
@@ -133,10 +133,12 @@ Ext.define('Ext.menu.Menu', {
     showSeparator : true,
 
     /**
-     * @cfg {Number} minWidth
-     * The minimum width of the Menu.
+     * @cfg {Number} [minWidth=120]
+     * The minimum width of the Menu. The default minWidth only applies when the {@link #floating} config is true.
      */
-    minWidth: 120,
+    minWidth: undefined,
+    
+    defaultMinWidth: 120,
 
     /**
      * @cfg {Boolean} [plain=false]
@@ -147,7 +149,8 @@ Ext.define('Ext.menu.Menu', {
         var me = this,
             prefix = Ext.baseCSSPrefix,
             cls = [prefix + 'menu'],
-            bodyCls = me.bodyCls ? [me.bodyCls] : [];
+            bodyCls = me.bodyCls ? [me.bodyCls] : [],
+            isFloating = me.floating !== false;
 
         me.addEvents(
             /**
@@ -207,14 +210,15 @@ Ext.define('Ext.menu.Menu', {
                 align: 'stretchmax',
                 overflowHandler: 'Scroller'
             };
-            
-            if (!me.floating) {
-                me.layout.align = 'stretch';
-            }
+        }
+        
+        // only apply the minWidth when we're floating & one hasn't already been set
+        if (isFloating && me.minWidth === undefined) {
+            me.minWidth = me.defaultMinWidth;
         }
 
         // hidden defaults to false if floating is configured as false
-        if (me.floating === false && me.initialConfig.hidden !== true) {
+        if (!isFloating && me.initialConfig.hidden !== true) {
             me.hidden = false;
         }
 
@@ -232,19 +236,32 @@ Ext.define('Ext.menu.Menu', {
         });
     },
 
-    afterRender: function(ct) {
+    beforeRender: function() {
+        this.callParent(arguments);
+
+        // Menus are usually floating: true, which means they shrink wrap their items.
+        // However, when they are contained, and not auto sized, we must stretch the items.
+        if (!this.getSizeModel().width.shrinkWrap) {
+            this.layout.align = 'stretch';
+        }
+    },
+
+    onBoxReady: function() {
         var me = this,
-            prefix = Ext.baseCSSPrefix,
-            space = '&#160;';
+            separatorSpec;
 
         me.callParent(arguments);
 
         // TODO: Move this to a subTemplate When we support them in the future
         if (me.showSeparator) {
-            me.iconSepEl = me.layout.getRenderTarget().insertFirst({
-                cls: prefix + 'menu-icon-separator',
-                html: space
-            });
+            separatorSpec = {
+                cls: Ext.baseCSSPrefix + 'menu-icon-separator',
+                html: '&#160;'
+            };
+            if ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) {
+                separatorSpec.style = 'height:' + me.el.getHeight() + 'px';
+            }
+            me.iconSepEl = me.layout.getElementTarget().insertFirst(separatorSpec);
         }
 
         me.mon(me.el, {
@@ -254,47 +271,9 @@ Ext.define('Ext.menu.Menu', {
         });
         me.mouseMonitor = me.el.monitorMouseLeave(100, me.onMouseLeave, me);
 
-        if (me.showSeparator && ((!Ext.isStrict && Ext.isIE) || Ext.isIE6)) {
-            me.iconSepEl.setHeight(me.el.getHeight());
-        }
-
         me.keyNav = new Ext.menu.KeyNav(me);
     },
 
-    afterLayout: function() {
-        var me = this;
-        me.callParent(arguments);
-
-        // For IE6 & IE quirks, we have to resize the el and body since position: absolute
-        // floating elements inherit their parent's width, making them the width of
-        // document.body instead of the width of their contents.
-        // This includes left/right dock items.
-        if ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) {
-            var innerCt = me.layout.getRenderTarget(),
-                innerCtWidth = 0,
-                dockedItems = me.dockedItems,
-                len = dockedItems.length,
-                i = 0,
-                dockedItem, newWidth;
-
-            innerCtWidth = innerCt.getWidth();
-
-            newWidth = innerCtWidth + me.body.getBorderWidth('lr') + me.body.getPadding('lr');
-
-            // First set the body to the new width
-            me.body.setWidth(newWidth);
-
-            // Now we calculate additional width (docked items) and set the el's width
-            for (; i < len; i++) {
-                dockedItem = dockedItems.getAt(i);
-                if (dockedItem.dock == 'left' || dockedItem.dock == 'right') {
-                    newWidth += dockedItem.getWidth();
-                }
-            }
-            me.el.setWidth(newWidth);
-        }
-    },
-    
     getBubbleTarget: function() {
         // If a submenu, this will have a parentMenu property
         // If a menu of a Button, it will have an ownerButton property
@@ -313,33 +292,34 @@ Ext.define('Ext.menu.Menu', {
     /**
      * Deactivates the current active item on the menu, if one exists.
      */
-    deactivateActiveItem: function() {
-        var me = this;
+    deactivateActiveItem: function(andBlurFocusedItem) {
+        var me = this,
+            activeItem = me.activeItem,
+            focusedItem = me.focusedItem;
 
-        if (me.activeItem) {
-            me.activeItem.deactivate();
-            if (!me.activeItem.activated) {
+        if (activeItem) {
+            activeItem.deactivate();
+            if (!activeItem.activated) {
                 delete me.activeItem;
             }
         }
 
-        // only blur if focusedItem is not a filter
-        if (me.focusedItem && !me.filtered) {
-            me.focusedItem.blur();
-            if (!me.focusedItem.hasFocus) {
-                delete me.focusedItem;
-            }
+        // Blur the focused item if we are being asked to do that too
+        // Only needed if we are being hidden - mouseout does not blur.
+        if (focusedItem && andBlurFocusedItem) {
+            focusedItem.blur();
+            delete me.focusedItem;
         }
     },
 
     // inherit docs
     getFocusEl: function() {
-        return this.el;
+        return this.focusedItem || this.el;
     },
 
     // inherit docs
     hide: function() {
-        this.deactivateActiveItem();
+        this.deactivateActiveItem(true);
         this.callParent(arguments);
     },
 
@@ -420,16 +400,14 @@ Ext.define('Ext.menu.Menu', {
             return;
         }
 
-        if ((e.getTarget() == me.el.dom) || e.within(me.layout.getRenderTarget())) {
+        if (e.within(me.layout.getRenderTarget())) {
             item = me.getItemFromEvent(e) || me.activeItem;
 
-            if (item) {
-                if (item.getXTypes().indexOf('menuitem') >= 0) {
-                    if (!item.menu || !me.ignoreParentClicks) {
-                        item.onClick(e);
-                    } else {
-                        e.stopEvent();
-                    }
+            if (item && item.isXType('menuitem')) {
+                if (!item.menu || !me.ignoreParentClicks) {
+                    item.onClick(e);
+                } else {
+                    e.stopEvent();
                 }
             }
             if (!item.disabled) {
@@ -482,7 +460,8 @@ Ext.define('Ext.menu.Menu', {
             return;
         }
 
-        if (item) {
+        // Do not activate the item if the mouseover was within the item, and it's already active
+        if (item && !item.activated) {
             me.setActiveItem(item);
             if (item.activated && item.expandMenu) {
                 item.expandMenu();
@@ -497,7 +476,7 @@ Ext.define('Ext.menu.Menu', {
     setActiveItem: function(item) {
         var me = this;
 
-        if (item && (item != me.activeItem && item != me.focusedItem)) {
+        if (item && (item != me.activeItem)) {
             me.deactivateActiveItem();
             if (me.canActivateItem(item)) {
                 if (item.activate) {
@@ -528,66 +507,74 @@ Ext.define('Ext.menu.Menu', {
         var me = this;
 
         if (me.floating && cmp) {
-            // If not rendered, then render visible so that an initial layout will occur, so that positioning may be calculated.
-            // Hide without going through the hide machinery. Ensure flags match so that the subsequent show works.
-            if (!me.el) {
-                me.hidden = false;
-                me.doAutoRender();
-                me.el.hide();
-                me.hidden = true;
-            }
-
-            // Align to Component or Element using setPagePosition because normal
-            // show methods are container-relative, and we must align to the requested element/Component
-            me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
             me.show();
+
+            // Align to Component or Element using setPagePosition because normal show
+            // methods are container-relative, and we must align to the requested element
+            // or Component:
+            me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
+            me.setVerticalPosition();
         }
         return me;
     },
 
-    doConstrain : function() {
+    show: function() {
         var me = this,
-            y = me.el.getY(),
-            max, full,
-            vector,
-            returnY = y, normalY, parentEl, scrollTop, viewHeight;
+            parentEl, viewHeight, result,
+            maxWas = me.maxHeight;
 
-        delete me.height;
-        me.updateLayout();
-        full = me.getHeight();
+        // we need to get scope parent for height constraint
+        if (!me.rendered){
+            me.doAutoRender();
+        }
+
+        // constrain the height to the curren viewable area
         if (me.floating) {
             //if our reset css is scoped, there will be a x-reset wrapper on this menu which we need to skip
             parentEl = Ext.fly(me.el.getScopeParent());
-            scrollTop = parentEl.getScroll().top;
             viewHeight = parentEl.getViewSize().height;
-            //Normalize y by the scroll position for the parent element.  Need to move it into the coordinate space
-            //of the view.
-            normalY = y - scrollTop;
+            me.maxHeight  =  Math.min(maxWas || viewHeight, viewHeight);
+        }
+
+        result = me.callParent(arguments);
+        me.maxHeight = maxWas;
+        return result;
+    },
+
+    afterComponentLayout: function(width, height, oldWidth, oldHeight){
+        var me = this;
+        me.callParent(arguments);
+        // fixup the separator
+        if (me.showSeparator){
+            me.iconSepEl.setHeight(me.componentLayout.lastComponentSize.contentHeight);
+        }
+    },
+
+    // private
+    // adjust the vertical position of the menu if the height of the
+    // menu is equal (or greater than) the viewport size
+    setVerticalPosition: function(){
+        var me = this,
+            max,
+            y = me.el.getY(),
+            returnY = y,
+            height = me.getHeight(),
+            viewportHeight = Ext.Element.getViewportHeight().height,
+            parentEl = Ext.fly(me.el.getScopeParent()),
+            viewHeight = parentEl.getViewSize().height,
+            normalY = y - parentEl.getScroll().top; // factor in scrollTop of parent
+
+        parentEl = null;
+
+        if (me.floating) {
             max = me.maxHeight ? me.maxHeight : viewHeight - normalY;
-            if (full > viewHeight) {
-                max = viewHeight;
-                //Set returnY equal to (0,0) in view space by reducing y by the value of normalY
+            if (height > viewHeight) {
                 returnY = y - normalY;
-            } else if (max < full) {
-                returnY = y - (full - max);
-                max = full;
+            } else if (max < height) {
+                returnY = y - (height - max);
+            } else if((y + height) > viewportHeight){ // keep the document from scrolling
+                returnY = viewportHeight - height;
             }
-        }else{
-            max = me.getHeight();
-        }
-        // Always respect maxHeight
-        if (me.maxHeight){
-            max = Math.min(me.maxHeight, max);
-        }
-        if (full > max && max > 0){
-            me.setHeight(max);
-            if (me.showSeparator){
-                me.iconSepEl.setHeight(me.layout.getRenderTarget().dom.scrollHeight);
-            }
-        }
-        vector = me.getConstrainVector(me.el.getScopeParent());
-        if (vector) {
-            me.setPosition(me.getPosition()[0] + vector[0]);
         }
         me.el.setY(returnY);
     }

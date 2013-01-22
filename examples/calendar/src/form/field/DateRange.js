@@ -182,6 +182,14 @@ Ext.define('Ext.calendar.form.field.DateRange', {
             }
         };
     },
+
+    getDuration: function() {
+        var me = this,
+            start = me.getDT('start'),
+            end = me.getDT('end');
+
+        return end.getTime() - start.getTime();
+    },
     
     getAllDayConfig: function() {
         return {
@@ -226,7 +234,7 @@ Ext.define('Ext.calendar.form.field.DateRange', {
                 if(el){
                     w -= el.getWidth() - el.getPadding('lr');
                 }
-                singleLine = w <= me.singleLineMinWidth ? false : true;
+                me.calculatedSingleLine = w <= me.singleLineMinWidth ? false : true;
             }
             else {
                 me.calculatedSingleLine = me.singleLine !== undefined ? me.singleLine : true;

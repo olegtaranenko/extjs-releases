@@ -234,6 +234,20 @@ Ext.define('Ext.calendar.form.EventDetails', {
         return dirty;
     },
 
+    setStartDate: function(d) {
+        var me = this,
+            duration = me.dateRangeField.getDuration();
+
+        me.dateRangeField.setDT(d, 'start');
+
+        // Set the end time to keep the duration the same
+        me.dateRangeField.setDT(new Date(me.dateRangeField.getDT('start').getTime() + duration), 'end');
+    },
+
+    setEndDate: function(d) {
+        this.dateRangeField.setDT(d, 'end');
+    },
+
     // private
     onCancel: function() {
         this.cleanup(true);

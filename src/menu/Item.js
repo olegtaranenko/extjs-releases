@@ -216,7 +216,7 @@ Ext.define('Ext.menu.Item', {
     deferExpandMenu: function() {
         var me = this;
 
-        if (!me.menu.rendered || !me.menu.isVisible()) {
+        if (me.activated && (!me.menu.rendered || !me.menu.isVisible())) {
             me.parentMenu.activeChild = me.menu;
             me.menu.parentItem = me;
             me.menu.parentMenu = me.menu.ownerCt = me.parentMenu;
@@ -238,10 +238,12 @@ Ext.define('Ext.menu.Item', {
         var ancestor;
         Ext.menu.Manager.hideAll();
 
-        // If we have just hidden all Menus, transfer focus to the first visible ancestor if any.
-        ancestor = this.up(':not([hidden])');
-        if (ancestor) {
-            ancestor.focus();
+        if (!Ext.Element.getActiveElement()) {
+            // If we have just hidden all Menus, and there is no currently focused element in the dom, transfer focus to the first visible ancestor if any.
+            ancestor = this.up(':not([hidden])');
+            if (ancestor) {
+                ancestor.focus();
+            }
         }
     },
 
@@ -348,6 +350,18 @@ Ext.define('Ext.menu.Item', {
         if (!me.hideOnClick) {
             me.focus();
         }
+    },
+
+    onRemoved: function() {
+        var me = this;
+
+        // Removing the active item, must deactivate it.
+        if (me.activated && me.parentMenu.activeItem === me) {
+            me.parentMenu.deactivateActiveItem();
+        }
+        me.callParent(arguments);
+        delete me.parentMenu;
+        delete me.ownerButton;
     },
 
     // private

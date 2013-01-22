@@ -354,16 +354,22 @@ describe("Ext.Class", function() {
         });
 
         describe("define override", function() {
-            var obj;
+            var obj,
+                createFnsCalled;
 
             beforeEach(function () {
+                createFnsCalled = [];
+                function onCreated () {
+                    createFnsCalled.push(this.$className);
+                }
+
                 Ext.define('Foo.UnusedOverride', {
                     override: 'Foo.Nothing',
 
                     foo: function (x) {
                         return this.callParent([x*2]);
                     }
-                });
+                }, onCreated);
 
                 // this override comes before its target:
                 Ext.define('Foo.SingletonOverride', {
@@ -372,7 +378,7 @@ describe("Ext.Class", function() {
                     foo: function (x) {
                         return this.callParent([x*2]);
                     }
-                });
+                }, onCreated);
 
                 Ext.define('Foo.Singleton', {
                     singleton: true,
@@ -413,7 +419,7 @@ describe("Ext.Class", function() {
                             return 'A' + this.callParent([x*2]) + 'C';
                         }
                     }
-                });
+                }, onCreated);
 
                 obj = Ext.create('Foo.SomeClass');
             });
@@ -440,6 +446,12 @@ describe("Ext.Class", function() {
                     });
             });
 
+            it("should call the createdFn", function () {
+                expect(createFnsCalled.length).toEqual(2);
+                expect(createFnsCalled[0]).toEqual('Foo.Singleton');
+                expect(createFnsCalled[1]).toEqual('Foo.SomeClass');
+            });
+
             it("can add new methods", function() {
                 expect(obj.method2()).toEqual('two');
             });
@@ -458,15 +470,6 @@ describe("Ext.Class", function() {
 
             it('works with singletons', function () {
                 expect(Foo.Singleton.foo(21)).toEqual(42);
-            });
-
-            it("should be active if used", function() {
-                expect(Foo.SingletonOverride.active).toBe(true)
-                expect(Foo.SomeClassOverride.active).toBe(true);
-            });
-
-            it("should be not active if unused", function() {
-                expect(Foo.UnusedOverride.active).toBeFalsy();
             });
         });
 

@@ -44,18 +44,17 @@ Ext.define('Ext.view.BoundList', {
     ],
 
     renderTpl: [
-        '<div id="{id}-listEl" class="{baseCls}-list-ct" style="overflow:auto"></div>' +
-        '{%this.renderToolbar(out, values)%}', {
-
-            disableFormats: true,
-
-            renderToolbar: function(out, values) {
-                var me = values.$comp;
-                if (me.pagingToolbar) {
-                    me.pagingToolbar.ownerLayout = me.componentLayout;
-                    Ext.DomHelper.generateMarkup(me.pagingToolbar.getRenderTree(), out);
-                }
-            }
+        '<div id="{id}-listEl" class="{baseCls}-list-ct" style="overflow:auto">' +
+        '{%',
+            'var me=values.$comp, pagingToolbar=me.pagingToolbar;',
+            'if (pagingToolbar) {',
+                'pagingToolbar.ownerLayout = me.componentLayout;',
+                'Ext.DomHelper.generateMarkup(pagingToolbar.getRenderTree(), out);',
+            '}',
+        '%}',
+        '</div>',
+        {
+            disableFormats: true
         }
     ],
 
@@ -81,7 +80,7 @@ Ext.define('Ext.view.BoundList', {
      *             ]
      *         }),
      *         listConfig : {
-     *             tpl : '<tpl for="."><div class="x-combo-list-item">{abbr}</div></tpl>'
+     *             tpl : '<tpl for="."><div class="x-boundlist-item">{abbr}</div></tpl>'
      *         }
      *     });
      *

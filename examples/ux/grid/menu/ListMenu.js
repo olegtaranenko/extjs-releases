@@ -44,9 +44,9 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
 
         this.callParent([cfg = cfg || {}]);
 
-        if(!cfg.store && cfg.options){
+        if(!cfg.store && cfg.options) {
             var options = [];
-            for(var i=0, len=cfg.options.length; i<len; i++){
+            for(var i = 0, len = cfg.options.length; i < len; i++){
                 var value = cfg.options[i];
                 switch(Ext.type(value)){
                     case 'array':  options.push(value); break;
@@ -65,7 +65,10 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
             });
             this.loaded = true;
         } else {
-            this.add({text: this.loadingText, iconCls: 'loading-indicator'});
+            this.add({
+                text: this.loadingText,
+                iconCls: 'loading-indicator'
+            });
             this.store.on('load', this.onLoad, this);
         }
     },
@@ -85,51 +88,39 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
      * thus recalculate the width and potentially hang the menu from the left.
      */
     show : function () {
-        var lastArgs = null;
-        return function(){
-            if(arguments.length === 0){
-                this.callParent(lastArgs);
-            } else {
-                lastArgs = arguments;
-                if (this.loadOnShow && !this.loaded) {
-                    this.store.load();
-                }
-                this.callParent(arguments);
-            }
-        };
-    }(),
+        if (this.loadOnShow && !this.loaded && !this.store.loading) {
+            this.store.load();
+        }
+        this.callParent();
+    },
 
     /** @private */
     onLoad : function (store, records) {
         var me = this,
-            visible = me.isVisible(),
-            gid, item, itemValue, i, len;
+            gid, itemValue, i, len,
+            listeners = {
+                checkchange: me.checkChange,
+                scope: me
+            };
 
-        me.hide(false);
-
+        Ext.suspendLayouts();
         me.removeAll(true);
 
         gid = me.single ? Ext.id() : null;
         for (i = 0, len = records.length; i < len; i++) {
             itemValue = records[i].get('id');
-            item = Ext.create('Ext.menu.CheckItem', {
+            me.add(Ext.create('Ext.menu.CheckItem', {
                 text: records[i].get(me.labelField),
                 group: gid,
                 checked: Ext.Array.contains(me.selected, itemValue),
                 hideOnClick: false,
-                value: itemValue
-            });
-
-            item.on('checkchange', me.checkChange, me);
-
-            me.add(item);
+                value: itemValue,
+                listeners: listeners
+            }));
         }
 
         me.loaded = true;
-
-        if (visible) {
-            me.show();
-        }
+        Ext.resumeLayouts(true);
         me.fireEvent('load', me, records);
     },
 

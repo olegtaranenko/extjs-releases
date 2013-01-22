@@ -69,9 +69,15 @@ Ext.define('Ext.layout.container.VBox', {
         right: 'bottom',
         position: 'top',
         width: 'height',
+        contentWidth: 'contentHeight',
+        minWidth: 'minHeight',
+        maxWidth: 'maxHeight',
         widthCap: 'Height',
+        widthModel: 'heightModel',
         widthIndex: 1,
         x: 'y',
+        scrollLeft: 'scrollTop',
+        overflowX: 'overflowY',
 
         // perpendicular
         center: 'center',
@@ -79,9 +85,25 @@ Ext.define('Ext.layout.container.VBox', {
         topPosition: 'left',
         bottom: 'right',// 'after',
         height: 'width',
+        contentHeight: 'contentWidth',
+        minHeight: 'minWidth',
+        maxHeight: 'maxWidth',
         heightCap: 'Width',
+        heightModel: 'widthModel',
         heightIndex: 0,
-        y: 'x'
+        y: 'x',
+        scrollTop: 'scrollLeft',
+        overflowY: 'overflowX',
+
+        // Methods
+        getWidth: 'getHeight',
+        getHeight: 'getWidth',
+        setWidth: 'setHeight',
+        setHeight: 'setWidth',
+        gotWidth: 'gotHeight',
+        gotHeight: 'gotWidth',
+        setContentWidth: 'setContentHeight',
+        setContentHeight: 'setContentWidth'
     },
 
     sizePolicy: {

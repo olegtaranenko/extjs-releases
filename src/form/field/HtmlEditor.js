@@ -68,11 +68,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
     ],
 
     fieldSubTpl: [
-        '{%this.renderToolbar(out, values)%}',
+        '{%Ext.DomHelper.generateMarkup(values.$comp.toolbar.getRenderTree(), out)%}',
         '{beforeTextAreaTpl}',
         '<textarea id="{cmpId}-textareaEl" name="{name}" tabIndex="-1" {inputAttrTpl}',
                  ' class="{textareaCls}" style="{size}" autocomplete="off">',
-            '{value}',
+            '{[Ext.util.Format.htmlEncode(values.value)]}',
         '</textarea>',
         '{afterTextAreaTpl}',
         '{beforeIFrameTpl}',
@@ -80,12 +80,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
                ' style="overflow:auto;{size}" src="{iframeSrc}"></iframe>',
         '{afterIFrameTpl}',
         {
-            disableFormats: true,
-
-            // Insert the markup for the toolbar's render tree into the output buffer
-            renderToolbar: function(out, values) {
-                Ext.DomHelper.generateMarkup(values.$comp.toolbar.getRenderTree(), out);
-            }
+            disableFormats: true
         }
     ],
 
@@ -689,11 +684,18 @@ Ext.define('Ext.form.field.HtmlEditor', {
     },
 
     disableItems: function(disabled) {
-        this.getToolbar().items.each(function(item){
-            if(item.getItemId() !== 'sourceedit'){
+        var items = this.getToolbar().items.items,
+            i,
+            iLen  = items.length,
+            item;
+
+        for (i = 0; i < iLen; i++) {
+            item = items[i];
+
+            if (item.getItemId() !== 'sourceedit') {
                 item.setDisabled(disabled);
             }
-        });
+        }
     },
 
     /**
@@ -736,7 +738,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
             me.inputEl = iframe;
         }
         me.fireEvent('editmodechange', me, sourceEditMode);
-        me.doComponentLayout();
+        me.updateLayout();
     },
 
     // private used internally
@@ -959,7 +961,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 if (doc) {
                     Ext.EventManager.removeAll(doc);
                     for (prop in doc) {
-                        if (doc.hasOwnProperty(prop)) {
+                        if (doc.hasOwnProperty && doc.hasOwnProperty(prop)) {
                             delete doc[prop];
                         }
                     }
@@ -1195,31 +1197,37 @@ Ext.define('Ext.form.field.HtmlEditor', {
     },
 
     // private
-    fixKeys: function() { // load time branching for fastest keydown performance
+    fixKeys: (function() { // load time branching for fastest keydown performance
         if (Ext.isIE) {
             return function(e){
                 var me = this,
                     k = e.getKey(),
                     doc = me.getDoc(),
+                    readOnly = me.readOnly,
                     range, target;
+
                 if (k === e.TAB) {
                     e.stopEvent();
-                    range = doc.selection.createRange();
-                    if(range){
-                        range.collapse(true);
-                        range.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');
-                        me.deferFocus();
+                    if (!readOnly) {
+                        range = doc.selection.createRange();
+                        if(range){
+                            range.collapse(true);
+                            range.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');
+                            me.deferFocus();
+                        }
                     }
                 }
                 else if (k === e.ENTER) {
-                    range = doc.selection.createRange();
-                    if (range) {
-                        target = range.parentElement();
-                        if(!target || target.tagName.toLowerCase() !== 'li'){
-                            e.stopEvent();
-                            range.pasteHTML('<br />');
-                            range.collapse(false);
-                            range.select();
+                    if (!readOnly) {
+                        range = doc.selection.createRange();
+                        if (range) {
+                            target = range.parentElement();
+                            if(!target || target.tagName.toLowerCase() !== 'li'){
+                                e.stopEvent();
+                                range.pasteHTML('<br />');
+                                range.collapse(false);
+                                range.select();
+                            }
                         }
                     }
                 }
@@ -1231,9 +1239,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 var me = this;
                 if (e.getKey() === e.TAB) {
                     e.stopEvent();
-                    me.win.focus();
-                    me.execCmd('InsertHTML','&nbsp;&nbsp;&nbsp;&nbsp;');
-                    me.deferFocus();
+                    if (!me.readOnly) {
+                        me.win.focus();
+                        me.execCmd('InsertHTML','&nbsp;&nbsp;&nbsp;&nbsp;');
+                        me.deferFocus();
+                    }
                 }
             };
         }
@@ -1241,22 +1251,28 @@ Ext.define('Ext.form.field.HtmlEditor', {
         if (Ext.isWebKit) {
             return function(e){
                 var me = this,
-                    k = e.getKey();
+                    k = e.getKey(),
+                    readOnly = me.readOnly;
+
                 if (k === e.TAB) {
                     e.stopEvent();
-                    me.execCmd('InsertText','\t');
-                    me.deferFocus();
+                    if (!readOnly) {
+                        me.execCmd('InsertText','\t');
+                        me.deferFocus();
+                    }
                 }
                 else if (k === e.ENTER) {
                     e.stopEvent();
-                    me.execCmd('InsertHtml','<br /><br />');
-                    me.deferFocus();
+                    if (!readOnly) {
+                        me.execCmd('InsertHtml','<br /><br />');
+                        me.deferFocus();
+                    }
                 }
             };
         }
 
         return null; // not needed, so null
-    }(),
+    }()),
 
     /**
      * Returns the editor's toolbar. **This is only available after the editor has been rendered.**

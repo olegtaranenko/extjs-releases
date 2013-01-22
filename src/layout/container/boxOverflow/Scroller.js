@@ -71,13 +71,16 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
      * @cfg {String} afterScrollerCls
      * CSS class added to the right scroller element if enableScroll is used
      */
-    
+
     constructor: function(layout, config) {
         var me = this;
-        
+
         me.layout = layout;
         Ext.apply(me, config || {});
-        
+
+        // Dont pass the config so that it is not applied to 'this' again
+        me.mixins.observable.constructor.call(me);
+
         me.addEvents(
             /**
              * @event scroll
@@ -88,8 +91,9 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
             'scroll'
         );
         me.scrollPosition = 0;
+        me.scrollSize = 0;
     },
-    
+
     getPrefixConfig: function() {
         var me = this;
         me.initCSSClasses();
@@ -133,6 +137,31 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         
         me.beforeScrollerCls = me.beforeScrollerCls || prefix + type + '-scroll-' + leftName;
         me.afterScrollerCls  = me.afterScrollerCls  || prefix + type + '-scroll-' + rightName;
+    },
+
+    beginLayout: function (ownerContext) {
+        var layout = this.layout,
+            names = layout.getNames();
+
+        ownerContext.innerCtScrollPos = layout.innerCt.dom['scroll' + names.leftCap];
+
+        this.callParent(arguments);
+    },
+
+    completeLayout: function (ownerContext) {
+        // capture this before callParent since it calls handle/clearOverflow:
+        this.scrollSize = ownerContext.props['content'+this.layout.getNames().widthCap];
+
+        this.callParent(arguments);
+    },
+    
+    finishedLayout: function(ownerContext) {
+        var me = this,
+            layout = me.layout,
+            names = layout.getNames(),
+            scrollPos = Math.min(me.getMaxScrollPosition(), ownerContext.innerCtScrollPos);
+
+        layout.innerCt.dom['scroll' + names.leftCap] = scrollPos;
     },
 
     handleOverflow: function(ownerContext) {
@@ -205,7 +234,9 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
     /**
      * @private
      */
-    clearOverflow: function() {
+    clearOverflow: function () {
+        var layout = this.layout;
+
         this.hideScrollers();
     },
 
@@ -216,7 +247,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
      */
     showScrollers: function() {
         var me = this;
-        
+
         me.captureChildElements();
         me.beforeScroller.show();
         me.afterScroller.show();
@@ -231,7 +262,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
      */
     hideScrollers: function() {
         var me = this;
-        
+
         if (me.beforeScroller !== undefined) {
             me.beforeScroller.hide();
             me.afterScroller.hide();
@@ -245,7 +276,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
      */
     destroy: function() {
         var me = this;
-        
+
         Ext.destroy(me.beforeRepeater, me.afterRepeater, me.beforeScroller, me.afterScroller, me.beforeCt, me.afterCt);
     },
 
@@ -289,7 +320,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         afterMeth  = me.atExtremeAfter() ? 'addCls' : 'removeCls';
         beforeCls  = me.beforeScrollerCls + '-disabled';
         afterCls   = me.afterScrollerCls  + '-disabled';
-        
+
         me.beforeScroller[beforeMeth](beforeCls);
         me.afterScroller[afterMeth](afterCls);
         me.scrolling = false;
@@ -301,7 +332,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
      * @return {Boolean} True if already at furthest left point
      */
     atExtremeBefore: function() {
-        return this.getScrollPosition() === 0;
+        return !this.getScrollPosition();
     },
 
     /**
@@ -344,11 +375,12 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
      * @return {Number} The max scroll value
      */
     getMaxScrollPosition: function() {
-        var layout = this.layout,
+        var me = this,
+            layout = me.layout,
             names = layout.getNames(),
-            widthName = names.widthCap;
+            maxScrollPos = me.scrollSize - layout.innerCt['get'+names.widthCap]();
 
-        return layout.innerCt.dom['scroll' + widthName] - this.layout.innerCt['get' + widthName]();
+        return (maxScrollPos < 0) ? 0 : maxScrollPos;
     },
 
     /**

@@ -56,6 +56,13 @@ Ext.samples = {
                     "url": "themes/index.html",
                     "icon": "themes.gif",
                     "desc": "View and test every Ext component against bundled Ext themes."
+                },
+                {
+                    "text": "Simple Tasks",
+                    "url": "simple-tasks/index.html",
+                    "icon": "tasks.gif",
+                    "desc": "Complete personal task management application example",
+                    "status": "new"
                 }
             ]
         },
@@ -229,16 +236,25 @@ Ext.samples = {
                     "url": "grid/progress-bar-pager.html",
                     "icon": "progress-bar-pager.gif",
                     "desc": "Progress Bar Pager Extension."
-                },{
+                },
+                {
                     "text": "Property Grid",
                     "url": "grid/property.html",
                     "icon": "grid-property.gif",
                     "desc": "Create a property grid from an object."
-                },{
+                },
+                {
                     "text": "Grid From Markup",
                     "url": "grid/transform-dom.html",
                     "icon": "grid-transform.gif",
                     "desc": "Create a grid with from an existing, unformatted HTML table."
+                },
+                {
+                    "text": "Locking Grouping Grid with Summary",
+                    "url": "grid/locking-group-summary-grid.html",
+                    "icon": "grid-summary.gif",
+                    "desc": "Advanced grouping grid that allows cell editing and includes custom dynamic summary calculations. With column locking capability",
+                    "status": "new"
                 }
             ]
         },

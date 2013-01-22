@@ -63,6 +63,7 @@ Ext.define('Ext.ux.ajax.JsonSimlet', function () {
                 return data;
             }
 
+            ctx.groupSpec = params.group &amp;&amp; Ext.decode(params.group);
             if (order == me.currentOrder) {
                 return me.sortedData;
             }
@@ -74,13 +75,13 @@ Ext.define('Ext.ux.ajax.JsonSimlet', function () {
                 fields = Ext.decode(params.sort);
             }
 
-            sortFn = makeSortFns(ctx.sortSpec = fields);
-
-            ctx.groupSpec = fields = params.group &amp;&amp; Ext.decode(params.group);
-            sortFn = makeSortFns(fields, sortFn);
+            sortFn = makeSortFns((ctx.sortSpec = fields));
+            sortFn = makeSortFns(ctx.groupSpec, sortFn);
 
             data = data.slice(0); // preserve 'physical' order of raw data...
-            data.sort(sortFn);
+            if (sortFn) {
+                Ext.Array.sort(data, sortFn);
+            }
 
             me.sortedData = data;
             me.currentOrder = order;
@@ -164,8 +165,12 @@ Ext.define('Ext.ux.ajax.JsonSimlet', function () {
                 ret = me.callParent(arguments), // pick up status/statusText
                 response = {};
 
-            response[reader.root] = page;
-            response[reader.totalProperty] = data.length;
+            if (reader.root) {
+                response[reader.root] = page;
+                response[reader.totalProperty] = data.length;
+            } else {
+                response = page;
+            }
 
             if (ctx.groupSpec) {
                 response.summaryData = me.getSummary(ctx, data, page);

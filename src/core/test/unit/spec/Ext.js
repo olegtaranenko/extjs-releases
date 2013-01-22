@@ -142,7 +142,7 @@ describe("Ext", function() {
            expect(Ext.apply(null, {})).toBeNull();
         });
 
-        it("should return the object if second argument is no defined", function() {
+        it("should return the object if second argument is not defined", function() {
             o = {
                 foo: 1
             };
@@ -491,96 +491,90 @@ describe("Ext", function() {
     });
 
     describe("Ext.typeOf", function() {
+        
         it("should return null", function() {
             expect(Ext.typeOf(null)).toEqual('null');
         });
+        
         it("should return undefined", function() {
             expect(Ext.typeOf(undefined)).toEqual('undefined');
-        });
-        it("should return undefined", function() {
             expect(Ext.typeOf(window.someWeirdPropertyThatDoesntExist)).toEqual('undefined');
         });
+
+
         it("should return string", function() {
             expect(Ext.typeOf('')).toEqual('string');
-        });
-        it("should return string", function() {
             expect(Ext.typeOf('something')).toEqual('string');
-        });
-        it("should return string", function() {
             expect(Ext.typeOf('1.2')).toEqual('string');
         });
+
         it("should return number", function() {
             expect(Ext.typeOf(1)).toEqual('number');
-        });
-        it("should return number", function() {
             expect(Ext.typeOf(1.2)).toEqual('number');
+            expect(Ext.typeOf(new Number(1.2))).toEqual('number');
         });
+
+
         it("should return boolean", function() {
             expect(Ext.typeOf(true)).toEqual('boolean');
-        });
-        it("should return boolean", function() {
             expect(Ext.typeOf(false)).toEqual('boolean');
+            expect(Ext.typeOf(new Boolean(true))).toEqual('boolean');
         });
+        
+
         it("should return array", function() {
             expect(Ext.typeOf([1,2,3])).toEqual('array');
-        });
-        it("should return array", function() {
             expect(Ext.typeOf(new Array(1,2,3))).toEqual('array');
         });
-        it("should return function 1", function() {
+        
+        it("should return function", function() {
             expect(Ext.typeOf(function(){})).toEqual('function');
-        });
-        // Don't run this test in IE
-        if (typeof alert === 'function') {
-            it("should return function 2", function() {
-                expect(Ext.typeOf(prompt)).toEqual('function');
-            });
-        }
-        it("should return function 3", function() {
             expect(Ext.typeOf(new Function())).toEqual('function');
+            expect(Ext.typeOf(Object)).toEqual('function');
+            expect(Ext.typeOf(Array)).toEqual('function');
+            expect(Ext.typeOf(Number)).toEqual('function');
+            expect(Ext.typeOf(Function)).toEqual('function');
+            expect(Ext.typeOf(Boolean)).toEqual('function');
+            expect(Ext.typeOf(String)).toEqual('function');
+            expect(Ext.typeOf(Date)).toEqual('function');
+            expect(Ext.typeOf(Ext.typeOf)).toEqual('function');
+
+            // In IE certain native functions come back as objects, e.g. alert, prompt and document.getElementById. It
+            // isn't clear exactly what correct behaviour should be in those cases as attempting to treat them like
+            // normal functions can causes various problems. Some, like document.getElementBy, have call and apply
+            // methods so in most cases will behave like any other function. It might be possible to detect them by
+            // using something like this:
+            //
+            // if (typeof obj === 'object' && !obj.toString && obj.call && obj.apply && (obj + '')) {...}
         });
-        it("should return regexp 1", function() {
+        
+        it("should return regexp", function() {
             expect(Ext.typeOf(/test/)).toEqual('regexp');
-        });
-        it("should return regexp 2", function() {
             expect(Ext.typeOf(new RegExp('test'))).toEqual('regexp');
         });
+
         it("should return date", function() {
             expect(Ext.typeOf(new Date())).toEqual('date');
         });
+        
         it("should return textnode", function() {
             expect(Ext.typeOf(document.createTextNode('tada'))).toEqual('textnode');
-        });
-        it("should return whitespace", function() {
             expect(Ext.typeOf(document.createTextNode(' '))).toEqual('whitespace');
-        });
-        it("should return whitespace", function() {
             expect(Ext.typeOf(document.createTextNode('         '))).toEqual('whitespace');
         });
+
         it("should return element", function() {
             expect(Ext.typeOf(document.getElementsByTagName('body')[0])).toEqual('element');
-        });
-        it("should return element", function() {
             expect(Ext.typeOf(document.createElement('button'))).toEqual('element');
-        });
-        it("should return element", function() {
             expect(Ext.typeOf(new Image())).toEqual('element');
         });
-        it("should return object 1", function() {
+
+        it("should return object", function() {
             expect(Ext.typeOf({some: 'stuff'})).toEqual('object');
-        });
-        it("should return object 2", function() {
             expect(Ext.typeOf(new Object())).toEqual('object');
-        });
-        it("should return object 3", function() {
             expect(Ext.typeOf(window)).toEqual('object');
         });
-        it("should return boolean", function() {
-            expect(Ext.typeOf(new Boolean(true))).toEqual('boolean');
-        });
-        it("should return number", function() {
-            expect(Ext.typeOf(new Number(1.2))).toEqual('number');
-        });
+
     });
 
     describe("Ext.isIterable", function() {
@@ -1537,6 +1531,14 @@ describe("Ext", function() {
             expect(clone.innerHTML).toEqual(clone.innerHTML);
             expect(clone).not.toBe(node);
             document.body.removeChild(node);
+        });
+        
+        it("should return null for null items", function() {
+        	expect(Ext.clone(null)).toBeNull();
+        });
+        
+        it("should return undefined for undefined items", function() {
+        	expect(Ext.clone(undefined)).toBeUndefined();
         });
     });
 

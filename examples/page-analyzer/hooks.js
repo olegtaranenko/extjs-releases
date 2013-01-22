@@ -1,9 +1,23 @@
-var _hooking = false;
-var _layoutRuns = [];
+var _hooking = 3,
+    _layoutRuns = []
+    _syncStatusCheck = function () {
+        _hooking--;
+    };
 
-Ext.Perf.setup(_accumulatorCfg);
+Ext.require([
+        'Ext.perf.Monitor',
+        'Ext.perf.Accumulator'
+    ],
+    function(){
+        if (typeof _accumulatorCfg != 'undefined') {
+            Ext.Perf.setup(_accumulatorCfg);
+        }
+        _syncStatusCheck();
+    }
+)
 
-Ext.define('Ext.lan.hook.Context', function () {
+Ext.define('PageAnalyzer.hook.Context', function () {
+
     function compareTriggers (a, b) {
         if (a.value === undefined) {
             if (b.value !== undefined) {
@@ -24,9 +38,12 @@ Ext.define('Ext.lan.hook.Context', function () {
         var owner = layout.owner,
             ownerContext = me.getCmp(owner),
             sizeModel = ownerContext.sizeModel,
+            stats = me.layoutsById[layout.id],
             results = {
                 allDone: layout.done,
                 done: layout.done,
+                id: layout.id,
+                type: layout.type,
                 name: getLayoutName(layout),
                 blocks: [],
                 boxParent: ownerContext.boxParent ? ownerContext.boxParent.id : null,
@@ -35,7 +52,10 @@ Ext.define('Ext.lan.hook.Context', function () {
                 orphan: !!orphan,
                 heightModel: ownerContext.heightModel.name,
                 widthModel: ownerContext.widthModel.name,
-                children: []
+                children: [],
+                duration: stats ? stats.duration : 0,
+                totalTime: stats ? stats.duration : 0,
+                count: stats ? stats.count : 1
             },
             order = [false, true],
             child, i;
@@ -79,6 +99,7 @@ Ext.define('Ext.lan.hook.Context', function () {
                     if (!child.allDone) {
                         results.allDone = false;
                     }
+                    results.totalTime += child.totalTime;
                     results.children.push(child);
                 }
             });
@@ -92,9 +113,12 @@ Ext.define('Ext.lan.hook.Context', function () {
         me.numByType = {};
         me.timesByType = {};
         me.triggersByLayoutId = {};
+        me.layoutsById = {};
+        me.layoutsByType = {};
+        me.flushLayoutStats = {};
 
         return {
-            startTime: new Date().getTime()
+            startTime: Ext.perf.getTimestamp()
         };
     }
 
@@ -103,15 +127,24 @@ Ext.define('Ext.lan.hook.Context', function () {
             reported = {};
 
         var data = {
-            duration: t2.getTime() - before.startTime,
+            duration: Ext.perf.getTimestamp() - before.startTime,
             time: t2,
             success: ok,
             cycleCount: me.cycleCount,
             flushCount: me.flushCount,
             calcCount: me.calcCount,
             orphans: 0,
-            layouts: []
+            layouts: [],
+            statsById: me.layoutsById,
+            statsByType: me.layoutsByType,
+            flushTime: me.flushTime,
+            flushInvalidateTime: me.flushInvalidateTime,
+            flushCount: me.flushCount,
+            flushInvalidateCount: me.flushInvalidateCount,
+            flushLayoutStats: me.flushLayoutStats
         };
+
+        data.totalTime = data.duration;
 
         Ext.Object.each(me.layouts, function (id, layout) {
             if (me.items[layout.owner.el.id].isTopLevel) {
@@ -129,8 +162,72 @@ Ext.define('Ext.lan.hook.Context', function () {
         _layoutRuns.push(Ext.encode(data));
     }
 
+    function beforeRunLayout (me) {
+        return {
+            startTime: Ext.perf.getTimestamp()
+        };
+    }
+
+    function afterRunLayout (me, layout, before) {
+        var id = layout.id,
+            type = layout.type,
+            duration =  Ext.perf.getTimestamp() - before.startTime,
+            typeMapping = me.layoutsByType[type] || (me.layoutsByType[type] = {
+                duration: 0,
+                layoutCount: 0,
+                count: 0
+            }),
+            idMapping = me.layoutsById[id];
+
+        if(!idMapping) {
+            typeMapping.layoutCount++;
+            idMapping = me.layoutsById[id] = {
+                duration: 0,
+                count: 0
+            };
+        }
+
+        idMapping.duration += duration;
+        typeMapping.duration +=  duration;
+        idMapping.count++;
+        typeMapping.count++;
+
+    }
+
     return {
         override: 'Ext.layout.Context',
+
+        flushInvalidateTime: 0,
+        flushInvalidateCount: 0,
+        flushTime: 0,
+        flushCount: 0,
+
+        flush: function() {
+            var start = Ext.perf.getTimestamp();
+            this.callParent(arguments);
+            this.flushTime += Ext.perf.getTimestamp() - start;
+            this.flushCount++;
+        },
+
+        flushInvalidates: function() {
+            var start = Ext.perf.getTimestamp();
+            this.callParent(arguments);
+            this.flushInvalidateTime += Ext.perf.getTimestamp() - start;
+            this.flushInvalidateCount++;
+        },
+
+        flushLayouts: function (queueName, methodName, dontClear) {
+            var start = Ext.perf.getTimestamp(),
+                stats = this.flushLayoutStats[methodName] ||
+                    (this.flushLayoutStats[methodName] = {
+                        count: 0,
+                        time: 0
+                    });
+
+            this.callParent(arguments);
+            stats.time += Ext.perf.getTimestamp() - start;
+            stats.count++;
+        },
 
         run: function () {
             var me = this,
@@ -138,15 +235,23 @@ Ext.define('Ext.lan.hook.Context', function () {
                 ok = me.callParent(arguments);
 
             afterRun(me, before, ok);
-
             return ok;
+        },
+
+        runLayout: function (layout) {
+            var me = this,
+                before = beforeRunLayout(me);
+            me.callParent(arguments);
+            afterRunLayout(me, layout, before);
         }
+
     };
-}());
+}(), _syncStatusCheck);
+
 
 //-----------------------------------------------------------------------------
 
-Ext.define('Ext.lan.hook.ContextItem', function () {
+Ext.define('PageAnalyzer.hook.ContextItem', function () {
     function getLayoutName (layout) {
         return layout.owner.id + '<' + layout.type + '>';
     }
@@ -180,26 +285,18 @@ Ext.define('Ext.lan.hook.ContextItem', function () {
         },
 
         addTrigger: function (propName, inDom) {
-            var name = inDom ? 'domTriggers' : 'triggers',
-                layout = this.context.currentLayout,
-                result = this.callParent(arguments),
+            var layout = this.context.currentLayout,
                 triggers;
 
-            //Ext.log(this.id,'.',propName,' ',name,' ',getLayoutName(layout));
+            this.callParent(arguments);
+            //Ext.log(this.id,'.',propName,' ',name = inDom ? ':dom' : '',' ',getLayoutName(layout));
 
-            if (result) {
-                triggers = this.context.triggersByLayoutId;
-                (triggers[layout.id] || (triggers[layout.id] = {}))[
-                    this.id+'.'+propName+(inDom ? ':dom' : '')] = {
-                        item: this,
-                        name: propName
-                    };
-            } else {
-                //console.log(me.target.el.dom, (' ' + getLayoutName(layout) + 
-                //' is asking for the ' + propName + ' which it is supposed to provide'));
-            }
-
-            return result;
+            triggers = this.context.triggersByLayoutId;
+            (triggers[layout.id] || (triggers[layout.id] = {}))[
+                this.id+'.'+propName+(inDom ? ':dom' : '')] = {
+                    item: this,
+                    name: propName
+                };
         },
 
         clearBlocks: function (name, propName) {
@@ -240,4 +337,4 @@ Ext.define('Ext.lan.hook.ContextItem', function () {
             return this.callParent(arguments);
         }
     };
-}());
+}(), _syncStatusCheck);

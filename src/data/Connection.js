@@ -80,6 +80,24 @@ Ext.define('Ext.data.Connection', {
      * Any parameters to be appended to the request.
      */
 
+    /**
+     * @cfg {Boolean} [autoAbort=false]
+     * Whether this request should abort any pending requests.
+     */
+
+    /**
+     * @cfg {String} method
+     * The default HTTP method to be used for requests.
+     *
+     * If not set, but {@link #request} params are present, POST will be used;
+     * otherwise, GET will be used.
+     */
+
+    /**
+     * @cfg {Object} defaultHeaders
+     * An object containing request headers which are added to each request made by this object.
+     */
+
     useDefaultHeader : true,
     defaultPostHeader : 'application/x-www-form-urlencoded; charset=UTF-8',
     useDefaultXhrHeader : true,
@@ -309,16 +327,18 @@ Ext.define('Ext.data.Connection', {
                 encoding: form.encoding,
                 enctype: form.enctype,
                 action: form.action
-            }, addField = function(name, value) {
-            hiddenItem = document.createElement('input');
-            Ext.fly(hiddenItem).set({
-                type: 'hidden',
-                value: value,
-                name: name
-            });
-            form.appendChild(hiddenItem);
-            hiddens.push(hiddenItem);
-        }, hiddenItem;
+            },
+            addField = function(name, value) {
+                hiddenItem = document.createElement('input');
+                Ext.fly(hiddenItem).set({
+                    type: 'hidden',
+                    value: value,
+                    name: name
+                });
+                form.appendChild(hiddenItem);
+                hiddens.push(hiddenItem);
+            },
+            hiddenItem, obj, value, name, vLen, v, hLen, h;
 
         /*
          * Originally this behaviour was modified for Opera 10 to apply the secure URL after
@@ -349,24 +369,33 @@ Ext.define('Ext.data.Connection', {
 
         // add dynamic params
         if (params) {
-            Ext.iterate(Ext.Object.fromQueryString(params), function(name, value) {
-                if (Ext.isArray(value)) {
-                    Ext.each(value, function(v) {
-                        addField(name, v);
-                    });
-                } else {
-                    addField(name, value);
+            obj = Ext.Object.fromQueryString(params) || {};
+
+            for (name in obj) {
+                if (obj.hasOwnProperty(name)) {
+                    value = obj[name];  
+                    if (Ext.isArray(value)) {
+                        vLen = value.length;
+                        for (v = 0; v < vLen; v++) {
+                            addField(name, value[v]);
+                        }
+                    } else {
+                        addField(name, value);
+                    }
                 }
-            });
+            }
         }
 
         Ext.fly(frame).on('load', Ext.Function.bind(this.onUploadComplete, this, [frame, options]), null, {single: true});
         form.submit();
 
         Ext.fly(form).set(buf);
-        Ext.each(hiddens, function(h) {
-            Ext.removeNode(h);
-        });
+
+        hLen = hiddens.length;
+
+        for (h = 0; h < hLen; h++) {
+            Ext.removeNode(hiddens[h]);
+        }
     },
 
     /**
@@ -685,7 +714,7 @@ Ext.define('Ext.data.Connection', {
             }
         }
         return xhr;
-    })(),
+    }()),
 
     /**
      * Determines whether this object has a request outstanding.

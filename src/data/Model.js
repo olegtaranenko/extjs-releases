@@ -208,7 +208,7 @@ Ext.define('Ext.data.Model', {
     mixins: {
         observable: 'Ext.util.Observable'
     },
-
+    
     requires: [
         'Ext.ModelManager',
         'Ext.data.IdGenerator',
@@ -216,7 +216,6 @@ Ext.define('Ext.data.Model', {
         'Ext.data.Errors',
         'Ext.data.Operation',
         'Ext.data.validations',
-        'Ext.data.proxy.Ajax',
         'Ext.util.MixedCollection'
     ],
 
@@ -288,8 +287,11 @@ Ext.define('Ext.data.Model', {
                 idProperty = data.idProperty || cls.prototype.idProperty,
                 fieldConvertSortFn = Ext.Function.bind(
                     fieldsMixedCollection.sortBy, 
-                    fieldsMixedCollection, 
-                    [prototype.sortConvertFields], false);
+                    fieldsMixedCollection,
+                    [prototype.sortConvertFields], false),
+
+                // Use the proxy from the class definition object if present, otherwise fall back to the inherited one, or the default    
+                clsProxy = data.proxy || cls.prototype.proxy || cls.prototype.defaultProxyType;
 
             // Save modelName on class and its prototype
             cls.modelName = name;
@@ -341,13 +343,9 @@ Ext.define('Ext.data.Model', {
                 dependencies.push('association.' + associations[i].type.toLowerCase());
             }
 
-            if (data.proxy) {
-                if (typeof data.proxy === 'string') {
-                    dependencies.push('proxy.' + data.proxy);
-                }
-                else if (typeof data.proxy.type === 'string') {
-                    dependencies.push('proxy.' + data.proxy.type);
-                }
+            // If we have not been supplied with a Proxy *instance*, then add the proxy type to our dependency list
+            if (clsProxy && !clsProxy.isProxy) {
+                dependencies.push('proxy.' + (typeof clsProxy === 'string' ? clsProxy : clsProxy.type));
             }
 
             Ext.require(dependencies, function() {
@@ -370,9 +368,14 @@ Ext.define('Ext.data.Model', {
 
                 data.associations = associationsMixedCollection;
 
+                // onBeforeCreated may get called *asynchronously* if any of those required classes caused
+                // an asynchronous script load. This would mean that the class definition object
+                // has not been applied to the prototype when the Model definition has returned.
+                // The Reader constructor does not attempt to buildExtractors if the fields MixedCollection
+                // has not yet been set. The cls.setProxy call triggers a build of extractor methods.
                 onBeforeClassCreated.call(me, cls, data, hooks);
 
-                cls.setProxy(cls.prototype.proxy || cls.prototype.defaultProxyType);
+                cls.setProxy(clsProxy);
 
                 // Fire the onModelDefined template method on ModelManager
                 Ext.ModelManager.onModelDefined(cls);
@@ -416,17 +419,26 @@ Ext.define('Ext.data.Model', {
         },
 
         /**
-         * Apply a new set of field definitions to the existing model. This will replace any existing
+         * Apply a new set of field and/or property definitions to the existing model. This will replace any existing
          * fields, including fields inherited from superclasses. Mainly for reconfiguring the
          * model based on changes in meta data (called from Reader's onMetaChange method).
          * @static
          * @inheritable
          */
-        setFields: function(fields) {
+        setFields: function(fields, idProperty, clientIdProperty) {
             var me = this,
-                prototypeFields = me.prototype.fields,
-                len = fields.length,
+                proto = me.prototype,
+                prototypeFields = proto.fields,
+                len = fields ? fields.length : 0,
                 i = 0;
+
+
+            if (idProperty) {
+                proto.idProperty = idProperty;
+            }
+            if (clientIdProperty) {
+                proto.clientIdProperty = clientIdProperty;
+            }
 
             if (prototypeFields) {
                 prototypeFields.clear();
@@ -439,6 +451,9 @@ Ext.define('Ext.data.Model', {
 
             for (; i < len; i++) {
                 prototypeFields.add(new Ext.data.Field(fields[i]));
+            }
+            if (!prototypeFields.get(proto.idProperty)) {
+                prototypeFields.add(new Ext.data.Field(proto.idProperty));
             }
 
             me.fields = prototypeFields;
@@ -633,7 +648,7 @@ Ext.define('Ext.data.Model', {
 
     /**
      * @property {Boolean} isModel
-     * `true` in this class to identify an objact as an instantiated Model, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Model, or subclass thereof.
      */
     isModel: true,
 
@@ -651,14 +666,14 @@ Ext.define('Ext.data.Model', {
     idProperty: 'id',
 
     /**
-     * @cfg {String} [clientIdProperty='clientId']
+     * @cfg {String} [clientIdProperty]
      * The name of a property that is used for submitting this Model's unique client-side identifier
      * to the server when multiple phantom records are saved as part of the same {@link Ext.data.Operation Operation}.
      * In such a case, the server response should include the client id for each record
      * so that the server response data can be used to update the client-side records if necessary.
      * This property cannot have the same name as any of this Model's fields.
      */
-    clientIdProperty: 'clientId',
+    clientIdProperty: null,
 
     /**
      * @cfg {String} defaultProxyType
@@ -807,8 +822,8 @@ Ext.define('Ext.data.Model', {
         }
 
         /**
-         * @property {Array} stores
-         * An array of {@link Ext.data.AbstractStore} objects that this record is bound to.
+         * @property {Ext.data.Store[]} stores
+         * The {@link Ext.data.Store Stores} to which this instance is bound.
          */
         me.stores = [];
 
@@ -841,81 +856,96 @@ Ext.define('Ext.data.Model', {
         return this[this.persistenceProperty][field];
     },
 
+    // This object is used whenever the set() method is called and given a string as the
+    // first argument. This approach saves memory (and GC costs) since we could be called
+    // a lot.
+    _singleProp: {},
+
     /**
      * Sets the given field to the given value, marks the instance as dirty
      * @param {String/Object} fieldName The field to set, or an object containing key/value pairs
-     * @param {Object} value The value to set
+     * @param {Object} newValue The value to set
+     * @return {String[]} The array of modified field names or null if nothing was modified.
      */
-    set: function(fieldName, value) {
+    set: function (fieldName, newValue) {
         var me = this,
+            data = me[me.persistenceProperty],
             fields = me.fields,
             modified = me.modified,
-            modifiedFieldNames = [],
-            field, key, i, currentValue, notEditing, count, length;
+            single = (typeof fieldName == 'string'),
+            currentValue, field, idChanged, key, modifiedFieldNames, name, oldId,
+            newId, value, values;
 
-        /*
-         * If we're passed an object, iterate over that object.
-         */
-        if (arguments.length == 1 && Ext.isObject(fieldName)) {
-            notEditing = !me.editing;
-            count = 0;
-            fields = me.fields.items;
-            length = fields.length;
-            for (i = 0; i < length; i++) {
-                field = fields[i].name;
-                if (fieldName.hasOwnProperty(field)) {
-                    if (!count && notEditing) {
-                        me.beginEdit();
-                    }
-                    ++count;
-                    me.set(field, fieldName[field]);
-                }
-            }
-            if (notEditing && count) {
-                me.endEdit(false, modifiedFieldNames);
-            }
+        if (single) {
+            values = me._singleProp;
+            values[fieldName] = newValue;
         } else {
-            fields = me.fields;
-            if (fields) {
-                field = fields.get(fieldName);
+            values = fieldName;
+        }
 
-                if (field && field.convert) {
+        for (name in values) {
+            if (values.hasOwnProperty(name)) {
+                value = values[name];
+
+                if ((field = fields && fields.get(name)) && field.convert) {
                     value = field.convert(value, me);
                 }
-            }
-            currentValue = me.get(fieldName);
-            me[me.persistenceProperty][fieldName] = value;
 
-            if (field && field.persist && !me.isEqual(currentValue, value)) {
-                if (me.isModified(fieldName)) {
-                    if (me.isEqual(modified[fieldName], value)) {
-                        // the original value in me.modified equals the new value, so the
-                        // field is no longer modified
-                        delete modified[fieldName];
-                        // we might have removed the last modified field, so check to see if
-                        // there are any modified fields remaining and correct me.dirty:
-                        me.dirty = false;
-                        for (key in modified) {
-                            if (modified.hasOwnProperty(key)){
-                                me.dirty = true;
-                                break;
+                currentValue = data[name];
+                if (me.isEqual(currentValue, value)) {
+                    continue; // new value is the same, so no change...
+                }
+
+                data[name] = value;
+                (modifiedFieldNames || (modifiedFieldNames = [])).push(name);
+
+                if (field && field.persist) {
+                    if (modified.hasOwnProperty(name)) {
+                        if (me.isEqual(modified[name], value)) {
+                            // The original value in me.modified equals the new value, so
+                            // the field is no longer modified:
+                            delete modified[name];
+
+                            // We might have removed the last modified field, so check to
+                            // see if there are any modified fields remaining and correct
+                            // me.dirty:
+                            me.dirty = false;
+                            for (key in modified) {
+                                if (modified.hasOwnProperty(key)){
+                                    me.dirty = true;
+                                    break;
+                                }
                             }
                         }
+                    } else {
+                        me.dirty = true;
+                        modified[name] = currentValue;
                     }
-                } else {
-                    me.dirty = true;
-                    modified[fieldName] = currentValue;
+                }
+
+                if (name == me.idProperty) {
+                    idChanged = true;
+                    oldId = currentValue;
+                    newId = value;
                 }
             }
-
-            if(fieldName === me.idProperty && currentValue !== value) {
-                me.fireEvent('idchanged', me, currentValue, value);
-            }
-
-            if (!me.editing) {
-                me.afterEdit([fieldName]);
-            }
         }
+
+        if (single) {
+            // cleanup our reused object for next time... important to do this before
+            // we fire any events or call anyone else (like afterEdit)!
+            delete values[fieldName];
+        }
+
+        if (idChanged) {
+            me.fireEvent('idchanged', me, oldId, newId);
+        }
+
+        if (!me.editing && modifiedFieldNames) {
+            me.afterEdit(modifiedFieldNames);
+        }
+
+        return modifiedFieldNames || null;
     },
 
     /**
@@ -1045,17 +1075,21 @@ Ext.define('Ext.data.Model', {
      * where it will have a create action composed for it during {@link Ext.data.Model#save model save} operations.
      */
     setDirty : function() {
-        var me = this,
-            name;
+        var me     = this,
+            fields = me.fields.items,
+            fLen   = fields.length,
+            field, name, f;
 
         me.dirty = true;
 
-        me.fields.each(function(field) {
+        for (f = 0; f < fLen; f++) {
+            field = fields[f];
+
             if (field.persist) {
-                name = field.name;
+                name  = field.name;
                 me.modified[name] = me.get(name);
             }
-        }, me);
+        }
     },
 
     //<debug>
@@ -1331,6 +1365,14 @@ Ext.define('Ext.data.Model', {
      */
     join : function(store) {
         Ext.Array.include(this.stores, store);
+
+        /**
+         * @property {Ext.data.Store} store
+         * The {@link Ext.data.Store Store} to which this instance belongs. NOTE: If this
+         * instance is bound to multiple stores, this property will reference only the
+         * first. To examine all the stores, use the {@link #stores} property instead.
+         */
+        this.store = this.stores[0]; // compat w/all releases ever
     },
 
     /**
@@ -1339,6 +1381,7 @@ Ext.define('Ext.data.Model', {
      */
     unjoin: function(store) {
         Ext.Array.remove(this.stores, store);
+        this.store = this.stores[0] || null; // compat w/all releases ever
     },
 
     /**
@@ -1405,14 +1448,16 @@ Ext.define('Ext.data.Model', {
      * @return {Object} An object hash containing all the values in this model
      */
     getData: function(includeAssociated){
-        var me = this,
-            data = {},
-            name;
+        var me     = this,
+            fields = me.fields.items,
+            fLen   = fields.length,
+            data   = {},
+            name, f;
 
-        me.fields.each(function(field) {
-            name = field.name;
+        for (f = 0; f < fLen; f++) {
+            name = fields[f].name;
             data[name] = me.get(name);
-        }, me);
+        }
 
         if (includeAssociated === true) {
             Ext.apply(data, me.getAssociatedData());
@@ -1439,72 +1484,92 @@ Ext.define('Ext.data.Model', {
      * @return {Object} The nested data set for the Model's loaded associations
      */
     getAssociatedData: function(){
-        return this.prepareAssociatedData(this, [], null);
+        return this.prepareAssociatedData({}, 1);
     },
 
     /**
      * @private
      * This complex-looking method takes a given Model instance and returns an object containing all data from
      * all of that Model's *loaded* associations. See {@link #getAssociatedData}
-     * @param {Ext.data.Model} record The Model instance
-     * @param {String[]} ids PRIVATE. The set of Model instance internalIds that have already been loaded
-     * @param {String} associationType (optional) The name of the type of association to limit to.
+     * @param {Object} seenKeys A hash of all the associations we've already seen
+     * @param {Number} depth The current depth
      * @return {Object} The nested data set for the Model's loaded associations
      */
-    prepareAssociatedData: function(record, ids, associationType) {
-        //we keep track of all of the internalIds of the models that we have loaded so far in here
-        var associations     = record.associations.items,
+    prepareAssociatedData: function(seenKeys, depth) {
+        /**
+         * In this method we use a breadth first strategy instead of depth
+         * first. The reason for doing so is that it prevents messy & difficult
+         * issues when figuring out which associations we've already processed
+         * & at what depths.
+         */
+        var me               = this,
+            associations     = me.associations.items,
             associationCount = associations.length,
             associationData  = {},
-            associatedStore, associatedRecords, associatedRecord,
-            associatedRecordCount, association, id, i, j, type, allow;
+            // We keep 3 lists at the same index instead of using an array of objects.
+            // The reasoning behind this is that this method gets called a lot
+            // So we want to minimize the amount of objects we create for GC.
+            toRead           = [],
+            toReadKey        = [],
+            toReadIndex      = [],
+            associatedStore, associatedRecords, associatedRecord, o, index, result, seenDepth,
+            associationId, associatedRecordCount, association, i, j, type, name;
 
         for (i = 0; i < associationCount; i++) {
             association = associations[i];
-            type = association.type;
-            allow = true;
-            if (associationType) {
-                allow = type == associationType;
+            associationId = association.associationId;
+            
+            seenDepth = seenKeys[associationId];
+            if (seenDepth && seenDepth !== depth) {
+                continue;
             }
-            if (allow && type == 'hasMany') {
+            seenKeys[associationId] = depth;
 
+            type = association.type;
+            name = association.name;
+            if (type == 'hasMany') {
                 //this is the hasMany store filled with the associated data
-                associatedStore = record[association.storeName];
+                associatedStore = me[association.storeName];
 
                 //we will use this to contain each associated record's data
-                associationData[association.name] = [];
+                associationData[name] = [];
 
                 //if it's loaded, put it into the association data
                 if (associatedStore && associatedStore.getCount() > 0) {
                     associatedRecords = associatedStore.data.items;
                     associatedRecordCount = associatedRecords.length;
 
-                    //now we're finally iterating over the records in the association. We do this recursively
+                    //now we're finally iterating over the records in the association. Get
+                    // all the records so we can process them
                     for (j = 0; j < associatedRecordCount; j++) {
                         associatedRecord = associatedRecords[j];
-                        // Use the id, since it is prefixed with the model name, guaranteed to be unique
-                        id = associatedRecord.id;
-
-                        //when we load the associations for a specific model instance we add it to the set of loaded ids so that
-                        //we don't load it twice. If we don't do this, we can fall into endless recursive loading failures.
-                        if (Ext.Array.indexOf(ids, id) == -1) {
-                            ids.push(id);
-
-                            associationData[association.name][j] = associatedRecord.getData();
-                            Ext.apply(associationData[association.name][j], this.prepareAssociatedData(associatedRecord, ids, type));
-                        }
+                        associationData[name][j] = associatedRecord.getData();
+                        toRead.push(associatedRecord);
+                        toReadKey.push(name);
+                        toReadIndex.push(j);
                     }
                 }
-            } else if (allow && (type == 'belongsTo' || type == 'hasOne')) {
-                associatedRecord = record[association.instanceName];
+            } else if (type == 'belongsTo' || type == 'hasOne') {
+                associatedRecord = me[association.instanceName];
+                // If we have a record, put it onto our list
                 if (associatedRecord !== undefined) {
-                    id = associatedRecord.id;
-                    if (Ext.Array.indexOf(ids, id) === -1) {
-                        ids.push(id);
-                        associationData[association.name] = associatedRecord.getData();
-                        Ext.apply(associationData[association.name], this.prepareAssociatedData(associatedRecord, ids, type));
-                    }
+                    associationData[name] = associatedRecord.getData();
+                    toRead.push(associatedRecord);
+                    toReadKey.push(name);
+                    toReadIndex.push(-1);
                 }
+            }
+        }
+        
+        for (i = 0, associatedRecordCount = toRead.length; i < associatedRecordCount; ++i) {
+            associatedRecord = toRead[i];
+            o = associationData[toReadKey[i]];
+            index = toReadIndex[i];
+            result = associatedRecord.prepareAssociatedData(seenKeys, depth + 1);
+            if (index === -1) {
+                Ext.apply(o, result);
+            } else {
+                Ext.apply(o[index], result);
             }
         }
 

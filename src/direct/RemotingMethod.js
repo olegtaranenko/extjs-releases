@@ -1,14 +1,13 @@
 /**
  * Small utility class used internally to represent a Direct method.
- * @class Ext.direct.RemotingMethod
- * @ignore
+ * @private
  */
 Ext.define('Ext.direct.RemotingMethod', {
 
     constructor: function(config){
         var me = this,
             params = Ext.isDefined(config.params) ? config.params : config.len,
-            name;
+            name, pLen, p, param;
 
         me.name = config.name;
         me.formHandler = config.formHandler;
@@ -23,10 +22,12 @@ Ext.define('Ext.direct.RemotingMethod', {
              * b) Objects with a name property. We may want to encode extra info in here later
              */
             me.params = [];
-            Ext.each(params, function(param){
-                name = Ext.isObject(param) ? param.name : param;
+			pLen = params.length;
+            for (p = 0; p < pLen; p++) {
+                param = params[p];
+                name  = Ext.isObject(param) ? param.name : param;
                 me.params.push(name);
-            });
+            }
         }
     },
     

@@ -135,13 +135,24 @@ Ext.is.init();
  * 
  * @singleton
  */
+(function(){
+
+    // this is a local copy of certain logic from (Abstract)Element.getStyle
+    // to break a dependancy between the supports mechanism and Element
+    // use this instead of element references to check for styling info
+    var getStyle = function(element, styleName){
+        var view = element.ownerDocument.defaultView,
+            style = (view ? view.getComputedStyle(element, null) : element.currentStyle) || element.style;
+        return style[styleName];
+    };
+
 Ext.supports = {
     /**
      * Runs feature detection routines and sets the various flags. This is called when
      * the scripts loads (very early) and again at {@link Ext#onReady}. Some detections
      * are flagged as `early` and run immediately. Others that require the document body
      * will not run until ready.
-     * 
+     *
      * Each test is run only once, so calling this method from an onReady function is safe
      * and ensures that all flags have been set.
      * @markdown
@@ -196,7 +207,7 @@ Ext.supports = {
      * @property CSS3BoxShadow True if document environment supports the CSS3 box-shadow style.
      * @type {Boolean}
      */
-    CSS3BoxShadow: 'boxShadow' in document.documentElement.style,
+    CSS3BoxShadow: 'boxShadow' in document.documentElement.style || 'WebkitBoxShadow' in document.documentElement.style || 'MozBoxShadow' in document.documentElement.style,
 
     /**
      * @property ClassList True if document environment supports the HTML5 classList API.
@@ -209,13 +220,13 @@ Ext.supports = {
      * @type {Boolean}
      */
     OrientationChange: ((typeof window.orientation != 'undefined') && ('onorientationchange' in window)),
-    
+
     /**
      * @property DeviceMotion True if the device supports device motion (acceleration and rotation rate)
      * @type {Boolean}
      */
     DeviceMotion: ('ondevicemotion' in window),
-    
+
     /**
      * @property Touch True if the device supports touch
      * @type {Boolean}
@@ -223,6 +234,17 @@ Ext.supports = {
     // is.Desktop is needed due to the bug in Chrome 5.0.375, Safari 3.1.2
     // and Safari 4.0 (they all have 'ontouchstart' in the window object).
     Touch: ('ontouchstart' in window) && (!Ext.is.Desktop),
+
+    /**
+     * @property TimeoutActualLateness True if the browser passes the "actualLateness" parameter to
+     * setTimeout. See: https://developer.mozilla.org/en/DOM/window.setTimeout
+     * @type {Boolean}
+     */
+    TimeoutActualLateness: (function(){
+        setTimeout(function(){
+            Ext.supports.TimeoutActualLateness = arguments.length !== 0;
+        }, 0);
+    }()),
 
     tests: [
         /**
@@ -250,9 +272,9 @@ Ext.supports = {
                     ln = prefix.length,
                     i = 0,
                     out = false;
-                div = Ext.get(div);
+
                 for (; i < ln; i++) {
-                    if (div.getStyle(prefix[i] + "TransitionProperty")) {
+                    if (getStyle(div, prefix[i] + "TransitionProperty")) {
                         Ext.supports.CSS3Prefix = prefix[i];
                         Ext.supports.CSS3TransitionEnd = transitionEndName[i];
                         out = true;
@@ -262,7 +284,7 @@ Ext.supports = {
                 return out;
             }
         },
-        
+
         /**
          * @property RightMargin True if the device supports right margin.
          * See https://bugs.webkit.org/show_bug.cgi?id=13343 for why this is needed.
@@ -280,7 +302,7 @@ Ext.supports = {
          * @property DisplayChangeInputSelectionBug True if INPUT elements lose their
          * selection when their display style is changed. Essentially, if a text input
          * has focus and its display style is changed, the I-beam disappears.
-         * 
+         *
          * This bug is encountered due to the work around in place for the {@link #RightMargin}
          * bug. This has been observed in Safari 4.0.4 and older, and appears to be fixed
          * in Safari 5. It's not clear if Safari 4.1 has the bug, but it has the same WebKit
@@ -354,7 +376,7 @@ Ext.supports = {
                 return view && view.getComputedStyle;
             }
         },
-        
+
         /**
          * @property SVG True if the device supports SVG
          * @type {Boolean}
@@ -365,7 +387,7 @@ Ext.supports = {
                 return !!doc.createElementNS && !!doc.createElementNS( "http:/" + "/www.w3.org/2000/svg", "svg").createSVGRect;
             }
         },
-    
+
         /**
          * @property Canvas True if the device supports Canvas
          * @type {Boolean}
@@ -376,7 +398,7 @@ Ext.supports = {
                 return !!doc.createElement('canvas').getContext;
             }
         },
-        
+
         /**
          * @property VML True if the device supports VML
          * @type {Boolean}
@@ -389,7 +411,7 @@ Ext.supports = {
                 return (d.childNodes.length == 2);
             }
         },
-        
+
         /**
          * @property Float True if the device supports CSS float
          * @type {Boolean}
@@ -400,7 +422,7 @@ Ext.supports = {
                 return !!div.lastChild.style.cssFloat;
             }
         },
-        
+
         /**
          * @property AudioTag True if the device supports the HTML5 audio tag
          * @type {Boolean}
@@ -411,7 +433,7 @@ Ext.supports = {
                 return !!doc.createElement('audio').canPlayType;
             }
         },
-        
+
         /**
          * @property History True if the device supports HTML5 history
          * @type {Boolean}
@@ -423,7 +445,7 @@ Ext.supports = {
                 return !!(history && history.pushState);
             }
         },
-        
+
         /**
          * @property CSS3DTransform True if the device supports CSS3DTransform
          * @type {Boolean}
@@ -446,14 +468,15 @@ Ext.supports = {
                     webkit   = '-webkit-gradient(linear, left top, right bottom, from(black), to(white))',
                     w3c      = 'linear-gradient(left top, black, white)',
                     moz      = '-moz-' + w3c,
-                    options  = [property + webkit, property + w3c, property + moz];
-                
+                    opera    = '-o-' + w3c,
+                    options  = [property + webkit, property + w3c, property + moz, property + opera];
+
                 div.style.cssText = options.join(';');
-                
+
                 return ("" + div.style.backgroundImage).indexOf('gradient') !== -1;
             }
         },
-        
+
         /**
          * @property CSS3BorderRadius True if the device supports CSS3 border radius
          * @type {Boolean}
@@ -472,7 +495,7 @@ Ext.supports = {
                 return pass;
             }
         },
-        
+
         /**
          * @property GeoLocation True if the device supports GeoLocation
          * @type {Boolean}
@@ -528,9 +551,9 @@ Ext.supports = {
                 return 'placeholder' in doc.createElement('input');
             }
         },
-        
+
         /**
-         * @property Direct2DBug True if when asking for an element's dimension via offsetWidth or offsetHeight, 
+         * @property Direct2DBug True if when asking for an element's dimension via offsetWidth or offsetHeight,
          * getBoundingClientRect, etc. the browser returns the subpixel width rounded to the nearest pixel.
          * @type {Boolean}
          */
@@ -553,18 +576,16 @@ Ext.supports = {
         {
             identity: 'IncludePaddingInWidthCalculation',
             fn: function(doc, div){
-                var el = Ext.get(div.childNodes[1].firstChild);
-                return el.getWidth() == 210;
+                return div.childNodes[1].firstChild.offsetWidth == 210;
             }
         },
         {
             identity: 'IncludePaddingInHeightCalculation',
             fn: function(doc, div){
-                var el = Ext.get(div.childNodes[1].firstChild);
-                return el.getHeight() == 210;
+                return div.childNodes[1].firstChild.offsetHeight == 210;
             }
         },
-        
+
         /**
          * @property ArraySort True if the Array sort native method isn't bugged.
          * @type {Boolean}
@@ -594,7 +615,7 @@ Ext.supports = {
             identity: 'CreateContextualFragment',
             fn: function() {
                 var range = Ext.supports.Range ? document.createRange() : false;
-                
+
                 return range && !!range.createContextualFragment;
             }
         },
@@ -610,7 +631,7 @@ Ext.supports = {
                 return Ext.isIE || Ext.isGecko || Ext.webKitVersion >= 534.16; // Chrome 10+
             }
         },
-        
+
         /**
          * @property TextAreaMaxLength True if the browser supports maxlength on textareas.
          * @type {Boolean}
@@ -623,7 +644,7 @@ Ext.supports = {
             }
         },
         /**
-         * @property GetPositionPercentage True if the browser will return the left/top/right/bottom 
+         * @property GetPositionPercentage True if the browser will return the left/top/right/bottom
          * position as a percentage when explicitly set as a percentage value.
          * @type {Boolean}
          */
@@ -631,10 +652,11 @@ Ext.supports = {
         {
             identity: 'GetPositionPercentage',
             fn: function(doc, div){
-                return Ext.get(div.childNodes[2]).getStyle('left') == '10%';
+               return getStyle(div.childNodes[2], 'left') == '10%';
             }
         }
     ]
 };
+}());
 
 Ext.supports.init(); // run the "early" detections now

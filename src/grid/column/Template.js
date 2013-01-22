@@ -42,16 +42,14 @@ Ext.define('Ext.grid.column.Template', {
      * column's rendered value.
      */
 
-    constructor: function(cfg){
-        var me = this,
-            tpl;
-            
+    initComponent: function(){
+        var me = this;
+        me.tpl = (!Ext.isPrimitive(me.tpl) && me.tpl.compile) ? me.tpl : new Ext.XTemplate(me.tpl);
         me.callParent(arguments);
-        tpl = me.tpl = (!Ext.isPrimitive(me.tpl) && me.tpl.compile) ? me.tpl : new Ext.XTemplate(me.tpl);
-
-        me.renderer = function(value, p, record) {
-            var data = Ext.apply({}, record.data, record.getAssociatedData());
-            return tpl.apply(data);
-        };
+    },
+    
+    defaultRenderer: function(value, meta, record) {
+        var data = Ext.apply({}, record.data, record.getAssociatedData());
+        return this.tpl.apply(data);
     }
 });

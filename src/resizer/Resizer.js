@@ -160,6 +160,7 @@ Ext.define('Ext.resizer.Resizer', {
     constructor: function(config) {
         var me = this,
             target,
+            targetEl,
             tag,
             handles = me.handles,
             handleCls,
@@ -248,20 +249,25 @@ Ext.define('Ext.resizer.Resizer', {
         if (tag == 'TEXTAREA' || tag == 'IMG' || tag == 'TABLE') {
             /**
              * @property {Ext.Element/Ext.Component} originalTarget
-             * Reference to the original resize target if the element of the original resize target was an IMG or a
-             * TEXTAREA which must be wrapped in a DIV.
+             * Reference to the original resize target if the element of the original resize target was a
+             * {@link Ext.form.field.Field Field}, or an IMG or a TEXTAREA which must be wrapped in a DIV.
              */
-            me.originalTarget = me.target.isComponent ? me.target.getEl() : me.target;
+            me.originalTarget = me.target;
+            targetEl = me.el;
+            box = targetEl.getBox();
             me.target = me.el = me.el.wrap({
                 cls: me.wrapCls,
-                id: me.el.id + '-rzwrap'
+                id: me.el.id + '-rzwrap',
+                style: targetEl.getStyles('margin-top', 'margin-bottom')
             });
 
-            // Transfer originalTarget's positioning/sizing
-            me.el.setPositioning(me.originalTarget.getPositioning());
-            me.originalTarget.clearPositioning();
-            box = me.originalTarget.getBox();
+            // Transfer originalTarget's positioning+sizing+margins
+            me.el.setPositioning(targetEl.getPositioning());
+            targetEl.clearPositioning();
             me.el.setBox(box);
+
+            // Position the wrapped element absolute so that it does not stretch the wrapper
+            targetEl.setStyle('position', 'absolute');
         }
 
         // Position the element, this enables us to absolute position
@@ -349,7 +355,7 @@ Ext.define('Ext.resizer.Resizer', {
             me.height = Ext.Number.constrain(me.height, me.minHeight, me.maxHeight);
         }
 
-        // Size the element
+        // Size the target (and originalTarget)
         if (me.width !== null || me.height !== null) {
             if (me.originalTarget) {
                 me.originalTarget.setWidth(me.width);
@@ -375,7 +381,7 @@ Ext.define('Ext.resizer.Resizer', {
      * @param e The Event
      */
     onBeforeResize: function(tracker, e) {
-        var box = this.target.getBox();
+        var box = this.el.getBox();
         return this.fireEvent('beforeresize', this, box.width, box.height, e);
     },
 
@@ -386,7 +392,7 @@ Ext.define('Ext.resizer.Resizer', {
      */
     onResize: function(tracker, e) {
         var me = this,
-            box = me.target.getBox();
+            box = me.el.getBox();
             
         me.forceHandlesHeight();
         return me.fireEvent('resizedrag', me, box.width, box.height, e);
@@ -399,7 +405,7 @@ Ext.define('Ext.resizer.Resizer', {
      */
     onResizeEnd: function(tracker, e) {
         var me = this,
-            box = me.target.getBox();
+            box = me.el.getBox();
             
         me.forceHandlesHeight();
         return me.fireEvent('resize', me, box.width, box.height, e);
@@ -410,9 +416,10 @@ Ext.define('Ext.resizer.Resizer', {
      * @param {Number} width
      * @param {Number} height
      */
-    resizeTo : function(width, height){
-        this.target.setSize(width, height);
-        this.fireEvent('resize', this, width, height, null);
+    resizeTo : function(width, height) {
+        var me = this;
+        me.target.setSize(width, height);
+        me.fireEvent('resize', me, width, height, null);
     },
 
     /**

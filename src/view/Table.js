@@ -26,10 +26,24 @@ Ext.define('Ext.view.Table', {
     itemSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
     // cell
     cellSelector: 'td.' + Ext.baseCSSPrefix + 'grid-cell',
-    
+
     // keep a separate rowSelector, since we may need to select the actual row elements
     rowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
-    
+
+    /**
+     * @cfg {String} [firstCls='x-grid-cell-first']
+     * A CSS class to add to the *first* cell in every row to enable special styling for the first column.
+     * If no styling is needed on the first column, this may be configured as `null`.
+     */
+    firstCls: Ext.baseCSSPrefix + 'grid-cell-first',
+
+    /**
+     * @cfg {String} [lastCls='x-grid-cell-last']
+     * A CSS class to add to the *last* cell in every row to enable special styling for the last column.
+     * If no styling is needed on the last column, this may be configured as `null`.
+     */
+    lastCls: Ext.baseCSSPrefix + 'grid-cell-last',
+
     headerRowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-header-row',
 
     selectedItemCls: Ext.baseCSSPrefix + 'grid-row-selected',
@@ -37,7 +51,7 @@ Ext.define('Ext.view.Table', {
     focusedItemCls: Ext.baseCSSPrefix + 'grid-row-focused',
     overItemCls: Ext.baseCSSPrefix + 'grid-row-over',
     altRowCls:   Ext.baseCSSPrefix + 'grid-row-alt',
-    rowClsRe: /(?:^|\s*)grid-row-(first|last|alt)(?:\s+|$)/g,
+    rowClsRe: new RegExp('(?:^|\\s*)' + Ext.baseCSSPrefix + 'grid-row-(first|last|alt)(?:\\s+|$)', 'g'),
     cellRe: new RegExp(Ext.baseCSSPrefix + 'grid-cell-([^\\s]+) ', ''),
 
     // cfg docs inherited
@@ -118,7 +132,11 @@ Ext.define('Ext.view.Table', {
         me.selModel.view = me;
         me.headerCt.view = me;
         me.headerCt.markDirty = me.markDirty;
-        me.initFeatures();
+
+        // Features need a reference to the grid.
+        me.initFeatures(me.grid);
+        delete me.grid;
+
         me.tpl = '<div></div>';
         me.callParent();
     },
@@ -132,33 +150,60 @@ Ext.define('Ext.view.Table', {
      */
     moveColumn: function(fromIdx, toIdx, colsToMove) {
         var me = this,
+            fragment = (colsToMove > 1) ? document.createDocumentFragment() : undefined,
+            destinationCellIdx = toIdx,
+            colCount = me.getGridColumns().length,
+            lastIdx = colCount - 1,
+            doFirstLastClasses = (me.firstCls || me.lastCls) && (toIdx == 0 || toIdx == colCount || fromIdx == 0 || fromIdx == lastIdx),
             i,
             j,
-            rows, len, tr,
-            fragment = (colsToMove > 1) ? document.createDocumentFragment() : undefined,
-            destinationCellIdx = toIdx;
-            
+            rows, len, tr, headerRows;
+
         if (me.rendered) {
-            tr = me.el.down(me.headerRowSelector, true);
+            // Use select here. In most cases there will only be one row. In
+            // the case of a grouping grid, each group also has a header.
+            headerRows = me.el.query(me.headerRowSelector);
             rows = me.el.query(me.rowSelector);
-            len = rows.length;
 
             if (toIdx > fromIdx && fragment) {
                 destinationCellIdx -= colsToMove;
             }
 
             // Move the column sizing header to match
-            if (fragment) {
-                for (j = 0; j < colsToMove; j++) {
-                    fragment.appendChild(tr.cells[fromIdx]);
+            for (i = 0, len = headerRows.length; i < len; ++i) {
+                tr = headerRows[i];
+                if (fragment) {
+                    for (j = 0; j < colsToMove; j++) {
+                        fragment.appendChild(tr.cells[fromIdx]);
+                    }
+                    tr.insertBefore(fragment, tr.cells[destinationCellIdx] || null);
+                } else {
+                    tr.insertBefore(tr.cells[fromIdx], tr.cells[destinationCellIdx] || null);
                 }
-                tr.insertBefore(fragment, tr.cells[destinationCellIdx] || null);
-            } else {
-                tr.insertBefore(tr.cells[fromIdx], tr.cells[destinationCellIdx] || null);
             }
 
-            for (i = 0; i < len; i++) {
+            for (i = 0, len = rows.length; i < len; i++) {
                 tr = rows[i];
+
+                // Keep first cell class and last cell class correct *only if needed*
+                if (doFirstLastClasses) {
+
+                    if (fromIdx === 0) {
+                        Ext.fly(tr.cells[0]).removeCls(me.firstCls);
+                        Ext.fly(tr.cells[1]).addCls(me.firstCls);
+                    } else if (fromIdx === lastIdx) {
+                        Ext.fly(tr.cells[lastIdx]).removeCls(me.lastCls);
+                        Ext.fly(tr.cells[lastIdx - 1]).addCls(me.lastCls);
+                    }
+                    if (toIdx === 0) {
+                        Ext.fly(tr.cells[0]).removeCls(me.firstCls);
+                        Ext.fly(tr.cells[fromIdx]).addCls(me.firstCls);
+                    } else if (toIdx === colCount) {
+                        Ext.fly(tr.cells[lastIdx]).removeCls(me.lastCls);
+                        Ext.fly(tr.cells[fromIdx]).addCls(me.lastCls);
+                    }
+                }
+
                 if (fragment) {
                     for (j = 0; j < colsToMove; j++) {
                         fragment.appendChild(tr.cells[fromIdx]);
@@ -231,27 +276,56 @@ Ext.define('Ext.view.Table', {
      * Initializes each feature and bind it to this view.
      * @private
      */
-    initFeatures: function() {
+    initFeatures: function(grid) {
         var me = this,
-            i = 0,
+            i,
             features,
+            feature,
             len;
 
-        me.features = me.features || [];
-        features = me.features;
-        len = features.length;
-
         me.featuresMC = new Ext.util.MixedCollection();
-        for (; i < len; i++) {
-            // ensure feature hasnt already been instantiated
-            if (!features[i].isFeature) {
-                features[i] = Ext.create('feature.' + features[i].ftype, features[i]);
-            }
-            // inject a reference to view
-            features[i].view = me;
-            me.featuresMC.add(features[i]);
-            features[i].init();
+        features = me.features = me.prepareFeatures();
+        len = features ? features.length : 0;
+        for (i = 0; i < len; i++) {
+            feature = features[i];
+
+            // inject a reference to view and grid - Features need both
+            feature.view = me;
+            feature.grid = grid;
+            me.featuresMC.add(feature);
+            feature.init();
         }
+    },
+
+    /**
+     * @private
+     * Converts the features array as configured, into an array of instantiated Feature objects.
+     * 
+     * This is borrowed by Lockable which clones and distributes Features to both child grids of a locking grid.
+     * 
+     * Must have no side effects other than Feature instantiation.
+     * 
+     * MUST NOT update the this.features property, and MUST NOT update the instantiated Features.
+     */
+    prepareFeatures: function() {
+        var me = this,
+            features = me.features,
+            feature,
+            result,
+            i = 0, len;
+        
+        if (features) {
+            result = [];
+            len = features.length;
+            for (; i < len; i++) {
+                feature = features[i];
+                if (!feature.isFeature) {
+                    feature = Ext.create('feature.' + feature.ftype, feature);
+                }
+                result[i] = feature;
+            }
+        }
+        return result;
     },
 
     /**
@@ -326,7 +400,9 @@ Ext.define('Ext.view.Table', {
             feature,
             j = 0,
             jln,
-            rowParams;
+            rowParams,
+            rec,
+            cls;
 
         jln = preppedRecords.length;
         // process row classes, rowParams has been deprecated and has been moved
@@ -334,7 +410,9 @@ Ext.define('Ext.view.Table', {
         if (this.getRowClass) {
             for (; j < jln; j++) {
                 rowParams = {};
-                preppedRecords[j].rowCls = this.getRowClass(records[j], j, rowParams, this.store);
+                rec = preppedRecords[j];
+                cls = rec.rowCls || '';
+                rec.rowCls = this.getRowClass(records[j], j, rowParams, this.store) + ' ' + cls;
                 //<debug>
                 if (rowParams.alt) {
                     Ext.Error.raise("The getRowClass alt property is no longer supported.");
@@ -370,6 +448,22 @@ Ext.define('Ext.view.Table', {
     },
 
     /**
+     * In FF10, flex columns transitioning from hidden to visible may not always be
+     * displayed properly initially.  Simply re-measuring the width after the styling
+     * changes take place seems to be enough to poke the browser into doing it's thing
+     * @private
+     */
+    forceReflow: Ext.isGecko10
+        ? function() {
+            var el = this.el.down('table'),
+                width;
+            if (el) {
+                width = el.getWidth();
+            }
+        }
+        : Ext.emptyFn,
+
+    /**
      * When a header is resized, setWidth on the individual columns resizer class,
      * the top level table, save/restore scroll state, generate a new template and
      * restore focus to the grid view's element so that keyboard navigation
@@ -392,6 +486,7 @@ Ext.define('Ext.view.Table', {
             if (!suppressFocus) {
                 me.el.focus();
             }
+            me.forceReflow();
         }
     },
 
@@ -411,6 +506,8 @@ Ext.define('Ext.view.Table', {
         // defaults: {width: 100} will fight with a flex value
         } else if (header.width && !header.flex) {
             me.onHeaderResize(header, header.width, suppressFocus);
+        } else if (header.el) {
+            me.onHeaderResize(header, header.el.getWidth(), suppressFocus);
         }
         delete me.ignoreTemplate;
         me.setNewTemplate();
@@ -429,20 +526,25 @@ Ext.define('Ext.view.Table', {
     // If we have flexed column headers, we need to update the header layout
     // because it may have to accommodate (or cease to accommodate) a vertical scrollbar.
     // Only do this on platforms with have a space-consuming scrollbar
-    refreshHeight: function() {
-        var cmp = this.up('tablepanel');
+    refreshSize: function() {
+        var me = this,
+            cmp;
+            
+        if (!me.hasLoadingHeight) {
+            cmp = me.up('tablepanel');
 
-        // Suspend layouts in case the superclass requests a layout. We might too, so they must be coalescsed.
-        Ext.suspendLayouts();
-        this.callParent(arguments);
+            // Suspend layouts in case the superclass requests a layout. We might too, so they
+            // must be coalescsed.
+            Ext.suspendLayouts();
 
-        // Do not perform layouts on refresh if the grid is monitoring scroll using a verticalScroller in order
-        // to buffer refreshes of the view from the Store's prefetch buffer. In the case of infinite scrolling,
-        // if there's no scrolling, there will be no refreshes, if there are refreshes, there will definitely be a scrollbar.
-        if (!cmp.verticalScroller && cmp && (cmp = cmp.child('headercontainer')) && Ext.getScrollbarSize().width && cmp.child('[flex]')) {
-            cmp.updateLayout();
+            me.callParent();
+
+            if (cmp && Ext.getScrollbarSize().width) {
+                cmp.updateLayout();
+            }
+
+            Ext.resumeLayouts(true);
         }
-        Ext.resumeLayouts(true);
     },
 
     /**
@@ -524,31 +626,25 @@ Ext.define('Ext.view.Table', {
     },
 
     onCellFocus: function(position) {
-        //var cell = this.getCellByPosition(position);
         this.focusCell(position);
     },
 
     getCellByPosition: function(position) {
-        var row    = position.row,
-            column = position.column,
-            store  = this.store,
-            node   = this.getNode(row),
-            header = this.headerCt.getHeaderAtIndex(column),
-            cellSelector,
-            cell = false;
+        if (position) {
+            var node   = this.getNode(position.row),
+                header = this.headerCt.getHeaderAtIndex(position.column);
 
-        if (header && node) {
-            cellSelector = header.getCellSelector();
-            cell = Ext.fly(node).down(cellSelector);
+            if (header && node) {
+                return Ext.fly(node).down(header.getCellSelector());
+            }
         }
-        return cell;
+        return false;
     },
 
     // GridSelectionModel invokes onRowFocus to 'highlight'
     // the last row focused
     onRowFocus: function(rowIdx, highlight, supressFocus) {
-        var me = this,
-            row = me.getNode(rowIdx);
+        var me = this;
 
         if (highlight) {
             me.addRowCls(rowIdx, me.focusedItemCls);
@@ -666,9 +762,11 @@ Ext.define('Ext.view.Table', {
             oldCells, newCells, len, i,
             columns = me.headerCt.getGridColumns(),
             overItemCls = me.overItemCls,
-            isHovered, fieldName, row;
+            isHovered, row;
 
-        if (index > -1) {
+        // If we have columns which may *need* updating (think lockable grid child with all columns either locked or unlocked)
+        // and the changed record is within our view, then update the view
+        if (columns.length && index > -1) {
             newRow = me.bufferRender([record], index)[0];
             oldRow = me.all.item(index);
             isHovered = oldRow.hasCls(overItemCls);
@@ -684,10 +782,8 @@ Ext.define('Ext.view.Table', {
             // row is the element that contains the cells.  This will be a different element from oldRow when using a rowwrap feature
             row = oldCells[0].parentNode;
             for (i = 0; i < len; i++) {
-                fieldName = columns[i].dataIndex;
-
                 // If the field at this column index was changed, replace the cell.
-                if (me.shouldUpdateCell(changedFieldNames, fieldName)) {
+                if (me.shouldUpdateCell(columns[i], changedFieldNames)) {
                     row.insertBefore(newCells[i], oldCells[i]);
                     row.removeChild(oldCells[i]);
                 }
@@ -702,8 +798,13 @@ Ext.define('Ext.view.Table', {
 
     },
     
-    shouldUpdateCell: function(changedFieldNames, fieldName){
-        return !changedFieldNames || Ext.Array.contains(changedFieldNames, fieldName);
+    shouldUpdateCell: function(column, changedFieldNames){
+        // Though this may not be the most efficient, a renderer could be dependent on any field in the
+        // store, so we must always update the cell
+        if (column.hasCustomRenderer) {
+            return true;
+        }
+        return !changedFieldNames || Ext.Array.contains(changedFieldNames, column.dataIndex);
     },
 
     /**
@@ -893,6 +994,13 @@ Ext.define('Ext.view.Table', {
      * @private
      */
     walkCells: function(pos, direction, e, preventWrap, verifierFn, scope) {
+
+        // Caller (probably CellModel) had no current position. This can happen
+        // if the main el is focused and any navigation key is presssed.
+        if (!pos) {
+            return;
+        }
+
         var me       = this,
             row      = pos.row,
             column   = pos.column,
@@ -1006,6 +1114,7 @@ Ext.define('Ext.view.Table', {
         return this.headerCt;
     },
 
+    // TODO: have this use the new Ext.grid.CellContext class
     getPosition: function(record, header) {
         var me = this,
             store = me.store,

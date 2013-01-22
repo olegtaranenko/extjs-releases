@@ -85,8 +85,7 @@ Ext.define('Ext.ux.grid.filter.Filter', {
         );
         Ext.ux.grid.filter.Filter.superclass.constructor.call(this);
 
-        // setting filtered to true on all filter instances ensures that the filter won't be blurred when the mouse leaves the component
-        this.menu = this.createMenu(Ext.applyIf({filtered: true}, config));
+        this.menu = this.createMenu(config);
         this.init(config);
         if(config &amp;&amp; config.value){
             this.setValue(config.value);

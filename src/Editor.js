@@ -288,7 +288,7 @@ Ext.define('Ext.Editor', {
                     me.cancelEdit();
                 }
                 if (field.triggerBlur) {
-                    field.triggerBlur();
+                    field.triggerBlur(event);
                 }
             }, 10);
         }
@@ -308,7 +308,7 @@ Ext.define('Ext.Editor', {
 
         me.completeEdit();
         me.boundEl = Ext.get(el);
-        value = Ext.isDefined(value) ? value : me.boundEl.dom.innerHTML;
+        value = Ext.isDefined(value) ? value : Ext.String.trim(me.boundEl.dom.innerText || me.boundEl.dom.innerHTML);
 
         if (!me.rendered) {
             me.render(me.parentEl || document.body);
@@ -393,7 +393,7 @@ Ext.define('Ext.Editor', {
         if (me.hideEl !== false) {
             me.boundEl.hide();
         }
-        me.fireEvent("startedit", me.boundEl, me.startValue);
+        me.fireEvent('startedit', me, me.boundEl, me.startValue);
     },
 
     /**
@@ -427,12 +427,18 @@ Ext.define('Ext.Editor', {
     },
 
     // private
-    onFieldBlur : function() {
-        var me = this;
+    onFieldBlur : function(field, e) {
+        var me = this,
+            target;
 
         // selectSameEditor flag allows the same editor to be started without onFieldBlur firing on itself
         if(me.allowBlur === true && me.editing && me.selectSameEditor !== true) {
             me.completeEdit();
+        }
+
+        // If the target of the event was focusable, prevent reacquisition of focus by editor owner
+        if (e && Ext.fly(target = e.getTarget()).focusable()) {
+            target.focus();
         }
     },
 

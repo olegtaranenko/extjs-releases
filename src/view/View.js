@@ -408,8 +408,17 @@ Ext.define('Ext.view.View', {
     },
 
     handleEvent: function(e) {
+        var key = e.type == 'keydown' && e.getKey();
+
         if (this.processUIEvent(e) !== false) {
             this.processSpecialEvent(e);
+        }
+
+        // After all listeners have processed the event, prevent browser's default action
+        // on SPACE which is to focus the event's target element.
+        // Focusing causes the browser to attempt to scroll the element into view.
+        if (key === e.SPACE) {
+            e.stopEvent();
         }
     },
 
@@ -469,7 +478,10 @@ Ext.define('Ext.view.View', {
                 record = me.getRecord(item);
             }
 
-            if (me.processItemEvent(record, item, index, e) === false) {
+            // It is possible for an event to arrive for which there is no record... this
+            // can happen with dblclick where the clicks are on removal actions (think a
+            // grid w/"delete row" action column)
+            if (!record || me.processItemEvent(record, item, index, e) === false) {
                 return false;
             }
 
@@ -623,13 +635,5 @@ Ext.define('Ext.view.View', {
     refresh: function() {
         this.clearHighlight();
         this.callParent(arguments);
-        this.refreshHeight();
-    },
-    
-    refreshHeight: function(){
-        var sizeModel = this.getSizeModel();
-        if (sizeModel.height.shrinkWrap) {
-            this.updateLayout();
-        }
     }
 });

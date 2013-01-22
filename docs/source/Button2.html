@@ -164,7 +164,7 @@ Ext.define('Ext.button.Button', {
 
     /*
      * @property {Boolean} isAction
-     * `true` in this class to identify an objact as an instantiated Button, or subclass thereof.
+     * `true` in this class to identify an object as an instantiated Button, or subclass thereof.
      */
     isButton: true,
     componentLayout: 'button',
@@ -378,6 +378,8 @@ Ext.define('Ext.button.Button', {
       * property is specified.
       */
      hrefTarget: '_blank',
+     
+     border: true,
 
 <span id='Ext-button-Button-cfg-baseParams'>    /**
 </span>     * @cfg {Object} baseParams
@@ -399,8 +401,8 @@ Ext.define('Ext.button.Button', {
             '&lt;tpl if=&quot;href&quot;&gt;',
                 '&lt;a id=&quot;{id}-btnEl&quot; href=&quot;{href}&quot; class=&quot;{btnCls}&quot; target=&quot;{hrefTarget}&quot;',
                     '&lt;tpl if=&quot;tabIndex&quot;&gt; tabIndex=&quot;{tabIndex}&quot;&lt;/tpl&gt;',
-                    ' role=&quot;link&quot;&gt;',
                     '&lt;tpl if=&quot;disabled&quot;&gt; disabled=&quot;disabled&quot;&lt;/tpl&gt;',
+                    ' role=&quot;link&quot;&gt;',
                     '&lt;span id=&quot;{id}-btnInnerEl&quot; class=&quot;{baseCls}-inner&quot;&gt;',
                         '{text}',
                     '&lt;/span&gt;',
@@ -493,13 +495,6 @@ Ext.define('Ext.button.Button', {
      * option.
      */
 
-<span id='Ext-button-Button-cfg-autoWidth'>    /**
-</span>     * @cfg {Boolean} autoWidth
-     * By default, if a width is not specified the button will attempt to stretch horizontally to fit its content. If
-     * the button is being managed by a width sizing layout (hbox, fit, anchor), set this to false to prevent the button
-     * from doing this automatic sizing.
-     */
-
     maskOnDisable: false,
     
 <span id='Ext-button-Button-property-persistentPadding'>    /**
@@ -511,6 +506,8 @@ Ext.define('Ext.button.Button', {
     persistentPadding: undefined,
 
     shrinkWrap: 3,
+
+    frame: true,
 
     // inherit docs
     initComponent: function() {
@@ -1235,7 +1232,7 @@ Ext.define('Ext.button.Button', {
         if (size === undef) {
             side = me.arrowAlign;
             sideFirstLetter = side.charAt(0);
-            size = me.triggerSize = me.el.getFrameWidth(sideFirstLetter) + me.btnWrap.getFrameWidth(sideFirstLetter) + (me.frameSize &amp;&amp; me.frameSize[side] || 0);
+            size = me.triggerSize = me.el.getFrameWidth(sideFirstLetter) + me.btnWrap.getFrameWidth(sideFirstLetter) + me.frameSize[side];
         }
         return size;
     },
@@ -1267,7 +1264,7 @@ Ext.define('Ext.button.Button', {
 <span id='Ext-button-Button-method-onMenuTriggerOver'>    /**
 </span>     * @private
      * virtual mouseenter handler called when it is detected that the mouseover event
-     * signified the mouse entering the arrow area of the button - the &lt;em&gt;.
+     * signified the mouse entering the arrow area of the button - the `&lt;em&gt;`.
      * @param e
      */
     onMenuTriggerOver: function(e) {
@@ -1279,7 +1276,7 @@ Ext.define('Ext.button.Button', {
 <span id='Ext-button-Button-method-onMenuTriggerOut'>    /**
 </span>     * @private
      * virtual mouseleave handler called when it is detected that the mouseout event
-     * signified the mouse leaving the arrow area of the button - the &lt;em&gt;.
+     * signified the mouse leaving the arrow area of the button - the `&lt;em&gt;`.
      * @param e
      */
     onMenuTriggerOut: function(e) {
@@ -1313,6 +1310,12 @@ Ext.define('Ext.button.Button', {
         }
         me.addClsWithUI('disabled');
         me.removeClsWithUI(me.overCls);
+
+        // IE renders disabled text by layering gray text on top of white text, offset by 1 pixel. Normally this is fine
+        // but in some circumstances (such as using formBind) it gets confused and renders them side by side instead.
+        if (me.btnInnerEl &amp;&amp; (Ext.isIE6 || Ext.isIE7)) {
+            me.btnInnerEl.repaint();
+        }
 
         return me;
     },

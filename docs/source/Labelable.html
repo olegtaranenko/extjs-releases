@@ -130,7 +130,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
         '&lt;/tpl&gt;',
 
         // body row. If a heighted Field (eg TextArea, HtmlEditor, this must greedily consume height.
-        '&lt;tr id=&quot;{id}-inputRow&quot; &lt;tpl if=&quot;inFormLayout&quot;&gt;id=&quot;{id}&quot; class=&quot;{componentClass}&quot;&lt;/tpl&gt;&gt;',
+        '&lt;tr id=&quot;{id}-inputRow&quot; &lt;tpl if=&quot;inFormLayout&quot;&gt;id=&quot;{id}&quot;&lt;/tpl&gt;&gt;',
 
             // Label cell
             '&lt;tpl if=&quot;labelOnLeft&quot;&gt;',
@@ -224,7 +224,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
 
 <span id='Ext-form-Labelable-cfg-fieldBodyCls'>    /**
 </span>     * @cfg {String} fieldBodyCls
-     * An extra CSS class to be applied to the body content element in addition to {@link #fieldBodyCls}.
+     * An extra CSS class to be applied to the body content element in addition to {@link #baseBodyCls}.
      */
     fieldBodyCls: '',
 
@@ -404,7 +404,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
         'labelAttrTpl'
     ],
 
-    labelableRenderProps: 'labelAlign,fieldBodyCls,baseBodyCls,clearCls,labelSeparator,msgTarget',
+    labelableRenderProps: 'allowBlank,labelAlign,fieldBodyCls,baseBodyCls,clearCls,labelSeparator,msgTarget',
 
 <span id='Ext-form-Labelable-method-initLabelable'>    /**
 </span>     * Performs initialization of this mixin. Component classes using this mixin should call this method during their
@@ -463,38 +463,20 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
         me.fieldLabel = label;
         if (me.rendered) {
             if (Ext.isEmpty(label) &amp;&amp; me.hideEmptyLabel) {
-                Ext.destroy(me.labelEl);
-                me.labelEl = null;
+                labelEl.parent().setDisplayed('none');
             } else {
-                labelEl = me.createLabelEl();
-                last = label.substr(label.length - 1);
-                // append separator if necessary
-                if (last != separator) {
-                    label += separator;
+                if (separator) {
+                    last = label.substr(label.length - 1);
+                    // append separator if necessary
+                    if (last != separator) {
+                        label += separator;
+                    }
                 }
                 labelEl.update(label);
+                labelEl.parent().setDisplayed('');
             }
-            me.doComponentLayout();
+            me.updateLayout();
         }
-    },
-    
-<span id='Ext-form-Labelable-method-createLabelEl'>    /**
-</span>     * Create the labelEl if it doesn't exist.
-     * @private
-     * @return {Ext.dom.Element} The labelEl
-     */
-    createLabelEl: function(){
-        var me = this;
-        
-        if (!me.labelEl) {
-            me.labelEl = me.el.insertFirst({
-                tag: 'label',
-                htmlFor: me.getInputId(),
-                cls: me.getLabelCls(),
-                style: me.getLabelStyle()
-            });
-        }
-        return me.labelEl;
     },
 
     getInsertionRenderData: function (data, names) {
@@ -527,7 +509,6 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
      */
     getLabelableRenderData: function() {
         var me = this,
-            cls = '',
             data,
             tempEl;
 
@@ -537,7 +518,6 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
         }
 
         data = Ext.copyTo({
-            componentClass : me.protoEl ? me.protoEl.classList.join(' ') : '',
             inFormLayout   : me.ownerLayout &amp;&amp; me.ownerLayout.type === 'form',
             inputId        : me.getInputId(),
             labelOnLeft    : me.labelAlign != 'top',
@@ -566,10 +546,23 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
         if (me.extraMargins) {
             margins = me.el.getMargin();
             for (side in margins) {
-                style['margin-' + side] = (margins[side] + me.extraMargins[side]) + 'px';
+                if (margins.hasOwnProperty(side)) {
+                    style['margin-' + side] = (margins[side] + me.extraMargins[side]) + 'px';
+                }
             }
             me.el.setStyle(style);
         }
+    },
+    
+<span id='Ext-form-Labelable-method-hasVisibleLabel'>    /**
+</span>     * Checks if the field has a visible label
+     * @return {Boolean} True if the field has a visible label
+     */
+    hasVisibleLabel: function(){
+        if (this.hideLabel) {
+            return false;
+        }
+        return !(this.hideEmptyLabel &amp;&amp; !this.getFieldLabel());
     },
 
 <span id='Ext-form-Labelable-method-getBodyColspan'>    /**
@@ -580,7 +573,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
      */
     getBodyColspan: function() {
         var me = this,
-            hideLabelCell = me.hideLabel || (!me.getFieldLabel() &amp;&amp; me.hideEmptyLabel),
+            hideLabelCell = !me.hasVisibleLabel(),
             result;
 
             // In the base case, the body cell spans itself, the triggerWrap cell, and the sideErrorEl by default, so 3
@@ -766,12 +759,18 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
      * @param {Object} defaults The defaults to apply to the object.
      */
     setFieldDefaults: function(defaults) {
-        var me = this;
-        Ext.iterate(defaults, function(key, val) {
-            if (!me.hasOwnProperty(key)) {
-                me[key] = val;
+        var me = this,
+            val, key;
+
+        for (key in defaults) {
+            if (defaults.hasOwnProperty(key)) {
+                val = defaults[key];
+
+                if (!me.hasOwnProperty(key)) {
+                    me[key] = val;
+                }
             }
-        });
+        }
     }
 });
 </pre>

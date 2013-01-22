@@ -54,20 +54,19 @@ Ext.onReady(function(){
                 }            
             
                 if (params.lang) {
-                    var url = Ext.util.Format.format("../../locale/ext-lang-{0}.js", params.lang);
-                
-                    Ext.Ajax.request({
-                        url: url,
-                        success: this.onSuccess,
-                        failure: this.onFailure,
-                        scope: this 
-                    });
+                    var record = store.findRecord('code', params.lang, null, null, null, true),
+                        url = Ext.util.Format.format("../../locale/ext-lang-{0}.js", params.lang);
+                    Ext.Loader.injectScriptElement(
+                        url,
+                        this.onSuccess,
+                        this.onFailure,
+                        this,
+                        params.charset);
                 } else {
                     this.setupDemo();
                 }
             },
-            onSuccess: function(response, opts) {
-                eval(response.responseText);
+            onSuccess: function() {
                 this.setupDemo();
             },
             onFailure: function() {

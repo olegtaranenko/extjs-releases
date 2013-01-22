@@ -15,7 +15,7 @@ Ext.define('FeedViewer.FeedInfo', {
     
     maxTabWidth: 230,
     border: false,
-    
+
     initComponent: function() {
         this.tabBar = {
             border: true
@@ -94,14 +94,15 @@ Ext.define('FeedViewer.FeedInfo', {
             this.setActiveTab(item);
         }
     },
-    
+
     /**
      * Find a tab by title
      * @param {String} title The title of the tab
      * @return {Ext.Component} The panel matching the title. null if not found.
      */
     getTabByTitle: function(title) {
-        return this.down('[title=' + title + ']');    
+        var index = this.items.findIndex('title', title);
+        return (index < 0) ? null : this.items.getAt(index);
     },
     
     /**

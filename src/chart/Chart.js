@@ -152,10 +152,16 @@ Ext.define('Ext.chart.Chart', {
         bindable: 'Ext.util.Bindable'
     },
 
+    uses: [
+        'Ext.chart.series.Series'
+    ],
+    
     requires: [
         'Ext.util.MixedCollection',
         'Ext.data.StoreManager',
         'Ext.chart.Legend',
+        'Ext.chart.theme.Base',
+        'Ext.chart.theme.Theme',
         'Ext.util.DelayedTask'
     ],
 
@@ -354,7 +360,7 @@ Ext.define('Ext.chart.Chart', {
     },
     
     getChartStore: function(){
-        return this.substore || this.store;    
+        return this.substore || this.store;
     },
 
     initComponent: function() {
@@ -368,7 +374,7 @@ Ext.define('Ext.chart.Chart', {
             'itemmouseover',
             'itemmouseout',
             'itemclick',
-            'itemdoubleclick',
+            'itemdblclick',
             'itemdragstart',
             'itemdrag',
             'itemdragend',
@@ -415,6 +421,8 @@ Ext.define('Ext.chart.Chart', {
             mouseleave: me.onMouseLeave,
             mousedown: me.onMouseDown,
             mouseup: me.onMouseUp,
+            click: me.onClick,
+            dblclick: me.onDblClick,
             scope: me
         });
     },
@@ -436,6 +444,11 @@ Ext.define('Ext.chart.Chart', {
      */
     redraw: function(resize) {
         var me = this,
+            seriesItems = me.series.items,
+            seriesLen = seriesItems.length,
+            axesItems = me.axes.items,
+            axesLen = axesItems.length,
+            i,
             chartBBox = me.chartBBox = {
                 x: 0,
                 y: 0,
@@ -445,20 +458,26 @@ Ext.define('Ext.chart.Chart', {
             legend = me.legend;
         me.surface.setSize(chartBBox.width, chartBBox.height);
         // Instantiate Series and Axes
-        me.series.each(me.initializeSeries, me);
-        me.axes.each(me.initializeAxis, me);
+        for (i = 0; i < seriesLen; i++) {
+            me.initializeSeries(seriesItems[i],i);
+        }
+        for (i = 0; i < axesLen; i++) {
+            me.initializeAxis(axesItems[i]);
+        }
         //process all views (aggregated data etc) on stores
         //before rendering.
-        me.axes.each(function(axis) {
-            axis.processView();
-        });
-        me.axes.each(function(axis) {
-            axis.drawAxis(true);
-        });
+        for (i = 0; i < axesLen; i++) {
+            axesItems[i].processView();
+        }
+        for (i = 0; i < axesLen; i++) {
+            axesItems[i].drawAxis(true);
+        }
 
         // Create legend if not already created
         if (legend !== false && legend.visible) {
-            legend.create();
+            if (legend.update || !legend.created) {
+              legend.create();
+            }
         }
 
         // Place axes properly, including influence from each other
@@ -475,8 +494,12 @@ Ext.define('Ext.chart.Chart', {
         // Draw axes and series
         me.resizing = !!resize;
 
-        me.axes.each(me.drawAxis, me);
-        me.series.each(me.drawCharts, me);
+        for (i = 0; i < axesLen; i++) {
+            axesItems[i].drawAxis();
+        }
+        for (i = 0; i < seriesLen; i++) {
+            me.drawCharts(seriesItems[i]);
+        }
         me.resizing = false;
     },
 
@@ -507,39 +530,53 @@ Ext.define('Ext.chart.Chart', {
             y = pageXY[1] - box.top;
         return [x, y];
     },
+    
+    onClick: function(e) {
+        this.handleClick('itemclick', e);
+    },
+    
+    onDblClick: function(e) {
+        this.handleClick('itemdblclick', e);
+    },
 
     // @private wrap the mouse down position to delegate the event to the series.
-    onClick: function(e) {
+    handleClick: function(name, e) {
         var me = this,
             position = me.getEventXY(e),
+            seriesItems = me.series.items,
+            i, ln, series,
             item;
 
         // Ask each series if it has an item corresponding to (not necessarily exactly
         // on top of) the current mouse coords. Fire itemclick event.
-        me.series.each(function(series) {
+        for (i = 0, ln = seriesItems.length; i < ln; i++) {
+            series = seriesItems[i];
             if (Ext.draw.Draw.withinBox(position[0], position[1], series.bbox)) {
                 if (series.getItemForPoint) {
                     item = series.getItemForPoint(position[0], position[1]);
                     if (item) {
-                        series.fireEvent('itemclick', item);
+                        series.fireEvent(name, item);
                     }
                 }
             }
-        }, me);
+        }
     },
 
     // @private wrap the mouse down position to delegate the event to the series.
     onMouseDown: function(e) {
         var me = this,
             position = me.getEventXY(e),
+            seriesItems = me.series.items,
+            i, ln, series,
             item;
 
         if (me.enableMask) {
             me.mixins.mask.onMouseDown.call(me, e);
         }
         // Ask each series if it has an item corresponding to (not necessarily exactly
-        // on top of) the current mouse coords. Fire mousedown event.
-        me.series.each(function(series) {
+        // on top of) the current mouse coords. Fire itemmousedown event.
+        for (i = 0, ln = seriesItems.length; i < ln; i++) {
+            series = seriesItems[i];
             if (Ext.draw.Draw.withinBox(position[0], position[1], series.bbox)) {
                 if (series.getItemForPoint) {
                     item = series.getItemForPoint(position[0], position[1]);
@@ -548,21 +585,24 @@ Ext.define('Ext.chart.Chart', {
                     }
                 }
             }
-        }, me);
+        }
     },
 
     // @private wrap the mouse up event to delegate it to the series.
     onMouseUp: function(e) {
         var me = this,
             position = me.getEventXY(e),
+            seriesItems = me.series.items,
+            i, ln, series,
             item;
 
         if (me.enableMask) {
             me.mixins.mask.onMouseUp.call(me, e);
         }
         // Ask each series if it has an item corresponding to (not necessarily exactly
-        // on top of) the current mouse coords. Fire mousedown event.
-        me.series.each(function(series) {
+        // on top of) the current mouse coords. Fire itemmouseup event.
+        for (i = 0, ln = seriesItems.length; i < ln; i++) {
+            series = seriesItems[i];
             if (Ext.draw.Draw.withinBox(position[0], position[1], series.bbox)) {
                 if (series.getItemForPoint) {
                     item = series.getItemForPoint(position[0], position[1]);
@@ -571,13 +611,15 @@ Ext.define('Ext.chart.Chart', {
                     }
                 }
             }
-        }, me);
+        }
     },
 
     // @private wrap the mouse move event so it can be delegated to the series.
     onMouseMove: function(e) {
         var me = this,
             position = me.getEventXY(e),
+            seriesItems = me.series.items,
+            i, ln, series,
             item, last, storeItem, storeField;
 
         
@@ -586,7 +628,8 @@ Ext.define('Ext.chart.Chart', {
         }
         // Ask each series if it has an item corresponding to (not necessarily exactly
         // on top of) the current mouse coords. Fire itemmouseover/out events.
-        me.series.each(function(series) {
+        for (i = 0, ln = seriesItems.length; i < ln; i++) {
+            series = seriesItems[i];
             if (Ext.draw.Draw.withinBox(position[0], position[1], series.bbox)) {
                 if (series.getItemForPoint) {
                     item = series.getItemForPoint(position[0], position[1]);
@@ -619,18 +662,22 @@ Ext.define('Ext.chart.Chart', {
                     delete series._lastStoreItem;
                 }
             }
-        }, me);
+        }
     },
 
     // @private handle mouse leave event.
     onMouseLeave: function(e) {
-        var me = this;
+        var me = this,
+            seriesItems = me.series.items,
+            i, ln, series;
+
         if (me.enableMask) {
             me.mixins.mask.onMouseLeave.call(me, e);
         }
-        me.series.each(function(series) {
+        for (i = 0, ln = seriesItems.length; i < ln; i++) {
+            series = seriesItems[i];
             delete series._lastItemForPoint;
-        });
+        }
     },
 
     // @private buffered refresh for when we update the store
@@ -748,8 +795,12 @@ Ext.define('Ext.chart.Chart', {
     alignAxes: function() {
         var me = this,
             axes = me.axes,
+            axesItems = axes.items,
+            axis,
             legend = me.legend,
             edges = ['top', 'right', 'bottom', 'left'],
+            edge,
+            i, ln,
             chartBBox,
             insetPadding = me.insetPadding,
             insets = {
@@ -757,7 +808,8 @@ Ext.define('Ext.chart.Chart', {
                 right: insetPadding,
                 bottom: insetPadding,
                 left: insetPadding
-            };
+            },
+            isVertical, bbox, pos;
 
         function getAxis(edge) {
             var i = axes.findIndex('position', edge);
@@ -765,10 +817,10 @@ Ext.define('Ext.chart.Chart', {
         }
 
         // Find the space needed by axes and legend as a positive inset from each edge
-        Ext.each(edges, function(edge) {
-            var isVertical = (edge === 'left' || edge === 'right'),
-                axis = getAxis(edge),
-                bbox;
+        for (i = 0, ln = edges.length; i < ln; i++) {
+            edge = edges[i];
+            isVertical = (edge === 'left' || edge === 'right');
+            axis = getAxis(edge);
 
             // Add legend size if it's on this edge
             if (legend !== false) {
@@ -784,7 +836,7 @@ Ext.define('Ext.chart.Chart', {
                 bbox = axis.bbox;
                 insets[edge] += (isVertical ? bbox.width : bbox.height);
             }
-        });
+        }
         // Build the chart bbox based on the collected inset values
         chartBBox = {
             x: insets.left,
@@ -796,15 +848,16 @@ Ext.define('Ext.chart.Chart', {
 
         // Go back through each axis and set its length and position based on the
         // corresponding edge of the chartBBox
-        axes.each(function(axis) {
-            var pos = axis.position,
-                isVertical = (pos === 'left' || pos === 'right');
+        for (i = 0, ln = axesItems.length; i < ln; i++) {
+            axis = axesItems[i];
+            pos = axis.position;
+            isVertical = (pos === 'left' || pos === 'right');
 
             axis.x = (pos === 'right' ? chartBBox.x + chartBBox.width : chartBBox.x);
             axis.y = (pos === 'top' ? chartBBox.y : chartBBox.y + chartBBox.height);
             axis.width = (isVertical ? chartBBox.width : chartBBox.height);
             axis.length = (isVertical ? chartBBox.height : chartBBox.width);
-        });
+        }
     },
 
     // @private initialize the series.
@@ -856,12 +909,16 @@ Ext.define('Ext.chart.Chart', {
     // @private
     getMaxGutter: function() {
         var me = this,
-            maxGutter = [0, 0];
-        me.series.each(function(s) {
-            var gutter = s.getGutters && s.getGutters() || [0, 0];
+            seriesItems = me.series.items,
+            i, ln, series,
+            maxGutter = [0, 0],
+            gutter;
+        for (i = 0, ln = seriesItems.length; i < ln; i++) {
+            series = seriesItems[i];
+            gutter = series.getGutters && series.getGutters() || [0, 0];
             maxGutter[0] = Math.max(maxGutter[0], gutter[0]);
             maxGutter[1] = Math.max(maxGutter[1], gutter[1]);
-        });
+        }
         me.maxGutter = maxGutter;
     },
 

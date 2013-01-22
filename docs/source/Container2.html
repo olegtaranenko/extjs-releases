@@ -167,64 +167,22 @@ Ext.define('Ext.container.Container', {
     alternateClassName: 'Ext.Container',
     
     /*
-     * The methods below are used to be able to detect showing/hiding at various levels
-     * in the hierarchy. While it's not particularly expensive to bubble an event up,
-     * cascading an event down can be quite costly.
-     * 
-     * The main usage for this is to do with floating components. For example, the load mask
-     * is a floating component. The component it is masking may be inside several containers.
-     * As such, we need to know when component is hidden, either directly, or via a parent
-     * container being hidden. We can subscribe to these events and filter out the appropriate
-     * container.
+     * For more information on the following methods, see the note for the
+     * hierarchyEventSource observer defined in the class' callback
      */
-    statics: {
-        onContainerHide: function(fn, scope, options) {
-            var cls = this.prototype,
-                hide = cls.globalHideEvent;
-                
-            if (!hide) {
-                cls.globalHideEvent = hide = new Ext.util.Event();
-            }
-            hide.addListener(fn, scope, options);
-        },
-        
-        removeHideListener: function(fn, scope) {
-            var hide = this.prototype.globalHideEvent;
-            if (hide) {
-                hide.removeListener(fn, scope);
-            }
-        },
-        
-        fireHideEvent: function(container){
-            var hide = this.prototype.globalHideEvent;
-            if (hide) {
-                hide.fire(container);
-            }
-        },
-        
-        onContainerShow: function(fn, scope, options){
-             var cls = this.prototype,
-                show = cls.globalShowEvent;
-                
-            if (!show) {
-                cls.globalShowEvent = show = new Ext.util.Event();
-            }
-            show.addListener(fn, scope, options);
-        },
-        
-        removeShowListener: function(fn, scope){
-            var show = this.prototype.globalShowEvent;
-            if (show) {
-                show.removeListener(fn, scope);
-            }
-        },
-        
-        fireShowEvent: function(container){
-            var show = this.prototype.globalShowEvent;
-            if (show) {
-                show.fire(container);
-            }
-        }
+    fireHierarchyEvent: function (ename) {
+        this.hierarchyEventSource.fireEvent(ename, this);
+    },
+
+    // note that the collapse and expand events are fired explicitly from Panel.js
+    afterHide: function() {
+        this.callParent(arguments);
+        this.fireHierarchyEvent('hide');
+    },
+    
+    afterShow: function(){
+        this.callParent(arguments);
+        this.fireHierarchyEvent('show');
     },
 
 <span id='Ext-container-Container-method-getChildByElement'>    /**
@@ -244,22 +202,30 @@ Ext.define('Ext.container.Container', {
         for (; i &lt; ln; i++) {
             item = it[i];
             itemEl = item.getEl();
-            if ((itemEl.dom === el) || itemEl.contains(el)) {
+            if (itemEl &amp;&amp; ((itemEl.dom === el) || itemEl.contains(el))) {
                 return (deep &amp;&amp; item.getChildByElement) ? item.getChildByElement(el, deep) : item;
             }
         }
         return null;
-    },
-    
-    afterHide: function() {
-        this.callParent(arguments);
-        this.statics().fireHideEvent(this);
-    },
-    
-    afterShow: function(){
-        this.callParent(arguments);
-        this.statics().fireShowEvent(this);
     }
+}, function () {
+    /*
+     * The observer below is used to be able to detect showing/hiding at various levels
+     * in the hierarchy. While it's not particularly expensive to bubble an event up,
+     * cascading an event down can be quite costly.
+     * 
+     * The main usage for this is to do with floating components. For example, the load mask
+     * is a floating component. The component it is masking may be inside several containers.
+     * As such, we need to know when component is hidden, either directly, or via a parent
+     * container being hidden. We can subscribe to these events and filter out the appropriate
+     * container.
+     */
+    this.hierarchyEventSource = this.prototype.hierarchyEventSource = new Ext.util.Observable({ events: {
+        hide: true,
+        show: true,
+        collapse: true,
+        expand: true
+    }});
 });
 </pre>
 </body>

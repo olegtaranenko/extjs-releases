@@ -50,12 +50,14 @@ Ext.define('Ext.grid.column.Date', {
      */
 
     initComponent: function(){
-        var me = this;
-        
-        me.callParent(arguments);
-        if (!me.format) {
-            me.format = Ext.Date.defaultFormat;
+        if (!this.format) {
+            this.format = Ext.Date.defaultFormat;
         }
-        me.renderer = Ext.util.Format.dateRenderer(me.format);
+        
+        this.callParent(arguments);
+    },
+    
+    defaultRenderer: function(value){
+        return Ext.util.Format.date(value, this.format);
     }
 });

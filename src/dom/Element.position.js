@@ -12,7 +12,22 @@ var Element = Ext.dom.Element,
     STATIC = "static",
     RELATIVE = "relative",
     AUTO = "auto",
-    ZINDEX = "z-index";
+    ZINDEX = "z-index",
+    BODY = 'BODY',
+
+    PADDING = 'padding',
+    BORDER = 'border',
+    SLEFT = '-left',
+    SRIGHT = '-right',
+    STOP = '-top',
+    SBOTTOM = '-bottom',
+    SWIDTH = '-width',
+    // special markup used throughout Ext when box wrapping elements
+    borders = {l: BORDER + SLEFT + SWIDTH, r: BORDER + SRIGHT + SWIDTH, t: BORDER + STOP + SWIDTH, b: BORDER + SBOTTOM + SWIDTH},
+    paddings = {l: PADDING + SLEFT, r: PADDING + SRIGHT, t: PADDING + STOP, b: PADDING + SBOTTOM},
+    paddingsTLRB = [paddings.l, paddings.r, paddings.t, paddings.b],
+    bordersTLRB = [borders.l,  borders.r,  borders.t,  borders.b],
+    positionTopLeft = ['position', 'top', 'left'];
 
 Element.override({
 
@@ -98,7 +113,7 @@ Element.override({
     },
 
     getLeft: function(local) {
-        return !local ? this.getX() : parseInt(this.getStyle(LEFT), 10) || 0;
+        return !local ? this.getX() : parseFloat(this.getStyle(LEFT)) || 0;
     },
 
     getRight: function(local) {
@@ -107,7 +122,7 @@ Element.override({
     },
 
     getTop: function(local) {
-        return !local ? this.getY() : parseInt(this.getStyle(TOP), 10) || 0;
+        return !local ? this.getY() : parseFloat(this.getStyle(TOP)) || 0;
     },
 
     getBottom: function(local) {
@@ -116,31 +131,31 @@ Element.override({
     },
 
     translatePoints: function(x, y) {
-        if (Ext.isArray(x)) {
-            y = x[1];
-            x = x[0];
-        }
         var me = this,
-                relative = me.isStyle(POSITION, RELATIVE),
-                o = me.getXY(),
-                left = parseInt(me.getStyle(LEFT), 10),
-                top = parseInt(me.getStyle(TOP), 10);
+            styles = me.getStyle(positionTopLeft),
+            relative = styles.position == 'relative',
+            left = parseFloat(styles.left),
+            top = parseFloat(styles.top),
+            xy = me.getXY();
 
-        if (!Ext.isNumber(left)) {
+        if (Ext.isArray(x)) {
+             y = x[1];
+             x = x[0];
+        }
+        if (isNaN(left)) {
             left = relative ? 0 : me.dom.offsetLeft;
         }
-        if (!Ext.isNumber(top)) {
+        if (isNaN(top)) {
             top = relative ? 0 : me.dom.offsetTop;
         }
-        left = (Ext.isNumber(x)) ? x - o[0] + left : undefined;
-        top = (Ext.isNumber(y)) ? y - o[1] + top : undefined;
+        left = (typeof x == 'number') ? x - xy[0] + left : undefined;
+        top = (typeof y == 'number') ? y - xy[1] + top : undefined;
         return {
             left: left,
             top: top
         };
+
     },
-
-
 
     setBox: function(box, adjust, animate) {
         var me = this,
@@ -156,24 +171,21 @@ Element.override({
 
     getBox: function(contentBox, local) {
         var me = this,
-                xy,
-                left,
-                top,
-                getBorderWidth = me.getBorderWidth,
-                getPadding = me.getPadding,
-                l, r, t, b, w, h, bx;
+            xy,
+            left,
+            top,
+            paddingWidth,
+            bordersWidth,
+            l, r, t, b, w, h, bx;
 
         if (!local) {
             xy = me.getXY();
         } else {
-            left = parseInt(me.getStyle("left"), 10) || 0;
-            top = parseInt(me.getStyle("top"), 10) || 0;
-            xy = [left, top];
+            xy = me.getStyle([LEFT, TOP]);
+            xy = [ parseFloat(xy.left) || 0, parseFloat(xy.top) || 0];
         }
-
         w = me.getWidth();
         h = me.getHeight();
-
         if (!contentBox) {
             bx = {
                 x: xy[0],
@@ -184,10 +196,14 @@ Element.override({
                 height: h
             };
         } else {
-            l = getBorderWidth.call(me, "l") + getPadding.call(me, "l");
-            r = getBorderWidth.call(me, "r") + getPadding.call(me, "r");
-            t = getBorderWidth.call(me, "t") + getPadding.call(me, "t");
-            b = getBorderWidth.call(me, "b") + getPadding.call(me, "b");
+            paddingWidth = me.getStyle(paddingsTLRB);
+            bordersWidth = me.getStyle(bordersTLRB);
+
+            l = (parseFloat(bordersWidth[borders.l]) || 0) + (parseFloat(paddingWidth[paddings.l]) || 0);
+            r = (parseFloat(bordersWidth[borders.r]) || 0) + (parseFloat(paddingWidth[paddings.r]) || 0);
+            t = (parseFloat(bordersWidth[borders.t]) || 0) + (parseFloat(paddingWidth[paddings.t]) || 0);
+            b = (parseFloat(bordersWidth[borders.b]) || 0) + (parseFloat(paddingWidth[paddings.b]) || 0);
+
             bx = {
                 x: xy[0] + l,
                 y: xy[1] + t,
@@ -199,20 +215,21 @@ Element.override({
         }
         bx.right = bx.x + bx.width;
         bx.bottom = bx.y + bx.height;
+
         return bx;
     },
 
     getPageBox: function(getRegion) {
         var me = this,
-                el = me.dom,
-                isDoc = el === document.body,
-                w = isDoc ? Ext.dom.AbstractElement.getViewWidth() : el.offsetWidth,
-                h = isDoc ? Ext.dom.AbstractElement.getViewHeight() : el.offsetHeight,
-                xy = me.getXY(),
-                t = xy[1],
-                r = xy[0] + w,
-                b = xy[1] + h,
-                l = xy[0];
+            el = me.dom,
+            isDoc = el.nodeName == BODY,
+            w = isDoc ? Ext.dom.AbstractElement.getViewWidth() : el.offsetWidth,
+            h = isDoc ? Ext.dom.AbstractElement.getViewHeight() : el.offsetHeight,
+            xy = me.getXY(),
+            t = xy[1],
+            r = xy[0] + w,
+            b = xy[1] + h,
+            l = xy[0];
 
         if (getRegion) {
             return new Ext.util.Region(t, r, b, l);
@@ -304,17 +321,11 @@ Element.override({
      * snapshot before performing an update and then restoring the element.
      * @return {Object}
      */
-    getPositioning : function() {
-        var l = this.getStyle(LEFT);
-        var t = this.getStyle(TOP);
-        return {
-            "position" : this.getStyle(POSITION),
-            "left" : l,
-            "right" : l ? "" : this.getStyle(RIGHT),
-            "top" : t,
-            "bottom" : t ? "" : this.getStyle(BOTTOM),
-            "z-index" : this.getStyle(ZINDEX)
-        };
+    getPositioning : function(){
+        var styles = this.getStyle([LEFT, TOP, POSITION, RIGHT, BOTTOM, ZINDEX]);
+        styles[RIGHT] =  styles[LEFT] ? '' : styles[RIGHT];
+        styles[BOTTOM] = styles[TOP] ? '' : styles[BOTTOM];
+        return styles;
     },
 
     /**
@@ -324,7 +335,7 @@ Element.override({
      */
     setPositioning : function(pc) {
         var me = this,
-                style = me.dom.style;
+            style = me.dom.style;
 
         me.setStyle(pc);
 
@@ -408,7 +419,7 @@ Element.override({
      */
     getViewRegion: function() {
         var me = this,
-            isBody = me.dom === document.body,
+            isBody = me.dom.nodeName == BODY,
             scroll, pos, top, left, width, height;
 
         // For the body we want to do some special logic
@@ -486,5 +497,5 @@ Element.override({
     }
 });
 
-})();
+}());
 

@@ -62,17 +62,17 @@ Ext.define('Ext.fx.target.Element', {
                         value = o[1];
                         if (attr === 'x') {
                             element.setX(value);
-                        }
-                        else if (attr === 'y') {
+                        } else if (attr === 'y') {
                             element.setY(value);
-                        }
-                        else if (attr === 'scrollTop') {
+                        } else if (attr === 'scrollTop') {
                             element.scrollTo('top', value);
-                        }
-                        else if (attr === 'scrollLeft') {
+                        } else if (attr === 'scrollLeft') {
                             element.scrollTo('left',value);
-                        }
-                        else {
+                        } else if (attr === 'width') {
+                            element.setWidth(value);
+                        } else if (attr === 'height') {
+                            element.setHeight(value);
+                        } else {
                             element.setStyle(attr, value);
                         }
                     }

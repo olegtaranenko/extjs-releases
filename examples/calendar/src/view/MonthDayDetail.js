@@ -63,7 +63,7 @@ Ext.define('Ext.calendar.view.MonthDayDetail', {
         }
         var eventTpl = this.view.getEventTemplate(),
 
-        templateData = [];
+        templateData = [],
 
         evts = this.store.queryBy(function(rec) {
             var thisDt = Ext.Date.clearTime(this.date, true).getTime(),

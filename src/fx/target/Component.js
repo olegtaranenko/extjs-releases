@@ -103,16 +103,8 @@ Ext.define('Ext.fx.target.Component', {
                     // Component's animate function initially resizes to the larger size before resizing the
                     // outer element to clip the contents.
                     if (isLastFrame || me.dynamic) {
-                        o.target.componentLayout.childrenChanged = true;
-
-                        // Flag if we are being called by an animating layout: use setCalculatedSize
-                        if (me.layoutAnimation) {
-                            o.target.setCalculatedSize(w, h);
-                        } else {
-                            o.target.setSize(w, h);
-                        }
-                    }
-                    else {
+                        o.target.setSize(w, h);
+                    } else {
                         o.target.el.setSize(w, h);
                     }
                 }

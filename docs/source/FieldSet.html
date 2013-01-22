@@ -35,12 +35,25 @@ Ext.define('Ext.layout.component.FieldSet', {
     },*/
 
     beginLayoutCycle: function (ownerContext) {
+        var target = ownerContext.target,
+            lastSize;
+
         this.callParent(arguments);
 
         // Each time we begin (2nd+ would be due to invalidate) we need to publish the
         // known contentHeight if we are collapsed:
-        if (ownerContext.target.collapsed) {
+        //
+        if (target.collapsed) {
+            ownerContext.heightModel = this.sizeModels.shrinkWrap;
             ownerContext.setContentHeight(0);
+
+            // If we are also shrinkWrap width, we must provide a contentWidth (since the
+            // container layout is not going to run).
+            //
+            if (ownerContext.widthModel.shrinkWrap) {
+                lastSize = target.lastComponentSize;
+                ownerContext.setContentWidth((lastSize &amp;&amp; lastSize.contentWidth) || 100);
+            }
         }
     },
 

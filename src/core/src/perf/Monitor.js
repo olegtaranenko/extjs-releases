@@ -61,17 +61,18 @@ Ext.define('Ext.perf.Monitor', {
     report: function () {
         var me = this,
             accumulators = me.accumulators,
-            calibration = me.calibrate(),
-            report = ['Calibration: ' + Math.round(calibration * 100) / 100 + ' msec/sample'];
+            calibration = me.calibrate();
 
         accumulators.sort(function (a, b) {
             return (a.name < b.name) ? -1 : ((b.name < a.name) ? 1 : 0);
         });
 
+        me.updateGC();
+
+        Ext.log('Calibration: ' + Math.round(calibration * 100) / 100 + ' msec/sample');
         Ext.each(accumulators, function (accum) {
-            report.push(accum.format(calibration));
+            Ext.log(accum.format(calibration));
         });
-        Ext.log(report.join('\n'));
     },
 
     getData: function (all) {
@@ -85,6 +86,35 @@ Ext.define('Ext.perf.Monitor', {
         });
 
         return ret;
+    },
+
+    updateGC: function () {
+        var accumGC = this.accumulatorsByName.GC,
+            toolbox = Ext.senchaToolbox,
+            bucket;
+
+        if (accumGC) {
+            accumGC.count = toolbox.garbageCollectionCounter || 0;
+
+            if (accumGC.count) {
+                bucket = accumGC.pure;
+                accumGC.total.sum = bucket.sum = toolbox.garbageCollectionMilliseconds;
+                bucket.min = bucket.max = bucket.sum / accumGC.count;
+                bucket = accumGC.total;
+                bucket.min = bucket.max = bucket.sum / accumGC.count;
+            }
+        }
+    },
+
+    watchGC: function () {
+        Ext.perf.getTimestamp(); // initializes SenchaToolbox (if available)
+
+        var toolbox = Ext.senchaToolbox;
+
+        if (toolbox) {
+            this.get("GC");
+            toolbox.watchGarbageCollector(false); // no logging, just totals
+        }
     },
 
     setup: function (config) {
@@ -146,12 +176,22 @@ Ext.define('Ext.perf.Monitor', {
 
         this.currentConfig = config;
 
-        Ext.Object.each(config, function (accumName, taps) {
-            var accum = Ext.Perf.get(accumName);
+        var key, prop,
+            accum, className, methods;
+        for (key in config) {
+            if (config.hasOwnProperty(key)) {
+                prop = config[key];
+                accum = Ext.Perf.get(key);
 
-            Ext.Object.each(taps, function (className, methods) {
-                accum.tap(className, methods);
-            });
-        });
+                for (className in prop) {
+                    if (prop.hasOwnProperty(className)) {
+                        methods = prop[className];
+                        accum.tap(className, methods);
+                    }
+                }
+            }
+        }
+
+        this.watchGC();
     }
 });

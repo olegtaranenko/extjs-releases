@@ -80,10 +80,12 @@ Ext.define('Ext.ComponentLoader', {
                 }
 
                 if (success) {
+                    target.suspendLayouts();
                     if (active.removeAll) {
                         target.removeAll();
                     }
                     target.add(items);
+                    target.resumeLayouts(true);
                 }
                 return success;
             }

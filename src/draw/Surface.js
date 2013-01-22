@@ -32,6 +32,7 @@
  * - mouseenter
  * - mouseleave
  * - click
+ * - dblclick
  *
  * For example:
  *
@@ -150,7 +151,7 @@ Ext.define('Ext.draw.Surface', {
                 surfaceClass;
 
             for (; i < len; i++) {
-                if (Ext.supports[enginePriority[i]]) {
+                if (Ext.supports[enginePriority[i]] !== false) {
                     return Ext.create('Ext.draw.engine.' + enginePriority[i], config);
                 }
             }
@@ -203,7 +204,7 @@ Ext.define('Ext.draw.Surface', {
         ry: 0,
         scale: "1 1",
         src: "",
-        stroke: "#000",
+        stroke: "none",
         "stroke-dasharray": "",
         "stroke-linecap": "butt",
         "stroke-linejoin": "butt",
@@ -263,7 +264,8 @@ Ext.define('Ext.draw.Surface', {
             'mousemove',
             'mouseenter',
             'mouseleave',
-            'click'
+            'click',
+            'dblclick'
         );
 
         me.mixins.observable.constructor.call(me);
@@ -340,9 +342,19 @@ Ext.define('Ext.draw.Surface', {
 
     // @private
     initGradients: function() {
-        var gradients = this.gradients;
-        if (gradients) {
-            Ext.each(gradients, this.addGradient, this);
+        if (this.hasOwnProperty('gradients')) {
+            var gradients = this.gradients,
+                gLen      = gradients.length,
+                fn        = this.addGradient,
+                g;
+
+            if (gradients) {
+                for (g = 0; g < gLen; g++) {
+                    if (fn.call(this, gradients[g], g, gLen) === false) {
+                        break;
+                    }
+                }
+            }
         }
     },
 
@@ -350,6 +362,7 @@ Ext.define('Ext.draw.Surface', {
     initItems: function() {
         var items = this.items;
         this.items = new Ext.draw.CompositeSprite();
+        this.items.autoDestroy = true;
         this.groups = new Ext.draw.CompositeSprite();
         if (items) {
             this.add(items);
@@ -448,6 +461,11 @@ Ext.define('Ext.draw.Surface', {
     onClick: function(e) {
         this.processEvent('click', e);
     },
+    
+    // @private
+    onDblClick: function(e) {
+        this.processEvent('dblclick', e);
+    },
 
     // @private
     onMouseUp: function(e) {
@@ -534,13 +552,17 @@ Ext.define('Ext.draw.Surface', {
     add: function() {
         var args = Array.prototype.slice.call(arguments),
             sprite,
-            index;
-
-        var hasMultipleArgs = args.length > 1;
+            index,
+            hasMultipleArgs = args.length > 1,
+            items,
+            results,
+            i,
+            ln,
+            item;
+            
         if (hasMultipleArgs || Ext.isArray(args[0])) {
-            var items = hasMultipleArgs ? args : args[0],
-                results = [],
-                i, ln, item;
+            items = hasMultipleArgs ? args : args[0];
+            results = [];
 
             for (i = 0, ln = items.length; i < ln; i++) {
                 item = items[i];
@@ -635,9 +657,15 @@ Ext.define('Ext.draw.Surface', {
     remove: function(sprite, destroySprite) {
         if (sprite) {
             this.items.remove(sprite);
-            this.groups.each(function(item) {
-                item.remove(sprite);
-            });
+
+            var groups = [].concat(this.groups),
+                gLen   = groups.length,
+                g;
+
+            for (g = 0; g < gLen; g++) {
+                groups[g].remove(sprite);
+            }
+
             sprite.onRemove();
             if (destroySprite === true) {
                 sprite.destroy();
@@ -897,8 +925,9 @@ Ext.define('Ext.draw.Surface', {
      * @return {Object} The {@link Ext.draw.CompositeSprite}.
      */
     getGroup: function(id) {
+        var group;
         if (typeof id == "string") {
-            var group = this.groups.get(id);
+            group = this.groups.get(id);
             if (!group) {
                 group = this.createGroup(id);
             }
@@ -961,7 +990,12 @@ Ext.define('Ext.draw.Surface', {
      *      drawComponent.surface.destroy();
      */
     destroy: function() {
-        delete this.domRef;
-        this.removeAll();
+        var me = this;
+        delete me.domRef;
+        if (me.background) {
+            me.background.destroy();
+        }
+        me.removeAll(true);
+        Ext.destroy(me.groups.items);
     }
 });

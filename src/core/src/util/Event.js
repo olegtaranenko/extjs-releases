@@ -28,7 +28,14 @@ Ext.require('Ext.util.DelayedTask', function() {
 
         function createSingle(handler, listener, o, scope) {
             return function() {
-                listener.ev.removeListener(listener.fn, scope);
+                var event = listener.ev;
+
+                if (event.removeListener(listener.fn, scope) && event.observable) {
+                    // Removing from a regular Observable-owned, named event (not an anonymous
+                    // event such as Ext's readyEvent): Decrement the listeners count
+                    event.observable.hasListeners[event.name]--;
+                }
+
                 return handler.apply(scope, arguments);
             };
         }
@@ -36,7 +43,7 @@ Ext.require('Ext.util.DelayedTask', function() {
         return {
             /**
              * @property {Boolean} isEvent
-             * `true` in this class to identify an objact as an instantiated Event, or subclass thereof.
+             * `true` in this class to identify an object as an instantiated Event, or subclass thereof.
              */
             isEvent: true,
 
@@ -193,5 +200,5 @@ Ext.require('Ext.util.DelayedTask', function() {
                 return true;
             }
         };
-    })());
+    }()));
 });

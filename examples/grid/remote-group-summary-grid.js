@@ -13,7 +13,7 @@ Ext.define('Task', {
         {name: 'project', type: 'string'},
         {name: 'taskId', type: 'int'},
         {name: 'description', type: 'string'},
-        {name: 'estimate', type: 'float'},
+        {name: 'estHours', type: 'float'},
         {name: 'rate', type: 'float'},
         {name: 'cost', type: 'float'},
         {name: 'due', type: 'date', dateFormat:'m/d/Y'}
@@ -95,7 +95,7 @@ Ext.onReady(function(){
             header: 'Estimate',
             width: 75,
             sortable: true,
-            dataIndex: 'estimate',
+            dataIndex: 'estHours',
             renderer: function(value, metaData, record, rowIdx, colIdx, store, view){
                 return value + ' hours';
             },
@@ -117,7 +117,7 @@ Ext.onReady(function(){
             sortable: false,
             groupable: false,
             renderer: function(value, metaData, record, rowIdx, colIdx, store, view) {
-                return Ext.util.Format.usMoney(record.get('estimate') * record.get('rate'));
+                return Ext.util.Format.usMoney(record.get('estHours') * record.get('rate'));
             },
             dataIndex: 'cost',
             summaryRenderer: Ext.util.Format.usMoney

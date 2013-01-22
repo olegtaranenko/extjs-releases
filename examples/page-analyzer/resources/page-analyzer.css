@@ -1,49 +1,88 @@
-.lan-failed-layout-run {
+.pgan-failed-layout-run {
     background-image: url(images/red-folder.gif);
 }
 
-.x-grid-tree-node-expanded .lan-failed-layout-run {
+.x-grid-tree-node-expanded .pgan-failed-layout-run {
     background-image: url(images/red-folder-open.gif);
 }
 
-.lan-missing-value {
+.pgan-unrendered-container {
+    background-image: url(images/gray-folder.gif);
+}
+
+.x-grid-tree-node-expanded .pgan-unrendered-container {
+    background-image: url(images/gray-folder-open.gif);
+}
+
+.pgan-missing-value {
     color: red;
     /*font-weight: bold;*/
 }
 
-.lan-available-value {
+.pgan-available-value {
     display: none;
 }
 
-.lan-show-all-triggers .lan-available-value {
+.pgan-show-all-triggers .pgan-available-value {
     display: block;
 }
 
-.lan-layout-not-done {
+.pgan-layout-not-done {
     background-image: url(images/red-led.gif) !important;
 }
 
-.lan-layout-partial-done {
+.pgan-layout-partial-done {
     background-image: url(images/orange-led.gif) !important;
 }
 
-.lan-layout-done {
+.pgan-layout-done {
     background-image: url(images/green-led.gif) !important;
 }
 
-.lan-layout .lan-delete-row,
-.lan-layout .lan-get-row-info {
+.pgan-delete-row, .pgan-show-row-data {
+    visibility: hidden;
+}
+
+.pgan-layoutrun .pgan-delete-row, .pgan-layoutrun .pgan-show-row-data {
+    visibility: visible;
+}
+
+.pgan-layout .pgan-get-row-info {
     display: none !important;
 }
 
-.lan-refresh {
+.pgan-refresh {
     background-image: url(images/refresh.gif) !important;
 }
 
-.lan-info {
+.pgan-info {
     background-image: url(images/info.gif) !important;
 }
 
-.lan-load-run {
+.pgan-load-run .pgan-rendered-container{
     background-image: url(images/folder-open.gif) !important;
+}
+
+textarea.x-form-field {
+    border: 0 none;
+}
+
+.pgan-visible-element {
+    background-image: url(images/boxParent.gif) !important;
+}
+
+.pgan-hidden-element {
+    background-image: url(images/boxParent.gif) !important;
+}
+
+.pgan-rendered-component {
+    background-image: url(images/component.gif) !important;
+}
+
+.pgan-unrendered-component {
+    background-image: url(images/gray-component.gif) !important;
+}
+
+.pgan-noncomponent .pgan-display-comp-spec {
+    display: none !important;
 }

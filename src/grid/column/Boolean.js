@@ -68,21 +68,15 @@ Ext.define('Ext.grid.column.Boolean', {
      * The string returned by the renderer when the column value is undefined.
      */
     undefinedText: '&#160;',
-
-    constructor: function(cfg){
-        this.callParent(arguments);
-        var trueText      = this.trueText,
-            falseText     = this.falseText,
-            undefinedText = this.undefinedText;
-
-        this.renderer = function(value){
-            if(value === undefined){
-                return undefinedText;
-            }
-            if(!value || value === 'false'){
-                return falseText;
-            }
-            return trueText;
-        };
+    
+    defaultRenderer: function(value){
+        if (value === undefined) {
+            return this.undefinedText;
+        }
+        
+        if (!value || value === 'false') {
+            return this.falseText;
+        }
+        return this.trueText;
     }
 });

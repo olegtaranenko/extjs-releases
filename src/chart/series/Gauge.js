@@ -152,13 +152,16 @@ Ext.define('Ext.chart.series.Gauge', {
     // @private updates some onbefore render parameters.
     initialize: function() {
         var me = this,
-            store = me.chart.getChartStore();
+            store = me.chart.getChartStore(),
+            data = store.data.items,
+            i, ln, rec;
         //Add yFields to be used in Legend.js
         me.yField = [];
         if (me.label.field) {
-            store.each(function(rec) {
+            for (i = 0, ln = data.length; i < ln; i++) {
+                rec = data[i];
                 me.yField.push(rec.get(me.label.field));
-            });
+            }
         }
     },
 

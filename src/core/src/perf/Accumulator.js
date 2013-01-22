@@ -2,31 +2,45 @@
  * @class Ext.perf.Accumulator
  * @private
  */
-Ext.define('Ext.perf.Accumulator', function () {
+Ext.define('Ext.perf.Accumulator', (function () {
     var currentFrame = null,
-        formatTpl;
-
-    // lazy init on first request for timestamp (avoids infobar in IE until needed)
-    var getTimestamp = function () {
+        khrome = Ext.global['chrome'],
+        formatTpl,
+        // lazy init on first request for timestamp (avoids infobar in IE until needed)
+        // Also avoids kicking off Chrome's microsecond timer until first needed
         getTimestamp = function () {
-            return new Date().getTime();
-        }
 
-        if (window.ActiveXObject) {
-            try {
-                // the above technique is not very accurate for small intervals...
-                var toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
+            getTimestamp = function () {
+                return new Date().getTime();
+            };
+            
+            var interval, toolbox;
+
+            // If Chrome is started with the --enable-benchmarking switch
+            if (Ext.isChrome && khrome && khrome.Interval) {
+                interval = new khrome.Interval();
+                interval.start();
                 getTimestamp = function () {
-                    return toolbox.milliseconds;
+                    return interval.microseconds() / 1000;
                 };
-            } catch (e) {
-                // ignore
+            } else if (window.ActiveXObject) {
+                try {
+                    // the above technique is not very accurate for small intervals...
+                    toolbox = new ActiveXObject('SenchaToolbox.Toolbox');
+                    Ext.senchaToolbox = toolbox; // export for other uses
+                    getTimestamp = function () {
+                        return toolbox.milliseconds;
+                    };
+                } catch (e) {
+                    // ignore
+                }
+            } else if (Date.now) {
+                getTimestamp = Date.now;
             }
-        }
 
-        Ext.perf.getTimestamp = Ext.perf.Accumulator.getTimestamp = getTimestamp;
-        return getTimestamp();
-    };
+            Ext.perf.getTimestamp = Ext.perf.Accumulator.getTimestamp = getTimestamp;
+            return getTimestamp();
+        };
 
     function adjustSet (set, time) {
         set.sum += time;
@@ -57,7 +71,7 @@ Ext.define('Ext.perf.Accumulator', function () {
             min: Number.MAX_VALUE,
             max: 0,
             sum: 0
-        }
+        };
     }
 
     function makeTap (me, fn) {
@@ -189,9 +203,10 @@ Ext.define('Ext.perf.Accumulator', function () {
         tap: function (className, methodName) {
             var me = this,
                 methods = typeof methodName == 'string' ? [methodName] : methodName,
-                klass, statik, i, parts, length, name, src;
+                klass, statik, i, parts, length, name, src,
+                tapFunc;
 
-            var tapFunc = function(){
+            tapFunc = function(){
                 if (typeof className == 'string') {
                     klass = Ext.global;
                     parts = className.split('.');
@@ -222,7 +237,7 @@ Ext.define('Ext.perf.Accumulator', function () {
             return me;
         }
     };
-}(),
+}()),
 
 function () {
     Ext.perf.getTimestamp = this.getTimestamp;

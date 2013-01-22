@@ -9,8 +9,8 @@ Ext.onReady(function() {
     var Restaurants = Ext.create('Ext.data.Store', {
         storeId: 'restaraunts',
         model: 'Restaurant',
-        sorters: ['cuisine','name'],
         groupField: 'cuisine',
+        sorters: ['cuisine','name'],
         data: [{
             name: 'Cheesecake Factory',
             cuisine: 'American'
@@ -229,6 +229,7 @@ Ext.onReady(function() {
         width: 600,
         height: 400,
         title: 'Restaurants',
+        resizable: true,
         features: [groupingFeature],
         columns: [{
             text: 'Name',

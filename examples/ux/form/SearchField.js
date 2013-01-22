@@ -10,13 +10,28 @@ Ext.define('Ext.ux.form.SearchField', {
     hasSearch : false,
     paramName : 'query',
     
-    initComponent: function(){
-        this.callParent(arguments);
-        this.on('specialkey', function(f, e){
-            if(e.getKey() == e.ENTER){
-                this.onTrigger2Click();
+    initComponent: function() {
+        var me = this;
+
+        me.callParent(arguments);
+        me.on('specialkey', function(f, e){
+            if (e.getKey() == e.ENTER) {
+                me.onTrigger2Click();
             }
-        }, this);
+        });
+
+        // We're going to use filtering
+        me.store.remoteFilter = true;
+
+        // Set up the proxy to encode the filter in the simplest way as a name/value pair
+        
+        // If the Store has not been *configured* with a filterParam property, then use our filter parameter name
+        if (!me.store.proxy.hasOwnProperty('filterParam')) {
+            me.store.proxy.filterParam = me.paramName;
+        }
+        me.store.proxy.encodeFilters = function(filters) {
+            return filters[0].value;
+        }
     },
     
     afterRender: function(){
@@ -25,18 +40,14 @@ Ext.define('Ext.ux.form.SearchField', {
     },
     
     onTrigger1Click : function(){
-        var me = this,
-            store = me.store,
-            proxy = store.getProxy(),
-            val;
+        var me = this;
             
         if (me.hasSearch) {
             me.setValue('');
-            proxy.extraParams[me.paramName] = '';
-            store.loadPage(1);
+            me.store.clearFilter();
             me.hasSearch = false;
             me.triggerCell.item(0).setDisplayed(false);
-            me.doComponentLayout();
+            me.updateLayout();
         }
     },
 
@@ -46,14 +57,17 @@ Ext.define('Ext.ux.form.SearchField', {
             proxy = store.getProxy(),
             value = me.getValue();
             
-        if (value.length < 1) {
-            me.onTrigger1Click();
-            return;
+        if (value.length > 0) {
+            // Param name is ignored here since we use custom encoding in the proxy.
+            // id is used by the Store to replace any previous filter
+            me.store.filter({
+                id: me.paramName,
+                property: me.paramName,
+                value: value
+            });
+            me.hasSearch = true;
+            me.triggerCell.item(0).setDisplayed(true);
+            me.updateLayout();
         }
-        proxy.extraParams[me.paramName] = value;
-        store.loadPage(1);
-        me.hasSearch = true;
-        me.triggerCell.item(0).setDisplayed(true);
-        me.doComponentLayout();
     }
 });

@@ -1,6 +1,6 @@
 /**
- * A modal, floating Component which may be shown above a specified {@link Ext.Component Component} while loading data. 
- * When shown, the configured owning Component will be covered with a modality mask, and the LoadMask's {@link #msg} will be 
+ * A modal, floating Component which may be shown above a specified {@link Ext.Component Component} while loading data.
+ * When shown, the configured owning Component will be covered with a modality mask, and the LoadMask's {@link #msg} will be
  * displayed centered, accompanied by a spinner image.
  *
  * If the {@link #store} config option is specified, the masking will be automatically shown and then hidden synchronized with
@@ -45,25 +45,25 @@ Ext.define('Ext.LoadMask', {
     //<locale>
     msg : 'Loading...',
     //</locale>
-    
+
     /**
      * @cfg {String} [msgCls="x-mask-loading"]
      * The CSS class to apply to the loading message element.
      */
     msgCls : Ext.baseCSSPrefix + 'mask-loading',
-    
+
     /**
      * @cfg {String} [maskCls="x-mask"]
      * The CSS class to apply to the mask element
      */
     maskCls: Ext.baseCSSPrefix + 'mask',
-    
+
     /**
      * @cfg {Boolean} [useMsg=true]
      * Whether or not to use a loading message class or simply mask the bound element.
      */
     useMsg: true,
-    
+
     /**
      * @cfg {Boolean} [useTargetEl=false]
      * True to mask the {@link Ext.Component#getTargetEl targetEl} of the bound Component. By default,
@@ -86,34 +86,35 @@ Ext.define('Ext.LoadMask', {
 
     // Private. Masks are not focusable
     focusOnToFront: false,
-    
+
+    // When we put the load mask to the front of it's owner, we generally don't want to also bring the owning
+    // component to the front.
+    bringParentToFront: false,
+
     /**
      * Creates new LoadMask.
-     * @param {Ext.Component} comp The Component you wish to mask. The the mask will be automatically sized 
+     * @param {Ext.Component} comp The Component you wish to mask. The the mask will be automatically sized
      * upon Component resize, and the message box will be kept centered.</p>
      * @param {Object} [config] The config object
      */
     constructor : function(comp, config) {
         var me = this;
 
-        //<debug>
+        // Element support to be deprecated
         if (!comp.isComponent) {
+            //<debug>
             if (Ext.isDefined(Ext.global.console)) {
                 Ext.global.console.warn('Ext.LoadMask: LoadMask for elements has been deprecated, use Ext.dom.Element.mask & Ext.dom.Element.unmask');
             }
+            //</debug>
             comp = Ext.get(comp);
             this.isElement = true;
         }
-        //</debug>
 
         me.ownerCt = comp;
-        //<debug>
         if (!this.isElement) {
-        //</debug>
-        me.bindComponent(comp);
-        //<debug>
+            me.bindComponent(comp);
         }
-        //</debug>
         me.callParent([config]);
 
         if (me.store) {
@@ -125,27 +126,48 @@ Ext.define('Ext.LoadMask', {
         var me = this,
             listeners = {
                 scope: this,
-                hide: me.onComponentHide,
-                show: me.onComponentShow,
                 resize: me.sizeMask,
                 added: me.onComponentAdded,
                 removed: me.onComponentRemoved
-            };
+            },
+            hierarchyEventSource = Ext.container.Container.hierarchyEventSource;
             
         if (comp.floating) {
             listeners.move = me.sizeMask;
+            /*
+             *  if floating, set to restack and bind the component to the mask if it's
+             *  determined that the owning component isn't at the front of the stack
+             *
+             *  if there are multiple floating components, each could have its own zIndexManager,
+             *  so it's necessary to have a ref to the owning component to be able
+             *  to look up it's z-index and then adjust accordingly in me.setZIndex
+             *  - the restack simply acts as a flag to know to adjust the z-index in me.setZIndex
+             */
+            if (comp.zIndexManager.front !== comp) {
+                me.restack = true;
+                me.activeOwner = comp;
+            }
         } else if (comp.ownerCt) {
             me.onComponentAdded(comp.ownerCt);
+        } else {
+            // if the target comp is non-floating and under a floating comp don't bring the load mask to the front of the stack
+            me.preventBringToFront = true;
         }
-            
+
         me.mon(comp, listeners);
         
-        Ext.container.Container.onContainerHide(me.onContainerHide, me);
-        Ext.container.Container.onContainerShow(me.onContainerShow, me);
+        // subscribe to the observer that manages the hierarchy
+        me.mon(hierarchyEventSource, {
+            show: me.onContainerShow,
+            hide: me.onContainerHide,
+            expand: me.onContainerExpand,
+            collapse: me.onContainerCollapse,
+            scope: me
+        });
     },
 
     onComponentAdded: function(owner){
-        var me = this;      
+        var me = this;
         delete me.activeOwner;
         me.floatParent = owner;
         if (!owner.floating) {
@@ -166,7 +188,7 @@ Ext.define('Ext.LoadMask', {
         var me = this,
             activeOwner = me.activeOwner,
             floatOwner = me.floatOwner;
-            
+
         if (activeOwner) {
             me.mun(activeOwner, 'move', me.sizeMask, me);
         }
@@ -194,14 +216,25 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
+    onContainerExpand: function(container){
+        if (this.isActiveContainer(container)) {
+            this.onComponentShow();
+        }
+    },
+
+    onContainerCollapse: function(container){
+        if (this.isActiveContainer(container)) {
+            this.onComponentHide();
+        }
+    },
+
     isActiveContainer: function(container){
-        var owner = this.getOwner();
-        return owner.isDescendantOf(container);
+        return this.isDescendantOf(container);
     },
 
     onComponentHide: function(){
         var me = this;
-        
+
         if (me.rendered && me.isVisible()) {
             me.hide();
             me.showNext = true;
@@ -222,13 +255,13 @@ Ext.define('Ext.LoadMask', {
     sizeMask: function() {
         var me = this,
             target;
-            
+
         if (me.rendered && me.isVisible()) {
             me.center();
-            
+
             target = me.getMaskTarget();
             me.getMaskEl().show().setSize(target.getSize()).alignTo(target, 'tl-tl');
-            
+
         }
     },
 
@@ -249,7 +282,13 @@ Ext.define('Ext.LoadMask', {
         return {
             beforeload: this.onBeforeLoad,
             load: this.onLoad,
-            exception: this.onLoad     
+            exception: this.onLoad,
+
+            // Fired when a range is requested for rendering that is not in the cache
+            cachemiss: this.onBeforeLoad,
+
+            // Fired when a range for rendering which was previously missing from the cache is loaded
+            cachefilled: this.onLoad
         };
     },
 
@@ -261,7 +300,7 @@ Ext.define('Ext.LoadMask', {
     },
 
     getOwner: function(){
-        return this.ownerCt || this.floatParent;    
+        return this.ownerCt || this.floatParent;
     },
 
     getMaskTarget: function(){
@@ -303,7 +342,7 @@ Ext.define('Ext.LoadMask', {
         else if (me.loading && owner.rendered) {
             me.show();
         }
-    }, 
+    },
 
     getMaskEl: function(){
         var me = this;
@@ -318,10 +357,10 @@ Ext.define('Ext.LoadMask', {
     onShow: function() {
         var me = this,
             msgEl = me.msgEl;
-            
+
         me.callParent(arguments);
         me.loading = true;
-        
+
         if (me.useMsg) {
             msgEl.show().update(me.msg);
         } else {
@@ -330,31 +369,29 @@ Ext.define('Ext.LoadMask', {
     },
 
     hide: function(){
-        //<debug>
+        // Element support to be deprecated
         if (this.isElement) {
             this.ownerCt.unmask();
             this.fireEvent('hide', this);
             return;
         }
-        //</debug>
-        delete this.showNext;  
+        delete this.showNext;
         return this.callParent(arguments);
     },
 
     onHide: function(){
         this.callParent();
-        this.getMaskEl().hide();   
+        this.getMaskEl().hide();
     },
 
     show: function(){
-        //<debug>
+        // Element support to be deprecated
         if (this.isElement) {
             this.ownerCt.mask(this.useMsg ? this.msg : '', this.msgCls);
             this.fireEvent('show', this);
             return;
         }
-        //</debug>  
-        return this.callParent(arguments);  
+        return this.callParent(arguments);
     },
 
     afterShow: function() {
@@ -364,6 +401,14 @@ Ext.define('Ext.LoadMask', {
 
     setZIndex: function(index) {
         var me = this;
+            
+        if (me.restack) {
+            // it seems silly to add 1 to have it subtracted in the call below,
+            // but this allows the x-mask el to have the correct z-index (same as the component)
+            // so instead of directly changing the zIndexStack just get the z-index of the owner comp
+            index = parseInt(me.activeOwner.el.getStyle('zIndex'), 10) + 1;
+        }
+
         me.getMaskEl().setStyle('zIndex', index - 1);
         return me.mixins.floating.setZIndex.apply(me, arguments);
     },
@@ -376,9 +421,12 @@ Ext.define('Ext.LoadMask', {
 
     onDestroy: function(){
         var me = this;
+
+        if (me.isElement) {
+            me.ownerCt.unmask();
+        }
+
         Ext.destroy(me.maskEl);
-        Ext.container.Container.removeHideListener(me.onContainerHide, me);
-        Ext.container.Container.removeShowListener(me.onContainerShow, me);
         me.callParent();
     }
 });

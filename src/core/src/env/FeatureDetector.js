@@ -185,9 +185,13 @@ Ext.define('Ext.env.FeatureDetector', {
     },
 
     registerTests: function(tests, isDefault) {
-        Ext.Object.each(tests, function(name, fn) {
-            this.registerTest(name, fn, isDefault);
-        }, this);
+        var key;
+
+        for (key in tests) {
+            if (tests.hasOwnProperty(key)) {
+                this.registerTest(key, tests[key], isDefault);
+            }
+        }
 
         return this;
     },

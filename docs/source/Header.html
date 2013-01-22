@@ -23,8 +23,8 @@ Ext.define('Ext.panel.Header', {
     uses: ['Ext.panel.Tool', 'Ext.draw.Component', 'Ext.util.CSS', 'Ext.layout.component.Body', 'Ext.Img'],
     alias: 'widget.header',
 
-<span id='Ext-panel-Header-property-isAction'>    /**
-</span>     * @property {Boolean} isAction
+<span id='Ext-panel-Header-property-isHeader'>    /**
+</span>     * @property {Boolean} isHeader
      * `true` in this class to identify an objact as an instantiated Header, or subclass thereof.
      */
     isHeader       : true,
@@ -33,15 +33,21 @@ Ext.define('Ext.panel.Header', {
     weight         : -1,
     componentLayout: 'body',
 
+<span id='Ext-panel-Header-cfg-titleAlign'>    /**
+</span>     * @cfg {String} [titleAlign='left']
+     * May be `&quot;left&quot;`, `&quot;right&quot;` or `&quot;center&quot;`.
+     *
+     * The alignment of the title text within the available space between the icon and the tools.
+     */
+    titleAlign: 'left',
+
     childEls: [
         'body'
     ],
 
     renderTpl: [
-        '&lt;div id=&quot;{id}-body&quot; class=&quot;{baseCls}-body&lt;tpl if=&quot;bodyCls&quot;&gt; {bodyCls}&lt;/tpl&gt;',
-        '&lt;tpl if=&quot;uiCls&quot;&gt;',
-            '&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&lt;/tpl&gt;',
-        '&lt;/tpl&gt;&quot;',
+        '&lt;div id=&quot;{id}-body&quot; class=&quot;{baseCls}-body {bodyCls}',
+        '&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&quot;&lt;/tpl&gt;',
         '&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;',
             '{%this.renderContainer(out,values)%}',
         '&lt;/div&gt;'
@@ -73,6 +79,26 @@ Ext.define('Ext.panel.Header', {
             style,
             ui,
             tempEl;
+            
+        me.addEvents(
+<span id='Ext-panel-Header-event-click'>            /**
+</span>             * @event click
+             * Fires when the header is clicked. This event will not be fired 
+             * if the click was on a {@link Ext.panel.Tool}
+             * @param {Ext.panel.Header} this
+             * @param {Ext.EventObject} e
+             */
+            'click',
+            
+<span id='Ext-panel-Header-event-dblclick'>            /**
+</span>             * @event dblclick
+             * Fires when the header is double clicked. This event will not 
+             * be fired if the click was on a {@link Ext.panel.Tool}
+             * @param {Ext.panel.Header} this
+             * @param {Ext.EventObject} e
+             */
+            'dblclick'
+        );
 
         me.indicateDragCls = me.baseCls + '-draggable';
         me.title = me.title || '&amp;#160;';
@@ -167,6 +193,7 @@ Ext.define('Ext.panel.Header', {
                 noWrap    : true,
                 flex      : 1,
                 id        : me.id + '_hd',
+                style     : 'text-align:' + me.titleAlign,
                 cls       : me.baseCls + '-text-container',
                 renderTpl : me.getTpl('headingTpl'),
                 renderData: {
@@ -184,6 +211,7 @@ Ext.define('Ext.panel.Header', {
         me.callParent();
         
         me.on({
+            dblclick: me.onDblClick,
             click: me.onClick,
             element: 'el',
             scope: me
@@ -214,74 +242,58 @@ Ext.define('Ext.panel.Header', {
     },
 
     // inherit docs
-    addUIClsToElement: function(cls, force) {
+    addUIClsToElement: function(cls) {
         var me = this,
             result = me.callParent(arguments),
             classes = [me.baseCls + '-body-' + cls, me.baseCls + '-body-' + me.ui + '-' + cls],
             array, i;
 
-        if (!force &amp;&amp; me.rendered) {
-            if (me.bodyCls) {
-                me.body.addCls(me.bodyCls);
-            } else {
-                me.body.addCls(classes);
-            }
-        } else {
-            if (me.bodyCls) {
-                array = me.bodyCls.split(' ');
+        if (me.bodyCls) {
+            array = me.bodyCls.split(' ');
 
-                for (i = 0; i &lt; classes.length; i++) {
-                    if (!Ext.Array.contains(array, classes[i])) {
-                        array.push(classes[i]);
-                    }
+            for (i = 0; i &lt; classes.length; i++) {
+                if (!Ext.Array.contains(array, classes[i])) {
+                    array.push(classes[i]);
                 }
-
-                me.bodyCls = array.join(' ');
-            } else {
-                me.bodyCls = classes.join(' ');
             }
+
+            me.bodyCls = array.join(' ');
+        } else {
+            me.bodyCls = classes.join(' ');
         }
 
         return result;
     },
 
     // inherit docs
-    removeUIClsFromElement: function(cls, force) {
+    removeUIClsFromElement: function(cls) {
         var me = this,
             result = me.callParent(arguments),
             classes = [me.baseCls + '-body-' + cls, me.baseCls + '-body-' + me.ui + '-' + cls],
             array, i;
 
-        if (!force &amp;&amp; me.rendered) {
-            if (me.bodyCls) {
-                me.body.removeCls(me.bodyCls);
-            } else {
-                me.body.removeCls(classes);
-            }
-        } else {
-            if (me.bodyCls) {
-                array = me.bodyCls.split(' ');
+        if (me.bodyCls) {
+            array = me.bodyCls.split(' ');
 
-                for (i = 0; i &lt; classes.length; i++) {
-                    Ext.Array.remove(array, classes[i]);
-                }
-
-                me.bodyCls = array.join(' ');
+            for (i = 0; i &lt; classes.length; i++) {
+                Ext.Array.remove(array, classes[i]);
             }
+
+            me.bodyCls = array.join(' ');
         }
 
-       return result;
+        return result;
     },
 
     // inherit docs
-    addUIToElement: function(force) {
+    addUIToElement: function() {
         var me = this,
             array, cls;
 
         me.callParent(arguments);
 
         cls = me.baseCls + '-body-' + me.ui;
-        if (!force &amp;&amp; me.rendered) {
+        if (me.rendered) {
             if (me.bodyCls) {
                 me.body.addCls(me.bodyCls);
             } else {
@@ -301,7 +313,7 @@ Ext.define('Ext.panel.Header', {
             }
         }
 
-        if (!force &amp;&amp; me.titleCmp &amp;&amp; me.titleCmp.rendered &amp;&amp; me.titleCmp.textEl) {
+        if (me.titleCmp &amp;&amp; me.titleCmp.rendered &amp;&amp; me.titleCmp.textEl) {
             me.titleCmp.textEl.addCls(me.baseCls + '-text-' + me.ui);
         }
     },
@@ -336,9 +348,18 @@ Ext.define('Ext.panel.Header', {
     },
 
     onClick: function(e) {
-        if (!e.getTarget(Ext.baseCSSPrefix + 'tool')) {
-            this.fireEvent('click', e);
-        }
+        this.fireClickEvent('click', e);
+    },
+    
+    onDblClick: function(e){
+        this.fireClickEvent('dblclick', e);
+    },
+    
+    fireClickEvent: function(type, e){
+        var toolCls = '.' + Ext.panel.Tool.prototype.baseCls;
+        if (!e.getTarget(toolCls)) {
+            this.fireEvent(type, this, e);
+        }    
     },
 
     getFocusEl: function() {
@@ -378,6 +399,7 @@ Ext.define('Ext.panel.Header', {
                     me.title = title;
                     me.titleCmp.textEl.update(me.title || '&amp;#160;');
                 }
+                me.titleCmp.updateLayout();
             } else {
                 me.titleCmp.on({
                     render: function() {
@@ -486,7 +508,7 @@ Ext.define('Ext.panel.Header', {
     },
 
 <span id='Ext-panel-Header-method-onAdd'>    /**
-</span>     * @private
+</span>     * @protected
      * Set up the `tools.&lt;tool type&gt;` link in the owning Panel.
      * Bind the tool to its owning Panel.
      * @param component

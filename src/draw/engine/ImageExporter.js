@@ -1,3 +1,6 @@
+/**
+ * @private
+ */
 Ext.define('Ext.draw.engine.ImageExporter', {
     singleton: true,
    
@@ -97,7 +100,7 @@ Ext.define('Ext.draw.engine.ImageExporter', {
                     return false;
                 }
             }
-        }
-    })()
+        };
+    }())
 
 });

@@ -429,6 +429,55 @@ describe("Ext.dom.Element", function() {
             });
         });
 
+        describe("visibility", function(){
+            var child, grandChild,
+                modes = [Ext.dom.Element.DISPLAY, Ext.dom.Element.VISIBILITY];
+
+            beforeEach(function() {
+                child = element.createChild({tag: "div"});
+                if (child) {
+                    child.setVisible(true);
+                    grandChild = child.createChild({tag: "div"});
+                    if (grandChild) {
+                        grandChild.setVisible(true);
+                    }
+                }
+            });
+
+            afterEach(function() {
+                if (grandChild) {
+                    grandChild.remove();
+                }
+                if (child) {
+                    child.remove();
+                }
+            });
+
+            it("should toggle the visibility of the element itself", function(){
+                for (var i in modes) {
+                    element.setVisibilityMode(modes[i]);
+
+                    element.setVisible(false);
+                    expect(element.isVisible(false)).toBe(false);
+
+                    element.setVisible(true);
+                    expect(element.isVisible(false)).toBe(true);                    
+                }
+            });
+
+            it("should toggle the 'deep' visibility of the grand-child", function(){
+                for (var i in modes) {
+                    element.setVisibilityMode(modes[i]);
+
+                    element.setVisible(false);
+                    expect(grandChild.isVisible(true)).toBe(false);
+
+                    element.setVisible(true);
+                    expect(grandChild.isVisible(true)).toBe(true);
+                }
+            });
+        });
+
     }
 
     describe('methods', function(){
@@ -667,6 +716,16 @@ describe("Ext.dom.Element", function() {
                 Ext.fly();
                 expect(Ext.dom.AbstractElement.fly).toHaveBeenCalled();
             });
+        });
+    });
+    
+    describe("getXY", function(){
+        var unAttached;
+        beforeEach(function(){
+            unAttached = document.createElement('div');
+        });
+        it("should not throw when reading unattached element", function(){
+            Ext.fly(unAttached).getXY();
         });
     });
 }, "/src/dom/Element.js");

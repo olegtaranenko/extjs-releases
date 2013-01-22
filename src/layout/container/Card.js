@@ -109,14 +109,39 @@ Ext.define('Ext.layout.container.Card', {
      * true might improve performance.
      */
     deferredRender : false,
-
+    
     getRenderTree: function () {
-        var me = this;
-        me.getActiveItem();
-        if (me.activeItem && me.deferredRender) {
-            return me.getItemsRenderTree([me.activeItem]);
-        } else {
-            return me.callParent(arguments);
+        var me = this,
+            activeItem = me.getActiveItem();
+
+        if (activeItem) {
+
+            // If they veto the activate, we have no active item
+            if (activeItem.hasListeners.beforeactivate && activeItem.fireEvent('beforeactivate', activeItem) === false) {
+ 
+                // We must null our activeItem reference, AND the one in our owning Container.
+                // Because upon layout invalidation, renderChildren will use this.getActiveItem which
+                // uses this.activeItem || this.owner.activeItem
+                activeItem = me.activeItem = me.owner.activeItem = null;
+            }
+            
+            // Item is to be the active one. Fire event after it is first layed out
+            else if (activeItem.hasListeners.activate) {
+                activeItem.on({
+                    boxready: function() {
+                        activeItem.fireEvent('activate', activeItem);
+                    },
+                    single: true
+                });
+            }
+
+            if (me.deferredRender) {
+                if (activeItem) {
+                    return me.getItemsRenderTree([activeItem]);
+                }
+            } else {
+                return me.callParent(arguments);
+            }
         }
     },
 
@@ -144,16 +169,18 @@ Ext.define('Ext.layout.container.Card', {
      * @returns {Ext.Component}
      */
     getActiveItem: function() {
-        var me = this;
-        if (!me.activeItem && me.owner) {
-            me.activeItem = me.parseActiveItem(me.owner.activeItem);
+        var me = this,
+            // Ensure the calculated result references a Component
+            result = me.parseActiveItem(me.activeItem || (me.owner && me.owner.activeItem));
+
+        // Sanitize the result in case the active item is no longer there.
+        if (result && me.owner.items.indexOf(result) != -1) {
+            me.activeItem = result;
+        } else {
+            me.activeItem = null;
         }
 
-        if (me.activeItem && me.owner.items.indexOf(me.activeItem) != -1) {
-            return me.activeItem;
-        }
-
-        return null;
+        return me.activeItem;
     },
 
     // @private
@@ -167,14 +194,15 @@ Ext.define('Ext.layout.container.Card', {
         }
     },
 
-    // @private
-    afterRenderItem: function(item, position) {
-        this.callParent([item, position]);
-        if (this.hideInactive && this.activeItem !== item) {
-            item.hide();
+    // @private. Called before both dynamic render, and bulk render.
+    // Ensure that the active item starts visible, and inactive ones start invisible
+    configureItem: function(item) {
+        if (item === this.getActiveItem()) {
+            item.hidden = false;
         } else {
-            item.show();
+            item.hidden = true;
         }
+        this.callParent(arguments);
     },
 
     onRemove: function(component) {
@@ -182,9 +210,6 @@ Ext.define('Ext.layout.container.Card', {
         
         if (component === me.activeItem) {
             me.activeItem = null;
-            if (me.owner.items.getCount() === 0) {
-                me.firstActivated = false;
-            }
         }
     },
 
@@ -279,20 +304,17 @@ Ext.define('Ext.layout.container.Card', {
         newCard = me.parseActiveItem(newCard);
         newIndex = owner.items.indexOf(newCard);
 
-        // If the card is not a child of the owner, then add it
+        // If the card is not a child of the owner, then add it.
+        // Without doing a layout!
         if (newIndex == -1) {
             newIndex = owner.items.items.length;
-            owner.add(newCard);
+            Ext.suspendLayouts();
+            newCard = owner.add(newCard);
+            Ext.resumeLayouts();
         }
 
         // Is this a valid, different card?
         if (newCard && oldCard != newCard) {
-            // If the card has not been rendered yet, now is the time to do so.
-            if (rendered && !newCard.rendered) {
-                me.renderItem(newCard, me.getRenderTarget(), owner.items.length);
-                me.afterRenderItem(newCard);
-            }
-
             // Fire the beforeactivate and beforedeactivate events on the cards
             if (newCard.fireEvent('beforeactivate', newCard, oldCard) === false) {
                 return false;
@@ -301,8 +323,14 @@ Ext.define('Ext.layout.container.Card', {
                 return false;
             }
 
-            owner.suspendLayouts();
             if (rendered) {
+                Ext.suspendLayouts();
+
+                // If the card has not been rendered yet, now is the time to do so.
+                if (!newCard.rendered) {
+                    me.renderItem(newCard, me.getRenderTarget(), owner.items.length);
+                }
+
                 if (oldCard) {
                     if (me.hideInactive) {
                         oldCard.hide();
@@ -314,15 +342,19 @@ Ext.define('Ext.layout.container.Card', {
                 if (newCard.hidden) {
                     newCard.show();
                 }
+
+                // Layout needs activeItem to be correct, so set it if the show has not been vetoed
+                if (!newCard.hidden) {
+                    me.activeItem = newCard;
+                }
+                Ext.resumeLayouts(true);
+            } else {
+                me.activeItem = newCard;
             }
-
-            me.activeItem = newCard;
-
-            owner.resumeLayouts(true);
 
             newCard.fireEvent('activate', newCard, oldCard);
 
-            return newCard;
+            return me.activeItem;
         }
         return false;
     }

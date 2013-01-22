@@ -417,7 +417,7 @@ Ext.define('Ext.Component', {
         me.mons = [];
     },
 
-    
+
     // private
     afterRender: function() {
         var me = this;
@@ -427,11 +427,6 @@ Ext.define('Ext.Component', {
         if (!(me.x && me.y) && (me.pageX || me.pageY)) {
             me.setPagePosition(me.pageX, me.pageY);
         }
-
-        if (me.resizable) {
-            me.initResizable(me.resizable);
-        }
-
         if (me.draggable) {
             me.initDraggable();
         }
@@ -508,6 +503,13 @@ Ext.define('Ext.Component', {
 
         return me.callParent();
     },
+    
+    afterComponentLayout: function(){
+        this.callParent(arguments);
+        if (this.floating) {
+            this.onAfterFloatLayout();
+        }
+    },
 
     // private
     makeFloating : function (dom) {
@@ -557,7 +559,7 @@ Ext.define('Ext.Component', {
 
     /**
      * Scrolls this Component's {@link #getTargetEl target element} by the passed delta values, optionally animating.
-     * 
+     *
      * All of the following are equivalent:
      *
      *      comp.scrollBy(10, 10, true);
@@ -576,7 +578,7 @@ Ext.define('Ext.Component', {
             el.scrollBy.apply(el, arguments);
         }
     },
-    
+
     /**
      * This method allows you to show or hide a LoadMask on top of this component.
      *
@@ -593,7 +595,7 @@ Ext.define('Ext.Component', {
         if (me.rendered) {
             Ext.destroy(me.loadMask);
             me.loadMask = null;
-            
+
             if (load !== false && !me.collapsed) {
                 if (Ext.isObject(load)) {
                     config = Ext.apply({}, load);
@@ -695,7 +697,7 @@ Ext.define('Ext.Component', {
         me.pageY = y;
 
         if (me.floating) {
- 
+
             // Floating Components which are registered with a Container have to have their x and y properties made relative
             if (me.isContainedFloater()) {
                 floatParentBox = me.floatParent.getTargetEl().getViewRegion();
@@ -705,12 +707,17 @@ Ext.define('Ext.Component', {
                 if (Ext.isNumber(y) && Ext.isNumber(floatParentBox.top)) {
                     y -= floatParentBox.top;
                 }
+            } else {
+                p = me.el.translatePoints(x, y);
+                x = p.left;
+                y = p.top;
             }
+
             me.setPosition(x, y, animate);
         } else {
             p = me.el.translatePoints(x, y);
             me.setPosition(p.left, p.top, animate);
-         }
+        }
 
         return me;
     },
@@ -838,20 +845,22 @@ Ext.define('Ext.Component', {
      * @return {Ext.Component} this
      */
     show: function(animateTarget, cb, scope) {
-        var me = this;
+        var me = this,
+            rendered = me.rendered;
 
-        if (me.rendered && me.isVisible()) {
+        if (rendered && me.isVisible()) {
             if (me.toFrontOnShow && me.floating) {
                 me.toFront();
             }
         } else if (me.fireEvent('beforeshow', me) !== false) {
-            me.hidden = false;
-
             // Render on first show if there is an autoRender config, or if this is a floater (Window, Menu, BoundList etc).
-            if (!me.rendered && (me.autoRender || me.floating)) {
+            me.hidden = false;
+            if (!rendered && (me.autoRender || me.floating)) {
                 me.doAutoRender();
+                rendered = me.rendered;
             }
-            if (me.rendered) {
+            
+            if (rendered) {
                 me.beforeShow();
                 me.onShow.apply(me, arguments);
                 me.afterShow.apply(me, arguments);
@@ -1163,6 +1172,17 @@ Ext.define('Ext.Component', {
         }
         return me;
     },
+    
+    /**
+     * Cancel any deferred focus on this component
+     * @protected
+     */
+    cancelFocus: function(){
+        var task = this.focusTask;
+        if (task) {
+            task.cancel();
+        }
+    },
 
     // private
     blur: function() {
@@ -1201,8 +1221,12 @@ Ext.define('Ext.Component', {
     onResize: Ext.emptyFn,
 
     // private
+    // Implements an upward event bubbilng policy. By default a Component bubbles events up to its ownerCt
+    // Floating Components target the floatParent.
+    // Some Component subclasses (such as Menu) might implement a different ownership hierarchy.
+    // The up() method uses this to find the immediate owner.
     getBubbleTarget: function() {
-        return this.ownerCt;
+        return this.ownerCt || this.floatParent;
     },
 
     // private
@@ -1246,6 +1270,9 @@ Ext.define('Ext.Component', {
     /**
      * Find a container above this component at any level by a custom function. If the passed function returns true, the
      * container will be returned.
+     *
+     * See also the {@link Ext.Component#up up} method.
+     *
      * @param {Function} fn The custom function to call with the arguments (container, this component).
      * @return {Ext.container.Container} The first Container for which the custom function returns true
      */
@@ -1253,7 +1280,7 @@ Ext.define('Ext.Component', {
         var p;
 
         // Iterate up the ownerCt chain until there's no ownerCt, or we find an ancestor which matches using the selector function.
-        for (p = this.ownerCt; p && !fn(p, this); p = p.ownerCt) {
+        for (p = this.getBubbleTarget(); p && !fn(p, this); p = p.getBubbleTarget()) {
             // do nothing
         }
         return p || null;
@@ -1292,7 +1319,7 @@ Ext.define('Ext.Component', {
             if (fn.apply(scope || p, args || [p]) === false) {
                 break;
             }
-            p = p.ownerCt;
+            p = p.getBubbleTarget();
         }
         return this;
     },

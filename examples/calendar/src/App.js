@@ -30,14 +30,14 @@ Ext.define('Ext.calendar.App', {
         
         // This is an example calendar store that enables event color-coding
         this.calendarStore = Ext.create('Ext.calendar.data.MemoryCalendarStore', {
-            data: Ext.create('Ext.calendar.data.Calendars')
+            data: Ext.calendar.data.Calendars.getData()
         });
 
         // A sample event store that loads static JSON from a local file. Obviously a real
         // implementation would likely be loading remote data via an HttpProxy, but the
         // underlying store functionality is the same.
         this.eventStore = Ext.create('Ext.calendar.data.MemoryEventStore', {
-            data: Ext.create('Ext.calendar.data.Events')
+            data: Ext.calendar.data.Events.getData()
         });
         
         // This is the app UI layout code.  All of the calendar views are subcomponents of
@@ -122,12 +122,6 @@ Ext.define('Ext.calendar.App', {
                             },
                             scope: this
                         },
-                        'eventdelete': {
-                            fn: function(cp, rec){
-                                this.showMsg('Event '+ rec.data.Title +' was deleted');
-                            },
-                            scope: this
-                        },
                         'eventcancel': {
                             fn: function(cp, rec){
                                 // edit canceled
@@ -138,7 +132,7 @@ Ext.define('Ext.calendar.App', {
                             fn: function(p, vw, dateInfo){
                                 if(this.editWin){
                                     this.editWin.hide();
-                                };
+                                }
                                 if(dateInfo){
                                     // will be null when switching to the event edit form so ignore
                                     Ext.getCmp('app-nav-picker').setValue(dateInfo.activeDate);

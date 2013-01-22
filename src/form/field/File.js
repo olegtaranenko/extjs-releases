@@ -174,7 +174,7 @@ Ext.define("Ext.form.field.File", {
                 size: 1
             };
         if (me.disabled) {
-            inputElCfg.cn.disabled = true;
+            inputElCfg.disabled = true;
         }
         btnCfg.cn = inputElCfg;
         result = '<td id="' + me.id + '-browseButtonWrap">' + Ext.DomHelper.markup(btnCfg) + '</td>';

@@ -31,7 +31,8 @@ Ext.define('Ext.layout.component.Component', {
             body = owner.el.dom === document.body,
             lastBox = owner.lastBox || me.nullBox,
             lastSize = owner.el.lastBox || me.nullBox,
-            dirty, ownerLayout, v;
+            dirty = !body,
+            ownerLayout, v, widthName, heightName;
 
         me.callParent(arguments);
 
@@ -69,21 +70,41 @@ Ext.define('Ext.layout.component.Component', {
             // it to the body el). For other el's, the width may already be correct in the
             // DOM (e.g., it is rendered in the markup initially). If the width is not
             // correct in the DOM, this is only going to be the case on the first cycle.
+            widthName = widthModel.names.width;
 
-            dirty = !body && firstCycle && owner.width !== lastSize.width;
+            if (!body) {
+                dirty = firstCycle ? owner[widthName] !== lastSize.width
+                                   : widthModel.constrained;
+            }
             
-            ownerContext.setWidth(owner.width, dirty);
-        } else if (ownerContext.isTopLevel && widthModel.calculated) {
-            v = lastBox.width;
-            ownerContext.setWidth(v, /*dirty=*/v != lastSize.width);
+            ownerContext.setWidth(owner[widthName], dirty);
+        } else if (ownerContext.isTopLevel) {
+            if (widthModel.calculated) {
+                v = lastBox.width;
+                ownerContext.setWidth(v, /*dirty=*/v != lastSize.width);
+            }
+
+            v = lastBox.x;
+            ownerContext.setProp('x', v, /*dirty=*/v != lastSize.x);
         }
 
         if (heightModel.configured) {
-            dirty = !body && firstCycle && owner.height !== lastSize.height;
-            ownerContext.setHeight(owner.height, dirty);
-        } else if (ownerContext.isTopLevel && heightModel.calculated) {
-            v = lastBox.height;
-            ownerContext.setHeight(v, v != lastSize.height);
+            heightName = heightModel.names.height;
+
+            if (!body) {
+                dirty = firstCycle ? owner[heightName] !== lastSize.height
+                                   : heightModel.constrained;
+            }
+
+            ownerContext.setHeight(owner[heightName], dirty);
+        } else if (ownerContext.isTopLevel) {
+            if (heightModel.calculated) {
+                v = lastBox.height;
+                ownerContext.setHeight(v, v != lastSize.height);
+            }
+
+            v = lastBox.y;
+            ownerContext.setProp('y', v, /*dirty=*/v != lastSize.y);
         }
     },
 

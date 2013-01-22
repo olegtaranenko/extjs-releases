@@ -160,7 +160,7 @@ Ext.define('Ext.form.field.Trigger', {
             field = me.callParent(arguments);
 
         return '&lt;table id=&quot;' + me.id + '-triggerWrap&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-wrap&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot;&gt;&lt;tbody&gt;&lt;tr&gt;' +
-            '&lt;td id=&quot;' + me.id + '-inputCell&quot;&gt;' + field + '&lt;/td&gt;' +
+            '&lt;td id=&quot;' + me.id + '-inputCell&quot; class=&quot;' + Ext.baseCSSPrefix + 'form-trigger-input-cell&quot;&gt;' + field + '&lt;/td&gt;' +
             me.getTriggerMarkup() +
             '&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;';
     },
@@ -220,6 +220,10 @@ Ext.define('Ext.form.field.Trigger', {
         triggerConfigs[i - 1].cn.cls += ' ' + triggerBaseCls + '-last';
 
         return Ext.DomHelper.markup(triggerConfigs);
+    },
+    
+    disableCheck: function() {
+        return !this.disabled;    
     },
 
     // private
@@ -302,7 +306,9 @@ Ext.define('Ext.form.field.Trigger', {
     initTrigger: function() {
         var me = this,
             triggerWrap = me.triggerWrap,
-            triggerEl = me.triggerEl;
+            triggerEl = me.triggerEl,
+            disableCheck = me.disableCheck,
+            els, eLen, el, e, idx;
 
         if (me.repeatTriggerClick) {
             me.triggerRepeater = new Ext.util.ClickRepeater(triggerWrap, {
@@ -323,14 +329,20 @@ Ext.define('Ext.form.field.Trigger', {
         }
 
         triggerEl.setVisibilityMode(Ext.Element.DISPLAY);
-        triggerEl.addClsOnOver(me.triggerBaseCls + '-over');
-        triggerEl.each(function(el, c, i) {
-            el.addClsOnOver(me['trigger' + (i + 1) + 'Cls'] + '-over');
-        });
-        triggerEl.addClsOnClick(me.triggerBaseCls + '-click');
-        triggerEl.each(function(el, c, i) {
-            el.addClsOnClick(me['trigger' + (i + 1) + 'Cls'] + '-click');
-        });
+        triggerEl.addClsOnOver(me.triggerBaseCls + '-over', disableCheck, me);
+
+        els  = triggerEl.elements;
+        eLen = els.length;
+
+        for (e = 0; e &lt; eLen; e++) {
+            el = els[e];
+            idx = e+1;
+            el.addClsOnOver(me['trigger' + (idx) + 'Cls'] + '-over', disableCheck, me);
+            el.addClsOnClick(me['trigger' + (idx) + 'Cls'] + '-click', disableCheck, me);
+        }
+
+        triggerEl.addClsOnClick(me.triggerBaseCls + '-click', disableCheck, me);
+
     },
 
     // private
@@ -395,19 +407,19 @@ Ext.define('Ext.form.field.Trigger', {
     // private
     mimicBlur: function(e) {
         if (!this.isDestroyed &amp;&amp; !this.bodyEl.contains(e.target) &amp;&amp; this.validateBlur(e)) {
-            this.triggerBlur();
+            this.triggerBlur(e);
         }
     },
 
     // private
-    triggerBlur: function() {
+    triggerBlur: function(e) {
         var me = this;
         me.mimicing = false;
         me.mun(me.doc, 'mousedown', me.mimicBlur, me);
         if (me.monitorTab &amp;&amp; me.inputEl) {
             me.un('specialkey', me.checkTab, me);
         }
-        Ext.form.field.Trigger.superclass.onBlur.call(me);
+        Ext.form.field.Trigger.superclass.onBlur.call(me, e);
         if (me.bodyEl) {
             me.bodyEl.removeCls(me.wrapFocusCls);
         }

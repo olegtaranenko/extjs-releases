@@ -24,6 +24,17 @@ Ext.define('Ext.grid.plugin.Editing', {
      */
     clicksToEdit: 2,
 
+    /**
+     * @cfg {String} triggerEvent
+     * The event which triggers editing. Supercedes the {@link clicksToEdit} configuration. Maybe one of:
+     *
+     *  * cellclick
+     *  * celldblclick
+     *  * cellfocus
+     *  * rowfocus
+     */
+    triggerEvent: undefined,
+
     // private
     defaultFieldXType: 'textfield',
 
@@ -151,7 +162,12 @@ Ext.define('Ext.grid.plugin.Editing', {
     init: function(grid) {
         var me = this;
 
+        // If the plugin owner is a lockable grid, attach to its normal (right side) grid.
+        if (grid.lockable) {
+            grid = grid.view.normalGrid;
+        }
         me.grid = grid;
+
         me.view = grid.view;
         me.initEvents();
         me.mon(grid, 'reconfigure', me.onReconfigure, me);
@@ -207,9 +223,7 @@ Ext.define('Ext.grid.plugin.Editing', {
      */
     destroy: function() {
         var me = this,
-            grid = me.grid,
-            headerCt = grid.headerCt,
-            events = grid.events;
+            grid = me.grid;
 
         Ext.destroy(me.keyNav);
         me.removeFieldAccessors(grid.getView().getGridColumns());
@@ -231,38 +245,43 @@ Ext.define('Ext.grid.plugin.Editing', {
     },
 
     // private
-    initFieldAccessors: function(column) {
-        var me = this;
+    initFieldAccessors: function(columns) {
+        columns = [].concat(columns);
 
-        if (Ext.isArray(column)) {
-            Ext.Array.forEach(column, me.initFieldAccessors, me);
-            return;
+        var me   = this,
+            c,
+            cLen = columns.length,
+            column;
+
+        for (c = 0; c < cLen; c++) {
+            column = columns[c];
+
+            Ext.applyIf(column, {
+                getEditor: function(record, defaultField) {
+                    return me.getColumnField(this, defaultField);
+                },
+
+                setEditor: function(field) {
+                    me.setColumnField(this, field);
+                }
+            });
         }
-
-        // Augment the Header class to have a getEditor and setEditor method
-        // Important: Only if the header does not have its own implementation.
-        Ext.applyIf(column, {
-            getEditor: function(record, defaultField) {
-                return me.getColumnField(this, defaultField);
-            },
-
-            setEditor: function(field) {
-                me.setColumnField(this, field);
-            }
-        });
     },
 
     // private
-    removeFieldAccessors: function(column) {
-        var me = this;
+    removeFieldAccessors: function(columns) {
+        columns = [].concat(columns);
 
-        if (Ext.isArray(column)) {
-            Ext.Array.forEach(column, me.removeFieldAccessors, me);
-            return;
+        var c,
+            cLen = columns.length,
+            column;
+
+        for (c = 0; c < cLen; c++) {
+            column = columns[c];
+
+            delete column.getEditor;
+            delete column.setEditor;
         }
-
-        delete column.getEditor;
-        delete column.setEditor;
     },
 
     // private
@@ -314,18 +333,61 @@ Ext.define('Ext.grid.plugin.Editing', {
 
     // @abstract
     initCancelTriggers: Ext.emptyFn,
-
+    
     // private
     initEditTriggers: function() {
         var me = this,
-            view = me.view,
-            clickEvent = me.clicksToEdit === 1 ? 'click' : 'dblclick';
+            view = me.view;
 
-        // Start editing
-        me.mon(view, 'cell' + clickEvent, me.startEditByClick, me);
+        // Listen for the edit trigger event.
+        if (me.triggerEvent == 'cellfocus') {
+            me.mon(view, 'cellfocus', me.onCellFocus, me);
+        } else if (me.triggerEvent == 'rowfocus') {
+            me.mon(view, 'rowfocus', me.onRowFocus, me);
+        } else {
+
+            // Prevent the View from processing when the SelectionModel focuses.
+            // This is because the SelectionModel processes the mousedown event, and
+            // focusing causes a scroll which means that the subsequent mouseup might
+            // take place at a different document XY position, and will therefore
+            // not trigger a click.
+            // This Editor must call the View's focusCell method directly when we recieve a request to edit
+            if (view.selModel.isCellModel) {
+                view.onCellFocus = Ext.Function.bind(me.beforeViewCellFocus, me);
+            }
+
+            // Listen for whichever click event we are configured to use
+            me.mon(view, me.triggerEvent || ('cell' + (me.clicksToEdit === 1 ? 'click' : 'dblclick')), me.onCellClick, me);
+        }
         view.on('render', me.addHeaderEvents, me, {single: true});
     },
-    
+
+    // Override of View's method so that we can pre-empt the View's processing if the view is being triggered by a mousedown
+    beforeViewCellFocus: function(position) {
+        // Pass call on to view if the navigation is from the keyboard, or we are not going to edit this cell.
+        if (this.view.selModel.keyNavigation || !this.isCellEditable || !this.isCellEditable(position.row, position.columnHeader)) {
+            this.view.focusCell.apply(this.view, arguments);
+        }
+    },
+
+    // private. Used if we are triggered by the rowfocus event
+    onRowFocus: function(record, row, rowIdx) {
+        this.startEdit(row, 0);
+    },
+
+    // private. Used if we are triggered by the cellfocus event
+    onCellFocus: function(record, cell, position) {
+        this.startEdit(position.row, position.column);
+    },
+
+    // private. Used if we are triggered by a cellclick event
+    onCellClick: function(view, cell, colIdx, record, row, rowIdx, e) {
+        // cancel editing if the element that was clicked was a tree expander
+        if(!view.expanderSelector || !e.getTarget(view.expanderSelector)) {
+            this.startEdit(record, view.getHeaderAtIndex(colIdx));
+        }
+    },
+
     addHeaderEvents: function(){
         var me = this;
         me.mon(me.grid.headerCt, {
@@ -368,27 +430,25 @@ Ext.define('Ext.grid.plugin.Editing', {
         // CellSelectionModel
         if (selModel.getCurrentPosition) {
             pos = selModel.getCurrentPosition();
-            record = grid.store.getAt(pos.row);
-            columnHeader = grid.headerCt.getHeaderAtIndex(pos.column);
+            if (pos) {
+                record = grid.store.getAt(pos.row);
+                columnHeader = grid.headerCt.getHeaderAtIndex(pos.column);
+            }
         }
         // RowSelectionModel
         else {
             record = selModel.getLastSelected();
         }
-        me.startEdit(record, columnHeader);
+
+        // If there was a selection to provide a starting context...
+        if (record && columnHeader) {
+            me.startEdit(record, columnHeader);
+        }
     },
 
     // private
     onEscKey: function(e) {
         this.cancelEdit();
-    },
-
-    // private
-    startEditByClick: function(view, cell, colIdx, record, row, rowIdx, e) {
-        // cancel editing if the element that was clicked was a tree expander
-        if(!view.expanderSelector || !e.getTarget(view.expanderSelector)) {
-            this.startEdit(record, view.getHeaderAtIndex(colIdx));
-        }
     },
 
     /**
@@ -409,7 +469,7 @@ Ext.define('Ext.grid.plugin.Editing', {
         var me = this,
             context = me.getEditingContext(record, columnHeader);
 
-        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel) {
+        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel || !me.grid.view.isVisible(true)) {
             return false;
         }
 
@@ -417,6 +477,7 @@ Ext.define('Ext.grid.plugin.Editing', {
         me.editing = true;
     },
 
+    // TODO: Have this use a new class Ext.grid.CellContext for use here, and in CellSelectionModel
     /**
      * @private
      * Collects all information necessary for any subclasses to perform their editing functions.
@@ -429,13 +490,16 @@ Ext.define('Ext.grid.plugin.Editing', {
             grid = me.grid,
             view = grid.getView(),
             node = view.getNode(record),
-            rowIdx, colIdx, value;
+            rowIdx, colIdx;
+
+        // An intervening listener may have deleted the Record
+        if (!node) {
+            return;
+        }
 
         // Coerce the column index to the closest visible column
         columnHeader = grid.headerCt.getVisibleHeaderClosestToIndex(Ext.isNumber(columnHeader) ? columnHeader : columnHeader.getIndex());
         colIdx = columnHeader.getIndex();
-
-        view = columnHeader.ownerCt.lockableInjected ? (columnHeader.locked ? view.lockedView : view.normalView) : view;
 
         if (Ext.isNumber(record)) {
             // look up record if numeric row index was passed
@@ -445,16 +509,15 @@ Ext.define('Ext.grid.plugin.Editing', {
             rowIdx = view.indexOf(node);
         }
 
-        value = record.get(columnHeader.dataIndex);
         return {
-            grid: grid,
-            record: record,
-            field: columnHeader.dataIndex,
-            value: value,
-            row: view.getNode(rowIdx),
-            column: columnHeader,
-            rowIdx: rowIdx,
-            colIdx: colIdx
+            grid   : grid,
+            record : record,
+            field  : columnHeader.dataIndex,
+            value  : record.get(columnHeader.dataIndex),
+            row    : view.getNode(rowIdx),
+            column : columnHeader,
+            rowIdx : rowIdx,
+            colIdx : colIdx
         };
     },
 

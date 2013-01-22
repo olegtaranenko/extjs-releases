@@ -90,7 +90,7 @@
  *
  * @singleton
  */
-Ext.define('Ext.tip.QuickTipManager', function() {
+Ext.define('Ext.tip.QuickTipManager', (function() {
     var tip,
         disabled = false;
 
@@ -112,7 +112,7 @@ Ext.define('Ext.tip.QuickTipManager', function() {
             if (!tip) {
                 if (!Ext.isReady) {
                     Ext.onReady(function(){
-                        Ext.tip.QuickTipManager.init(autoRender);
+                        Ext.tip.QuickTipManager.init(autoRender, config);
                     });
                     return;
                 }
@@ -236,4 +236,4 @@ Ext.define('Ext.tip.QuickTipManager', function() {
             tip.register.apply(tip, arguments);
         }
     };
-}());
+}()));

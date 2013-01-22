@@ -132,42 +132,38 @@ Ext.define('Ext.chart.series.Scatter', {
         var me = this,
             chart = me.chart,
             store = chart.getChartStore(),
-            axes = [].concat(me.axis),
+            chartAxes = chart.axes,
+            boundAxes = me.getAxesForXAndYFields(),
+            boundXAxis = boundAxes.xAxis,
+            boundYAxis = boundAxes.yAxis,
             bbox, xScale, yScale, ln, minX, minY, maxX, maxY, i, axis, ends;
 
         me.setBBox();
         bbox = me.bbox;
 
-        for (i = 0, ln = axes.length; i < ln; i++) {
-            axis = chart.axes.get(axes[i]);
-            if (axis) {
-                ends = axis.calcEnds();
-                if (axis.position == 'top' || axis.position == 'bottom') {
-                    minX = ends.from;
-                    maxX = ends.to;
-                }
-                else {
-                    minY = ends.from;
-                    maxY = ends.to;
-                }
-            }
+        if (axis = chartAxes.get(boundXAxis)) {
+            ends = axis.applyData();
+            minX = ends.from;
+            maxX = ends.to;
         }
+
+        if (axis = chartAxes.get(boundYAxis)) {
+            ends = axis.applyData();
+            minY = ends.from;
+            maxY = ends.to;
+        }
+
         // If a field was specified without a corresponding axis, create one to get bounds
         if (me.xField && !Ext.isNumber(minX)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
-                chart: chart,
-                fields: [].concat(me.xField)
-            }).calcEnds();
-            minX = axis.from;
-            maxX = axis.to;
+            axis = me.getMinMaxXValues();
+            minX = axis[0];
+            maxX = axis[1];
         }
+
         if (me.yField && !Ext.isNumber(minY)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
-                chart: chart,
-                fields: [].concat(me.yField)
-            }).calcEnds();
-            minY = axis.from;
-            maxY = axis.to;
+            axis = me.getMinMaxYValues();
+            minY = axis[0];
+            maxY = axis[1];
         }
 
         if (isNaN(minX)) {
@@ -203,6 +199,8 @@ Ext.define('Ext.chart.series.Scatter', {
             chart = me.chart,
             enableShadows = chart.shadow,
             store = chart.getChartStore(),
+            data = store.data.items,
+            i, ln, record,
             group = me.group,
             bounds = me.bounds = me.getBounds(),
             bbox = me.bbox,
@@ -217,7 +215,8 @@ Ext.define('Ext.chart.series.Scatter', {
             attrs = [],
             x, y, xValue, yValue, sprite;
 
-        store.each(function(record, i) {
+        for (i = 0, ln = data.length; i < ln; i++) {
+            record = data[i];
             xValue = record.get(me.xField);
             yValue = record.get(me.yField);
             //skip undefined or null values
@@ -228,7 +227,7 @@ Ext.define('Ext.chart.series.Scatter', {
                     Ext.global.console.warn("[Ext.chart.series.Scatter]  Skipping a store element with a value which is either undefined or null  at ", record, xValue, yValue);
                 }
                 //</debug>
-                return;
+                continue;
             }
             // Ensure a value
             if (typeof xValue == 'string' || typeof xValue == 'object' && !Ext.isDate(xValue)) {
@@ -261,7 +260,7 @@ Ext.define('Ext.chart.series.Scatter', {
                     }
                 }
             }
-        });
+        }
         return attrs;
     },
 

@@ -96,6 +96,14 @@ Ext.define('Ext.chart.Legend', {
      * Whether or not the legend should be displayed.
      */
     visible: true,
+    
+    /**
+     * @cfg {Boolean} update
+     * If set to true the legend will be refreshed when the chart is.
+     * This is useful to update the legend items if series are
+     * added/removed/updated from the chart. Default is true.
+     */
+    update: true,
 
     /**
      * @cfg {String} position
@@ -197,7 +205,10 @@ Ext.define('Ext.chart.Legend', {
      * @private Create all the sprites for the legend
      */
     create: function() {
-        var me = this;
+        var me = this,
+            seriesItems = me.chart.series.items,
+            i, ln, series;
+
         me.createBox();
         
         if (me.rebuild !== false) {
@@ -208,12 +219,13 @@ Ext.define('Ext.chart.Legend', {
             me.created = true;
 
             // Listen for changes to series titles to trigger regeneration of the legend
-            me.chart.series.each(function(series) {
+            for (i = 0, ln = seriesItems.length; i < ln; i++) {
+                series = seriesItems[i];
                 series.on('titlechange', function() {
                     me.create();
                     me.updatePosition();
                 });
-            });
+            }
         }
     },
 
@@ -231,6 +243,8 @@ Ext.define('Ext.chart.Legend', {
     createItems: function() {
         var me = this,
             chart = me.chart,
+            seriesItems = chart.series.items,
+            ln, series,
             surface = chart.surface,
             items = me.items,
             padding = me.padding,
@@ -247,7 +261,8 @@ Ext.define('Ext.chart.Legend', {
             index = 0,
             i = 0,
             len = items ? items.length : 0,
-            x, y, spacing, item, bbox, height, width;
+            x, y, spacing, item, bbox, height, width,
+            fields, field, nFields, j;
 
         //remove all legend items
         if (len) {
@@ -259,9 +274,12 @@ Ext.define('Ext.chart.Legend', {
         items.length = [];
         // Create all the item labels, collecting their dimensions and positioning each one
         // properly in relation to the previous item
-        chart.series.each(function(series, i) {
+        for (i = 0, ln = seriesItems.length; i < ln; i++) {
+            series = seriesItems[i];
             if (series.showInLegend) {
-                Ext.each([].concat(series.yField), function(field, j) {
+                fields = [].concat(series.yField);
+                for (j = 0, nFields = fields.length; j < nFields; j++) {
+                    field = fields[j];
                     item = new Ext.chart.LegendItem({
                         legend: this,
                         series: series,
@@ -291,9 +309,9 @@ Ext.define('Ext.chart.Legend', {
                     maxHeight = mmax(maxHeight, height);
 
                     items.push(item);
-                }, this);
+                }
             }
-        }, me);
+        }
 
         // Store the collected dimensions for later
         me.width = mfloor((vertical ? maxWidth : totalWidth) + padding * 2);
@@ -355,6 +373,8 @@ Ext.define('Ext.chart.Legend', {
      */
     updatePosition: function() {
         var me = this,
+            items = me.items,
+            i, ln,
             x, y,
             legendWidth = me.width || 0,
             legendHeight = me.height || 0,
@@ -397,9 +417,9 @@ Ext.define('Ext.chart.Legend', {
             me.y = y;
 
             // Update the position of each item
-            Ext.each(me.items, function(item) {
-                item.updatePosition();
-            });
+            for (i = 0, ln = items.length; i < ln; i++) {
+                items[i].updatePosition();
+            }
 
             bbox = me.getBBox();
 

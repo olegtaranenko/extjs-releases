@@ -79,7 +79,6 @@ Ext.define('Ext.grid.RowEditor', {
             me.setField(me.fields);
             delete me.fields;
         }
-        me.hasFields = true;
 
         form = me.getForm();
         form.trackResetOnLoad = true;
@@ -238,7 +237,7 @@ Ext.define('Ext.grid.RowEditor', {
             fieldEl;
 
         if (!column.isGroupHeader) {
-            field = column.getEditor(),
+            field = column.getEditor();
             fieldEl = field.el;
             me.remove(field, false);
             if (fieldEl) {
@@ -252,10 +251,14 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     clearFields: function() {
-        var map = this.columns;
-        map.each(function(fieldId) {
-            map.removeAtKey(fieldId);
-        });
+        var map = this.columns,
+            key;
+
+        for (key in map) {
+            if (map.hasOwnProperty(key)) {
+                map.removeAtKey(key);
+            }
+        }
     },
 
     getFloatingButtons: function() {
@@ -342,7 +345,9 @@ Ext.define('Ext.grid.RowEditor', {
                 if (animateConfig && animateConfig.callback) {
                     animateConfig.callback.call(animateConfig.scope || me);
                 }
-            };
+            },
+            
+            animObj;
 
         // need to set both top/left
         if (row && Ext.isElement(row.dom)) {
@@ -364,7 +369,7 @@ Ext.define('Ext.grid.RowEditor', {
             }
 
             if (animateConfig) {
-                var animObj = {
+                animObj = {
                     to: {
                         y: y
                     },
@@ -416,10 +421,16 @@ Ext.define('Ext.grid.RowEditor', {
 
     setField: function(column) {
         var me = this,
-            field;
+            i,
+            length, field;
 
         if (Ext.isArray(column)) {
-            Ext.Array.forEach(column, me.setField, me);
+            length = column.length;
+
+            for (i = 0; i < length; i++) {
+                me.setField(column[i]);
+            }
+
             return;
         }
 
@@ -451,25 +462,31 @@ Ext.define('Ext.grid.RowEditor', {
         me.columns.add(field.id, column);
         if (column.hidden) {
             me.onColumnHide(column);
-        } else if (me.hasFields) {
+        } else if (column.rendered) {
             // Setting after initial render
             me.onColumnShow(column);
         }
     },
 
     loadRecord: function(record) {
-        var me = this,
-            form = me.getForm(),
-            fields = form.getFields();
+        var me     = this,
+            form   = me.getForm(),
+            fields = form.getFields(),
+            items  = fields.items,
+            length = items.length,
+            i, displayFields;
             
         // temporarily suspend events on form fields before loading record to prevent the fields' change events from firing
-        fields.each(function(field) {
-            field.suspendEvents();
-        });
+        for (i = 0; i < length; i++) {
+            items[i].suspendEvents();
+        }
+
         form.loadRecord(record);
-        fields.each(function(field) {
-            field.resumeEvents();
-        });
+
+        for (i = 0; i < length; i++) {
+            items[i].resumeEvents();
+        }
+
         if (me.errorSummary) {
             if (form.isValid()) {
                 me.hideToolTip();
@@ -479,9 +496,12 @@ Ext.define('Ext.grid.RowEditor', {
         }
 
         // render display fields so they honor the column renderer/template
-        Ext.Array.forEach(me.query('>displayfield'), function(field) {
-            me.renderColumnData(field, record);
-        }, me);
+        displayFields = me.query('>displayfield');
+        length = displayFields.length;
+
+        for (i = 0; i < length; i++) {
+            me.renderColumnData(displayFields[i], record);
+        }
     },
 
     renderColumnData: function(field, record, activeColumn) {
@@ -567,20 +587,26 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     cancelEdit: function() {
-        var me = this,
-            form = me.getForm(),
-            fields = form.getFields();
+        var me     = this,
+            form   = me.getForm(),
+            fields = form.getFields(),
+            items  = fields.items,
+            length = items.length,
+            i;
 
         me.hide();
         form.clearInvalid();
+
         // temporarily suspend events on form fields before reseting the form to prevent the fields' change events from firing
-        fields.each(function(field) {
-            field.suspendEvents();
-        });
+        for (i = 0; i < length; i++) {
+            items[i].suspendEvents();
+        }
+
         form.reset();
-        fields.each(function(field) {
-            field.resumeEvents();
-        });
+
+        for (i = 0; i < length; i++) {
+            items[i].resumeEvents();
+        }
     },
 
     completeEdit: function() {
@@ -648,7 +674,7 @@ Ext.define('Ext.grid.RowEditor', {
 
         tip.setTarget(row);
         tip.showAt([-10000, -10000]);
-        tip.body.update(me.getErrors());
+        tip.update(me.getErrors());
         tip.mouseOffset = [viewEl.getWidth() - row.getWidth() + me.lastScrollLeft + 15, 0];
         me.repositionTip();
         tip.doLayout();
@@ -678,17 +704,22 @@ Ext.define('Ext.grid.RowEditor', {
     },
 
     getErrors: function() {
-        var me = this,
+        var me        = this,
             dirtyText = !me.autoCancel && me.isDirty() ? me.dirtyText + '<br />' : '',
-            errors = [];
+            errors    = [],
+            fields    = me.query('>[isFormField]'),
+            length    = fields.length,
+            i;
 
-        Ext.Array.forEach(me.query('>[isFormField]'), function(field) {
+        function createListItem(e) {
+            return '<li>' + e + '</li>';
+        }
+
+        for (i = 0; i < length; i++) {
             errors = errors.concat(
-                Ext.Array.map(field.getErrors(), function(e) {
-                    return '<li>' + e + '</li>';
-                })
+                Ext.Array.map(fields[i].getErrors(), createListItem)
             );
-        }, me);
+        }
 
         return dirtyText + '<ul>' + errors.join('') + '</ul>';
     },

@@ -279,7 +279,7 @@ Ext.define('Ext.form.field.Text', {
              */
             'keypress'
         );
-
+        me.addStateEvents('change');
         me.setGrowSizePolicy();
     },
     
@@ -513,6 +513,17 @@ Ext.define('Ext.form.field.Text', {
         }
         if(!this.maskRe.test(charCode)){
             e.stopEvent();
+        }
+    },
+
+    getState: function() {
+        return this.addPropertyToState(this.callParent(), 'value');
+    },
+
+    applyState: function(state) {
+        this.callParent(arguments);
+        if(state.hasOwnProperty('value')) {
+            this.setValue(state.value);
         }
     },
 

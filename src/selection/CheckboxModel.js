@@ -17,11 +17,9 @@ Ext.define('Ext.selection.CheckboxModel', {
     mode: 'MULTI',
 
     /**
-     * @cfg {Number/Boolean/String} injectCheckbox
-     * Instructs the SelectionModel whether or not to inject the checkbox header
-     * automatically or not. (Note: By not placing the checkbox in manually, the
-     * grid view will need to be rendered 2x on initial render.)
-     * Supported values are a Number index, false and the strings 'first' and 'last'.
+     * @cfg {Number/String} [injectCheckbox=0]
+     * The index at which to insert the checkbox column.
+     * Supported values are a numeric index, and the strings 'first' and 'last'.
      */
     injectCheckbox: 0,
 
@@ -33,7 +31,7 @@ Ext.define('Ext.selection.CheckboxModel', {
     
     /**
      * @cfg {Boolean} showHeaderCheckbox
-     * False to not display the header checkbox at the top of the column.
+     * Configure as `false` to not display the header checkbox at the top of the column.
      */
     showHeaderCheckbox: true,
 
@@ -47,23 +45,28 @@ Ext.define('Ext.selection.CheckboxModel', {
 
         me.sortable = false;
         me.callParent(arguments);
+
+        // if we have a locked header, only hook up to the first
         if (!me.hasLockedHeader() || view.headerCt.lockedCt) {
-            // if we have a locked header, only hook up to the first
-            view.headerCt.on('headerclick', me.onHeaderClick, me);
+            if (me.showHeaderCheckbox !== false) {
+                view.headerCt.on('headerclick', me.onHeaderClick, me);
+            }
             me.addCheckbox(true);
             me.mon(view.ownerCt, 'reconfigure', me.onReconfigure, me);
         }
     },
 
     hasLockedHeader: function(){
-        var hasLocked = false;
-        Ext.each(this.views, function(view){
-            if (view.headerCt.lockedCt) {
-                hasLocked = true;
-                return false;
+        var views     = this.views,
+            vLen      = views.length,
+            v;
+
+        for (v = 0; v < vLen; v++) {
+            if (views[v].headerCt.lockedCt) {
+                return true;
             }
-        });
-        return hasLocked;
+        }
+        return false;
     },
 
     /**
@@ -77,13 +80,16 @@ Ext.define('Ext.selection.CheckboxModel', {
             view = me.views[0],
             headerCt = view.headerCt;
 
+        // Preserve behaviour of false, but not clear why that would ever be done.
         if (checkbox !== false) {
             if (checkbox == 'first') {
                 checkbox = 0;
             } else if (checkbox == 'last') {
                 checkbox = headerCt.getColumnCount();
             }
+            Ext.suspendLayouts();
             headerCt.add(checkbox,  me.getHeaderConfig());
+            Ext.resumeLayouts();
         }
 
         if (initial !== true) {
@@ -188,7 +194,8 @@ Ext.define('Ext.selection.CheckboxModel', {
     onRowMouseDown: function(view, record, item, index, e) {
         view.el.focus();
         var me = this,
-            checker = e.getTarget('.' + Ext.baseCSSPrefix + 'grid-row-checker');
+            checker = e.getTarget('.' + Ext.baseCSSPrefix + 'grid-row-checker'),
+            mode;
             
         if (!me.allowRightMouseSelection(e)) {
             return;
@@ -200,7 +207,7 @@ Ext.define('Ext.selection.CheckboxModel', {
         }
 
         if (checker) {
-            var mode = me.getSelectionMode();
+            mode = me.getSelectionMode();
             // dont change the mode if its single otherwise
             // we would get multiple selection
             if (mode !== 'SINGLE') {

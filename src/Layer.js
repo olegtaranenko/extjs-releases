@@ -70,6 +70,8 @@ Ext.define('Ext.Layer', {
     statics: {
         shims: []
     },
+    
+    isLayer: true,
 
     /**
      * Creates new Layer.
@@ -219,15 +221,15 @@ Ext.define('Ext.Layer', {
     sync: function(doShow) {
         var me = this,
             shadow = me.shadow,
-            shadowPos, shimStyle, shadowSize;
+            shadowPos, shimStyle, shadowSize,
+            shim, l, t, w, h, shimIndex;
 
         if (!me.updating && me.isVisible() && (shadow || me.useShim)) {
-            var shim = me.getShim(),
-                l = me.getLeft(true),
-                t = me.getTop(true),
-                w = me.dom.offsetWidth,
-                h = me.dom.offsetHeight,
-                shimIndex;
+            shim = me.getShim();
+            l = me.getLeft(true);
+            t = me.getTop(true);
+            w = me.dom.offsetWidth;
+            h = me.dom.offsetHeight;
 
             if (shadow && !me.shadowDisabled) {
                 if (doShow && !shadow.isVisible()) {
@@ -532,10 +534,10 @@ Ext.define('Ext.Layer', {
         return me.setStyle('z-index', zindex);
     },
     
-    setOpacity: function(opacity){
-        if (this.shadow) {
-            this.shadow.setOpacity(opacity);
+    onOpacitySet: function(opacity){
+        var shadow = this.shadow;
+        if (shadow) {
+            shadow.setOpacity(opacity);
         }
-        return this.callParent(arguments);
     }
 });

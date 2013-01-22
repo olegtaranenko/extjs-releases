@@ -94,6 +94,10 @@ Ext.define('Ext.util.Floating', {
             me.constrainTo = floatParent ? floatParent.getTargetEl() : me.container;
         }
     },
+    
+    onAfterFloatLayout: function(){
+        this.syncShadow();   
+    },
 
     onFloatParentHide: function() {
         var me = this;
@@ -169,13 +173,11 @@ Ext.define('Ext.util.Floating', {
      * @return {Number[]} The x/y constraints
      */
     getConstrainVector: function(constrainTo){
-        var me = this,
-            el;
+        var me = this;
 
         if (me.constrain || me.constrainHeader) {
-            el = me.constrainHeader ? me.header.el : me.el;
             constrainTo = constrainTo || (me.floatParent && me.floatParent.getTargetEl()) || me.container || me.el.getScopeParent();
-            return el.getConstrainVector(constrainTo);
+            return (me.constrainHeader ? me.header.el : me.el).getConstrainVector(constrainTo);
         }
     },
 
@@ -212,7 +214,7 @@ Ext.define('Ext.util.Floating', {
 
         // Find the floating Component which provides the base for this Component's zIndexing.
         // That must move to front to then be able to rebase its zIndex stack and move this to the front
-        if (me.zIndexParent) {
+        if (me.zIndexParent && me.bringParentToFront !== false) {
             me.zIndexParent.toFront(true);
         }
         

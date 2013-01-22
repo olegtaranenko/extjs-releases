@@ -95,7 +95,7 @@ Ext.define('Ext.calendar.view.DayBody', {
 
     /**
      * Scrolls the container to the specified vertical position. If the view is large enough that
-     * there is no scroll overflow then this method will have no affect.
+     * there is no scroll overflow then this method will have no effect.
      * @param {Number} y The new vertical scroll position in pixels 
      * @param {Boolean} defer (optional) <p>True to slightly defer the call, false to execute immediately.</p> 
      * <p>This method will automatically defer itself for IE and Opera (even if you pass false) otherwise
@@ -107,12 +107,12 @@ Ext.define('Ext.calendar.view.DayBody', {
         defer = defer || (Ext.isIE || Ext.isOpera);
         if (defer) {
             Ext.defer(function() {
-                this.el.scrollTo('top', y);
+                this.el.scrollTo('top', y, true);
                 this.scrollReady = true;
             }, 10, this);
         }
         else {
-            this.el.scrollTo('top', y);
+            this.el.scrollTo('top', y, true);
             this.scrollReady = true;
         }
     },
@@ -184,22 +184,22 @@ Ext.define('Ext.calendar.view.DayBody', {
         if (!this.eventTpl) {
             this.eventTpl = !(Ext.isIE || Ext.isOpera) ?
             new Ext.XTemplate(
-            '<div id="{_elId}" class="{_selectorCls} {_colorCls} ext-cal-evt ext-cal-evr" style="left: {_left}%; width: {_width}%; top: {_top}px; height: {_height}px;">',
-            '<div class="ext-evt-bd">', this.getEventBodyMarkup(), '</div>',
-            '<div class="ext-evt-rsz"><div class="ext-evt-rsz-h">&nbsp;</div></div>',
-            '</div>'
+                '<div id="{_elId}" class="{_selectorCls} {_colorCls} ext-cal-evt ext-cal-evr" style="left: {_left}%; width: {_width}%; top: {_top}px; height: {_height}px;">',
+                '<div class="ext-evt-bd">', this.getEventBodyMarkup(), '</div>',
+                '<div class="ext-evt-rsz"><div class="ext-evt-rsz-h">&nbsp;</div></div>',
+                '</div>'
             )
             : new Ext.XTemplate(
-            '<div id="{_elId}" class="ext-cal-evt {_selectorCls} {_colorCls}-x" style="left: {_left}%; width: {_width}%; top: {_top}px;">',
-            '<div class="ext-cal-evb">&nbsp;</div>',
-            '<dl style="height: {_height}px;" class="ext-cal-evdm">',
-            '<dd class="ext-evt-bd">',
-            this.getEventBodyMarkup(),
-            '</dd>',
-            '<div class="ext-evt-rsz"><div class="ext-evt-rsz-h">&nbsp;</div></div>',
-            '</dl>',
-            '<div class="ext-cal-evb">&nbsp;</div>',
-            '</div>'
+                '<div id="{_elId}" class="ext-cal-evt {_selectorCls} {_colorCls}-x" style="left: {_left}%; width: {_width}%; top: {_top}px;">',
+                '<div class="ext-cal-evb">&nbsp;</div>',
+                '<dl style="height: {_height}px;" class="ext-cal-evdm">',
+                '<dd class="ext-evt-bd">',
+                this.getEventBodyMarkup(),
+                '</dd>',
+                '<div class="ext-evt-rsz"><div class="ext-evt-rsz-h">&nbsp;</div></div>',
+                '</dl>',
+                '<div class="ext-cal-evb">&nbsp;</div>',
+                '</div>'
             );
             this.eventTpl.compile();
         }
@@ -224,19 +224,19 @@ Ext.define('Ext.calendar.view.DayBody', {
 
             tpl = !(Ext.isIE || Ext.isOpera) ?
             new Ext.XTemplate(
-            '<div id="{_elId}" class="{_selectorCls} {_colorCls} {spanCls} ext-cal-evt ext-cal-evr" style="left: {_left}%; width: {_width}%; top: {_top}px; height: {_height}px;">',
-            body,
-            '</div>'
+                '<div id="{_elId}" class="{_selectorCls} {_colorCls} {spanCls} ext-cal-evt ext-cal-evr" style="left: {_left}%; width: {_width}%; top: {_top}px; height: {_height}px;">',
+                body,
+                '</div>'
             )
             : new Ext.XTemplate(
-            '<div id="{_elId}" class="ext-cal-evt" style="left: {_left}%; width: {_width}%; top: {_top}px; height: {_height}px;">',
-            '<div class="{_selectorCls} {spanCls} {_colorCls} ext-cal-evo">',
-            '<div class="ext-cal-evm">',
-            '<div class="ext-cal-evi">',
-            body,
-            '</div>',
-            '</div>',
-            '</div></div>'
+                '<div id="{_elId}" class="ext-cal-evt" style="left: {_left}%; width: {_width}%; top: {_top}px; height: {_height}px;">',
+                '<div class="{_selectorCls} {spanCls} {_colorCls} ext-cal-evo">',
+                '<div class="ext-cal-evm">',
+                '<div class="ext-cal-evi">',
+                body,
+                '</div>',
+                '</div>',
+                '</div></div>'
             );
             tpl.compile();
             this.eventAllDayTpl = tpl;
@@ -247,13 +247,13 @@ Ext.define('Ext.calendar.view.DayBody', {
     // private
     getTemplateEventData: function(evt) {
         var selector = this.getEventSelectorCls(evt[Ext.calendar.data.EventMappings.EventId.name]),
-        data = {},
-        M = Ext.calendar.data.EventMappings;
+            data = {},
+            M = Ext.calendar.data.EventMappings;
 
         this.getTemplateEventBox(evt);
 
         data._selectorCls = selector;
-        data._colorCls = 'ext-color-' + evt[M.CalendarId.name] + (evt._renderAsAllDay ? '-ad': '');
+        data._colorCls = 'ext-color-' + (evt[M.CalendarId.name] || '0') + (evt._renderAsAllDay ? '-ad': '');
         data._elId = selector + (evt._weekIndex ? '-' + evt._weekIndex: '');
         data._isRecurring = evt.Recurrence && evt.Recurrence != '';
         data._isReminder = evt[M.Reminder.name] && evt[M.Reminder.name] != '';
@@ -289,6 +289,9 @@ Ext.define('Ext.calendar.view.DayBody', {
             i,
             j,
             l,
+            emptyCells, skipped,
+            evt,
+            evt2,
             overlapCols,
             prevCol,
             colWidth,
@@ -388,24 +391,23 @@ Ext.define('Ext.calendar.view.DayBody', {
 
     // private
     getDayAt: function(x, y) {
-        var sel = '.ext-cal-body-ct',
-        xoffset = this.el.down('.ext-cal-day-times').getWidth(),
-        viewBox = this.el.getBox(),
-        daySize = this.getDaySize(false),
-        relX = x - viewBox.x - xoffset,
-        dayIndex = Math.floor(relX / daySize.width),
-        // clicked col index
-        scroll = this.el.getScroll(),
-        row = this.el.down('.ext-cal-bg-row'),
-        // first avail row, just to calc size
-        rowH = row.getHeight() / 2,
-        // 30 minute increment since a row is 60 minutes
-        relY = y - viewBox.y - rowH + scroll.top,
-        rowIndex = Math.max(0, Math.ceil(relY / rowH)),
-        mins = rowIndex * 30,
-        dt = Ext.calendar.util.Date.add(this.viewStart, {days: dayIndex, minutes: mins}),
-        el = this.getDayEl(dt),
-        timeX = x;
+        var xoffset = this.el.down('.ext-cal-day-times').getWidth(),
+            viewBox = this.el.getBox(),
+            daySize = this.getDaySize(false),
+            relX = x - viewBox.x - xoffset,
+            dayIndex = Math.floor(relX / daySize.width),
+            // clicked col index
+            scroll = this.el.getScroll(),
+            row = this.el.down('.ext-cal-bg-row'),
+            // first avail row, just to calc size
+            rowH = row.getHeight() / 2,
+            // 30 minute increment since a row is 60 minutes
+            relY = y - viewBox.y - rowH + scroll.top,
+            rowIndex = Math.max(0, Math.ceil(relY / rowH)),
+            mins = rowIndex * 30,
+            dt = Ext.calendar.util.Date.add(this.viewStart, {days: dayIndex, minutes: mins}),
+            el = this.getDayEl(dt),
+            timeX = x;
 
         if (el) {
             timeX = el.getLeft();
