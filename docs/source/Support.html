@@ -772,28 +772,32 @@ Ext.supports = {
          */
         {
             identity: 'PercentageHeightOverflowBug',
-            fn: function() {
+            fn: function(doc) {
                 var hasBug = false,
-                    el;
+                    style, el;
 
                 if (Ext.getScrollbarSize().height) {
                     // must have space-consuming scrollbars for bug to be possible
-                    el = Ext.getBody().createChild([
-                        '&lt;div style=&quot;height:50px;width:50px;overflow:auto;position:absolute;&quot;&gt;',
-                            '&lt;div style=&quot;display:table;height:100%;&quot;&gt;',
-                                // The element that causes the horizontal overflow must be 
-                                // a child of the element with the 100% height, otherwise
-                                // horizontal overflow is not triggered in webkit quirks mode
-                                '&lt;div style=&quot;width:51px;&quot;&gt;&lt;/div&gt;',
-                            '&lt;/div&gt;',
+                    el = doc.createElement('div');
+                    style = el.style;
+                    style.height = '50px';
+                    style.width = '50px';
+                    style.overflow = 'auto';
+                    style.position = 'absolute';
+                    
+                    el.innerHTML = [
+                        '&lt;div style=&quot;display:table;height:100%;&quot;&gt;',
+                            // The element that causes the horizontal overflow must be 
+                            // a child of the element with the 100% height, otherwise
+                            // horizontal overflow is not triggered in webkit quirks mode
+                            '&lt;div style=&quot;width:51px;&quot;&gt;&lt;/div&gt;',
                         '&lt;/div&gt;'
-                    ].join(''));
-         
-                    if (el.dom.firstChild.offsetHeight === 50) {
+                    ].join('');
+                    doc.body.appendChild(el);
+                    if (el.firstChild.offsetHeight === 50) {
                         hasBug = true;
                     }
-
-                    el.remove();
+                    doc.body.removeChild(el);
                 }
                 
                 return hasBug;

@@ -37,7 +37,7 @@ Ext.define('Ext.data.Errors', {
      */
     getByField: function(fieldName) {
         var errors = [],
-            error, field, i;
+            error, i;
 
         for (i = 0; i < this.length; i++) {
             error = this.items[i];

@@ -126,11 +126,21 @@ Ext.define('Ext.form.field.Text', {
      */
 
     /**
-     * @cfg {Boolean} allowBlank
-     * Specify false to validate that the value's length is > 0
+     * @cfg {Boolean} [allowBlank=true]
+     * Specify false to validate that the value's length must be > 0. If `true`, then a blank value is **always** taken to be valid regardless of any {@link #vtype}
+     * validation that may be applied.
+     *
+     * If {@link #vtype} validation must still be applied to blank values, configure {@link #validateBlank} as `true`;
      */
     allowBlank : true,
-    
+
+    /**
+     * @cfg {Boolean} [validateBlank=false]
+     * Specify as `true` to modify the behaviour of {@link #allowBlank} so that blank values are not passed as valid, but are subject to any configure {@link #vtype} validation.
+     * @since 4.2.0
+     */
+    validateBlank: false,
+
     /**
      * @cfg {Boolean} allowOnlyWhitespace
      * Specify false to automatically trim the value before validating
@@ -677,13 +687,11 @@ Ext.define('Ext.form.field.Text', {
         var me = this,
             errors = me.callParent(arguments),
             validator = me.validator,
-            emptyText = me.emptyText,
-            allowBlank = me.allowBlank,
             vtype = me.vtype,
             vtypes = Ext.form.field.VTypes,
             regex = me.regex,
             format = Ext.String.format,
-            msg, trimmed;
+            msg, trimmed, isBlank;
 
         value = value || me.processRawValue(me.getRawValue());
 
@@ -697,14 +705,19 @@ Ext.define('Ext.form.field.Text', {
         trimmed = me.allowOnlyWhitespace ? value : Ext.String.trim(value);
 
         if (trimmed.length < 1 || (value === me.emptyText && me.valueContainsPlaceholder)) {
-            if (!allowBlank) {
+            if (!me.allowBlank) {
                 errors.push(me.blankText);
             }
-            //if value is blank, there cannot be any additional errors
-            return errors;
+            // If we are not configured to validate blank values, there cannot be any additional errors
+            if (!me.validateBlank) {
+                return errors;
+            }
+            isBlank = true;
         }
 
-        if (value.length < me.minLength) {
+        // If a blank value has been allowed through, then exempt it dfrom the minLength check.
+        // It must be allowed to hit the vtype validation.
+        if (!isBlank && value.length < me.minLength) {
             errors.push(format(me.minLengthText, me.minLength));
         }
 
@@ -713,7 +726,7 @@ Ext.define('Ext.form.field.Text', {
         }
 
         if (vtype) {
-            if(!vtypes[vtype](value, me)){
+            if (!vtypes[vtype](value, me)) {
                 errors.push(me.vtypeText || vtypes[vtype +'Text']);
             }
         }

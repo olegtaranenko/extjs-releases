@@ -63,10 +63,7 @@ Ext.define('Ext.menu.Manager', {
     onShow: function(m) {
         var me = this,
             active   = me.active,
-            last     = active.last(),
-            attached = me.attached,
-            menuEl   = m.getEl(),
-            zIndex;
+            attached = me.attached;
 
         me.lastShow = new Date();
         active.add(m);

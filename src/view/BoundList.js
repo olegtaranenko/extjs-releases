@@ -137,13 +137,7 @@ Ext.define('Ext.view.BoundList', {
         }
     },
 
-    /**
-     * @private
-     * Boundlist-specific implementation of the getBubbleTarget used by {@link Ext.AbstractComponent#up} method.
-     * This links to the owning input field so that the FocusManager, when receiving notification of a hide event,
-     * can find a focusable parent.
-     */
-    getBubbleTarget: function() {
+    getRefOwner: function() {
         return this.pickerField;
     },
 

@@ -134,15 +134,16 @@ Ext.define('Ext.ux.PanelFieldDragZone', {
 
 //  Call the DRagZone's constructor. The Panel must have been rendered.
     init: function(panel) {
+        // Panel is an HtmlElement
         if (panel.nodeType) {
             // Called via dragzone::init
             Ext.ux.PanelFieldDragZone.superclass.init.apply(this, arguments);
-        } else {
+        }
+        // Panel is a Component - need the el
+        else {
             // Called via plugin::init
             if (panel.rendered) {
                 Ext.ux.PanelFieldDragZone.superclass.constructor.call(this, panel.getEl());
-                var i = Ext.fly(panel.getEl()).select('input');
-                i.unselectable();
             } else {
                 panel.on('afterrender', this.init, this, {single: true});
             }

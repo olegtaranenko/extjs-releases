@@ -1,7 +1,11 @@
 @mixin extjs-dragdrop {
+
     // Must always be on top
-    .#{$prefix}dd-drag-proxy {
+    // Pointer events go through so that mousemove fires on the element being dragged *over*
+    .#{$prefix}dd-drag-proxy,
+    .#{$prefix}dd-drag-current {
         z-index: 1000000!important;
+        pointer-events: none;
     }
     
     .#{$prefix}dd-drag-repair {

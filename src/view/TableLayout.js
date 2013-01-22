@@ -46,11 +46,6 @@ Ext.define('Ext.view.TableLayout', {
             lockingPartner = me.lockingPartner,
             contentHeight;
 
-        // Nothing there yet, not worth doing anything
-        if (!me.owner.refreshCounter) {
-            return;
-        }
-
         // We can only complete our work (setting the CSS rules governing column widths) if the
         // Grid's HeaderContainer's ColumnLayout has set the widths of its columns.
         if (ownerContext.headerContext.hasProp('columnWidthsDone')) {

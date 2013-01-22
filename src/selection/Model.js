@@ -46,8 +46,8 @@ Ext.define('Ext.selection.Model', {
      * @cfg {Boolean} [pruneRemoved=true]
      * Remove records from the selection when they are removed from the store.
      *
-     * **Important:** When using {Ext.toolbar.Paging paging} or a {@link Ext.data.Store#buffered sparsely populated (buffered) Store},
-     * records which are cached in the Store's {@link #data collection} may be removed from the Store when pages change,
+     * **Important:** When using {@link Ext.toolbar.Paging paging} or a {@link Ext.data.Store#buffered sparsely populated (buffered) Store},
+     * records which are cached in the Store's {@link Ext.data.Store#property-data data collection} may be removed from the Store when pages change,
      * or when rows are scrolled out of view. For this reason `pruneRemoved` should be set to `false` when using a buffered Store.
      *
      * Also, when previously pruned pages are returned to the cache, the records objects in the page will be
@@ -197,6 +197,116 @@ Ext.define('Ext.selection.Model', {
         }
     },
 
+    // Private
+    // Called after a new record has been navigated to by a keystroke.
+    // Event is passed so that shift and ctrl can be handled.
+    afterKeyNavigate: function(e, record) {
+        var me = this,
+            idx,
+            isSelected = me.isSelected(record),
+            from = this.lastSelected || this.lastFocused,
+            key = e.getCharCode(),
+            isSpace = key === e.SPACE;
+
+        switch (me.selectionMode) {
+            case 'MULTI':
+                
+                if (isSpace) {
+                    // SHIFT+SPACE, select range
+                    if (e.shiftKey) {
+                        me.selectRange(from, record, e.ctrlKey);
+                    } else {
+                        // SPACE pessed on a selected item: deselect but leave it focused.
+                        // e.ctrlKey means "keep existing"
+                        if (isSelected) {
+                            me.doDeselect(record, e.ctrlKey);
+
+                            // This record is already focused. To get the focus effect put on it (as opposed to selected)
+                            // we have to focus null first.
+                            me.setLastFocused(null);
+                            me.setLastFocused(record);
+                        }
+                        // SPACE on an unselected item: select it
+                        else {
+                            me.doSelect(record, e.ctrlKey);
+                        }
+                    }
+                }
+
+                // CTRL-navigate onto a selected item just focuses it
+                else if (e.ctrlKey && isSelected) {
+                    me.setLastFocused(record);
+                }
+                
+                // SHIFT-navigate selects intervening rows from the last selected (or last focused) item and target item
+                else if (e.shiftKey && from) {
+                    
+                    // No movement took place (against start or end limits) - do nothing
+                    if (from === record) {
+                        return;
+                    }
+
+                    // If we are going back *into* the selected range, we deselect.
+                    if (me.isSelected(record) && me.isRangeSelected(from, record)) {
+
+                        // If whole range between from an here is selected, then deselect
+                        // all of it **except the current record**
+                        idx = me.store.indexOf(record);
+                        idx += (me.store.indexOf(from) < idx) ? -1 : 1;
+                        me.deselectRange(from, idx);
+                    } else {
+                        me.selectRange(from, record, true, e === e.UP || e === e.PAGE_UP ? 'up' : 'down');
+                    }
+                    me.lastSelected = record;
+                    me.setLastFocused(record);
+                }
+                
+                // CTRL-navigate, just move focus
+                else if (e.ctrlKey) {
+                    me.setLastFocused(record);
+                }
+
+                // Just navigation - select the target
+                else {
+                    me.doSelect(record, false);
+                }
+                break;
+            case 'SIMPLE':
+                if (isSelected) {
+                    me.doDeselect(record);
+                } else {
+                    me.doSelect(record, true);
+                }
+                break;
+            case 'SINGLE':
+                // Space hit
+                if (isSpace) {
+                    if (isSelected) {
+                        me.doDeselect(record);
+                        me.setLastFocused(record);
+                    } else {
+                        me.doSelect(record);
+                    }
+                }
+
+                // CTRL-navigation: just move focus
+                else if (e.ctrlKey) {
+                    me.setLastFocused(record);
+                }
+
+                // if allowDeselect is on and this record isSelected, deselect it
+                else if (me.allowDeselect && isSelected) {
+                    me.doDeselect(record);
+                }
+                
+                // select the record and do NOT maintain existing selections
+                else {
+                    me.doSelect(record, false);
+                }
+                break;
+        }
+    },
+
     /**
      * Selects a range of rows if the selection model {@link #isLocked is not locked}.
      * All rows in between startRow and endRow are also selected.
@@ -204,7 +314,7 @@ Ext.define('Ext.selection.Model', {
      * @param {Ext.data.Model/Number} endRow The record or index of the last row in the range
      * @param {Boolean} keepExisting (optional) True to retain existing selections
      */
-    selectRange : function(startRow, endRow, keepExisting, dir){
+    selectRange : function(startRow, endRow, keepExisting, dir) {
         var me = this,
             store = me.store,
             selectedCount = 0,
@@ -257,6 +367,44 @@ Ext.define('Ext.selection.Model', {
             }
         }
         me.doMultiSelect(records, true);
+    },
+
+    /**
+     * Deselects a range of rows if the selection model {@link #isLocked is not locked}.
+     * @param {Ext.data.Model/Number} startRow The record or index of the first row in the range
+     * @param {Ext.data.Model/Number} endRow The record or index of the last row in the range
+     */
+    deselectRange : function(startRow, endRow) {
+        var me = this,
+            store = me.store,
+            i,
+            tmp,
+            record;
+
+        if (me.isLocked()){
+            return;
+        }
+
+        if (!Ext.isNumber(startRow)) {
+            startRow = store.indexOf(startRow);
+        }
+        if (!Ext.isNumber(endRow)) {
+            endRow = store.indexOf(endRow);
+        }
+
+        // swap values
+        if (startRow > endRow){
+            tmp = endRow;
+            endRow = startRow;
+            startRow = tmp;
+        }
+
+        for (i = startRow; i <= endRow; i++) {
+            record = store.getAt(i);
+            if (me.isSelected(record)) {
+                me.deselect(record);
+            }
+        }
     },
 
     /**
@@ -524,6 +672,34 @@ Ext.define('Ext.selection.Model', {
 
     /**
      * Returns true if the specified row is selected.
+     * @param {Ext.data.Model/Number} from The start of the range to check.
+     * @param {Ext.data.Model/Number} to The end of the range to check.
+     * @return {Boolean}
+     */
+    isRangeSelected: function(from, to) {
+        var me = this,
+            store = me.store,
+            startIdx = store.indexOf(from),
+            endIdx = store.indexOf(to),
+            i;
+
+        if (endIdx < startIdx) {
+            i = endIdx;
+            endIdx = startIdx;
+            startIdx = i;
+        }
+
+        // Loop through. If any of the range is not selected, the answer is false.
+        for (i = startIdx; i <= endIdx; i++) {
+            if (!me.isSelected(store.getAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    },
+
+    /**
+     * Returns true if the specified row is selected.
      * @param {Ext.data.Model/Number} record The record or index of the record to check
      * @return {Boolean}
      */
@@ -539,18 +715,13 @@ Ext.define('Ext.selection.Model', {
     hasSelection: function() {
         return this.selected.getCount() > 0;
     },
-    
+
     getSelectionId: function(record){
-        var id = record.getId();
-        if (!record.hasId()) {
-            id = record.internalId;
-        }
-        return id;
+        return record.internalId;
     },
-    
+
     pruneIf: function() {
         var me = this,
-            store = me.store,
             selected = me.selected,
             toRemove = [],
             len = selected.length,
@@ -567,20 +738,21 @@ Ext.define('Ext.selection.Model', {
                 for (i = 0, len = toRemove.length; i < len; i++) {
                     selected.remove(toRemove[i]);
                 }
+                me.maybeFireSelectionChange(true);
             }
         }
     },
-    
+
     // We need this special check because we could have a model
     // without an idProperty. getById() is fast, so we use that
     // if possible, otherwise we need to check the internalId
-    storeHasSelected: function(record){
+    storeHasSelected: function(record) {
         var store = this.store,
             records,
             len, id, i;
         
-        if (record.hasId()) {
-            return !!store.getById(record);
+        if (record.hasId() && store.getById(record)) {
+            return true;
         } else {
             records = store.data.items;
             len = records.length;
@@ -632,6 +804,11 @@ Ext.define('Ext.selection.Model', {
                 else {
                     toBeReAdded.push(selection)
                 }
+            }
+
+            // In single select mode, only one record may be selected
+            if (me.mode === 'SINGLE' && toBeReAdded.length) {
+                break;
             }
         }
 
@@ -693,15 +870,20 @@ Ext.define('Ext.selection.Model', {
     // prune records from the SelectionModel if
     // they were selected at the time they were
     // removed.
-    onStoreRemove: function(store, records, indexes) {
+    onStoreRemove: function(store, records, indexes, isMove) {
+        if (isMove || this.locked || !this.pruneRemoved) {
+            return;
+        }
+        this.deselectDeletedRecords(records);
+    },
+
+    // @private
+    // Called by subclasses to deselect records upon detection of deletion from the store
+    deselectDeletedRecords: function(records) {
         var me = this,
             selected = me.selected,
             i, length = records.length,
             record, removed;
-
-        if (me.locked || !me.pruneRemoved) {
-            return;
-        }
 
         // Deselect records which were removed
         for (i = 0; i < length; i++) {

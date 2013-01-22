@@ -47,9 +47,8 @@
  * it is best to avoid animation. More information can be found here: https://bugzilla.mozilla.org/show_bug.cgi?id=90268 
  */
 Ext.define('Ext.form.field.HtmlEditor', {
-    extend:'Ext.Component',
+    extend: 'Ext.form.FieldContainer',
     mixins: {
-        labelable: 'Ext.form.Labelable',
         field: 'Ext.form.field.Field'
     },
     alias: 'widget.htmleditor',
@@ -57,25 +56,21 @@ Ext.define('Ext.form.field.HtmlEditor', {
     requires: [
         'Ext.tip.QuickTipManager',
         'Ext.picker.Color',
+        'Ext.layout.container.VBox',
         'Ext.toolbar.Item',
         'Ext.toolbar.Toolbar',
-        'Ext.util.Format',
-        'Ext.layout.component.field.HtmlEditor'
+        'Ext.util.Format'
     ],
 
-    childEls: [
-        'iframeEl', 'textareaEl', 'wrapEl'
-    ],
-
-    fieldSubTpl: [
+    componentTpl: [
         '{beforeTextAreaTpl}',
-        '<textarea id="{cmpId}-textareaEl" name="{name}" tabIndex="-1" {inputAttrTpl}',
+        '<textarea id="{id}-textareaEl" name="{name}" tabIndex="-1" {inputAttrTpl}',
                  ' class="{textareaCls}" style="{size}" autocomplete="off">',
             '{[Ext.util.Format.htmlEncode(values.value)]}',
         '</textarea>',
         '{afterTextAreaTpl}',
         '{beforeIFrameTpl}',
-        '<iframe id="{cmpId}-iframeEl" name="{iframeName}" frameBorder="0" {iframeAttrTpl}',
+        '<iframe id="{id}-iframeEl" name="{iframeName}" frameBorder="0" {iframeAttrTpl}',
                ' style="{size}" src="{iframeSrc}" class="{iframeCls}"></iframe>',
         '{afterIFrameTpl}',
         {
@@ -203,9 +198,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
      */
     defaultValue: (Ext.isOpera || Ext.isIE6) ? '&#160;' : '&#8203;',
 
-    editorWrapCls: Ext.baseCSSPrefix + 'html-editor-wrap',
-
-    componentLayout: 'htmleditor',
+    fieldBodyCls: Ext.baseCSSPrefix + 'html-editor-wrap',
 
     // @private
     initialized : false,
@@ -217,8 +210,6 @@ Ext.define('Ext.form.field.HtmlEditor', {
     iframePad:3,
     // @private
     hideMode:'offsets',
-
-    afterBodyEl: '</div>',
 
     maskOnDisable: true,
 
@@ -277,21 +268,48 @@ Ext.define('Ext.form.field.HtmlEditor', {
              */
             'editmodechange'
         );
+        
+        me.items = [me.createToolbar(), me.createInputCmp()];
+        
+        me.layout = {
+            type: 'vbox',
+            align: 'stretch'
+        };
 
         me.callParent(arguments);
-        me.createToolbar(me);
-
-        // Init mixins
-        me.initLabelable();
         me.initField();
     },
-
-    /**
-     * @private
-     * Must define this function to allow the Layout base class to collect all descendant layouts to be run.
-     */
-    getRefItems: function() {
-        return [ this.toolbar ];
+    
+    createInputCmp: function(){
+        this.inputCmp = Ext.widget(this.getInputCmpCfg());
+        return this.inputCmp;
+    },
+    
+    getInputCmpCfg: function(){
+        var me = this,
+            id = me.id + '-inputCmp',
+            data = {
+                id          : id,
+                name        : me.name,
+                textareaCls : Ext.baseCSSPrefix + 'hidden',
+                value       : me.value,
+                iframeName  : Ext.id(),
+                iframeSrc   : Ext.SSL_SECURE_URL,
+                iframeCls   : Ext.baseCSSPrefix + 'htmleditor-iframe',
+                size        : 'height:100px;width:100%'
+            };
+            
+        me.getInsertionRenderData(data, me.subTplInsertions);
+            
+        return {
+            flex: 1,
+            xtype: 'component',
+            tpl: me.getTpl('componentTpl'),
+            childEls: ['iframeEl', 'textareaEl'],
+            id: id, 
+            cls: Ext.baseCSSPrefix + 'html-editor-input',
+            data: data 
+        };    
     },
 
     /*
@@ -300,12 +318,17 @@ Ext.define('Ext.form.field.HtmlEditor', {
      * @param {Ext.form.field.HtmlEditor} editor
      * @protected
      */
-    createToolbar : function(editor){
+    createToolbar : function(){
+        this.toolbar = Ext.widget(this.getToolbarCfg());
+        return this.toolbar;
+    },
+    
+    getToolbarCfg: function(){
         var me = this,
             items = [], i,
             tipsEnabled = Ext.quickTipsActive && Ext.tip.QuickTipManager.isEnabled(),
             baseCSSPrefix = Ext.baseCSSPrefix,
-            fontSelectItem, toolbar, undef;
+            fontSelectItem, undef;
 
         function btn(id, toggle, handler){
             return {
@@ -313,11 +336,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 cls : baseCSSPrefix + 'btn-icon',
                 iconCls: baseCSSPrefix + 'edit-'+id,
                 enableToggle:toggle !== false,
-                scope: editor,
-                handler:handler||editor.relayBtnCmd,
+                scope: me,
+                handler:handler||me.relayBtnCmd,
                 clickEvent: 'mousedown',
-                tooltip: tipsEnabled ? editor.buttonTips[id] || undef : undef,
-                overflowText: editor.buttonTips[id].title || undef,
+                tooltip: tipsEnabled ? me.buttonTips[id] || undef : undef,
+                overflowText: me.buttonTips[id].title || undef,
                 tabIndex: -1
             };
         }
@@ -341,8 +364,6 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 afterRender: function() {
                     me.fontSelect = this.selectEl;
                     Ext.Component.prototype.afterRender.apply(this, arguments);
-                    me.relayCmd('fontName', me.defaultFont);
-                    me.deferFocus();
                 },
                 onDisable: function() {
                     var selectEl = this.selectEl;
@@ -396,8 +417,8 @@ Ext.define('Ext.form.field.HtmlEditor', {
                     itemId: 'forecolor',
                     cls: baseCSSPrefix + 'btn-icon',
                     iconCls: baseCSSPrefix + 'edit-forecolor',
-                    overflowText: editor.buttonTips.forecolor.title,
-                    tooltip: tipsEnabled ? editor.buttonTips.forecolor || undef : undef,
+                    overflowText: me.buttonTips.forecolor.title,
+                    tooltip: tipsEnabled ? me.buttonTips.forecolor || undef : undef,
                     tabIndex:-1,
                     menu : Ext.widget('menu', {
                         plain: true,
@@ -422,8 +443,8 @@ Ext.define('Ext.form.field.HtmlEditor', {
                     itemId: 'backcolor',
                     cls: baseCSSPrefix + 'btn-icon',
                     iconCls: baseCSSPrefix + 'edit-backcolor',
-                    overflowText: editor.buttonTips.backcolor.title,
-                    tooltip: tipsEnabled ? editor.buttonTips.backcolor || undef : undef,
+                    overflowText: me.buttonTips.backcolor.title,
+                    tooltip: tipsEnabled ? me.buttonTips.backcolor || undef : undef,
                     tabIndex:-1,
                     menu : Ext.widget('menu', {
                         plain: true,
@@ -498,13 +519,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
 
         // build the toolbar
         // Automatically rendered in AbstractComponent.afterRender's renderChildren call
-        toolbar = Ext.widget('toolbar', {
-            id: me.id + '-toolbar',
-            ownerCt: me,
+        return {
+            xtype: 'toolbar',
             cls: Ext.baseCSSPrefix + 'html-editor-tb',
             enableOverflow: true,
             items: items,
-            ownerLayout: me.getComponentLayout(),
 
             // stop form submits
             listeners: {
@@ -513,15 +532,13 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 },
                 element: 'el'
             }
-        });
-
-        me.toolbar = toolbar;
+        }; 
     },
     
     getMaskTarget: function(){
         // Can't be the body td directly because of issues with absolute positioning
         // inside td's in FF
-        return Ext.isGecko ? this.wrapEl : this.bodyEl;
+        return Ext.isGecko ? this.inputCmp.el : this.bodyEl;
     },
 
     /**
@@ -603,19 +620,16 @@ Ext.define('Ext.form.field.HtmlEditor', {
         return Ext.isIE ? this.iframeEl.dom.contentWindow : window.frames[this.iframeEl.dom.name];
     },
 
-    // Do the job of a container layout at this point even though we are not a Container.
-    // @TODO Refactor as a Container.
-    finishRenderChildren: function () {
-        this.callParent();
-        this.toolbar.finishRender();
-    },
-
     // @private
-    onRender: function() {
-        var me = this;
+    afterRender: function() {
+        var me = this,
+            inputCmp = me.inputCmp;
 
         me.callParent(arguments);
-
+          
+        me.iframeEl = inputCmp.iframeEl;
+        me.textareaEl = inputCmp.textareaEl;
+        
         // The input element is interrogated by the layout to extract height when labelAlign is 'top'
         // It must be set, and then switched between the iframe and the textarea
         me.inputEl = me.iframeEl;
@@ -626,42 +640,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
             scope: me,
             interval: 100
         });
-    },
-
-    initRenderTpl: function() {
-        var me = this;
-        if (!me.hasOwnProperty('renderTpl')) {
-            me.renderTpl = me.getTpl('labelableRenderTpl');
-        }
-        return me.callParent();
-    },
-
-    initRenderData: function() {
-        var me = this;
-        
-        me.beforeSubTpl = '<div id="' + me.id + '-wrapEl" class="' + me.editorWrapCls + '">' + Ext.DomHelper.markup(me.toolbar.getRenderTree());
-        return Ext.applyIf(me.callParent(), me.getLabelableRenderData());
-    },
-
-    getSubTplData: function() {
-        var me = this;
-        
-        return {
-            $comp       : me,
-            cmpId       : me.id,
-            id          : me.getInputId(),
-            name        : me.name,
-            textareaCls : Ext.baseCSSPrefix + 'hidden',
-            value       : me.value,
-            iframeName  : Ext.id(),
-            iframeSrc   : Ext.SSL_SECURE_URL,
-            iframeCls   : Ext.baseCSSPrefix + 'htmleditor-iframe',
-            size        : 'height:100px;width:100%'
-        };
-    },
-
-    getSubTplMarkup: function() {
-        return this.getTpl('fieldSubTpl').apply(this.getSubTplData());
+        me.relayCmd('fontName', me.defaultFont);
     },
 
     initFrameDoc: function() {
@@ -1039,9 +1018,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
             } catch(e) {
                 // ignore (why?)
             }
-            Ext.destroyMembers(me, 'iframeEl', 'textareaEl', 'wrapEl');
+            delete me.iframeEl;
+            delete me.textareaEl;
+            delete me.toolbar;
+            delete me.inputCmp;
         }
-        Ext.destroyMembers(me, 'toolbar');
         me.callParent();
     },
 

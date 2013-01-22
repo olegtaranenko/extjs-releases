@@ -755,28 +755,32 @@ Ext.supports = {
          */
         {
             identity: 'PercentageHeightOverflowBug',
-            fn: function() {
+            fn: function(doc) {
                 var hasBug = false,
-                    el;
+                    style, el;
 
                 if (Ext.getScrollbarSize().height) {
                     // must have space-consuming scrollbars for bug to be possible
-                    el = Ext.getBody().createChild([
-                        '<div style="height:50px;width:50px;overflow:auto;position:absolute;">',
-                            '<div style="display:table;height:100%;">',
-                                // The element that causes the horizontal overflow must be 
-                                // a child of the element with the 100% height, otherwise
-                                // horizontal overflow is not triggered in webkit quirks mode
-                                '<div style="width:51px;"></div>',
-                            '</div>',
+                    el = doc.createElement('div');
+                    style = el.style;
+                    style.height = '50px';
+                    style.width = '50px';
+                    style.overflow = 'auto';
+                    style.position = 'absolute';
+                    
+                    el.innerHTML = [
+                        '<div style="display:table;height:100%;">',
+                            // The element that causes the horizontal overflow must be 
+                            // a child of the element with the 100% height, otherwise
+                            // horizontal overflow is not triggered in webkit quirks mode
+                            '<div style="width:51px;"></div>',
                         '</div>'
-                    ].join(''));
-         
-                    if (el.dom.firstChild.offsetHeight === 50) {
+                    ].join('');
+                    doc.body.appendChild(el);
+                    if (el.firstChild.offsetHeight === 50) {
                         hasBug = true;
                     }
-
-                    el.remove();
+                    doc.body.removeChild(el);
                 }
                 
                 return hasBug;

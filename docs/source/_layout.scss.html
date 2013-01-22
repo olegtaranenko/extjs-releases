@@ -264,6 +264,13 @@
     .#{$prefix}horizontal-box-overflow-body {
         float: left;
     }
+    
+    @if $include-rtl {
+        .#{$prefix}rtl &gt; .#{$prefix}horizontal-box-overflow-body {
+            float: right;
+        }
+    }
+    
     .#{$prefix}box-scroller-right {
         float: right;
         height: 100%;
@@ -334,9 +341,17 @@
         }
     }
 
-    .#{$prefix}box-menu-right {
+    .#{$prefix}box-menu-after {
         float: right;
         padding-right: $toolbar-horizontal-spacing;
+    }
+    
+    @if $include-rtl {
+        .#{$prefix}rtl.#{$prefix}box-menu-after {
+            float: left;
+            padding-left: $toolbar-horizontal-spacing;
+            padding-right: 0;
+        }
     }
 
     .#{$prefix}column {

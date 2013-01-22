@@ -194,14 +194,18 @@ Ext.define('Ext.selection.CellModel', {
         // </debug>
     },
 
-    isCellSelected: function(row, column) {
+    isCellSelected: function(view, row, column) {
         var me = this,
             testPos,
             pos = me.getCurrentPosition();
-        
-        if (pos) {
+
+        if (pos && pos.view === view) {
             testPos = new this.Selection(me);
-            testPos.setPosition(row, column);
+            testPos.setPosition({
+                view: view,
+                row: row,
+                column: column
+            });
             return (testPos.record === pos.record) && (testPos.columnHeader === pos.columnHeader);
         }
     },
@@ -232,7 +236,7 @@ Ext.define('Ext.selection.CellModel', {
                     break;
                 }
             }
-            
+
             // Deletions were before the selection - bump it up
             if (shuffleCount) {
                 pos.setRow(pos.row - shuffleCount);
@@ -244,13 +248,13 @@ Ext.define('Ext.selection.CellModel', {
      * Set the current position based on where the user clicks.
      * @private
      */
-    onMouseDown: function(view, cell, cellIndex, record, row, rowIndex, e) {
+    onMouseDown: function(view, cell, cellIndex, record, row, recordIndex, e) {
 
         // Record index will be -1 if the clicked record is a metadata record and not selectable
-        if (rowIndex !== -1) {
+        if (recordIndex !== -1) {
             this.setCurrentPosition({
                 view: view,
-                row: rowIndex,
+                row: row,
                 column: cellIndex
             });
         }

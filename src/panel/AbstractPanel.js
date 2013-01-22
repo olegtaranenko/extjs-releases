@@ -94,6 +94,14 @@ bodyCls: ['foo', 'bar']
      * @inheritdoc
      */ 
     contentPaddingProperty: 'bodyPadding',
+    
+    /**
+     * @cfg {Boolean/Number} shrinkWrapDock
+     * Allows for this panel to include the {@link #dockedItems} when trying to determine the overall
+     * size of the panel. This option is only applicable when this panel is also shrink wrapping in the
+     * same dimensions. See {@link Ext.AbstractComponent#shrinkWrap} for an explanation of the configuration options.
+     */
+    shrinkWrapDock: false,
 
     componentLayout: 'dock',
 

@@ -22,6 +22,9 @@ the following `taskdef`:
 This category contains various commands for application management.
 
 
+### Categories
+  * `package` - Packages a Sencha Touch application for native app stores
+
 ### Commands
   * `build` - Executes the build process for an application
   * `refresh` - Updates the application metadata (aka "bootstrap") file
@@ -45,6 +48,36 @@ application folder.
   * `--destination`, `-d` - The directory path to build this application to. Default: build
   * `--environment`, `-e` - The build environment, either 'testing', 'production', 'package' (Touch Specific), or 'native' (Touch Specific).
   * `--run`, `-r` - Enables automatically running builds with the native packager
+
+## sencha app package
+
+
+
+### Commands
+  * `build` - Packages an app with the given configuration file
+  * `generate` - Generates a Packager configuration JSON file
+  * `run` - Packages and tries to run the application for the given configuration JSON file
+
+## sencha app package build
+
+
+
+### Options
+  * `--path`, `-p` - the path to the configuration file
+
+## sencha app package generate
+
+
+
+### Options
+  * `--path`, `-p` - the path to the configuration file
+
+## sencha app package run
+
+
+
+### Options
+  * `--path`, `-p` - the path to the configuration file
 
 ## sencha app refresh
 
@@ -492,41 +525,6 @@ This command generates a list of metadata for all classes.
 ### Options
   * `--output-path`, `-o` - The file path to write the results to in JSON format.
   * `--path`, `-p` - The directory path(s) that contains all classes
-
-## sencha package
-
-This category of commands is used to wrap Sencha Touch applications as native
-phone apps for distribution to app stores.
-
-
-### Commands
-  * `build` - Packages an app with the given configuration file
-  * `generate` - Generates a Packager configuration JSON file
-  * `run` - Packages and tries to run the application for the given configuration JSON file
-
-## sencha package build
-
-This command creates a native package of the current application.
-
-
-### Options
-  * `--path`, `-p` - the path to the configuration file
-
-## sencha package generate
-
-This command generates a Packager configuration JSON file.
-
-
-### Options
-  * `--path`, `-p` - the path to the configuration file
-
-## sencha package run
-
-This command packages and runs the current application.
-
-
-### Options
-  * `--path`, `-p` - the path to the configuration file
 
 ## sencha theme
 

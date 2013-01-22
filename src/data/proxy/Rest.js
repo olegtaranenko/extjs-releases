@@ -120,19 +120,19 @@ Ext.define('Ext.data.proxy.Rest', {
      * See Rest proxy intro docs for more details. Defaults to true.
      */
     appendId: true,
-    
+
     /**
      * @cfg {String} format
      * Optional data format to send to the server when making any request (e.g. 'json'). See the Rest proxy intro docs
      * for full details. Defaults to undefined.
      */
-    
+
     /**
      * @cfg {Boolean} batchActions
      * True to batch actions of a particular type when synchronizing the store. Defaults to false.
      */
     batchActions: false,
-    
+
     /**
      * Specialized version of buildUrl that incorporates the {@link #appendId} and {@link #format} options into the
      * generated url. Override this to provide further customizations, but remember to call the superclass buildUrl so
@@ -147,25 +147,25 @@ Ext.define('Ext.data.proxy.Rest', {
             format    = me.format,
             url       = me.getUrl(request),
             id        = record ? record.getId() : operation.id;
-        
-        if (me.appendId && id) {
+
+        if (me.appendId && (id != null)) {
             if (!url.match(/\/$/)) {
                 url += '/';
             }
-            
+
             url += id;
         }
-        
+
         if (format) {
             if (!url.match(/\.$/)) {
                 url += '.';
             }
-            
+
             url += format;
         }
-        
+
         request.url = url;
-        
+
         return me.callParent(arguments);
     }
 });

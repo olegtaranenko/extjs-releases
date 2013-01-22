@@ -224,6 +224,12 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
      * See also {@link #nodeHighlightColor} and {@link #nodeHighlightOnDrop}.
      */
     nodeHighlightOnRepair: Ext.enableFx,
+    
+    /**
+     * @cfg {String} displayField
+     * The name of the model field that is used to display the text for the nodes
+     */
+    displayField: 'text',
 
     init : function(view) {
         view.on('render', this.onViewRender, this, {single: true});
@@ -249,6 +255,7 @@ Ext.define('Ext.tree.plugin.TreeViewDragDrop', {
                 view: view,
                 ddGroup: me.dragGroup || me.ddGroup,
                 dragText: me.dragText,
+                displayField: me.displayField,
                 repairHighlightColor: me.nodeHighlightColor,
                 repairHighlight: me.nodeHighlightOnRepair,
                 scrollEl: scrollEl

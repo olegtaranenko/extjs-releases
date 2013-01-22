@@ -40,7 +40,7 @@ Ext.define('Ext.tip.Tip', {
 
     /**
      * @cfg {String} defaultAlign
-     * **Experimental**. The default {@link Ext.Element#alignTo} anchor position value
+     * **Experimental**. The default {@link Ext.util.Positionable#alignTo} anchor position value
      * for this tip relative to its element of origin.
      */
     defaultAlign : "tl-bl?",
@@ -121,7 +121,7 @@ Ext.define('Ext.tip.Tip', {
 
     /**
      * **Experimental**. Shows this tip at a position relative to another element using
-     * a standard {@link Ext.Element#alignTo} anchor position value.  Example usage:
+     * a standard {@link Ext.util.Positionable#alignTo} anchor position value.  Example usage:
      *
      *     // Show the tip at the default position ('tl-br?')
      *     tip.showBy('my-el');
@@ -132,7 +132,7 @@ Ext.define('Ext.tip.Tip', {
      * @param {String/HTMLElement/Ext.Element} el An HTMLElement, {@link Ext.Element} or string
      * id of the target element to align to.
      *
-     * @param {String} [position] A valid {@link Ext.Element#alignTo} anchor position.
+     * @param {String} [position] A valid {@link Ext.util.Positionable#alignTo} anchor position.
      * 
      * Defaults to 'tl-br?' or {@link #defaultAlign} if specified.
      */

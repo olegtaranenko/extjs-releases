@@ -170,7 +170,7 @@ Ext.define('Ext.Component', {
     
     /**
      * @cfg {String} [defaultAlign="tl-bl?"]
-     * The default {@link Ext.Element#getAlignToXY Ext.Element#getAlignToXY} anchor position value for this menu
+     * The default {@link Ext.util.Positionable#getAlignToXY Ext.Element#getAlignToXY} anchor position value for this menu
      * relative to its element of origin. Used in conjunction with {@link #showBy}.
      */
     defaultAlign: 'tl-bl?',
@@ -575,7 +575,9 @@ Ext.define('Ext.Component', {
      */
     setLoading : function(load, targetEl) {
         var me = this,
-            config;
+            config = {
+                target: me
+            };
 
         if (me.rendered) {
             Ext.destroy(me.loadMask);
@@ -583,18 +585,17 @@ Ext.define('Ext.Component', {
 
             if (load !== false && !me.collapsed) {
                 if (Ext.isObject(load)) {
-                    config = Ext.apply({}, load);
+                    Ext.apply(config, load);
                 } else if (Ext.isString(load)) {
-                    config = {msg: load};
-                } else {
-                    config = {};
+                    config.msg = load;
                 }
+                
                 if (targetEl) {
                     Ext.applyIf(config, {
                         useTargetEl: true
                     });
                 }
-                me.loadMask = new Ext.LoadMask(me, config);
+                me.loadMask = new Ext.LoadMask(config);
                 me.loadMask.show();
             }
         }
@@ -669,9 +670,9 @@ Ext.define('Ext.Component', {
      * Shows this component by the specified {@link Ext.Component Component} or {@link Ext.Element Element}.
      * Used when this component is {@link #floating}.
      * @param {Ext.Component/Ext.Element} component The {@link Ext.Component} or {@link Ext.Element} to show the component by.
-     * @param {String} [position] Alignment position as used by {@link Ext.Element#getAlignToXY}.
+     * @param {String} [position] Alignment position as used by {@link Ext.util.Positionable#getAlignToXY}.
      * Defaults to `{@link #defaultAlign}`.
-     * @param {Number[]} [offsets] Alignment offsets as used by {@link Ext.Element#getAlignToXY}.
+     * @param {Number[]} [offsets] Alignment offsets as used by {@link Ext.util.Positionable#getAlignToXY}.
      * @return {Ext.Component} this
      */
     showBy: function(cmp, pos, off) {
@@ -1033,7 +1034,7 @@ Ext.define('Ext.Component', {
 
     /**
      * Hides this Component, setting it to invisible using the configured {@link #hideMode}.
-     * @param {String/Ext.Element/Ext.Component} [animateTarget=null] **only valid for {@link #floating} Components
+     * @param {String/Ext.Element/Ext.Component} [animateTarget=null] **only valid for {@link #cfg-floating} Components
      * such as {@link Ext.window.Window Window}s or {@link Ext.tip.ToolTip ToolTip}s, or regular Components which have
      * been configured with `floating: true`.**. The target to which the Component should animate while hiding.
      * @param {Function} [callback] A callback function to call after the Component is hidden.
@@ -1086,7 +1087,7 @@ Ext.define('Ext.Component', {
 
         // If hiding a Component which is focused, or contains focus: blur the focused el. 
         if (activeEl === me.el || me.el.contains(activeEl)) {
-            activeEl.blur();
+            Ext.fly(activeEl).blur();
         }
 
         // Default to configured animate target if none passed
@@ -1284,13 +1285,28 @@ Ext.define('Ext.Component', {
         return this.el;
     },
 
-    // private
-    // Implements an upward event bubbilng policy. By default a Component bubbles events up to its ownerCt
-    // Floating Components target the floatParent.
-    // Some Component subclasses (such as Menu) might implement a different ownership hierarchy.
-    // The up() method uses this to find the immediate owner.
-    getBubbleTarget: function() {
+    /*
+     * @protected
+     * Used by {@link Ext.ComponentQuery ComponentQuery}, and the {@link Ext.AbstractComponent#up up} method to find the
+     * owning Component in the linkage hierarchy.
+     *
+     * By default this returns the Container which contains this Component.
+     *
+     * This may be overriden by Component authors who implement ownership hierarchies which are not
+     * based upon ownerCt, such as BoundLists being owned by Fields or Menus being owned by Buttons.
+     */
+    getRefOwner: function() {
         return this.ownerCt || this.floatParent;
+    },
+
+    /**
+     * @protected
+     * Implements an upward event bubbling policy. By default a Component bubbles events up to its {@link #getRefOwner reference owner}.
+     *
+     * Component subclasses may implement a different bubbling strategy by overriding this method.
+     */
+    getBubbleTarget: function() {
+        return this.getRefOwner();
     },
 
     // @private

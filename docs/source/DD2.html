@@ -75,7 +75,10 @@ Ext.define('Ext.panel.DD', {
 <span id='Ext-panel-DD-method-createFrame'>    createFrame : Ext.emptyFn,
 </span>    
 <span id='Ext-panel-DD-method-getDragEl'>    getDragEl : function(e){
-</span>        return this.panelProxy.ghost.el.dom;
+</span>        var ghost = this.panelProxy.ghost;
+        if (ghost) {
+            return ghost.el.dom;
+        }
     },
     
 <span id='Ext-panel-DD-method-endDrag'>    endDrag : function(e){

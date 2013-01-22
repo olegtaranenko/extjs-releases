@@ -34,7 +34,7 @@
  * Specifications like `[propName]` check that the property is a truthy value. To check that the object has an `ownProperty`
  * of a certain name, regardless of the value use the form `[?propName]`
  *
- * The specified value is coerced to match the type of the property found in the candidate Component using {@link Ext.coerce}.
+ * The specified value is coerced to match the type of the property found in the candidate Component using {@link Ext#coerce}.
  *
  * The '=' operator will return the results that <strong>exactly</strong> match:
  *
@@ -199,7 +199,7 @@ Ext.define('Ext.ComponentQuery', {
                 candidate;
             for (; i < length; i++) {
                 candidate = items[i];
-                while (!!(candidate = (candidate.ownerCt || candidate.floatParent))) {
+                while (!!(candidate = candidate.getRefOwner())) {
                     result.push(candidate);
                 }
             }

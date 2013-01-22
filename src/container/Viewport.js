@@ -136,6 +136,11 @@ Ext.define('Ext.container.Viewport', {
         me.renderTo = me.el;
     },
     
+    // override here to prevent an extraneous warning
+    applyTargetCls: function(targetCls) {
+        this.el.addCls(targetCls);
+    },
+    
     onRender: function() {
         var me = this;
 

@@ -1,6 +1,7 @@
 Ext.require([
     'Ext.container.Viewport',
     'Ext.grid.Panel',
+    'Ext.grid.plugin.RowEditing',
     'Ext.layout.container.Border',
     'Ext.rtl.*'
 ]);
@@ -22,6 +23,9 @@ Ext.onReady(function() {
         i = 50,
         sentences = [],
         words = text.split(' '),
+        edCfg = {
+            xtype: 'textfield'    
+        },
         paragraph;
         
     while (i--) {
@@ -51,18 +55,33 @@ Ext.onReady(function() {
             title: '\u0627\u0644\u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u063a\u0631\u0628\u064a\u0629',
             width: 200,
             collapsible: true,
-            split: true
+            split: true,
+            tbar: {
+                enableOverflow: true,
+                items: [{
+                    text: words[9]
+                }, {
+                    text: words[3]
+                }, {
+                    text: words[4]
+                }, {
+                    text: words[0]
+                }, {
+                    text: words[12]
+                }]
+            }
         }, {
             region: 'center',
             xtype: 'grid',
+            plugins: [new Ext.grid.plugin.RowEditing()],
             title: '\u0645\u0631\u0643\u0632 \u0627\u0644\u0645\u0646\u0637\u0642\u0629',
             columns: [
-                { dataIndex: 'foo', text: words[0] },
-                { dataIndex: 'bar', text: words[1] },
-                { dataIndex: 'baz', text: words[2] },
-                { dataIndex: 'zork', text: words[3] },
-                { dataIndex: 'gork', text: words[4] },
-                { dataIndex: 'bork', text: words[5], flex: 1 }
+                { dataIndex: 'foo', text: words[0], field: edCfg},
+                { dataIndex: 'bar', text: words[1], field: edCfg },
+                { dataIndex: 'baz', text: words[2], field: edCfg },
+                { dataIndex: 'zork', text: words[3], field: edCfg },
+                { dataIndex: 'gork', text: words[4], field: edCfg },
+                { dataIndex: 'bork', text: words[5], field: edCfg, flex: 1 }
             ],
             store: Ext.create('Ext.data.Store', {
                 model: 'Fubar',

@@ -186,8 +186,9 @@ Ext.define('Ext.grid.feature.RowBody', {
             items[i].colSpan = colspan;
         }
     },
-
+    
     /**
+     * @method getAdditionalData
      * Provides additional data to the prepareData call within the grid view.
      * The rowbody feature adds 3 additional variables into the grid view's template.
      * These are rowBodyCls, rowBodyColspan, and rowBody.

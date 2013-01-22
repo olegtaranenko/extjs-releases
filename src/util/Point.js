@@ -76,7 +76,7 @@ Ext.define('Ext.util.Point', {
 
     /**
      * Determins whether this Point contained by the passed Region, Component or element.
-     * @param {Ext.util.Region/Ext.Component/Ext.dom.Element/HtmlElement} region The rectangle to checkthat this Point is within.
+     * @param {Ext.util.Region/Ext.Component/Ext.dom.Element/HTMLElement} region The rectangle to checkthat this Point is within.
      * @param {Object/Number} threshold Can be either an object with x and y properties or a number
      * @return {Boolean}
      */

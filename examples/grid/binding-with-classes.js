@@ -118,7 +118,7 @@ Ext.Loader.onReady(function() {
         // register the App.BookDetail class with an xtype of bookdetail
         alias: 'widget.bookdetail',
         // add tplMarkup as a new property
-        tplMarkup: [
+        tpl: [
             'Title: <a href="{DetailPageURL}" target="_blank">{Title}</a><br/>',
             'Author: {Author}<br/>',
             'Manufacturer: {Manufacturer}<br/>',
@@ -132,18 +132,9 @@ Ext.Loader.onReady(function() {
         // apply styles to the body of the panel and initialize
         // html to startingMarkup
         initComponent: function() {
-            this.tpl = Ext.create('Ext.Template', this.tplMarkup);
             this.html = this.startingMarkup;
-
-            this.bodyStyle = {
-                background: '#ffffff'
-            };
             // call the superclass's initComponent implementation
             this.callParent();
-        },
-        // add a method which updates the details
-        updateDetail: function(data) {
-            this.tpl.overwrite(this.body, data);
         }
     });
 
@@ -205,7 +196,7 @@ Ext.Loader.onReady(function() {
             // conflicts with the ComponentManager
             if (rs.length) {
                 var detailPanel = this.getComponent('detailPanel');
-                detailPanel.updateDetail(rs[0].getData());
+                detailPanel.update(rs[0].getData());
             }
 
         }

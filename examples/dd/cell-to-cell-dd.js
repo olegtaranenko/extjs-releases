@@ -68,8 +68,9 @@ Ext.onReady(function () {
             sortable: true,
             dataIndex: 'company'
         }, {
+            xtype: 'datecolumn',
             header: "First Updated",
-            width: 235,
+            width: 100,
             sortable: true,
             dataIndex: 'firstChange'
         }, {
@@ -93,8 +94,9 @@ Ext.onReady(function () {
             sortable: true,
             dataIndex: 'pctChange'
         }, {
+            xtype: 'datecolumn',
             header: "Last Updated",
-            width: 235,
+            width: 100,
             sortable: true,
             dataIndex: 'lastChange'
         }],

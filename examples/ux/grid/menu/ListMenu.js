@@ -108,10 +108,11 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
      * thus recalculate the width and potentially hang the menu from the left.
      */
     show : function () {
-        if (this.loadOnShow && !this.loaded && !this.store.loading) {
-            this.store.load();
+        var me = this;
+        if (me.loadOnShow && !me.loaded && !me.store.loading) {
+            me.store.load();
         }
-        this.callParent();
+        me.callParent();
     },
 
     /** @private */
@@ -123,7 +124,7 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
                 scope: me
             };
 
-        this.suspendLayouts();
+        Ext.suspendLayouts();
         me.removeAll(true);
         gid = me.single ? Ext.id() : null;
         for (i = 0, len = records.length; i < len; i++) {
@@ -139,7 +140,7 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
         }
 
         me.loaded = true;
-        this.resumeLayouts(true);
+        Ext.resumeLayouts(true);
         me.fireEvent('load', me, records);
     },
 
@@ -163,7 +164,7 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
                         item.setChecked(true, true);
                     }
                 }
-            }, this);
+            });
         }
     },
 
@@ -178,7 +179,7 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
             if (item.checked) {
                 value.push(item.value);
             }
-        },this);
+        });
         this.selected = value;
 
         this.fireEvent('checkchange', item, checked);

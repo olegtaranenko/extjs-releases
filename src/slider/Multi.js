@@ -479,7 +479,7 @@ Ext.define('Ext.slider.Multi', {
     getNearest: function(trackPoint) {
         var me = this,
             clickValue = me.reversePixelValue(trackPoint),
-            nearestDistance = (me.maxValue - me.minValue) + 5, //add a small fudge for the end of the slider
+            nearestDistance = me.getRange() + 5, //add a small fudge for the end of the slider
             nearest = null,
             thumbs = me.thumbs,
             i = 0,
@@ -675,7 +675,7 @@ Ext.define('Ext.slider.Multi', {
     calculateThumbPosition : function(v) {
         var me = this,
             minValue = me.minValue,
-            pos = (v - minValue) / (me.maxValue - minValue) * 100;
+            pos = (v - minValue) / me.getRange() * 100;
 
         // If the total number of records is <= pageSize then return minValue.
         if (isNaN(pos)) {
@@ -693,9 +693,15 @@ Ext.define('Ext.slider.Multi', {
      */
     getRatio : function() {
         var me = this,
-            trackLength = this.vertical ? this.innerEl.getHeight() : this.innerEl.getWidth(),
-            valueRange = this.maxValue - this.minValue;
+            innerEl = me.innerEl,
+            trackLength = me.vertical ? innerEl.getHeight() : innerEl.getWidth(),
+            valueRange = me.getRange();
+            
         return valueRange === 0 ? trackLength : (trackLength / valueRange);
+    },
+    
+    getRange: function(){
+        return this.maxValue - this.minValue;
     },
 
     /**
@@ -719,7 +725,7 @@ Ext.define('Ext.slider.Multi', {
      * @return {Number} The mapped value for the given position
      */
     reversePercentageValue : function(pos) {
-        return this.minValue + (this.maxValue - this.minValue) * (pos / 100);
+        return this.minValue + this.getRange() * (pos / 100);
     },
 
     //private

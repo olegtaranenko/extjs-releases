@@ -565,7 +565,9 @@ Ext.define('Ext.container.AbstractContainer', {
 
 <span id='Ext-container-AbstractContainer-method-getComponentId'>    // @private - used as the key lookup function for the items collection
 </span>    getComponentId : function(comp) {
-        return comp.getItemId();
+        if (comp.getItemId) {
+            return comp.getItemId();
+        }
     },
 
 <span id='Ext-container-AbstractContainer-method-add'>    /**
@@ -899,14 +901,19 @@ Ext.define('Ext.container.AbstractContainer', {
         return items;
     },
 
-<span id='Ext-container-AbstractContainer-method-getRefItems'>    // Used by ComponentQuery to retrieve all of the items
-</span>    // which can potentially be considered a child of this Container.
-    // This should be overriden by components which have child items
-    // that are not contained in items. For example dockedItems, menu, etc
-    // IMPORTANT note for maintainers:
-    //  Items are returned in tree traversal order. Each item is appended to the result array
-    //  followed by the results of that child's getRefItems call.
-    //  Floating child items are appended after internal child items.
+<span id='Ext-container-AbstractContainer-method-getRefItems'>    /**
+</span>     * @protected
+     * Used by {@link Ext.ComponentQuery ComponentQuery}, {@link #child} and {@link #down} to retrieve all of the items
+     * which can potentially be considered a child of this Container.
+     * 
+     * This may be overriden by Components which have ownership of Components
+     * that are not contained in the {@link #property-items} collection.
+     *
+     * @NOTE IMPORTANT note for maintainers:
+     * Items are returned in tree traversal order. Each item is appended to the result array
+     * followed by the results of that child's getRefItems call.
+     * Floating child items are appended after internal child items.
+     */
     getRefItems : function(deep) {
         var me = this,
             items = me.items.items,
@@ -1063,15 +1070,42 @@ Ext.define('Ext.container.AbstractContainer', {
     },
 
 <span id='Ext-container-AbstractContainer-method-child'>    /**
-</span>     * Retrieves the first direct child of this container which matches the passed selector.
-     * The passed in selector must comply with an Ext.ComponentQuery selector.
-     * @param {String} [selector] An Ext.ComponentQuery selector. If no selector is
+</span>     * Retrieves the first direct child of this container which matches the passed selector or component.
+     * The passed in selector must comply with an Ext.ComponentQuery selector, or it can be an actual Ext.Component.
+     * @param {String/Ext.Component} [selector] An Ext.ComponentQuery selector. If no selector is
      * specified, the first child will be returned.
-     * @return Ext.Component
+     * @return Ext.Component The matching child Ext.Component (or `null` if no match was found).
      */
-    child : function(selector) {
+    child: function (selector) {
+        if (selector &amp;&amp; selector.isComponent) {
+            selector = '#' + Ext.escapeId(selector.getItemId());
+        }
+
         selector = selector || '';
         return this.query('&gt; ' + selector)[0] || null;
+    },
+
+<span id='Ext-container-AbstractContainer-method-contains'>    /**
+</span>     * Determines whether the passed Component is either an immediate child of this Container,
+     * or whether it is a descendant.
+     *
+     * @param {Ext.Component} comp The Component to test.
+     * @param {Boolean} [deep=false] Pass `true` to test for the Component being a descendant at any level.
+     * @return {Boolean} `true` if the passed Component is contained at the specified level.
+     */
+    contains: function(comp, deep) {
+        var result = false;
+        if (deep) {
+            this.cascade(function(c) {
+                if (c.contains(comp)) {
+                    result = true;
+                    return false;
+                }
+            });
+            return result;
+        } else {
+            return this.items.contains(comp) || this.floatingItems.contains(comp);
+        }
     },
 
 <span id='Ext-container-AbstractContainer-method-nextChild'>    nextChild: function(child, selector) {
@@ -1104,12 +1138,17 @@ Ext.define('Ext.container.AbstractContainer', {
 
 <span id='Ext-container-AbstractContainer-method-down'>    /**
 </span>     * Retrieves the first descendant of this container which matches the passed selector.
-     * The passed in selector must comply with an Ext.ComponentQuery selector.
-     * @param {String} [selector] An Ext.ComponentQuery selector. If no selector is
+     * The passed in selector must comply with an Ext.ComponentQuery selector, or it can be an actual Ext.Component.
+     * @param {String/Ext.Component} [selector] An Ext.ComponentQuery selector or Ext.Component. If no selector is
      * specified, the first child will be returned.
-     * @return Ext.Component
+     * @return Ext.Component The matching descendant Ext.Component (or `null` if no match was found).
      */
-    down : function(selector) {
+    down: function (selector) {
+        if (selector &amp;&amp; selector.isComponent) {
+            selector = '#' + Ext.escapeId(selector.getItemId());
+        }
+
+        selector = selector || '';
         return this.query(selector)[0] || null;
     },
 

@@ -17,10 +17,7 @@ Ext.define('Ext.data.Group', {
     },
     
     add: function(records) {
-        if (!Ext.isArray(records)) {
-            records = [records];
-        }
-        this.records = this.records.concat(records);
+        Ext.Array.push(this.records, records);
         this.dirty = true;  
     },
     

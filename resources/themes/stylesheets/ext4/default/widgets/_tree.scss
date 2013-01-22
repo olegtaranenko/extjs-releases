@@ -13,6 +13,8 @@
 
     .#{$prefix}tree-expander {
         cursor: pointer;
+        position: relative;
+        top: -2px;
     }
 
     //arrows
@@ -202,11 +204,6 @@
         }
     }
 
-    .#{$prefix}grid-cell-treecolumn .#{$prefix}grid-cell-inner {
-        padding: 0;
-        line-height: $tree-elbow-height - 1;
-    }
-
     .#{$prefix}grid-with-row-lines .#{$prefix}grid-cell-treecolumn .#{$prefix}grid-cell-inner {
         line-height: $tree-elbow-height - 3;
     }
@@ -217,6 +214,21 @@
             display: inline-block;
             vertical-align: top;
         }
+        // Tree cell inners use 1px less padding top and bottom to account for borders which are always 1px, but invisible unless focused.
+        padding: $grid-cell-inner-padding-top - 1px $grid-cell-inner-padding-horizontal $grid-cell-inner-padding-bottom - 1px;
+    }
+
+    .#{$prefix}grid-cell-treecolumn {
+        // Connector line images must flow between cells, overwriting borders
+        overflow: visible;
+    }
+
+    .#{$prefix}grid-cell-treecolumn .#{$prefix}grid-cell-inner {
+        padding: 0;
+        height: $tree-elbow-height - 1px;
+        line-height: $tree-elbow-height - 2px;
+        // Connector line images must flow between cells, overwriting borders
+        overflow: visible;
     }
 
     @if $include-ie {

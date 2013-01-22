@@ -39,6 +39,7 @@ Ext.define('Ext.util.HashMap', {
         var me = this,
             keyFn = config.keyFn;
 
+        me.initialConfig = config;
         me.addEvents(
             /**
              * @event add
@@ -327,7 +328,7 @@ Ext.define('Ext.util.HashMap', {
      * @return {Ext.util.HashMap} The new hash object.
      */
     clone: function() {
-        var hash = new this.self(),
+        var hash = new this.self(this.initialConfig),
             map = this.map,
             key;
 

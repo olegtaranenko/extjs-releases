@@ -405,7 +405,8 @@ Ext.define('Ext.grid.feature.Grouping', {
     },
 
     vetoEvent: function(record, row, rowIndex, e) {
-        if (e.getTarget(this.eventSelector)) {
+        // Do not veto mouseover/mouseout
+        if (e.type !== 'mouseover' && e.type !== 'mouseout'  && e.type !== 'mouseenter' && e.type !== 'mouseleave' && e.getTarget(this.eventSelector)) {
             return false;
         }
     },
@@ -509,32 +510,31 @@ Ext.define('Ext.grid.feature.Grouping', {
             headerCt = view.headerCt,
             menu = headerCt.getMenu(),
             groupToggleMenuItem  = menu.down('#groupMenuItem'),
-            visible = headerCt.getGridColumns(true).length,
+            colCount = headerCt.getGridColumns(true).length,
             items,
             len,
             i;
 
-        if (header !== this.prunedHeader) {
-            // "Group by this field" must be disabled if there's only one column left visible.
-            if (groupToggleMenuItem) {
-                if (visible > 1) {
-                    groupToggleMenuItem.enable();
-                } else {
-                    groupToggleMenuItem.disable();
-                }
+        // "Group by this field" must be disabled if there's only one column left visible.
+        if (groupToggleMenuItem) {
+            if (headerCt.getVisibleGridColumns(true).length > 1) {
+                groupToggleMenuItem.enable();
+            } else {
+                groupToggleMenuItem.disable();
             }
         }
 
+        // header containing TDs have to span all columns, hiddens are just zero width
         items = view.el.query('.' + this.ctCls);
         for (i = 0, len = items.length; i < len; ++i) {
-            items[i].colSpan = visible;
+            items[i].colSpan = colCount;
         }
     },
 
     showMenuBy: function(t, header) {
         var menu = this.getMenu(),
             groupMenuItem  = menu.down('#groupMenuItem'),
-            groupMenuMeth = header.groupable === false ?  'disable' : 'enable',
+            groupMenuMeth = header.groupable === false || this.view.headerCt.getVisibleGridColumns().length < 2 ?  'disable' : 'enable',
             groupToggleMenuItem  = menu.down('#groupToggleMenuItem'),
             isGrouped = this.view.store.isGrouped();
 
@@ -696,7 +696,7 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
         Ext.resumeLayouts(true);
 
-        // Fire event for all groups post collapse
+        // Fire event for all groups post expand
         for (groupName in groupCache) {
             if (groupCache.hasOwnProperty(groupName)) {
                 view.fireEvent('groupexpand', view, Ext.get(this.getHeaderNode(groupName)), groupName);
@@ -868,15 +868,15 @@ Ext.define('Ext.grid.feature.Grouping', {
             groupInfo = me.groupInfo,
             header = data.header,
             groupField = data.groupField,
-            groupCache = me.groupCache,
             store = me.view.dataSource,
-            groupName, prev, next;
+            grouper, groupName, prev, next;
 
         rowValues.isCollapsedGroup = false;
         rowValues.summaryRecord = null;
 
         if (data.doGrouping) {
-            groupName = record.get(groupField);
+            grouper = me.view.store.groupers.first();
+            groupName = grouper.getGroupString(record);
 
             // See if the current record is the last in the group
             rowValues.isFirstRow = idx === 0;
@@ -884,7 +884,8 @@ Ext.define('Ext.grid.feature.Grouping', {
                 prev = store.getAt(idx - 1);
                 // If the previous row is of a different group, then we're at the first for a new group
                 if (prev) {
-                    rowValues.isFirstRow = prev.get(groupField) !== groupName;
+                    // Must use Model's comparison because Date objects are never equal
+                    rowValues.isFirstRow = !prev.isEqual(grouper.getGroupString(prev), groupName);
                 }
             }
 
@@ -893,14 +894,15 @@ Ext.define('Ext.grid.feature.Grouping', {
             if (!rowValues.isLastRow) {
                 next = store.getAt(idx + 1);
                 if (next) {
-                    rowValues.isLastRow = next.get(groupField) !== groupName;
+                    // Must use Model's comparison because Date objects are never equal
+                    rowValues.isLastRow = !next.isEqual(grouper.getGroupString(next), groupName);
                 }
             }
 
             if (rowValues.isFirstRow) {
                 groupInfo.groupField = groupField;
                 groupInfo.name = groupName;
-                groupInfo.groupValue = groupName;
+                groupInfo.groupValue = record.get(groupField);
                 groupInfo.columnName = header ? header.text : groupField;
                 rowValues.collapsibleCls = me.collapsible ? me.collapsibleCls : me.hdNotCollapsibleCls;
                 rowValues.groupId = me.createGroupId(groupName);
@@ -983,15 +985,15 @@ Ext.define('Ext.grid.feature.Grouping', {
     /**
      * Returns the group data object for the group to which the passed record belongs **if the Store is grouped**.
      *
-     * @para, {Ext.data.Model} record The record for which to return group information.
+     * @param {Ext.data.Model} record The record for which to return group information.
      * @return {Object} A single group data block as returned from {@link Ext.data.Store#getGroups Store.getGroups}. Returns
      * `undefined` if the Store is not grouped.
      *
      */
     getRecordGroup: function(record) {
-        var groupField = this.getGroupField();
-        if (groupField) {
-            return this.groupCache[record.get(groupField)];
+        var grouper = this.view.store.groupers.first();
+        if (grouper) {
+            return this.groupCache[grouper.getGroupString(record)];
         }
     },
 

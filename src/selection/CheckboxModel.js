@@ -39,9 +39,6 @@ Ext.define('Ext.selection.CheckboxModel', {
 
     // private
     checkerOnCls: Ext.baseCSSPrefix + 'grid-hd-checker-on',
-
-    // private
-    refreshOnRemove: true,
     
     constructor: function(){
         var me = this;
@@ -211,11 +208,8 @@ Ext.define('Ext.selection.CheckboxModel', {
 
     // After refresh, ensure that the header checkbox state matches
     refresh: function() {
-        var me = this;
-
-        me.callParent(arguments);
-
-        me.updateHeaderState();
+        this.callParent(arguments);
+        this.updateHeaderState();
     },
 
     /**
@@ -264,18 +258,26 @@ Ext.define('Ext.selection.CheckboxModel', {
      * @private
      */
     onSelectChange: function() {
-        var me = this;
-        me.callParent(arguments);
-        me.updateHeaderState();
+        this.callParent(arguments);
+        this.updateHeaderState();
     },
 
     /**
      * @private
      */
     onStoreLoad: function() {
-        var me = this;
-        me.callParent(arguments);
-        me.updateHeaderState();
+        this.callParent(arguments);
+        this.updateHeaderState();
+    },
+
+    onStoreAdd: function() {
+        this.callParent(arguments);
+        this.updateHeaderState();
+    },
+
+    onStoreRemove: function() {
+        this.callParent(arguments);
+        this.updateHeaderState();
     },
 
     /**

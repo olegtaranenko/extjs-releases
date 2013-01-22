@@ -21,21 +21,21 @@
  * This class represents an Action Message Format (AMF) Packet.  It contains all
  * the logic required to decode an AMF Packet from a byte array.
  * To decode a Packet, first construct a Packet:
- * 
+ *
  *     var packet = Ext.create('Ext.data.amf.Packet');
- *     
+ *
  * Then use the decode method to decode an AMF byte array:
- * 
+ *
  *     packet.decode(bytes);
- * 
+ *
  * where &quot;bytes&quot; is a Uint8Array or an array of numbers representing the binary
  * AMF data.
- * 
+ *
  * To access the decoded data use the #version, #headers, and #messages properties:
- * 
+ *
  *     console.log(packet.version, packet.headers, packet.messages);
- * 
- * For more information on working with AMF data please refer to the 
+ *
+ * For more information on working with AMF data please refer to the
  * [AMF Guide](#/guide/amf).
  */
 Ext.define('Ext.data.amf.Packet', function() {
@@ -49,17 +49,17 @@ Ext.define('Ext.data.amf.Packet', function() {
 </span>         * @property {Array} headers
          * @readonly
          * The decoded headers. Each header has the following properties:
-         * 
-         * - `name`: String  
+         *
+         * - `name`: String
          * The header name. Typically identifies a remote operation or method to
          * be invoked by this context header.
-         * - `mustUnderstand`: Boolean  
+         * - `mustUnderstand`: Boolean
          * If `true` this flag instructs the endpoint to abort and generate an
          * error if the header is not understood.
-         * - `byteLength`: Number  
+         * - `byteLength`: Number
          * If the byte-length of a header is known it can be specified to optimize
          * memory allocation at the remote endpoint.
-         * - `value`: Mixed  
+         * - `value`: Mixed
          * The header value
          */
 
@@ -67,15 +67,15 @@ Ext.define('Ext.data.amf.Packet', function() {
 </span>         * @property {Array} messages
          * @readonly
          * The decoded messages. Each message has the following properties:
-         * 
-         * - `targetURI`: String  
+         *
+         * - `targetURI`: String
          * Describes which operation, function, or method is to be remotely
          * invoked.
-         * - `responseURI`: String  
+         * - `responseURI`: String
          * A unique operation name
-         * - `byteLength`: Number  
+         * - `byteLength`: Number
          * Optional byte-length of the message body
-         * - `body`: Mixed  
+         * - `body`: Mixed
          * The message body
          */
 
@@ -138,6 +138,8 @@ Ext.define('Ext.data.amf.Packet', function() {
                 messages = me.messages = [],
                 headerCount, messageCount;
 
+            pos = 0;
+
             bytes = me.bytes = byteArray;
 
             // The strings array holds references to all of the deserialized
@@ -165,7 +167,7 @@ Ext.define('Ext.data.amf.Packet', function() {
             // as an unsigned 16 bit integer.
             me.version = me.readUInt(2);
 
-            // the next 2 bytes contain the header count 
+            // the next 2 bytes contain the header count
             for (headerCount = me.readUInt(2); headerCount--;) {
                 headers.push({
                     name: me.readAmf0String(),
@@ -197,10 +199,56 @@ Ext.define('Ext.data.amf.Packet', function() {
             pos = 0;
             // null the bytes array and reference arrays to free up memory.
             bytes = strings = objects = traits =
-            me.bytes = me.strings = me.objects = me.traits = null;
+                me.bytes = me.strings = me.objects = me.traits = null;
 
             return me;
         },
+
+
+<span id='Ext-data-amf-Packet-method-decodeValue'>        /**
+</span>         * Decodes an AMF3 byte array and that has one value and returns it.
+         * Note: Destroys previously stored data in this Packet.
+         * @param {Array} byteArray A byte array containing the encoded AMF data.
+         * @return {Object} the decoded object
+         */
+        decodeValue: function(byteArray) {
+            var me = this;
+
+            bytes = me.bytes = byteArray;
+
+            // reset the pointer
+            pos = 0;
+
+            // The first two bytes of an AMF packet contain the AMF version
+            // as an unsigned 16 bit integer.
+            me.version = 3;
+
+            // The strings array holds references to all of the deserialized
+            // AMF3 strings for a given header value or message body so that
+            // repeat instances of the same string can be deserialized by
+            // reference
+            strings = me.strings = [];
+
+            // The objects array holds references to deserialized objects so
+            // that repeat occurrences of the same object instance in the byte
+            // array can be deserialized by reference.
+            // If version is AMF0 this array holds anonymous objects, typed
+            // objects, arrays, and ecma-arrays.
+            // If version is AMF3 this array holds instances of Object, Array, XML,
+            // XMLDocument, ByteArray, Date, and instances of user defined Classes
+            objects = me.objects = [];
+
+            // The traits array holds references to the &quot;traits&quot; (the
+            // characteristics of objects that define a strong type such as the
+            // class name and public member names) of deserialized AMF3 objects
+            // so that if they are repeated they can be deserialized by reference.
+            traits = me.traits = [];
+
+            // read one value and return it
+            return me.readValue();
+        },
+
+
 
 <span id='Ext-data-amf-Packet-method-parseXml'>        /**
 </span>         * Parses an xml string and returns an xml document
@@ -226,7 +274,7 @@ Ext.define('Ext.data.amf.Packet', function() {
          */
         readAmf0Date: function() {
             var date = new Date(this.readDouble());
-            // An AMF0 date type ends with a 16 bit integer time-zone, but 
+            // An AMF0 date type ends with a 16 bit integer time-zone, but
             // according to the spec time-zone is &quot;reserved, not supported,
             // should be set to 0x000&quot;.
             pos += 2; // discard the time zone
@@ -361,7 +409,7 @@ Ext.define('Ext.data.amf.Packet', function() {
             // There are 3 different types of object headers, distinguishable
             // by the 1-3 least significant bits.  All object instances have
             // a 1 in the low bit position, while references have a 0:
-            // 
+            //
             // 0    : object reference
             // 011  : traits
             // 01   : traits-ref
@@ -412,7 +460,7 @@ Ext.define('Ext.data.amf.Packet', function() {
 
                 if (className) {
                     klass = Ext.ClassManager.getByAlias('amf.' + className);
-                    obj = klass ? new klass() : {};
+                    obj = klass ? new klass() : {$className: className};
                 } else {
                     obj = {};
                 }
@@ -432,6 +480,12 @@ Ext.define('Ext.data.amf.Packet', function() {
                         obj[key] = me.readValue();
                     }
                 }
+
+                // finally, check if we need to convert this class
+                if ((!klass) &amp;&amp; this.converters[className]) {
+                    obj = this.converters[className](obj);
+                }
+
             } else {
                 // If the first (low) bit of the header is a 0, this is an
                 // object reference. The remaining 1-28 significant bits are
@@ -453,7 +507,7 @@ Ext.define('Ext.data.amf.Packet', function() {
 
             if (header &amp; 1) {
                 // If the first (low) bit is a 1, this is a string literal.
-                // Discard the low bit.  The remaining 1-28 bits are used to 
+                // Discard the low bit.  The remaining 1-28 bits are used to
                 // encode the string's byte-length.
                 value = me.readUtf8(header &gt;&gt; 1);
                 if (value) {
@@ -547,9 +601,9 @@ Ext.define('Ext.data.amf.Packet', function() {
                     // shift them left by 4 bits to make room for the 4 remaining
                     // bits from byte 2
                     (((byte1 &amp; 0x7F) &lt;&lt; 4)
-                    // add the 4 most significant bits from byte 2 to complete
-                    // the exponent
-                    | (byte2 &gt;&gt; 4)),
+                     // add the 4 most significant bits from byte 2 to complete
+                     // the exponent
+                     | (byte2 &gt;&gt; 4)),
                 // the remaining 52 bits make up the significand. read the 4
                 // least significant bytes of byte 2 to begin the significand
                 significand = (byte2 &amp; 0x0F),
@@ -561,7 +615,7 @@ Ext.define('Ext.data.amf.Packet', function() {
                 // numbers always have a 0 hidden bit.
                 hiddenBit = exponent ? 1 : 0,
                 i = 6;
-            
+
             // The operands of all bitwise operators in javascript are converted
             // to signed 32 bit integers.  It is therefore impossible to construct
             // the 52 bit significand by repeatedly shifting its bits and then
@@ -592,13 +646,13 @@ Ext.define('Ext.data.amf.Packet', function() {
             }
 
             return sign *
-                   // The exponent is encoded using an offset binary
-                   // representation with the zero offset being 0x3FF (1023),
-                   // so we have to subtract 0x3FF to get the true exponent
-                   Math.pow(2, exponent - 0x3FF) *
-                   // convert the significand to its decimal value by multiplying
-                   // it by 2^52 and then add the hidden bit
-                   (hiddenBit + twoPowN52 * significand);
+                // The exponent is encoded using an offset binary
+                // representation with the zero offset being 0x3FF (1023),
+                // so we have to subtract 0x3FF to get the true exponent
+                Math.pow(2, exponent - 0x3FF) *
+                // convert the significand to its decimal value by multiplying
+                // it by 2^52 and then add the hidden bit
+                (hiddenBit + twoPowN52 * significand);
         },
 
 <span id='Ext-data-amf-Packet-method-readEcmaArray'>        /**
@@ -640,7 +694,7 @@ Ext.define('Ext.data.amf.Packet', function() {
         },
 
 <span id='Ext-data-amf-Packet-method-readReference'>        /**
-</span>         * Reads a reference from the byte array.  Reference types are used to 
+</span>         * Reads a reference from the byte array.  Reference types are used to
          * avoid duplicating data if the same instance of a complex object (which
          * is defined in AMF0 as an anonymous object, typed object, array, or
          * ecma-array) is included in the data more than once.
@@ -685,12 +739,18 @@ Ext.define('Ext.data.amf.Packet', function() {
         readTypedObject: function() {
             var me = this,
                 className = me.readAmf0String(),
-                klass, instance;
+                klass, instance, modified;
 
             klass = Ext.ClassManager.getByAlias('amf.' + className);
-            instance = klass ? new klass() : {};
+            instance = klass ? new klass() : {$className: className}; // if there is no klass, mark the classname for easier parsing of returned results
 
-            return me.readAmf0Object(instance);
+            modified = me.readAmf0Object(instance);
+
+            // check if we need to convert this class
+            if ((!klass) &amp;&amp; this.converters[className]) {
+                modified = this.converters[className](instance);
+            }
+            return modified;
         },
 
 <span id='Ext-data-amf-Packet-method-readUInt'>        /**
@@ -725,7 +785,7 @@ Ext.define('Ext.data.amf.Packet', function() {
          * the 32 bits being used as flags, only 29 significant bits remain for
          * encoding an integer. This means the largest unsigned integer value
          * that can be represented is 2^29-1.
-         * 
+         *
          *           (hex)         :                (binary)
          * 0x00000000 - 0x0000007F :  0xxxxxxx
          * 0x00000080 - 0x00003FFF :  1xxxxxxx 0xxxxxxx
@@ -804,11 +864,11 @@ Ext.define('Ext.data.amf.Packet', function() {
             // high-order position) indicate a 4-byte character. The remaining
             // bits of the leading byte hold bits of the encoded character, with
             // leading zeros if necessary.
-            // 
+            //
             // The continuation bytes all have &quot;10&quot; in the high-order position,
             // which means only the 6 least significant bits of continuation
             // bytes are available to hold the bits of the encoded character.
-            // 
+            //
             // The following table illustrates the binary format of UTF-8
             // characters:
             //
@@ -891,7 +951,7 @@ Ext.define('Ext.data.amf.Packet', function() {
             // arguments to fromCharCode (fortunately all currently supported
             // browsers can handle at least 65,535 function arguments).
             for (; i &lt; charArrayCount; i++) {
-                // create a result array containing the strings converted from 
+                // create a result array containing the strings converted from
                 // the individual character arrays.
                 result.push(String.fromCharCode.apply(String, charArrays[i]));
             }
@@ -914,12 +974,23 @@ Ext.define('Ext.data.amf.Packet', function() {
             // to start out in AMF 0 and switch to AMF 3 on the first complex type
             // to take advantage of the more the efficient encoding of AMF 3.
             if (marker === 17) {
-                // change the version to AMF3 when we see a 17 marker 
+                // change the version to AMF3 when we see a 17 marker
                 me.version = 3;
                 marker = bytes[pos++];
-            } 
+            }
 
             return me[me.typeMap[me.version][marker]]();
+        },
+
+<span id='Ext-data-amf-Packet-property-converters'>        /**
+</span>         * Converters used in converting specific typed Flex classes to JavaScript usable form.
+         * @private
+         */
+
+        converters: {
+            'flex.messaging.io.ArrayCollection': function(obj) {
+                return obj.source || []; // array collections have a source var that contains the actual data
+            }
         }
 
     };

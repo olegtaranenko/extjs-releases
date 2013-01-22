@@ -34,10 +34,7 @@
     },
     
 <span id='Ext-data-Group-method-add'>    add: function(records) {
-</span>        if (!Ext.isArray(records)) {
-            records = [records];
-        }
-        this.records = this.records.concat(records);
+</span>        Ext.Array.push(this.records, records);
         this.dirty = true;  
     },
     

@@ -91,6 +91,12 @@ Ext.define('Ext.data.Types', {
          */
         INT: {
             convert: function(v) {
+                // Handle values which are already numbers.
+                // Value truncation behaviour of parseInt is historic and must be maintained.
+                // parseInt(35.9)  and parseInt("35.9") returns 35
+                if (typeof v == 'number') {
+                    return parseInt(v);
+                }
                 return v !== undefined && v !== null && v !== '' ?
                     parseInt(String(v).replace(Ext.data.Types.stripRe, ''), 10) : (this.useNull ? null : 0);
             },
@@ -105,6 +111,9 @@ Ext.define('Ext.data.Types', {
          */
         FLOAT: {
             convert: function(v) {
+                if (typeof v === 'number') {
+                    return v;
+                }
                 return v !== undefined && v !== null && v !== '' ?
                     parseFloat(String(v).replace(Ext.data.Types.stripRe, ''), 10) : (this.useNull ? null : 0);
             },
@@ -120,6 +129,9 @@ Ext.define('Ext.data.Types', {
          */
         BOOL: {
             convert: function(v) {
+                if (typeof v === 'boolean') {
+                    return v;
+                }
                 if (this.useNull && (v === undefined || v === null || v === '')) {
                     return null;
                 }
@@ -143,7 +155,8 @@ Ext.define('Ext.data.Types', {
                 if (!v) {
                     return null;
                 }
-                if (Ext.isDate(v)) {
+                // instanceof check ~10 times faster than Ext.isDate. Values here will not be cross-document objects
+                if (v instanceof Date) {
                     return v;
                 }
                 if (df) {

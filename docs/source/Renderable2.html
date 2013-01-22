@@ -233,13 +233,8 @@ Ext.define('Ext.util.Renderable', {
             me.setPosition(x, y);
         }
         me.onBoxReady(width, height);
-        if (me.hasListeners.boxready) {
-            me.fireEvent('boxready', me, width, height);
-        }
     },
 
-<span id='Ext-util-Renderable-method-onBoxReady'>    onBoxReady: Ext.emptyFn,
-</span>
 <span id='Ext-util-Renderable-method-applyRenderSelectors'>    /**
 </span>     * Sets references to elements inside the component. This applies {@link Ext.AbstractComponent#cfg-renderSelectors renderSelectors}
      * as well as {@link Ext.AbstractComponent#cfg-childEls childEls}.

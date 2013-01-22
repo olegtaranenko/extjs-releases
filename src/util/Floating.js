@@ -75,15 +75,21 @@ Ext.define('Ext.util.Floating', {
     },
 
     registerWithOwnerCt: function() {
-        var me = this;
+        var me = this,
+            ownerCt = me.ownerCt;
 
         if (me.zIndexParent) {
             me.zIndexParent.unregisterFloatingItem(me);
         }
 
-        // Acquire a zIndexParent by traversing the ownerCt axis for the nearest floating ancestor
+        // Acquire a zIndexParent by traversing the ownerCt axis for the nearest floating ancestor.
+        // This is to find a base which can allocate relative z-index values
         me.zIndexParent = me.up('[floating]');
-        me.setFloatParent(me.ownerCt || me.zIndexParent);
+
+        // Set the floatParent to the ownertCt if one has been provided.
+        // Otherwise use the zIndexParent.
+        // Developers must only use ownerCt if there is really a containing relationship.
+        me.setFloatParent(ownerCt || me.zIndexParent);
         delete me.ownerCt;
 
         if (me.zIndexParent) {
@@ -217,15 +223,15 @@ Ext.define('Ext.util.Floating', {
         if (me.zIndexParent && me.bringParentToFront !== false) {
             me.zIndexParent.toFront(true);
         }
-        
+
         if (!Ext.isDefined(preventFocus)) {
             preventFocus = !me.focusOnToFront;
         }
-        
+
         if (preventFocus) {
             me.preventFocusOnActivate = true;
         }
-        if (me.zIndexManager.bringToFront(me)) {    
+        if (me.zIndexManager.bringToFront(me, preventFocus)) {    
             if (!preventFocus) {
                 // Kick off a delayed focus request.
                 // If another floating Component is toFronted before the delay expires

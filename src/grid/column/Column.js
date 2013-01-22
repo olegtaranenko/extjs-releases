@@ -317,7 +317,6 @@ Ext.define('Ext.grid.column.Column', {
 
     ascSortCls: Ext.baseCSSPrefix + 'column-header-sort-ASC',
     descSortCls: Ext.baseCSSPrefix + 'column-header-sort-DESC',
-    nullSortCls: Ext.baseCSSPrefix + 'column-header-sort-null',
 
     componentLayout: 'columncomponent',
 
@@ -333,7 +332,8 @@ Ext.define('Ext.grid.column.Column', {
 
     initComponent: function() {
         var me = this,
-            renderer;
+            renderer,
+            listeners;
 
         if (Ext.isDefined(me.header)) {
             me.text = me.header;
@@ -396,13 +396,16 @@ Ext.define('Ext.grid.column.Column', {
         // Initialize as a HeaderContainer
         me.callParent(arguments);
 
-        me.on({
+        listeners = {
             element:  'el',
             click:    me.onElClick,
-            dblclick: me.onElDblClick,
             contextmenu: me.onElContextMenu,
             scope:    me
-        });
+        };
+        if (me.resizable) {
+            listeners.dblclick = me.onElDblClick;
+        }
+        me.on(listeners);
         me.on({
             element:    'titleEl',
             mouseenter: me.onTitleMouseOver,
@@ -681,7 +684,7 @@ Ext.define('Ext.grid.column.Column', {
             prev = me.previousNode('gridcolumn:not([hidden]):not([isGroupHeader])');
 
             // If found in the same grid, autosize it
-            if (prev.getOwnerHeaderCt() === me.getOwnerHeaderCt()) {
+            if (prev && prev.getOwnerHeaderCt() === me.getOwnerHeaderCt()) {
                 prev.autoSize();
             }
         }
@@ -810,14 +813,12 @@ Ext.define('Ext.grid.column.Column', {
         var me = this,
             ascCls = me.ascSortCls,
             descCls = me.descSortCls,
-            nullCls = me.nullSortCls,
             ownerHeaderCt = me.getOwnerHeaderCt(),
             oldSortState = me.sortState;
 
          state = state || null;
 
         if (!me.sorting && oldSortState !== state && me.getSortParam()) {
-            me.addCls(Ext.baseCSSPrefix + 'column-header-sort-' + state);
             // don't trigger a sort on the first time, we just want to update the UI
             if (state && !initial) {
                 // when sorting, it will call setSortState on the header again once
@@ -828,14 +829,15 @@ Ext.define('Ext.grid.column.Column', {
             }
             switch (state) {
                 case 'DESC':
-                    me.removeCls([ascCls, nullCls]);
+                    me.addCls(descCls);
+                    me.removeCls(ascCls);
                     break;
                 case 'ASC':
-                    me.removeCls([descCls, nullCls]);
+                    me.addCls(ascCls);
+                    me.removeCls(descCls);
                     break;
-                case null:
+                default:
                     me.removeCls([ascCls, descCls]);
-                    break;
             }
             if (ownerHeaderCt && !me.triStateSort && !skipClear) {
                 ownerHeaderCt.clearOtherSortStates(me);
@@ -936,6 +938,13 @@ Ext.define('Ext.grid.column.Column', {
             owner = me.ownerCt,
             ownerIsGroup,
             item, items, len, i;
+            
+        // If we have no ownerHeaderCt, it's during object construction, so
+        // just set the hidden flag and jump out
+        if (!ownerHeaderCt) {
+            me.callParent();
+            return me;
+        }
 
         // Save our last shown width so we can gain space when shown back into fully flexed HeaderContainer.
         // If we are, say, flex: 1 and all others are fixed width, then removing will do a layout which will
@@ -947,13 +956,7 @@ Ext.define('Ext.grid.column.Column', {
                 delete me.flex;
             }
         }
-
-        // If we have no ownerHeaderCt, it's during object construction, so
-        // just set the hidden flag and jump out
-        if (!ownerHeaderCt) {
-            me.callParent();
-            return me;
-        }
+        
         ownerIsGroup = owner.isGroupHeader;
 
         // owner is a group, hide call didn't come from the owner

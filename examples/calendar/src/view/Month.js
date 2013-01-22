@@ -141,9 +141,11 @@ Ext.define('Ext.calendar.view.Month', {
 
     // private
     onResize: function() {
-        if (this.monitorResize) {
-            this.maxEventsPerDay = this.getMaxEventsPerDay();
-            this.refresh();
+        var me = this;
+        me.callParent(arguments);
+        if (me.monitorResize) {
+            me.maxEventsPerDay = me.getMaxEventsPerDay();
+            me.refresh();
         }
     },
 
@@ -314,9 +316,9 @@ Ext.define('Ext.calendar.view.Month', {
 
     // private
     getDaySize: function(contentOnly) {
-        var box = this.el.getBox(),
-        w = box.width / this.dayCount,
-        h = box.height / this.getWeekCount();
+        var box = this.el.down(this.daySelector).getBox(),
+        w = box.width,
+        h = box.height;
 
         if (contentOnly) {
             var hd = this.el.select('.ext-cal-dtitle').first().parent('tr');

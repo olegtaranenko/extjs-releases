@@ -471,7 +471,7 @@ Ext.define('Ext.form.field.Time', {
         // Store MUST be created for parent setValue to function
         this.getPicker();
 
-        this.callParent(arguments);
+        return this.callParent(arguments);
     },
 
     getValue: function() {

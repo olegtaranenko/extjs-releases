@@ -52,18 +52,17 @@ Ext.define('Ext.grid.plugin.Editing', {
              * Fires before editing is triggered. Return false from event handler to stop the editing.
              *
              * @param {Ext.grid.plugin.Editing} editor
-             * @param {Object} e An edit event with the following properties:
-             *
-             * - grid - The grid
-             * - record - The record being edited
-             * - field - The field name being edited
-             * - value - The value for the field being edited.
-             * - row - The grid table row
-             * - column - The grid {@link Ext.grid.column.Column Column} defining the column that is being edited.
-             * - rowIdx - The row index that is being edited
-             * - colIdx - The column index that is being edited
-             * - cancel - Set this to true to cancel the edit or return false from your handler.
-             * - originalValue - Alias for value (only when using {@link Ext.grid.plugin.CellEditing CellEditing}).
+             * @param {Object} context The editing context with the following properties:
+             *  @param {Ext.grid.Panel}         context.grid The owning grid Panel.
+             *  @param {Ext.data.Model}         context.record The record being edited.
+             *  @param {String}                 context.field The name of the field being edited.
+             *  @param {Mixed}                  context.value The field's current value.
+             *  @param {HTMLElement}            context.row The grid row element.
+             *  @param {Ext.grid.column.Column} context.column The Column being edited.
+             *  @param {Number}                 context.rowIdx The index of the row being edited.
+             *  @param {Number}                 context.colIdx The index of the column being edited.
+             *  @param {Boolean}                context.cancel Set this to `true` to cancel the edit or return false from your handler.
+             *  @param {Mixed}                  context.originalValue Alias for value (only when using {@link Ext.grid.plugin.CellEditing CellEditing}).
              */
             'beforeedit',
 
@@ -77,21 +76,15 @@ Ext.define('Ext.grid.plugin.Editing', {
              *     });
              *
              * @param {Ext.grid.plugin.Editing} editor
-             * @param {Object} e An edit event with the following properties:
-             *
-             * - grid - The grid
-             * - record - The record that was edited
-             * - field - The field name that was edited
-             * - value - The value being set
-             * - row - The grid table row
-             * - column - The grid {@link Ext.grid.column.Column Column} defining the column that was edited.
-             * - rowIdx - The row index that was edited
-             * - colIdx - The column index that was edited
-             * - originalValue - The original value for the field, before the edit (only when using {@link Ext.grid.plugin.CellEditing CellEditing})
-             * - originalValues - The original values for the field, before the edit (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
-             * - newValues - The new values being set (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
-             * - view - The grid view (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
-             * - store - The grid store (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
+             * @param {Object} context The editing context with the following properties:
+             *  @param {Ext.grid.Panel}         context.grid The owning grid Panel.
+             *  @param {Ext.data.Model}         context.record The record being edited.
+             *  @param {String}                 context.field The name of the field being edited.
+             *  @param {Mixed}                  context.value The field's current value.
+             *  @param {HTMLElement}            context.row The grid row element.
+             *  @param {Ext.grid.column.Column} context.column The Column being edited.
+             *  @param {Number}                 context.rowIdx The index of the row being edited.
+             *  @param {Number}                 context.colIdx The index of the column being edited.
              */
             'edit',
 
@@ -114,40 +107,30 @@ Ext.define('Ext.grid.plugin.Editing', {
              *     });
              *
              * @param {Ext.grid.plugin.Editing} editor
-             * @param {Object} e An edit event with the following properties:
-             *
-             * - grid - The grid
-             * - record - The record being edited
-             * - field - The field name being edited
-             * - value - The value being set
-             * - row - The grid table row
-             * - column - The grid {@link Ext.grid.column.Column Column} defining the column that is being edited.
-             * - rowIdx - The row index that is being edited
-             * - colIdx - The column index that is being edited
-             * - cancel - Set this to true to cancel the edit or return false from your handler.
-             * - originalValue - The original value for the field, before the edit (only when using {@link Ext.grid.plugin.CellEditing CellEditing})
-             * - originalValues - The original values for the field, before the edit (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
-             * - newValues - The new values being set (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
-             * - view - The grid view (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
-             * - store - The grid store (only when using {@link Ext.grid.plugin.RowEditing RowEditing})
+             * @param {Object} context The editing context with the following properties:
+             *  @param {Ext.grid.Panel}         context.grid The owning grid Panel.
+             *  @param {Ext.data.Model}         context.record The record being edited.
+             *  @param {String}                 context.field The name of the field being edited.
+             *  @param {Mixed}                  context.value The field's current value.
+             *  @param {HTMLElement}            context.row The grid row element.
+             *  @param {Ext.grid.column.Column} context.column The Column being edited.
+             *  @param {Number}                 context.rowIdx The index of the row being edited.
+             *  @param {Number}                 context.colIdx The index of the column being edited.
              */
             'validateedit',
             /**
              * @event canceledit
              * Fires when the user started editing but then cancelled the edit.
              * @param {Ext.grid.plugin.Editing} editor
-             * @param {Object} e An edit event with the following properties:
-             * 
-             * - grid - The grid
-             * - record - The record that was edited
-             * - field - The field name that was edited
-             * - value - The value being set
-             * - row - The grid table row
-             * - column - The grid {@link Ext.grid.column.Column Column} defining the column that was edited.
-             * - rowIdx - The row index that was edited
-             * - colIdx - The column index that was edited
-             * - view - The grid view
-             * - store - The grid store
+             * @param {Object} context The editing context with the following properties:
+             *  @param {Ext.grid.Panel}         context.grid The owning grid Panel.
+             *  @param {Ext.data.Model}         context.record The record being edited.
+             *  @param {String}                 context.field The name of the field being edited.
+             *  @param {Mixed}                  context.value The field's current value.
+             *  @param {HTMLElement}            context.row The grid row element.
+             *  @param {Ext.grid.column.Column} context.column The Column being edited.
+             *  @param {Number}                 context.rowIdx The index of the row being edited.
+             *  @param {Number}                 context.colIdx The index of the column being edited.
              */
             'canceledit'
 
@@ -223,17 +206,13 @@ Ext.define('Ext.grid.plugin.Editing', {
             grid = me.grid;
 
         Ext.destroy(me.keyNav);
-        me.removeFieldAccessors(grid.getView().getGridColumns());
-
         // Clear all listeners from all our events, clear all managed listeners we added to other Observables
         me.clearListeners();
 
-        delete me.grid.editingPlugin;
-        delete me.grid.view.editingPlugin;
-        delete me.grid;
-        delete me.view;
-        delete me.editor;
-        delete me.keyNav;
+        if (grid) {
+            me.removeFieldAccessors(grid.getView().getGridColumns());
+            grid.editingPlugin = grid.view.editingPlugin = me.grid = me.view = me.editor = me.keyNav = null;
+        }
     },
 
     // @private
@@ -564,7 +543,7 @@ Ext.define('Ext.grid.plugin.Editing', {
             me.fireEvent('edit', me, me.context);
         }
 
-        delete me.context;
+        me.context = null;
         me.editing = false;
     },
 

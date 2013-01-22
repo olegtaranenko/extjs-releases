@@ -405,7 +405,7 @@ Ext._startTime = new Date().getTime();
          *
          * Numbers and numeric strings are coerced to Dates using the value as the millisecond era value.
          *
-         * Strings are coerced to Dates by parsing using the {@link Ext.Date.defaultFormat defaultFormat}.
+         * Strings are coerced to Dates by parsing using the {@link Ext.Date#defaultFormat defaultFormat}.
          * 
          * For example
          *

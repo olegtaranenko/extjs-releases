@@ -118,7 +118,7 @@ var flyInstance,
 
         /**
          * Centers the Element in either the viewport, or another Element.
-         * @param {String/HTMLElement/Ext.dom.Elemendom.Element} centerIn element in
+         * @param {String/HTMLElement/Ext.dom.Element} centerIn element in
          * which to center the element.
          */
         center: function(centerIn){
@@ -190,6 +190,11 @@ var flyInstance,
             return local ? this.getLocalX() : this.getX();
         },
 
+        /**
+         * Gets the local CSS X position for the element
+         *
+         * @return {Number}
+         */
         getLocalX: function() {
             var me = this,
                 offsetParent = me.dom.offsetParent,
@@ -209,6 +214,11 @@ var flyInstance,
             return x;
         },
 
+        /**
+         * Gets the local CSS X and Y position for the element
+         *
+         * @return {Array} [x, y]
+         */
         getLocalXY: function() {
             var me = this,
                 offsetParent = me.dom.offsetParent,
@@ -241,6 +251,11 @@ var flyInstance,
             return [x, y];
         },
 
+        /**
+         * Gets the local CSS Y position for the element
+         *
+         * @return {Number}
+         */
         getLocalY: function() {
             var me = this,
                 offsetParent = me.dom.offsetParent,
@@ -262,7 +277,7 @@ var flyInstance,
 
         /**
          * Returns an object defining the area of this Element which can be passed to
-         * {@link #setBox} to set another Element's size/location to match this element.
+         * {@link Ext.util.Positionable#setBox} to set another Element's size/location to match this element.
          *
          * @param {Boolean} [asRegion] If true an Ext.util.Region will be returned
          * @return {Object/Ext.util.Region} box An object in the following format:
@@ -279,8 +294,8 @@ var flyInstance,
          * The returned object may also be addressed as an Array where index 0 contains
          * the X position and index 1 contains the Y position. So the result may also be
          * used for {@link #setXY}
-         * @deprecated use {@link #getBox} to get a box object, and {@link #getRegion} to
-         * get a {@link Ext.util.Region Region}.
+         * @deprecated use {@link Ext.util.Positionable#getBox} to get a box object, and
+         * {@link Ext.util.Positionable#getRegion} to get a {@link Ext.util.Region Region}.
          */
         getPageBox: function(getRegion) {
             var me = this,
@@ -354,14 +369,29 @@ var flyInstance,
             return local ? this.getLocalY() : this.getY();
         },
 
+        /**
+         * Gets element X position in page coordinates
+         *
+         * @return {Number}
+         */
         getX: function() {
             return Element.getX(this.dom);
         },
 
+        /**
+         * Gets element X and Y positions in page coordinates
+         *
+         * @return {Array} [x, y]
+         */
         getXY: function() {
             return Element.getXY(this.dom);
         },
 
+        /**
+         * Gets element Y position in page coordinates
+         *
+         * @return {Number}
+         */
         getY: function() {
             return Element.getY(this.dom);
         },
@@ -437,7 +467,7 @@ var flyInstance,
          * a standard Element animation config object
          *
          * @return {Ext.dom.Element} this
-         * @deprecated Use {@link #setBox} instead.
+         * @deprecated Use {@link Ext.util.Positionable#setBox} instead.
          */
         setBounds: function(x, y, width, height, animate) {
             return this.setBox({

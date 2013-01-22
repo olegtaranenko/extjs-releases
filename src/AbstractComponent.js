@@ -870,9 +870,9 @@ Ext.define('Ext.AbstractComponent', {
 
     /**
      * @cfg {Boolean/String/HTMLElement/Ext.Element} autoRender
-     * This config is intended mainly for non-{@link #floating} Components which may or may not be shown. Instead of using
+     * This config is intended mainly for non-{@link #cfg-floating} Components which may or may not be shown. Instead of using
      * {@link #renderTo} in the configuration, and rendering upon construction, this allows a Component to render itself
-     * upon first _{@link Ext.Component#method-show show}_. If {@link #floating} is `true`, the value of this config is omitted as if it is `true`.
+     * upon first _{@link Ext.Component#method-show show}_. If {@link #cfg-floating} is `true`, the value of this config is omitted as if it is `true`.
      *
      * Specify as `true` to have this Component render to the document body upon first show.
      *
@@ -1318,7 +1318,10 @@ Ext.define('Ext.AbstractComponent', {
             to,
             clearWidth,
             clearHeight,
-            curWidth, w, curHeight, h, needsResize;
+            curWidth, w, curHeight, h, needsResize,
+            wasConstrained,
+            wasConstrainedHeader,
+            passedCallback;
 
         animObj = animObj || {};
         to = animObj.to || {};
@@ -1358,16 +1361,15 @@ Ext.define('Ext.AbstractComponent', {
             // of the Component, but then clip it by sizing its encapsulating element back to original dimensions.
             // The animation will then progressively reveal the larger content.
             if (needsResize) {
-                wasConstrained = me.constrain;
-                wasConstrainedHeader = me.constrainHeader;
-                me.constrain = me.constrainHeader = false;
                 clearWidth = !Ext.isNumber(me.width);
                 clearHeight = !Ext.isNumber(me.height);
 
+                // Lay out this component at the new, larger size to get the internals correctly laid out.
+                // Then size the encapsulating **Element** back down to size.
+                // We will then just animate the element to reveal the correctly laid out content.
                 me.setSize(w, h);
                 me.el.setSize(curWidth, curHeight);
-                me.constrainwasConstrained;
-                me.constrainHeaderwasConstrainedHeader;
+
                 if (clearWidth) {
                     delete me.width;
                 }
@@ -1383,6 +1385,23 @@ Ext.define('Ext.AbstractComponent', {
                 to.height = toHeight;
             }
         }
+
+        // No constraining during the animate - the "to" size has already been calculated with respect to all settings.
+        // Arrange to reinstate any constraining after the animation has completed
+        wasConstrained = me.constrain;
+        wasConstrainedHeader = me.constrainHeader;
+        if (wasConstrained || wasConstrainedHeader) {
+            me.constrain = me.constrainHeader = false;
+            passedCallback = animObj.callback;
+            animObj.callback = function() {
+                me.constrain = wasConstrained;
+                me.constrainHeader = wasConstrainedHeader;
+                // Call the original callback if any
+                if (passedCallback) {
+                    passedCallback.call(animObj.scope||me, arguments);
+                }
+            };
+        }
         return me.mixins.animate.animate.apply(me, arguments);
     },
 
@@ -1397,7 +1416,7 @@ Ext.define('Ext.AbstractComponent', {
     constructPlugin: function(plugin) {
         
         // If a config object with a ptype
-        if (plugin.ptype && typeof plugin.init != 'function') {
+        if (plugin.ptype && !plugin.isPlugin) {
             plugin.cmp = this;
             plugin = Ext.PluginManager.create(plugin);
         }
@@ -2106,7 +2125,7 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
-     * Navigates up the ownership hierarchy searching for an ancestor Container which matches any passed simple selector.
+     * Navigates up the ownership hierarchy searching for an ancestor Container which matches any passed simple selector or component.
      *
      * *Important.* There is not a universal upwards navigation pointer. There are several upwards relationships
      * such as the {@link Ext.button.Button button} which activates a {@link Ext.button.Button#cfg-menu menu}, or the
@@ -2119,18 +2138,21 @@ Ext.define('Ext.AbstractComponent', {
      *
      *     var owningTabPanel = grid.up('tabpanel');
      *
-     * @param {String} [selector] The simple selector to test. If not passed the immediate owner/activater is returned.
+     * @param {String/Ext.Component} [selector] The simple selector component or actual component to test. If not passed the immediate owner/activater is returned.
      * @return {Ext.container.Container} The matching ancestor Container (or `undefined` if no match was found).
      */
-    up: function(selector) {
-        // Use bubble target to navigate upwards so that Components can implement their own hierarchy.
-        // For example Menus implement getBubbleTarget because they have a parentMenu or ownerButton as an
-        // upward link depending upon how they are owned and triggered.
-        var result = this.getBubbleTarget();
+    up: function (selector) {
+        var result = this.getRefOwner();
         if (selector) {
-            for (; result; result = result.getBubbleTarget()) {
-                if (Ext.ComponentQuery.is(result, selector)) {
-                    return result;
+            for (; result; result = result.getRefOwner()) {
+                if (selector.isComponent) {
+                    if (result === selector) {
+                        return result;
+                    }
+                } else {
+                    if (Ext.ComponentQuery.is(result, selector)) {
+                        return result;
+                    }
                 }
             }
         }
@@ -2354,11 +2376,12 @@ Ext.define('Ext.AbstractComponent', {
                 };
 
                 /**
+                * @member Ext.Component
                 * @property {Object} scrollFlags
                 * An object property which provides unified information as to which dimensions are scrollable based upon
                 * the {@link #autoScroll}, {@link #overflowX} and {@link #overflowY} settings (And for *views* of trees and grids, the owning panel's {@link Ext.panel.Table#scroll scroll} setting).
                 * 
-                * Note that if you set overflow styles using the {@link #style} config or {@link Ext.panel.Panel.bodyStyle bodyStyle} config, this object does not include that information;
+                * Note that if you set overflow styles using the {@link #style} config or {@link Ext.panel.Panel#bodyStyle bodyStyle} config, this object does not include that information;
                 * it is best to use {@link #autoScroll}, {@link #overflowX} and {@link #overflowY} if you need to access these flags.
                 * 
                 * This object has the following properties:
@@ -2577,9 +2600,12 @@ Ext.define('Ext.AbstractComponent', {
         return hidden;
     },
 
-    onBoxReady: function(){
+    onBoxReady: function(width, height) {
         var me = this;
 
+        if (me.hasListeners.boxready) {
+            me.fireEvent('boxready', me, width, height);
+        }
         if (me.disableOnBoxReady) {
             me.onDisable();
         } else if (me.enableOnBoxReady) {
@@ -3190,7 +3216,7 @@ Ext.define('Ext.AbstractComponent', {
                 shrinkWrap = ownerLayout.isItemShrinkWrap(me);
             }
 
-            shrinkWrap = (shrinkWrap === true) ? 3 : (shrinkWrap || 0); // false->0, true->3
+            shrinkWrap = shrinkWrap === true ? 3 : (shrinkWrap || 0);
 
             // Now that we have shrinkWrap as a 0-3 value, we need to turn off shrinkWrap
             // bits for any dimension that has a configured size not in pixels. These must
@@ -3345,8 +3371,9 @@ Ext.define('Ext.AbstractComponent', {
     },
 
     /**
+     * @member Ext.Component
      * Sets the left and top of the component. To set the page XY position instead, use {@link Ext.Component#setPagePosition setPagePosition}. This
-     * method fires the {@link #move} event.
+     * method fires the {@link #event-move} event.
      * @param {Number/Number[]/Object} x The new left, an array of `[x,y]`, or animation config object containing `x` and `y` properties.
      * @param {Number} [y] The new top.
      * @param {Boolean/Object} [animate] If `true`, the Component is _animated_ into its new position. You may also pass an
@@ -3735,7 +3762,11 @@ Ext.define('Ext.AbstractComponent', {
             hierarchyState = me.hierarchyState;
  
         if (!hierarchyState || hierarchyState.invalid) {
-            parent = me.ownerCt || me.floatParent;
+            // Use upward navigational link, not ownerCt.
+            // 99% of the time, this will use ownerCt/floatParent.
+            // Certain floating components do not have an ownerCt, but they are still linked
+            // into a navigational hierarchy. The getRefOwner method normalizes these differences.
+            parent = me.getRefOwner();
             hierarchyState = me.hierarchyState =
                 // chain this component's hierarchyState to that of its parent.  If it
                 // doesn't have a parent, then chain to the rootHierarchyState.  This is

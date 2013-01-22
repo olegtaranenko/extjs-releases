@@ -374,12 +374,16 @@ Ext.define('Ext.data.reader.Json', {
         var re = /[\[\.]/;
 
         return function(field, fieldVarName, dataName) {
-            var me     = this,
-                mapping = field.mapping,
+            var mapping = field.mapping,
                 hasMap = mapping || mapping === 0,
                 map    = hasMap ? mapping : field.name,
                 result,
                 operatorIndex;
+
+            // mapping: false means that the Field will never be read from server data.
+            if (mapping === false) {
+                return;
+            }
 
             if (typeof map === 'function') {
                 result = fieldVarName + '.mapping(' + dataName + ', this)';

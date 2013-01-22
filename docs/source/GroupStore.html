@@ -49,7 +49,6 @@ Ext.define('Ext.grid.feature.GroupStore', {
         }
         if (store) {
             me.storeListeners = store.on({
-                remove: me.onRemove,
                 bulkremove: me.onBulkRemove,
                 add: me.onAdd,
                 update: me.onUpdate,
@@ -179,11 +178,6 @@ Ext.define('Ext.grid.feature.GroupStore', {
     },
 
 <span id='Ext-grid-feature-GroupStore-method-onRefresh'>    onRefresh: function(store) {
-</span>        this.processStore(this.store);
-        this.fireEvent('refresh', this);
-    },
-
-<span id='Ext-grid-feature-GroupStore-method-onRemove'>    onRemove: function(store, record, index) {
 </span>        this.processStore(this.store);
         this.fireEvent('refresh', this);
     },

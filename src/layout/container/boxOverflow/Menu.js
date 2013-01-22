@@ -27,7 +27,7 @@ Ext.define('Ext.layout.container.boxOverflow.Menu', {
 
         me.callParent(arguments);
 
-        me.triggerButtonCls = me.triggerButtonCls || Ext.baseCSSPrefix + 'box-menu-' + layout.names.afterX;
+        me.triggerButtonCls = me.triggerButtonCls || Ext.baseCSSPrefix + 'box-menu-after';
         /**
          * @property {Array} menuItems
          * Array of all items that are currently hidden and should go into the dropdown menu

@@ -434,7 +434,7 @@ Ext.define('Ext.form.CheckboxGroup', {
         } else {
             errors = me.getErrors();
             isValid = Ext.isEmpty(errors);
-            wasValid = !me.hasActiveError();
+            wasValid = me.wasValid;
             if (isValid) {
                 me.unsetActiveError();
             } else {
@@ -442,6 +442,7 @@ Ext.define('Ext.form.CheckboxGroup', {
             }
         }
         if (isValid !== wasValid) {
+            me.wasValid = isValid;
             me.fireEvent('validitychange', me, isValid);
             me.updateLayout();
         }

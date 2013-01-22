@@ -373,6 +373,9 @@ Ext.String = (function() {
          * @param {String} sep An option string to separate each pattern.
          */
         repeat: function(pattern, count, sep) {
+            if (count < 1) {
+                count = 0;
+            }
             for (var buf = [], i = count; i--; ) {
                 buf.push(pattern);
             }

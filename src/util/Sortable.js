@@ -152,11 +152,7 @@ Ext.define("Ext.util.Sortable", {
             newSorters = me.decodeSorters(newSorters);
             if (Ext.isString(where)) {
                 if (where === 'prepend') {
-                    sorters = me.sorters.clone().items;
-
-                    me.sorters.clear();
-                    me.sorters.addAll(newSorters);
-                    me.sorters.addAll(sorters);
+                    me.sorters.insert(0, newSorters);
                 }
                 else {
                     me.sorters.addAll(newSorters);
@@ -251,7 +247,7 @@ Ext.define("Ext.util.Sortable", {
                 // ensure sortType gets pushed on if necessary
                 if (fields && !config.transform) {
                     field = fields.get(config.property);
-                    config.transform = field ? field.sortType : undefined;
+                    config.transform = field && field.sortType !== Ext.identityFn ? field.sortType : undefined;
                 }
                 sorters[i] = new Ext.util.Sorter(config);
             }

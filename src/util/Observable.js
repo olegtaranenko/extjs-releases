@@ -39,25 +39,30 @@
 Ext.define('Ext.util.Observable', function(Observable) {
 
     // Private Destroyable class which removes listeners
-    var ListenerRemover = function(observable) {
+    var emptyArray = [],
+        arrayProto = Array.prototype,
+        arraySlice = arrayProto.slice,
+        ExtEvent = Ext.util.Event,
+        ListenerRemover = function(observable) {
 
-        // Passed a ListenerRemover: return it
-        if (observable instanceof ListenerRemover) {
-            return observable;
-        }
+            // Passed a ListenerRemover: return it
+            if (observable instanceof ListenerRemover) {
+                return observable;
+            }
 
-        this.observable = observable;
+            this.observable = observable;
 
-        // Called when addManagedListener is used with the event source as the second arg:
-        // (owner, eventSource, args...)
-        if (arguments[1].isObservable) {
-            this.managedListeners = true;
-        }
-        this.args = Ext.Array.slice(arguments, 1);
-    };
+            // Called when addManagedListener is used with the event source as the second arg:
+            // (owner, eventSource, args...)
+            if (arguments[1].isObservable) {
+                this.managedListeners = true;
+            }
+            this.args = arraySlice.call(arguments, 1);
+        };
+
     ListenerRemover.prototype.destroy = function() {
         this.observable[this.managedListeners ? 'mun' : 'un'].apply(this.observable, this.args);
-    }
+    };
 
     return {
 
@@ -241,7 +246,6 @@ Ext.define('Ext.util.Observable', function(Observable) {
         },
 
         onClassExtended: function (T) {
-
             if (!T.HasListeners) {
                 // Some classes derive from us and some others derive from those classes. All
                 // of these are passed to this method.
@@ -286,9 +290,15 @@ Ext.define('Ext.util.Observable', function(Observable) {
         addManagedListener : function(item, ename, fn, scope, options, /* private */ noDestroy) {
             var me = this,
                 managedListeners = me.managedListeners = me.managedListeners || [],
-                config;
+                config, passedOptions;
 
             if (typeof ename !== 'string') {
+                // When creating listeners using the object form, allow caller to override the default of
+                // using the listeners object as options.
+                // This is used by relayEvents, when adding its relayer so that it does not contibute
+                // a spurious options param to the end of the arg list.
+                passedOptions = arguments.length > 4 ? options : ename;
+
                 options = ename;
                 for (ename in options) {
                     if (options.hasOwnProperty(ename)) {
@@ -296,7 +306,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
                         if (!me.eventOptionsRe.test(ename)) {
                             // recurse, but pass the noDestroy parameter as true so that lots of individual Destroyables are not created.
                             // We create a single one at the end if necessary.
-                            me.addManagedListener(item, ename, config.fn || config, config.scope || options.scope || scope, config.fn ? config : options, true);
+                            me.addManagedListener(item, ename, config.fn || config, config.scope || options.scope || scope, config.fn ? config : passedOptions, true);
                         }
                     }
                 }
@@ -380,6 +390,20 @@ Ext.define('Ext.util.Observable', function(Observable) {
         * @return {Boolean} returns false if any of the handlers return false otherwise it returns true.
         */
         fireEvent: function(eventName) {
+            return this.fireEventArgs(eventName, Array.prototype.slice.call(arguments, 1));
+        },
+
+        /**
+        * Fires the specified event with the passed parameter list.
+        *
+        * An event may be set to bubble up an Observable parent hierarchy (See {@link Ext.Component#getBubbleTarget}) by
+        * calling {@link #enableBubble}.
+        *
+        * @param {String} eventName The name of the event to fire.
+        * @param {Object[]} args An array of parameters which are passed to handlers.
+        * @return {Boolean} returns false if any of the handlers return false otherwise it returns true.
+        */
+        fireEventArgs: function(eventName, args) {
             eventName = eventName.toLowerCase();
             var me = this,
                 events = me.events,
@@ -389,7 +413,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
             // Only continue firing the event if there are listeners to be informed.
             // Bubbled events will always have a listener count, so will be fired.
             if (event && me.hasListeners[eventName]) {
-                ret = me.continueFireEvent(eventName, Ext.Array.slice(arguments, 1), event.bubble);
+                ret = me.continueFireEvent(eventName, args || emptyArray, event.bubble);
             }
             return ret;
         },
@@ -432,7 +456,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
         * @private
         * @return {Ext.util.Observable} The bubble parent. null is returned if no bubble target exists
         */
-        getBubbleParent: function(){
+        getBubbleParent: function() {
             var me = this, parent = me.getBubbleTarget && me.getBubbleTarget();
             if (parent && parent.isObservable) {
                 return parent;
@@ -475,7 +499,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
         *
         * @param {Function} [fn] The method the event invokes, or *if `scope` is specified, the *name* of the method within
         * the specified `scope`.  Will be called with arguments
-        * given to {@link #fireEvent} plus the `options` parameter described below.
+        * given to {@link Ext.util.Observable#fireEvent} plus the `options` parameter described below.
         *
         * @param {Object} [scope] The scope (`this` reference) in which the handler function is
         * executed. **If omitted, defaults to the object which fired the event.**
@@ -567,7 +591,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
         */
         addListener: function(ename, fn, scope, options) {
             var me = this,
-                config, event, hasListeners,
+                config, event,
                 prevListenerCount = 0;
 
             // Object listener hash passed
@@ -600,7 +624,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
                 if (event && event.isEvent) {
                     prevListenerCount = event.listeners.length;
                 } else {
-                    me.events[ename] = event = new Ext.util.Event(me, ename);
+                    me.events[ename] = event = new ExtEvent(me, ename);
                 }
                 //<debug>
                 if (!fn) {
@@ -623,15 +647,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
                 // If a new listener has been added (Event.addListener rejects duplicates of the same fn+scope)
                 // then increment the hasListeners counter
                 if (event.listeners.length !== prevListenerCount) {
-                    hasListeners = me.hasListeners;
-                    if (hasListeners.hasOwnProperty(ename)) {
-                        // if we already have listeners at this level, just increment the count...
-                        ++hasListeners[ename];
-                    } else {
-                        // otherwise, start the count at 1 (which hides whatever is in our prototype
-                        // chain)...
-                        hasListeners[ename] = 1;
-                    }
+                    me.hasListeners._incr_(ename);
                 }
                 if (options && options.destroyable) {
                     return new ListenerRemover(me, ename, fn, scope, options);
@@ -644,9 +660,9 @@ Ext.define('Ext.util.Observable', function(Observable) {
         *
         * @param {String} eventName The type of event the handler was associated with.
         * @param {Function} fn The handler to remove. **This must be a reference to the function passed into the
-        * {@link #addListener} call.**
+        * {@link Ext.util.Observable#addListener} call.**
         * @param {Object} scope (optional) The scope originally specified for the handler. It must be the same as the
-        * scope argument specified in the original call to {@link #addListener} or the listener will not be removed.
+        * scope argument specified in the original call to {@link Ext.util.Observable#addListener} or the listener will not be removed.
         */
         removeListener: function(ename, fn, scope) {
             var me = this,
@@ -668,11 +684,8 @@ Ext.define('Ext.util.Observable', function(Observable) {
                 ename = ename.toLowerCase();
                 event = me.events[ename];
                 if (event && event.isEvent) {
-                    if (event.removeListener(fn, scope) && !--me.hasListeners[ename]) {
-                        // Delete this entry, since 0 does not mean no one is listening, just
-                        // that no one is *directly* listening. This allows the eventBus or
-                        // class observers to "poke" through and expose their presence.
-                        delete me.hasListeners[ename];
+                    if (event.removeListener(fn, scope)) {
+                        me.hasListeners._decr_(ename);
                     }
                 }
             }
@@ -922,7 +935,9 @@ Ext.define('Ext.util.Observable', function(Observable) {
                 relayers[oldName] = me.createRelayer(prefix ? prefix + oldName : oldName);
             }
             // Add the relaying listeners as ManagedListeners so that they are removed when this.clearListeners is called (usually when _this_ is destroyed)
-            me.mon(origin, relayers);
+            // Explicitly pass options as undefined so that the listener does not get an extra options param
+            // which then has to be sliced off in the relayer.
+            me.mon(origin, relayers, null, null, undefined);
 
             // relayed events are always destroyable.
             return new ListenerRemover(me, origin, relayers);
@@ -931,14 +946,14 @@ Ext.define('Ext.util.Observable', function(Observable) {
         /**
         * @private
         * Creates an event handling function which refires the event from this object as the passed event name.
-        * @param newName
-        * @param {Array} beginEnd (optional) The caller can specify on which indices to slice
+        * @param {String} newName The name under which to refire the passed parameters.
+        * @param {Array} beginEnd (optional) The caller can specify on which indices to slice.
         * @returns {Function}
         */
-        createRelayer: function(newName, beginEnd){
+        createRelayer: function(newName, beginEnd) {
             var me = this;
             return function() {
-                return me.fireEvent.apply(me, [newName].concat(Array.prototype.slice.apply(arguments, beginEnd || [0, -1])));
+                return me.fireEventArgs.call(me, newName, beginEnd ? Array.prototype.slice.apply(arguments, beginEnd) : arguments);
             };
         },
 
@@ -991,11 +1006,12 @@ Ext.define('Ext.util.Observable', function(Observable) {
                     event = events[ename];
 
                     if (!event || typeof event == 'boolean') {
-                        events[ename] = event = new Ext.util.Event(me, ename);
+                        events[ename] = event = new ExtEvent(me, ename);
                     }
 
-                    // Event must fire if it bubbles (We don't know if anyone up the bubble hierarchy has listeners added)
-                    me.hasListeners[ename] = (me.hasListeners[ename]||0) + 1;
+                    // Event must fire if it bubbles (We don't know if anyone up the
+                    // bubble hierarchy has listeners added)
+                    me.hasListeners._incr_(ename);
 
                     event.bubble = true;
                 }
@@ -1041,6 +1057,24 @@ Ext.define('Ext.util.Observable', function(Observable) {
 
     HasListeners.prototype = {
         //$$: 42  // to make sure we have a proper prototype
+        _decr_: function (ev) {
+            if (! --this[ev]) {
+                // Delete this entry, since 0 does not mean no one is listening, just
+                // that no one is *directly* listening. This allows the eventBus or
+                // class observers to "poke" through and expose their presence.
+                delete this[ev];
+            }
+        },
+        _incr_: function (ev) {
+            if (this.hasOwnProperty(ev)) {
+                // if we already have listeners at this level, just increment the count...
+                ++this[ev];
+            } else {
+                // otherwise, start the count at 1 (which hides whatever is in our prototype
+                // chain)...
+                this[ev] = 1;
+            }
+        }
     };
 
     proto.HasListeners = Observable.HasListeners = HasListeners;
@@ -1093,17 +1127,19 @@ Ext.define('Ext.util.Observable', function(Observable) {
      *    due to the intervening browser reflow/repaint which would take place.
      *
      * * **`ready`**
-     *    Fires when the DOM is ready, and all required classes have been loaded. Functionally
-     *    the same as {@link Ext.onReady}, but must be called with the `single` option:
      *
-     *     Ext.on({
-     *         ready: function() {
-     *             console.log('document is ready!');
-     *         },
-     *         single: true
-     *     }); 
+     *    Fires when the DOM is ready, and all required classes have been loaded. Functionally
+     *    the same as {@link Ext#onReady}, but must be called with the `single` option:
+     *
+     *         Ext.on({
+     *             ready: function() {
+     *                 console.log('document is ready!');
+     *             },
+     *             single: true
+     *         }); 
      *
      * * **`resumelayouts`**
+     *
      *    Fires after global layout processing has been resumed in {@link Ext.AbstractComponent#resumeLayouts}.
      */
     Ext.globalEvents = globalEvents = new Observable({
@@ -1117,7 +1153,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
      * @member Ext
      * @method on
      * Shorthand for the {@link Ext.util.Observable#addListener} method of the
-     * {@link Ext.globalEvents} Observable instance.
+     * {@link Ext#globalEvents} Observable instance.
      * @inheritdoc Ext.util.Observable#addListener
      */
     Ext.on = function() {
@@ -1128,7 +1164,7 @@ Ext.define('Ext.util.Observable', function(Observable) {
      * @member Ext
      * @method
      * Shorthand for the {@link Ext.util.Observable#removeListener} method of the
-     * {@link Ext.globalEvents} Observable instance.
+     * {@link Ext#globalEvents} Observable instance.
      * @inheritdoc Ext.util.Observable#removeListener
      */
     Ext.un = function() {

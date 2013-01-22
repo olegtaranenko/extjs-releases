@@ -53,7 +53,10 @@ Ext.define('Ext.direct.Manager', {
         observable: 'Ext.util.Observable'
     },
 
-    requires: ['Ext.util.MixedCollection'],
+    requires: [
+        'Ext.util.MixedCollection',
+        'Ext.app.domain.Direct'
+    ],
 
     /**
      * Exception types.

@@ -458,6 +458,16 @@
      *     iPhone.getPrice(); // 500;
      *     iPhone.getOperatingSystem(); // 'iOS'
      *     iPhone.getHasTouchScreen(); // true;
+     *
+     * NOTE for when configs are reference types, the getter and setter methods do not make copies.
+     *
+     * For example, when a config value is set, the reference is stored on the instance. All instances that set
+     * the same reference type will share it.
+     *
+     * In the case of the getter, the value with either come from the prototype if the setter was never called or from
+     * the instance as the last value passed to the setter.
+     *
+     * For some config properties, the value passed to the setter is transformed prior to being stored on the instance.
      */
     ExtClass.registerPreprocessor('config', function(Class, data) {
         var config = data.config,

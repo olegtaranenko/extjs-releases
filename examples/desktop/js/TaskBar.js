@@ -158,7 +158,7 @@ Ext.define('Ext.ux.desktop.TaskBar', {
             btn.disable();
             win.on('hide', function() {
                 btn.enable();
-            }, null, {sinfgle: true});
+            }, null, {single: true});
             win.minimize();
         } else {
             win.toFront();

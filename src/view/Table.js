@@ -715,15 +715,9 @@ Ext.define('Ext.view.Table', {
 
             me.callParent();
 
-            // If the OS displays scrollbars, and we are overflowing vertically, ensure the
-            // HeaderContainer accounts for the scrollbar.
-            // If we need to measure row heights, update the layout
-            if (grid && 
-                (Ext.getScrollbarSize().width && me.scrollFlags.y) ||
-                (grid.lockable && grid.syncRowHeight)
-            ) {
-                grid.updateLayout();
-            }
+            // Since columns and tables are not sized by generated CSS rules any more, EVERY table refresh
+            // has to be followed by a layout to ensure correct table and column sizing.
+            grid.updateLayout();
 
             Ext.resumeLayouts(true);
         }
@@ -904,7 +898,7 @@ Ext.define('Ext.view.Table', {
         cellValues.tdCls = cellValues.style = cellValues.tdAttr = "";
         cellValues.unselectableAttr = me.enableTextSelection ? '' : 'unselectable="on"';
 
-        if (column.renderer.call) {
+        if (column.renderer && column.renderer.call) {
             value = column.renderer.call(column.scope || me.ownerCt, fieldValue, cellValues, record, recordIndex, columnIndex, me.dataSource, me);
             if (cellValues.css) {
                 // This warning attribute is used by the compat layer
@@ -942,7 +936,7 @@ Ext.define('Ext.view.Table', {
         }
 
         classes.push(cellValues.tdCls);
-        if (selModel && selModel.isCellSelected && selModel.isCellSelected(recordIndex, columnIndex)) {
+        if (selModel && selModel.isCellSelected && selModel.isCellSelected(me, recordIndex, columnIndex)) {
             classes.push(me.selectedCellCls);
         }
         cellValues.tdCls = classes.join(' ');
@@ -987,7 +981,7 @@ Ext.define('Ext.view.Table', {
             itemSelector = this.itemSelector,
             fly;
 
-        if (dataRow === false) {
+        if (dataRow === false && result) {
             if (!(fly = Ext.fly(result)).is(itemSelector)) {
                 return fly.up(itemSelector, null, true);
             }
@@ -1205,7 +1199,7 @@ Ext.define('Ext.view.Table', {
                 adjustment = rowRegion.bottom - elBottom;
             }
             record = me.getRecord(row);
-            rowIdx = me.dataSource.indexOf(record);
+            rowIdx = me.indexInStore(row);
 
             if (adjustment) {
                 panel.scrollByDeltaY(adjustment);
@@ -1294,7 +1288,9 @@ Ext.define('Ext.view.Table', {
         var me = this,
             rowTpl = me.rowTpl,
             firstRowHeight = firstRow.dom.offsetHeight,
-            secondRowHeight = secondRow.dom.offsetHeight;
+            secondRowHeight = secondRow.dom.offsetHeight,
+            // Hack for legacy IE browsers which add cell borders onto the TR height.
+            incr = Ext.isBorderBox ? 0 : -2;
 
         // If the two rows *need* syncing...
         if (firstRowHeight !== secondRowHeight) {
@@ -1326,9 +1322,9 @@ Ext.define('Ext.view.Table', {
                     secondRowHeight = secondRow.dom.offsetHeight;
 
                     if (firstRowHeight > secondRowHeight) {
-                        secondRow.setHeight(firstRowHeight);
+                        secondRow.setHeight(firstRowHeight + incr);
                     } else if (secondRowHeight > firstRowHeight) {
-                        firstRow.setHeight(secondRowHeight);
+                        firstRow.setHeight(secondRowHeight + incr);
                     }
                 }
             }
@@ -1344,8 +1340,8 @@ Ext.define('Ext.view.Table', {
             newRowDom,
             newAttrs, attLen, attName, attrIndex,
             overItemCls,
-            columns,
-            isHovered;
+            focusedItemCls,
+            columns;
 
         if (me.viewReady) {
             // Table row being updated
@@ -1354,10 +1350,17 @@ Ext.define('Ext.view.Table', {
             // Row might not be rendered due to buffered rendering or being part of a collapsed group...
             if (oldRowDom) {
                 overItemCls = me.overItemCls;
+                focusedItemCls = me.focusedItemCls;
+                
                 index = me.indexInStore(record);
-                newRowDom = me.createRowElement(record, index);
                 oldRow = Ext.fly(oldRowDom, '_internal');
-                isHovered = oldRow.hasCls(overItemCls);
+                newRowDom = me.createRowElement(record, index);
+                if (oldRow.hasCls(overItemCls)) {
+                    Ext.fly(newRowDom).addCls(overItemCls);
+                }
+                if (oldRow.hasCls(focusedItemCls)) {
+                    Ext.fly(newRowDom).addCls(focusedItemCls);
+                }
                 columns = me.headerCt.getGridColumns();
 
                 // Copy new row attributes across. Use IE-specific method if possible.
@@ -1372,10 +1375,6 @@ Ext.define('Ext.view.Table', {
                             oldRowDom.setAttribute(attName, newAttrs[attrIndex].value);
                         }
                     }
-                }
-
-                if (isHovered) {
-                    oldRow.addCls(overItemCls);
                 }
 
                 // If we have columns which may *need* updating (think locked side of lockable grid with all columns unlocked)
@@ -1538,6 +1537,10 @@ Ext.define('Ext.view.Table', {
                 (me['onCell' + map[type]](cell, cellIndex, record, row, rowIndex, e) === false) ||
                 (me.fireEvent('cell' + type, me, cell, cellIndex, record, row, rowIndex, e) === false)
             );
+        } else {
+            // If it's not in the store, it could be a feature event, so check here
+            this.processSpecialEvent(e);
+            return false;
         }
     },
 
@@ -1811,22 +1814,79 @@ Ext.define('Ext.view.Table', {
      *
      * If no row is visible in the specified direction, returns the input row index unchanged.
      * @param {Number} startRow The zero-based row index to start from.
-     * @param {Number} increment The increment to move the row by. May be +ve or -ve.
+     * @param {Number} distance The distance to move the row by. May be +ve or -ve.
      */
-    walkRows: function(startRow, increment) {
+    walkRows: function(startRow, distance) {
+        // Note that we use the **dataSource** here because row indices mean view row indices
+        // so records in collapsed groups must be omitted.
         var me = this,
+            moved = 0,
+            lastValid = startRow,
             node,
-            count = me.dataSource.getCount(),
-            limit = increment === -1 ? 0 : count - 1,
+            last = me.dataSource.getCount() - 1,
+            limit = (distance < 0) ? 0 : last,
+            increment = limit ? 1 : -1,
             result = startRow;
             
         do {
-            if (result === limit) {
-                return startRow;
+            // Walked off the end: return the last encountered valid row
+            if (limit ? result >= limit : result <= 0) {
+                return lastValid || limit;
             }
+            
+            // Move the result pointer on by one position. We have to count intervening VISIBLE nodes
             result += increment;
-        } while (!(node = Ext.fly(me.getNode(result, true))) || !node.isVisible(true));
+            
+            // Stepped onto VISIBLE record: Increment the moved count.
+            // We must not count stepping onto a non-rendered record as a move.
+            if ((node = Ext.fly(me.getNode(result, true))) && node.isVisible(true)) {
+                moved += increment;
+                lastValid = result;
+            }
+        } while (moved !== distance);
         return result;
+    },
+
+    /**
+     * Navigates from the passed record by the passed increment which may be +ve or -ve
+     *
+     * Skips hidden records.
+     *
+     * If no record is visible in the specified direction, returns the starting record index unchanged.
+     * @param {Ext.data.Model} startRec The Record to start from.
+     * @param {Number} distance The distance to move from the record. May be +ve or -ve.
+     */
+    walkRecs: function(startRec, distance) {
+        // Note that we use the **store** to access the records by index because the dataSource omits records in collapsed groups.
+        // This is used by selection models which use the **store**
+        var me = this,
+            moved = 0,
+            lastValid = startRec,
+            node,
+            last = me.store.getCount() - 1,
+            limit = (distance < 0) ? 0 : last,
+            increment = limit ? 1 : -1,
+            testIndex = me.store.indexOf(startRec),
+            rec;
+            
+        do {
+            // Walked off the end: return the last encountered valid record
+            if (limit ? testIndex >= limit : testIndex <= 0) {
+                return lastValid;
+            }
+            
+            // Move the result pointer on by one position. We have to count intervening VISIBLE nodes
+            testIndex += increment;
+            
+            // Stepped onto VISIBLE record: Increment the moved count.
+            // We must not count stepping onto a non-rendered record as a move.
+            rec = me.store.getAt(testIndex);
+            if ((node = Ext.fly(me.getNodeByRecord(rec, true))) && node.isVisible(true)) {
+                moved += increment;
+                lastValid = rec;
+            }
+        } while (moved !== distance);
+        return lastValid;
     },
 
     getFirstVisibleRowIndex: function() {

@@ -62,6 +62,7 @@ Ext.define('Ext.resizer.Resizer', {
 </span><span id='Ext-resizer-Resizer-property-pinnedCls'>    pinnedCls: Ext.baseCSSPrefix + 'resizable-pinned',
 </span><span id='Ext-resizer-Resizer-property-overCls'>    overCls:   Ext.baseCSSPrefix + 'resizable-over',
 </span><span id='Ext-resizer-Resizer-property-wrapCls'>    wrapCls:   Ext.baseCSSPrefix + 'resizable-wrap',
+</span><span id='Ext-resizer-Resizer-property-delimiterRe'>    delimiterRe: /(?:\s*[,;]\s*)|\s+/,
 </span>
 <span id='Ext-resizer-Resizer-cfg-dynamic'>    /**
 </span>     * @cfg {Boolean} dynamic
@@ -328,7 +329,7 @@ Ext.define('Ext.resizer.Resizer', {
             me.handles = 'n s e w ne nw se sw';
         }
 
-        handles = me.handles = me.handles.split(/ |\s*?[,;]\s*?/);
+        handles = me.handles = me.handles.split(me.delimiterRe);
         possibles = me.possiblePositions;
         len = handles.length;
         handleCls = me.handleCls + ' ' + (me.target.isComponent ? (me.target.baseCls + '-handle ') : '') + me.handleCls + '-';
@@ -470,13 +471,16 @@ Ext.define('Ext.resizer.Resizer', {
     },
 
 <span id='Ext-resizer-Resizer-method-destroy'>    destroy: function() {
-</span>        var i = 0,
+</span>        var i,
             handles = this.handles,
             len = handles.length,
-            positions = this.possiblePositions;
+            positions = this.possiblePositions,
+            handle;
 
-        for (; i &lt; len; i++) {
-            this[positions[handles[i]]].remove();
+        for (i = 0; i &lt; len; i++) {
+            if (handle = this[positions[handles[i]]]) {
+                handle.remove();
+            }
         }
     },
 

@@ -276,15 +276,16 @@
             }
             font: $grid-row-cell-font;
             background-color: $grid-row-cell-background;
-            border-color: $grid-row-cell-border-color;
+            border-color: $grid-row-cell-background;
             border-style: $grid-row-cell-border-style;
-            border-top-color: lighten($grid-row-cell-border-color, 5);
-            border-width: 0;
+            border-width: 1px 0;
         }
     }
 
     .#{$prefix}grid-with-row-lines .#{$prefix}grid-cell {
         border-width: $grid-row-cell-border-width;
+        border-top-color: lighten($grid-row-cell-border-color, 5);
+        border-bottom-color: $grid-row-cell-border-color;
     }
 
     .#{$prefix}grid-rowwrap {
@@ -310,8 +311,8 @@
 
     .#{$prefix}grid-row-focused .#{$prefix}grid-cell,
     .#{$prefix}grid-row-focused .#{$prefix}grid-rowwrap {
-        border-color: $grid-row-cell-focus-border-color;
-
+        border-top: 1px dotted $grid-row-cell-focus-border-color!important;
+        border-bottom: 1px dotted $grid-row-cell-focus-border-color!important;
         background-color: $grid-row-cell-focus-background-color;
     }
 
@@ -359,10 +360,17 @@
             margin: 5px 5px 10px 5px;
         }
     }
+    
+    @if $include-ie {
+        .#{$prefix}ie6 .#{$prefix}grid-rowbody {
+            width: 100%;
+        }
+    }
 
     //grid cells
     .#{$prefix}grid-cell {
         overflow: hidden;
+        border-color: $grid-row-cell-background;
     }
 
     .#{$prefix}grid-cell-inner {
@@ -384,7 +392,8 @@
     // Action columns with a standard, 16x16 icon require less padding
     .#{$prefix}action-col-cell .#{$prefix}grid-cell-inner {
         line-height: 0;
-        padding: 2px;
+        // !important needed to override .x-tree-panel .x-grid-cell-inner's padding setting.
+        padding: 1px 2px 1px 2px!important;
     }
 
     .#{$prefix}action-col-cell .#{$prefix}item-disabled {
@@ -578,6 +587,7 @@
         border-color: $grid-grouped-header-border-color;
 
         cursor: pointer;
+        white-space: nowrap;
     }
     
     .#{$prefix}grid-group-hd-not-collapsible {

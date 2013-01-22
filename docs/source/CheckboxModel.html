@@ -56,9 +56,6 @@ Ext.define('Ext.selection.CheckboxModel', {
 </span>
 <span id='Ext-selection-CheckboxModel-property-checkerOnCls'>    // private
 </span>    checkerOnCls: Ext.baseCSSPrefix + 'grid-hd-checker-on',
-
-<span id='Ext-selection-CheckboxModel-property-refreshOnRemove'>    // private
-</span>    refreshOnRemove: true,
     
 <span id='Ext-selection-CheckboxModel-method-constructor'>    constructor: function(){
 </span>        var me = this;
@@ -228,11 +225,8 @@ Ext.define('Ext.selection.CheckboxModel', {
 
 <span id='Ext-selection-CheckboxModel-method-refresh'>    // After refresh, ensure that the header checkbox state matches
 </span>    refresh: function() {
-        var me = this;
-
-        me.callParent(arguments);
-
-        me.updateHeaderState();
+        this.callParent(arguments);
+        this.updateHeaderState();
     },
 
 <span id='Ext-selection-CheckboxModel-method-renderer'>    /**
@@ -281,18 +275,26 @@ Ext.define('Ext.selection.CheckboxModel', {
      * @private
      */
     onSelectChange: function() {
-        var me = this;
-        me.callParent(arguments);
-        me.updateHeaderState();
+        this.callParent(arguments);
+        this.updateHeaderState();
     },
 
 <span id='Ext-selection-CheckboxModel-method-onStoreLoad'>    /**
 </span>     * @private
      */
     onStoreLoad: function() {
-        var me = this;
-        me.callParent(arguments);
-        me.updateHeaderState();
+        this.callParent(arguments);
+        this.updateHeaderState();
+    },
+
+<span id='Ext-selection-CheckboxModel-method-onStoreAdd'>    onStoreAdd: function() {
+</span>        this.callParent(arguments);
+        this.updateHeaderState();
+    },
+
+<span id='Ext-selection-CheckboxModel-method-onStoreRemove'>    onStoreRemove: function() {
+</span>        this.callParent(arguments);
+        this.updateHeaderState();
     },
 
 <span id='Ext-selection-CheckboxModel-method-updateHeaderState'>    /**

@@ -9,8 +9,17 @@ Ext.define('Ext.tree.ViewDragZone', {
     },
 
     getDragText: function() {
-        var count = this.dragData.records.length;
-        return count == 1 ? this.dragData.records[0].get('text') : Ext.String.format(this.dragText, count, 's');
+        var records = this.dragData.records,
+            count = records.length,
+            text = records[0].get(this.displayField),
+            suffix = 's';
+            
+        if (count === 1 && text) {
+            return text;    
+        } else if (!text) {
+            suffix = '';
+        }
+        return Ext.String.format(this.dragText, count, suffix);
     },
 
     afterRepair: function() {

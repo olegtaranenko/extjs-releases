@@ -217,11 +217,32 @@ Ext.define('Ext.util.LruCache', {
             map = this.map;
 
         for (key in map) {
+            // Attention. Differs from subclass in that this compares the value property
+            // of the entry.
             if (map.hasOwnProperty(key) && map[key].value === value) {
                 return key;
             }
         }
         return undefined;
+    },
+
+    /**
+     * Performs a shallow copy on this haLruCachesh.
+     * @return {Ext.util.HashMap} The new hash object.
+     */
+    clone: function() {
+        var newCache = new this.self(this.initialConfig),
+            map = this.map,
+            key;
+
+        newCache.suspendEvents();
+        for (key in map) {
+            if (map.hasOwnProperty(key)) {
+                newCache.add(key, map[key].value);
+            }
+        }
+        newCache.resumeEvents();
+        return newCache;
     },
 
     /**

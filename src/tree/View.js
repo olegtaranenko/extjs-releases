@@ -9,6 +9,12 @@ Ext.define('Ext.tree.View', {
         'Ext.data.NodeStore'
     ],
 
+    /**
+     * @property {Boolean} isTreeView
+     * `true` in this class to identify an object as an instantiated TreeView, or subclass thereof.
+     */
+    isTreeView: true,
+
     loadingCls: Ext.baseCSSPrefix + 'grid-tree-loading',
     expandedCls: Ext.baseCSSPrefix + 'grid-tree-node-expanded',
     leafCls: Ext.baseCSSPrefix + 'grid-tree-node-leaf',
@@ -107,36 +113,6 @@ Ext.define('Ext.tree.View', {
             });
         }
 
-        store.on({
-            beforeexpand: me.onBeforeExpand,
-            expand: me.onExpand,
-            beforecollapse: me.onBeforeCollapse,
-            collapse: me.onCollapse,
-            write: me.onStoreWrite,
-            datachanged: me.onStoreDataChanged,
-            collapsestart: me.beginBulkUpdate,
-            collapsecomplete: me.endBulkUpdate,
-            scope: me
-        });
-
-        treeStore.on({
-            scope: me,
-            beforefill: me.onBeforeFill,
-            fillcomplete: me.onFillComplete,
-            beforebulkremove: me.beginBulkUpdate,
-            bulkremovecomplete: me.endBulkUpdate
-        });
-
-        if (!treeStore.remoteSort) {
-            // If we're local sorting, we don't want the view to be
-            // continually updated during the sort process
-            treeStore.on({
-                scope: me,
-                beforesort: me.onBeforeSort,
-                sort: me.onSort
-            });
-        }
-
         if (me.node) {
             me.setRootNode(me.node);
         }
@@ -171,43 +147,18 @@ Ext.define('Ext.tree.View', {
         );
         me.callParent(arguments);
         me.addRowTpl(Ext.XTemplate.getTpl(me, 'treeRowTpl'));
-        me.on({
-            element: 'el',
-            scope: me,
-            delegate: me.expanderSelector,
-            mouseover: me.onExpanderMouseOver,
-            mouseout: me.onExpanderMouseOut
-        });
-        me.on({
-            element: 'el',
-            scope: me,
-            delegate: me.checkboxSelector,
-            click: me.onCheckboxChange
-        });
     },
 
-    onBeforeFill: function(treeStore, fillRoot){
-        var store = this.store,
-            index = store.indexOf(fillRoot);
-
-        // Filling a bunch of nodes, save the index of the root and the next sibling. When
-        // the load is finished, the new records will be those that exist between the two.
-        this.fillRootIndex = index;
-        this.fillSibling = store.getAt(index + 1);
-        store.suspendEvents();
-
+    onBeforeFill: function(treeStore, fillRoot) {
+        this.store.suspendEvents();
     },
 
-    onFillComplete: function(treeStore, fillRoot, newNodes){
+    onFillComplete: function(treeStore, fillRoot, newNodes) {
         var me = this,
             store = me.store,
-            start = me.fillRootIndex + 1,
-            sibling = me.fillSibling,
-            end, records;
+            start = store.indexOf(newNodes[0]);
 
         store.resumeEvents();
-        delete me.fillSibling;
-        delete me.fillRootIndex;
 
         // Always update the current node, since the load may be triggered
         // by .load() directly instead of .expand() on the node
@@ -215,17 +166,13 @@ Ext.define('Ext.tree.View', {
 
         // In the cases of expand, the records might not be in the store yet,
         // so jump out early and expand will handle it later
-        if (!newNodes.length || store.indexOf(newNodes[0]) === -1) {
+        if (!newNodes.length || start === -1) {
             return;
         }
 
-        if (sibling) {
-            end = store.indexOf(sibling) - 1;
-        } 
+        // Insert new nodes into the view
+        me.onAdd(me.store, newNodes, start);
 
-        records = store.getRange(start, end);
-        me.onAdd(store, records, start);
-        
         me.refreshPartner();
     },
 
@@ -242,29 +189,33 @@ Ext.define('Ext.tree.View', {
             this.refreshPartner();
         }
     },
-    
-    refreshPartner: function(){
+
+    refreshPartner: function() {
         var partner = this.lockingPartner;
         if (partner) {
             partner.refresh();
         }
     },
 
-    // Overridden from base class
-    // TreeView uses the individual record remove event rather than the bulkremove
-    getStoreListeners: function() {
-        var me = this;
-        return {
-            refresh: me.onDataRefresh,
-            add: me.onAdd,
-            remove: me.onRemove,
-            update: me.onUpdate,
-            clear: me.refresh
-        };
-    },
-
     getMaskStore: function() {
         return this.panel.getStore();
+    },
+
+    afterRender: function() {
+        var me = this;
+        me.callParent(arguments);
+
+        me.el.on({
+            scope: me,
+            delegate: me.expanderSelector,
+            mouseover: me.onExpanderMouseOver,
+            mouseout: me.onExpanderMouseOut,
+            click: {
+                delegate: me.checkboxSelector,
+                fn: me.onCheckboxChange,
+                scope: me
+            }
+        });
     },
 
     afterComponentLayout: function() {
@@ -455,36 +406,62 @@ Ext.define('Ext.tree.View', {
         }
     },
 
-    beginBulkUpdate: function(){
-        this.bulkUpdate = true;
+    // These methods are triggered by:
+    //  the TreeStore's beforebulkremove & bulkremovecomplete events.
+    // In the case of a fully loaded tree (no async IO needed), the whole expansion will be bracketed by
+    // layout suspension, and will end with one refreshSize call.
+    beginBulkUpdate: function() {
+        if (this.rendered) {
+            Ext.suspendLayouts();
+        }
     },
-
     endBulkUpdate: function(){
-        var me = this;
-        this.bulkUpdate = false;
-        if (me.rendered) {
-            me.refreshSize();
-            me.updateIndexes();
+        if (this.rendered) {
+            this.refreshSize();
+            Ext.resumeLayouts(true);
         }
     },
 
-    onRemove : function(ds, record, index) {
+    onAdd: function(store, records, index) {        
+        this.callParent(arguments);
+
+        // If appending, and there is a previous node, then to keep the elbows
+        // correct, update the previous node.
+        if (records[records.length - 1].data.isLast && records[0].previousSibling) {
+            this.onUpdate(store, records[0].previousSibling);
+        }
+    },
+
+    onRemove : function(ds, records, indexes) {
         var me = this,
-            bulk = me.bulkUpdate,
-            empty;
+            empty, i,
+            record;
 
         if (me.viewReady) {
-            me.doRemove(record, index);
-            if (!bulk) {
-                me.updateIndexes(index);
-            }
             empty = me.store.getCount() === 0;
-            if (empty){
+
+            // Nothing left, just refresh the view.
+            if (empty) {
                 me.refresh();
             }
-            me.fireEvent('itemremove', record, index);
-            if (!bulk && !empty) {
-                me.refreshSize();
+            else {
+                // Remove in reverse order so that indices remain correct
+                for (i = indexes.length - 1; i >= 0; --i) {
+                    me.doRemove(records[i], indexes[i]);
+                }
+
+                // If the previous sibling is now last, update it to keep the elbows up to date
+                record = records[0];
+                if (record.previousSibling && record.previousSibling.data.isLast) {
+                    this.onUpdate(ds, record.previousSibling);
+                }
+            }
+
+            // Only loop through firing the event if there's anyone listening
+            if (me.hasListeners.itemremove) {
+                for (i = indexes.length - 1; i >= 0; --i) {
+                    me.fireEvent('itemremove', records[i], indexes[i]);
+                }
             }
         }
     },
@@ -502,7 +479,9 @@ Ext.define('Ext.tree.View', {
             return me.callParent(arguments);
         }
 
-        animWrap.targetEl.appendChild(node);
+        // Insert the item at the beginning of the animate el - child nodes are removed
+        // in reverse order so that the index can be used.
+        animWrap.targetEl.dom.insertBefore(node, animWrap.targetEl.dom.firstChild);
         all.removeElement(index);
     },
 
@@ -596,26 +575,32 @@ Ext.define('Ext.tree.View', {
         animWrap.isAnimating = true;
     },
 
+    // Triggered by the NodeStore's onNodeCollapse event.
     onBeforeCollapse: function(parent, records, index) {
         var me = this,
             animWrap;
 
-        if (!me.rendered || !me.animate) {
-            return;
-        }
+        if (me.rendered) {
+            if (!me.animate) {
+                return;
+            }
 
-        if (me.getNode(parent)) {
-            animWrap = me.getAnimWrap(parent);
-            if (!animWrap) {
-                animWrap = me.animWraps[parent.internalId] = me.createAnimWrap(parent, index);
+            // Only process if the collapsing node is in the UI.
+            // A node may be collapsed as part of a recursive ancestor collapse, and if it
+            // has already been removed from the UI by virtue of an ancestor being collapsed, we should not do anything.
+            if (Ext.Array.contains(parent.stores, me.store)) {
+                animWrap = me.getAnimWrap(parent);
+                if (!animWrap) {
+                    animWrap = me.animWraps[parent.internalId] = me.createAnimWrap(parent, index);
+                }
+                else if (animWrap.expanding) {
+                    // If we collapse this node while it is still expanding then we
+                    // have to remove the nodes from the animWrap.
+                    animWrap.targetEl.select(this.itemSelector).remove();
+                }
+                animWrap.expanding = false;
+                animWrap.collapsing = true;
             }
-            else if (animWrap.expanding) {
-                // If we collapse this node while it is still expanding then we
-                // have to remove the nodes from the animWrap.
-                animWrap.targetEl.select(this.itemSelector).remove();
-            }
-            animWrap.expanding = false;
-            animWrap.collapsing = true;
         }
     },
 
@@ -628,11 +613,14 @@ Ext.define('Ext.tree.View', {
             animWrap = me.getAnimWrap(parent),
             animateEl;
 
-        // The item has already been removed by a parent node
-        if (index === -1) {
+        // If the collapsed node is already removed from the UI
+        // by virtue of being a descendant of a collapsed node, then
+        // we have nothing to do here.
+        if (!Ext.Array.contains(parent.stores, me.store)) {
             return;
         }
 
+        // Not animating, all items will have been added, so updateLayout and resume layouts
         if (!animWrap) {
             parent.isExpandingOrCollapsing = false;
             me.fireEvent('afteritemcollapse', parent, index, node);
@@ -644,7 +632,6 @@ Ext.define('Ext.tree.View', {
 
         queue[id] = true;
 
-        // @TODO: we are setting it to 1 because quirks mode on IE seems to have issues with 0
         animateEl.stopAnimation();
         animateEl.animate({
             to: {
@@ -770,6 +757,68 @@ Ext.define('Ext.tree.View', {
 
     onExpanderMouseOut: function(e, t) {
         e.getTarget(this.cellSelector, 10, true).removeCls(this.expanderIconOverCls);
+    },
+    
+    getStoreListeners: function(){
+        var me = this,
+            listeners = me.callParent(arguments);
+            
+        return Ext.apply(listeners, {
+            beforeexpand: me.onBeforeExpand,
+            expand: me.onExpand,
+            beforecollapse: me.onBeforeCollapse,
+            collapse: me.onCollapse,
+            write: me.onStoreWrite,
+            datachanged: me.onStoreDataChanged
+        });    
+    },
+    
+    onBindStore: function(){
+        var me = this,
+            treeStore = me.getTreeStore();
+        
+        me.callParent(arguments);
+        
+        me.mon(treeStore, {
+            scope: me,
+            beforefill: me.onBeforeFill,
+            fillcomplete: me.onFillComplete,
+            beforebulkremove: me.beginBulkUpdate,
+            bulkremovecomplete: me.endBulkUpdate
+        });
+
+        if (!treeStore.remoteSort) {
+            // If we're local sorting, we don't want the view to be
+            // continually updated during the sort process
+            me.mon(treeStore, {
+                scope: me,
+                beforesort: me.onBeforeSort,
+                sort: me.onSort
+            });
+        }
+    },
+    
+    onUnbindStore: function(){
+        var me = this,
+            treeStore = me.getTreeStore();
+            
+        me.callParent(arguments);
+        
+        me.mun(treeStore, {
+            scope: me,
+            beforefill: me.onBeforeFill,
+            fillcomplete: me.onFillComplete,
+            beforebulkremove: me.beginBulkUpdate,
+            bulkremovecomplete: me.endBulkUpdate
+        });
+
+        if (!treeStore.remoteSort) {
+            me.mun(treeStore, {
+                scope: me,
+                beforesort: me.onBeforeSort,
+                sort: me.onSort
+            });
+        }
     },
 
     /**

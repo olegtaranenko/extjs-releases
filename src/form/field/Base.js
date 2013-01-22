@@ -421,18 +421,6 @@ Ext.define('Ext.form.field.Base', {
         return this.inputType === 'file';
     },
 
-    extractFileInput: function() {
-        var me = this,
-            fileInput = me.isFileUpload() ? me.inputEl.dom : null,
-            clone;
-        if (fileInput) {
-            clone = fileInput.cloneNode(true);
-            fileInput.parentNode.replaceChild(clone, fileInput);
-            me.inputEl = Ext.get(clone);
-        }
-        return fileInput;
-    },
-
     // private override to use getSubmitValue() as a convenience
     getSubmitData: function() {
         var me = this,

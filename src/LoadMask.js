@@ -31,6 +31,11 @@ Ext.define('Ext.LoadMask', {
     uses: ['Ext.data.StoreManager'],
 
     /* End Definitions */
+    
+    /**
+     * @cfg {Ext.Component} target The Component you wish to mask. The the mask will be automatically sized
+     * upon Component resize, and the message box will be kept centered.
+     */
 
     /**
      * @cfg {Ext.data.Store} store
@@ -100,12 +105,23 @@ Ext.define('Ext.LoadMask', {
 
     /**
      * Creates new LoadMask.
-     * @param {Ext.Component} comp The Component you wish to mask. The the mask will be automatically sized
-     * upon Component resize, and the message box will be kept centered.</p>
-     * @param {Object} [config] The config object
+     * @param {Object} [config] The config object.
      */
-    constructor : function(comp, config) {
-        var me = this;
+    constructor : function(config) {
+        var me = this,
+            comp;
+
+        if (arguments.length === 2) {
+            //<debug>
+            if (Ext.isDefined(Ext.global.console)) {
+                Ext.global.console.warn('Ext.LoadMask: LoadMask now uses a standard 1 arg constructor: use the target config');
+            }
+            //</debug>
+            comp = config;
+            config = arguments[1];
+        } else {
+            comp = config.target;
+        }
 
         // Element support to be deprecated
         if (!comp.isComponent) {
@@ -129,7 +145,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-    bindComponent: function(comp){
+    bindComponent: function(comp) {
         var me = this,
             listeners = {
                 scope: this,
@@ -160,7 +176,7 @@ Ext.define('Ext.LoadMask', {
         });
     },
 
-    onComponentAdded: function(owner){
+    onComponentAdded: function(owner) {
         var me = this;
         delete me.activeOwner;
         me.floatParent = owner;
@@ -180,7 +196,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-    onComponentRemoved: function(owner){
+    onComponentRemoved: function(owner) {
         var me = this,
             activeOwner = me.activeOwner,
             floatOwner = me.floatOwner;
@@ -197,38 +213,38 @@ Ext.define('Ext.LoadMask', {
 
     afterRender: function() {
         this.callParent(arguments);
-        this.container = this.floatParent.getContentTarget();
+            this.container = this.floatParent.getContentTarget();
     },
 
-    onContainerShow: function(container){
+    onContainerShow: function(container) {
         if (this.isActiveContainer(container)) {
             this.onComponentShow();
         }
     },
 
-    onContainerHide: function(container){
+    onContainerHide: function(container) {
         if (this.isActiveContainer(container)) {
             this.onComponentHide();
         }
     },
 
-    onContainerExpand: function(container){
+    onContainerExpand: function(container) {
         if (this.isActiveContainer(container)) {
             this.onComponentShow();
         }
     },
 
-    onContainerCollapse: function(container){
+    onContainerCollapse: function(container) {
         if (this.isActiveContainer(container)) {
             this.onComponentHide();
         }
     },
 
-    isActiveContainer: function(container){
+    isActiveContainer: function(container) {
         return this.isDescendantOf(container);
     },
 
-    onComponentHide: function(){
+    onComponentHide: function() {
         var me = this;
 
         if (me.rendered && me.isVisible()) {
@@ -237,7 +253,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-    onComponentShow: function(){
+    onComponentShow: function() {
         if (this.showNext) {
             this.show();
         }
@@ -334,7 +350,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-    maybeShow: function(){
+    maybeShow: function() {
         var me = this,
             owner = me.getOwner();
 
@@ -371,7 +387,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-    hide: function(){
+    hide: function() {
         // Element support to be deprecated
         if (this.isElement) {
             this.ownerCt.unmask();
@@ -382,12 +398,12 @@ Ext.define('Ext.LoadMask', {
         return this.callParent(arguments);
     },
 
-    onHide: function(){
+    onHide: function() {
         this.callParent();
         this.getMaskEl().hide();
     },
 
-    show: function(){
+    show: function() {
         // Element support to be deprecated
         if (this.isElement) {
             this.ownerCt.mask(this.useMsg ? this.msg : '', this.msgCls);
@@ -423,7 +439,7 @@ Ext.define('Ext.LoadMask', {
         this.hide();
     },
 
-    onDestroy: function(){
+    onDestroy: function() {
         var me = this;
 
         if (me.isElement) {

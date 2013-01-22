@@ -162,9 +162,11 @@ Ext.define('Ext.grid.feature.Summary', {
         var view = values.view,
             me = view.findFeature('summary');
 
-        out.push('<tfoot>');
-        me.outputSummaryRecord(me.createSummaryRecord(view), values, out);
-        out.push('</tfoot>');
+        if (me.showSummaryRow) {
+            out.push('<tfoot>');
+            me.outputSummaryRecord(me.createSummaryRecord(view), values, out);
+            out.push('</tfoot>');
+        }
     },
     
     vetoEvent: function(record, row, rowIndex, e) {
@@ -206,11 +208,16 @@ Ext.define('Ext.grid.feature.Summary', {
 
     onStoreUpdate: function() {
         var me = this,
-            record = this.createSummaryRecord(this.view),
-            newRowDom = me.view.createRowElement(record, -1),
-            oldRowDom,
+            view = me.view,
+            record = me.createSummaryRecord(view),
+            newRowDom = view.createRowElement(record, -1),
+            oldRowDom, partner,
             p;
 
+        if (!view.rendered) {
+            return;
+        }
+        
         // Summary row is inside the docked summaryBar Component
         if (me.dock) {
             oldRowDom = me.summaryBar.el.down('.' + me.summaryRowCls, true);
@@ -220,16 +227,20 @@ Ext.define('Ext.grid.feature.Summary', {
         else {
             oldRowDom = me.view.getNode(record);
         }
-        p = oldRowDom.parentNode;
-        p.insertBefore(newRowDom, oldRowDom);
-        p.removeChild(oldRowDom);
+        
+        if (oldRowDom) {
+            p = oldRowDom.parentNode;
+            p.insertBefore(newRowDom, oldRowDom);
+            p.removeChild(oldRowDom);
 
-        // For locking grids...
-        // Update summary on other side (unless we have been called from the other side)
-        if (me.lockingPartner && me.lockingPartner.grid.rendered && !me.calledFromLockingPartner) {
-            me.lockingPartner.calledFromLockingPartner = true;
-            me.lockingPartner.onStoreUpdate();
-            me.lockingPartner.calledFromLockingPartner = false;
+            partner = me.lockingPartner;
+            // For locking grids...
+            // Update summary on other side (unless we have been called from the other side)
+            if (partner && partner.grid.rendered && !me.calledFromLockingPartner) {
+                partner.calledFromLockingPartner = true;
+                partner.onStoreUpdate();
+                partner.calledFromLockingPartner = false;
+            }
         }
         // If docked, the updated row will need sizing because it's outside the View
         if (me.dock) {

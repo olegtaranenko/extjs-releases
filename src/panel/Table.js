@@ -427,7 +427,7 @@ Ext.define('Ext.panel.Table', {
             }
 
             // Attach this Panel to the Store
-            me.bindStore(store);
+            me.bindStore(store, true);
 
             me.mon(view, {
                 viewready: me.onViewReady,
@@ -804,7 +804,7 @@ Ext.define('Ext.panel.Table', {
                 // Features need a reference to the grid, so configure a reference into the View
                 grid: me,
                 deferInitialRefresh: me.deferRowRender !== false,
-                trackOver: !(me.trackMouseOver === false),
+                trackOver: me.trackMouseOver !== false,
                 scroll: me.scroll,
                 xtype: me.viewType,
                 store: me.store,
@@ -1079,7 +1079,7 @@ Ext.define('Ext.panel.Table', {
         return this.body;
     },
 
-    bindStore: function(store) {
+    bindStore: function(store, initial) {
         var me = this,
             view = me.getView(),
             bufferedStore = store && store.buffered,
@@ -1088,9 +1088,15 @@ Ext.define('Ext.panel.Table', {
         // Bind to store immediately because subsequent processing looks for grid's store property
         me.store = store;
 
-        // The initially created View will already be bound to the configured Store
         if (view.store !== store) {
-            view.bindStore(store, false, 'dataSource');
+            if (initial) {
+                // The initially created View will already be bound to the configured Store
+                view.bindStore(store, false, 'dataSource');
+            } else {
+                // Otherwise, we're coming from a reconfigure, so we need to set the actual
+                // store property on the view. It will set the data source
+                view.bindStore(store, false);
+            }
         }
 
         me.mon(store, {
@@ -1102,6 +1108,7 @@ Ext.define('Ext.panel.Table', {
         // and scroll rows on/off when it detects we are nearing an edge.
         bufferedRenderer = me.findPlugin('bufferedrenderer');
         if (bufferedRenderer) {
+            me.verticalScroller = bufferedRenderer;
             // If we're in a reconfigure rebind the BufferedRenderer
             if (bufferedRenderer.store) {
                 bufferedRenderer.bindStore(store);

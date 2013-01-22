@@ -48,6 +48,11 @@ Ext.define('Ext.LoadMask', {
     uses: ['Ext.data.StoreManager'],
 
     /* End Definitions */
+    
+<span id='Ext-LoadMask-cfg-target'>    /**
+</span>     * @cfg {Ext.Component} target The Component you wish to mask. The the mask will be automatically sized
+     * upon Component resize, and the message box will be kept centered.
+     */
 
 <span id='Ext-LoadMask-cfg-store'>    /**
 </span>     * @cfg {Ext.data.Store} store
@@ -117,12 +122,23 @@ Ext.define('Ext.LoadMask', {
 
 <span id='Ext-LoadMask-method-constructor'>    /**
 </span>     * Creates new LoadMask.
-     * @param {Ext.Component} comp The Component you wish to mask. The the mask will be automatically sized
-     * upon Component resize, and the message box will be kept centered.&lt;/p&gt;
-     * @param {Object} [config] The config object
+     * @param {Object} [config] The config object.
      */
-    constructor : function(comp, config) {
-        var me = this;
+    constructor : function(config) {
+        var me = this,
+            comp;
+
+        if (arguments.length === 2) {
+            //&lt;debug&gt;
+            if (Ext.isDefined(Ext.global.console)) {
+                Ext.global.console.warn('Ext.LoadMask: LoadMask now uses a standard 1 arg constructor: use the target config');
+            }
+            //&lt;/debug&gt;
+            comp = config;
+            config = arguments[1];
+        } else {
+            comp = config.target;
+        }
 
         // Element support to be deprecated
         if (!comp.isComponent) {
@@ -146,7 +162,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-<span id='Ext-LoadMask-method-bindComponent'>    bindComponent: function(comp){
+<span id='Ext-LoadMask-method-bindComponent'>    bindComponent: function(comp) {
 </span>        var me = this,
             listeners = {
                 scope: this,
@@ -177,7 +193,7 @@ Ext.define('Ext.LoadMask', {
         });
     },
 
-<span id='Ext-LoadMask-method-onComponentAdded'>    onComponentAdded: function(owner){
+<span id='Ext-LoadMask-method-onComponentAdded'>    onComponentAdded: function(owner) {
 </span>        var me = this;
         delete me.activeOwner;
         me.floatParent = owner;
@@ -197,7 +213,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-<span id='Ext-LoadMask-method-onComponentRemoved'>    onComponentRemoved: function(owner){
+<span id='Ext-LoadMask-method-onComponentRemoved'>    onComponentRemoved: function(owner) {
 </span>        var me = this,
             activeOwner = me.activeOwner,
             floatOwner = me.floatOwner;
@@ -214,38 +230,38 @@ Ext.define('Ext.LoadMask', {
 
 <span id='Ext-LoadMask-method-afterRender'>    afterRender: function() {
 </span>        this.callParent(arguments);
-        this.container = this.floatParent.getContentTarget();
+            this.container = this.floatParent.getContentTarget();
     },
 
-<span id='Ext-LoadMask-method-onContainerShow'>    onContainerShow: function(container){
+<span id='Ext-LoadMask-method-onContainerShow'>    onContainerShow: function(container) {
 </span>        if (this.isActiveContainer(container)) {
             this.onComponentShow();
         }
     },
 
-<span id='Ext-LoadMask-method-onContainerHide'>    onContainerHide: function(container){
+<span id='Ext-LoadMask-method-onContainerHide'>    onContainerHide: function(container) {
 </span>        if (this.isActiveContainer(container)) {
             this.onComponentHide();
         }
     },
 
-<span id='Ext-LoadMask-method-onContainerExpand'>    onContainerExpand: function(container){
+<span id='Ext-LoadMask-method-onContainerExpand'>    onContainerExpand: function(container) {
 </span>        if (this.isActiveContainer(container)) {
             this.onComponentShow();
         }
     },
 
-<span id='Ext-LoadMask-method-onContainerCollapse'>    onContainerCollapse: function(container){
+<span id='Ext-LoadMask-method-onContainerCollapse'>    onContainerCollapse: function(container) {
 </span>        if (this.isActiveContainer(container)) {
             this.onComponentHide();
         }
     },
 
-<span id='Ext-LoadMask-method-isActiveContainer'>    isActiveContainer: function(container){
+<span id='Ext-LoadMask-method-isActiveContainer'>    isActiveContainer: function(container) {
 </span>        return this.isDescendantOf(container);
     },
 
-<span id='Ext-LoadMask-method-onComponentHide'>    onComponentHide: function(){
+<span id='Ext-LoadMask-method-onComponentHide'>    onComponentHide: function() {
 </span>        var me = this;
 
         if (me.rendered &amp;&amp; me.isVisible()) {
@@ -254,7 +270,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-<span id='Ext-LoadMask-method-onComponentShow'>    onComponentShow: function(){
+<span id='Ext-LoadMask-method-onComponentShow'>    onComponentShow: function() {
 </span>        if (this.showNext) {
             this.show();
         }
@@ -351,7 +367,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-<span id='Ext-LoadMask-method-maybeShow'>    maybeShow: function(){
+<span id='Ext-LoadMask-method-maybeShow'>    maybeShow: function() {
 </span>        var me = this,
             owner = me.getOwner();
 
@@ -388,7 +404,7 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
-<span id='Ext-LoadMask-method-hide'>    hide: function(){
+<span id='Ext-LoadMask-method-hide'>    hide: function() {
 </span>        // Element support to be deprecated
         if (this.isElement) {
             this.ownerCt.unmask();
@@ -399,12 +415,12 @@ Ext.define('Ext.LoadMask', {
         return this.callParent(arguments);
     },
 
-<span id='Ext-LoadMask-method-onHide'>    onHide: function(){
+<span id='Ext-LoadMask-method-onHide'>    onHide: function() {
 </span>        this.callParent();
         this.getMaskEl().hide();
     },
 
-<span id='Ext-LoadMask-method-show'>    show: function(){
+<span id='Ext-LoadMask-method-show'>    show: function() {
 </span>        // Element support to be deprecated
         if (this.isElement) {
             this.ownerCt.mask(this.useMsg ? this.msg : '', this.msgCls);
@@ -440,7 +456,7 @@ Ext.define('Ext.LoadMask', {
         this.hide();
     },
 
-<span id='Ext-LoadMask-method-onDestroy'>    onDestroy: function(){
+<span id='Ext-LoadMask-method-onDestroy'>    onDestroy: function() {
 </span>        var me = this;
 
         if (me.isElement) {

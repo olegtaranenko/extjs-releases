@@ -81,6 +81,13 @@ Ext.define('Ext.form.field.File', {
      * applies if {@link #buttonOnly} = false.
      */
     buttonMargin: 3,
+    
+    /**
+     * @cfg {Boolean} clearOnSubmit
+     * True to clear the selected file value when the form this field belongs to
+     * is submitted to the server.
+     */
+    clearOnSubmit: true,
 
     /**
      * @cfg {Object} buttonConfig
@@ -194,11 +201,14 @@ Ext.define('Ext.form.field.File', {
     setValue: Ext.emptyFn,
 
     reset : function(){
-        var me = this;
+        var me = this,
+            clear = me.clearOnSubmit;
         if (me.rendered) {
-            me.button.reset();
+            me.button.reset(clear);
             me.fileInputEl = me.button.fileInputEl;
-            me.inputEl.dom.value = '';
+            if (clear) {
+                me.inputEl.dom.value = '';
+            }
         }
         me.callParent();
     },
@@ -228,6 +238,12 @@ Ext.define('Ext.form.field.File', {
         var fileInput = this.button.fileInputEl.dom;
         this.reset();
         return fileInput;
+    },
+    
+    restoreInput: function(el) {
+        var button = this.button;
+        button.restoreInput(el);
+        this.fileInputEl = button.fileInputEl;
     },
 
     onDestroy: function(){

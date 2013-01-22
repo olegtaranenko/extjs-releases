@@ -400,12 +400,6 @@ Ext.define('Ext.grid.header.Container', {
         return ret;
     },
 
-    afterRender: function() {
-        this.callParent();
-        this.setSortState(undefined, true);
-
-    },
-
     setSortState: function(){
         var store   = this.up('[store]').store,
             // grab the first sorter, since there may also be groupers
@@ -578,8 +572,9 @@ Ext.define('Ext.grid.header.Container', {
             descItem = menu.down('#descItem'),
             sortableMth;
 
-        menu.activeHeader = menu.ownerCt = header;
-        menu.setFloatParent(header);
+        // Use ownerButton as the upward link. Menus *must have no ownerCt* - they are global floaters.
+        // Upward navigation is done using the up() method.
+        menu.activeHeader = menu.ownerButton = header;
         header.setMenuActive(true);
 
         // enable or disable asc & desc menu items based on header being sortable
@@ -849,7 +844,10 @@ Ext.define('Ext.grid.header.Container', {
                     lastVisibleColumn = item;
                 }
             }
-            lastVisibleColumn.isLastVisible = true;
+            // If we haven't hidden all columns, tag the last visible one encountered
+            if (lastVisibleColumn) {
+                lastVisibleColumn.isLastVisible = true;
+            }
         }
 
         return result;

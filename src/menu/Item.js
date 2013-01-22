@@ -113,7 +113,7 @@ Ext.define('Ext.menu.Item', {
 
     /**
      * @cfg {String} menuAlign
-     * The default {@link Ext.Element#getAlignToXY Ext.Element.getAlignToXY} anchor position value for this
+     * The default {@link Ext.util.Positionable#getAlignToXY Ext.util.Positionable.getAlignToXY} anchor position value for this
      * item's sub-menu relative to this item's position.
      */
     menuAlign: 'tl-tr?',
@@ -215,18 +215,6 @@ Ext.define('Ext.menu.Item', {
         }
     },
 
-    deferExpandMenu: function() {
-        var me = this,
-            menu = me.menu;
-
-        if (me.activated && (!menu.rendered || !menu.isVisible())) {
-            me.parentMenu.activeChild = menu;
-            menu.parentItem = me;
-            menu.parentMenu = me.parentMenu;
-            menu.showBy(me, me.menuAlign);
-        }
-    },
-
     deferHideMenu: function() {
         if (this.menu.isVisible()) {
             this.menu.hide();
@@ -256,14 +244,27 @@ Ext.define('Ext.menu.Item', {
         if (me.menu) {
             me.cancelDeferHide();
             if (delay === 0) {
-                me.deferExpandMenu();
+                me.doExpandMenu();
             } else {
-                me.expandMenuTimer = Ext.defer(me.deferExpandMenu, Ext.isNumber(delay) ? delay : me.menuExpandDelay, me);
+                clearTimeout(me.expandMenuTimer);
+                me.expandMenuTimer = Ext.defer(me.doExpandMenu, Ext.isNumber(delay) ? delay : me.menuExpandDelay, me);
             }
         }
     },
 
-    getRefItems: function(deep){
+    doExpandMenu: function() {
+        var me = this,
+            menu = me.menu;
+
+        if (me.activated && (!menu.rendered || !menu.isVisible())) {
+            me.parentMenu.activeChild = menu;
+            menu.parentItem = me;
+            menu.parentMenu = me.parentMenu;
+            menu.showBy(me, me.menuAlign);
+        }
+    },
+
+    getRefItems: function(deep) {
         var menu = this.menu,
             items;
 
@@ -381,8 +382,7 @@ Ext.define('Ext.menu.Item', {
             me.parentMenu.deactivateActiveItem();
         }
         me.callParent(arguments);
-        delete me.parentMenu;
-        delete me.ownerButton;
+        me.parentMenu = me.ownerButton = null;
     },
 
     // @private

@@ -114,6 +114,9 @@ Ext.define('Ext.menu.CheckItem', {
 
     initComponent: function() {
         var me = this;
+        
+        // coerce to bool straight away
+        me.checked = !!me.checked;
         me.addEvents(
             /**
              * @event beforecheckchange

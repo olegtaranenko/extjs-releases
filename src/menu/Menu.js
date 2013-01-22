@@ -212,23 +212,47 @@ Ext.define('Ext.menu.Menu', {
                 overflowHandler: 'Scroller'
             };
         }
-        
-        // only apply the minWidth when we're floating & one hasn't already been set
-        if (isFloating && me.minWidth === undefined) {
-            me.minWidth = me.defaultMinWidth;
+
+        if (isFloating)  {
+            // only apply the minWidth when we're floating & one hasn't already been set
+            if (me.minWidth === undefined) {
+                me.minWidth = me.defaultMinWidth;
+            }
         }
 
         // hidden defaults to false if floating is configured as false
-        if (!isFloating && me.initialConfig.hidden !== true) {
-            me.hidden = false;
+        else {
+            me.hidden = !!me.initialConfig.hidden;
         }
 
         me.callParent(arguments);
     },
 
+    // Private implementation for Menus. They are a special case.
+    // They are always global floaters, never contained.
+    registerWithOwnerCt: function() {
+        if (this.floating) {
+            this.ownerCt = null;
+            Ext.WindowManager.register(this);
+        }
+    },
+
     // Menus do not have owning containers on which they depend for visibility. They stand outside
     // any container hierarchy.
     initHierarchyEvents: Ext.emptyFn,
+
+    // Menus are never contained, and must not ascertain their visibility from the ancestor hierarchy
+    isVisible: function() {
+        return this.callParent();
+    },
+
+    // As menus are never contained, a Menu's visibility only ever depends upon its own hidden state.
+    // Ignore hiddenness from the ancestor hierarchy, override it with local hidden state.
+    getHierarchyState: function() {
+        var result = this.callParent();
+        result.hidden = this.hidden;
+        return result;
+    },
 
     beforeRender: function() {
         this.callParent(arguments);
@@ -260,12 +284,16 @@ Ext.define('Ext.menu.Menu', {
         });
         me.mouseMonitor = me.el.monitorMouseLeave(100, me.onMouseLeave, me);
 
+        // A Menu is a Panel. The KeyNav can use the Panel's KeyMap
         if (me.enableKeyNav) {
-            me.keyNav = new Ext.menu.KeyNav(me);
+            me.keyNav = new Ext.menu.KeyNav({
+                target: me,
+                keyMap: me.getKeyMap()
+            });
         }
     },
 
-    getBubbleTarget: function() {
+    getRefOwner: function() {
         // If a submenu, this will have a parentMenu property
         // If a menu of a Button, it will have an ownerButton property
         // Else use the default method.
@@ -308,7 +336,7 @@ Ext.define('Ext.menu.Menu', {
         return this.focusedItem || this.el;
     },
 
-    // @inheritdocs
+    // @inheritdoc
     hide: function() {
         this.deactivateActiveItem(true);
         this.callParent(arguments);
@@ -409,12 +437,11 @@ Ext.define('Ext.menu.Menu', {
         var me = this;
 
         Ext.menu.Manager.unregister(me);
-        delete me.parentMenu;
-        delete me.ownerButton;
+        me.parentMenu = me.ownerButton = null;
         if (me.rendered) {
             me.el.un(me.mouseMonitor);
             Ext.destroy(me.keyNav);
-            delete me.keyNav;
+            me.keyNav = null;
         }
         me.callParent(arguments);
     },

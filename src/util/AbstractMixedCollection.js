@@ -19,51 +19,70 @@ Ext.define('Ext.util.AbstractMixedCollection', {
      * @private Mutation counter which is incremented upon add and remove.
      */
     generation: 0,
+    
+    /**
+     * @private Mutation counter for the index map which is synchronized with the collection's mutation counter
+     * when the index map is interrogated and found to be out of sync and needed a rebuild.
+     */
+    indexGeneration: 0,
 
     constructor: function(allowFunctions, keyFn) {
         var me = this;
 
+        // Modern constructor signature using a config object
+        if (arguments.length === 1 && Ext.isObject(allowFunctions)) {
+            me.initialConfig = allowFunctions;
+            Ext.apply(me, allowFunctions);
+        }
+        // Old constructor signature
+        else {
+            me.allowFunctions = allowFunctions === true;
+            if (keyFn) {
+                me.getKey = keyFn;
+            }
+            me.initialConfig = {
+                allowFunctions: me.allowFunctions,
+                getKey: me.getKey
+            };
+        }
+
         me.items = [];
         me.map = {};
         me.keys = [];
+        me.indexMap = {};
         me.length = 0;
 
-            /**
-             * @event clear
-             * Fires when the collection is cleared.
-             * @since Ext 1
-             */
+        /**
+         * @event clear
+         * Fires when the collection is cleared.
+         * @since Ext 1
+         */
 
-            /**
-             * @event add
-             * Fires when an item is added to the collection.
-             * @param {Number} index The index at which the item was added.
-             * @param {Object} o The item added.
-             * @param {String} key The key associated with the added item.
-             * @since Ext 1
-             */
+        /**
+         * @event add
+         * Fires when an item is added to the collection.
+         * @param {Number} index The index at which the item was added.
+         * @param {Object} o The item added.
+         * @param {String} key The key associated with the added item.
+         * @since Ext 1
+         */
 
-            /**
-             * @event replace
-             * Fires when an item is replaced in the collection.
-             * @param {String} key he key associated with the new added.
-             * @param {Object} old The item being replaced.
-             * @param {Object} new The new item.
-             * @since Ext 1
-             */
-            /**
-             * @event remove
-             * Fires when an item is removed from the collection.
-             * @param {Object} o The item being removed.
-             * @param {String} key (optional) The key associated with the removed item.
-             * @since Ext 1
-             */
-
-        me.allowFunctions = allowFunctions === true;
-
-        if (keyFn) {
-            me.getKey = keyFn;
-        }
+        /**
+         * @event replace
+         * Fires when an item is replaced in the collection.
+         * @param {String} key he key associated with the new added.
+         * @param {Object} old The item being replaced.
+         * @param {Object} new The new item.
+         * @since Ext 1
+         */
+       
+        /**
+         * @event remove
+         * Fires when an item is removed from the collection.
+         * @param {Object} o The item being removed.
+         * @param {String} key (optional) The key associated with the removed item.
+         * @since Ext 1
+         */
 
         me.mixins.observable.constructor.call(me);
     },
@@ -86,84 +105,58 @@ Ext.define('Ext.util.AbstractMixedCollection', {
      * the MixedCollection will be able to *derive* the key for the new item.
      * In this case just pass the new item in this parameter.
      *
-     * @param {Object} [o] The item to add.
+     * @param {Object} [obj] The item to add.
      *
      * @return {Object} The item added.
      * @since Ext 1
      */
-    add : function(key, obj){
-        var me = this,
-            myObj = obj,
-            myKey = key,
-            old;
-
-        if (arguments.length == 1) {
-            myObj = myKey;
-            myKey = me.getKey(myObj);
-        }
-        if (typeof myKey != 'undefined' && myKey !== null) {
-            old = me.map[myKey];
-            if (typeof old != 'undefined') {
-                return me.replace(myKey, myObj);
-            }
-            me.map[myKey] = myObj;
-        }
-        me.generation++;
-        me.length++;
-        me.items.push(myObj);
-        me.keys.push(myKey);
-        if (me.hasListeners.add) {
-            me.fireEvent('add', me.length - 1, myObj, myKey);
-        }
-        return myObj;
+    add : function(key, obj) {
+        return this.insert(this.length, key, obj);
     },
 
     /**
-      * MixedCollection has a generic way to fetch keys if you implement getKey.  The default implementation
-      * simply returns <b><code>item.id</code></b> but you can provide your own implementation
-      * to return a different value as in the following examples:<pre><code>
-// normal way
-var mc = new Ext.util.MixedCollection();
-mc.add(someEl.dom.id, someEl);
-mc.add(otherEl.dom.id, otherEl);
-//and so on
-
-// using getKey
-var mc = new Ext.util.MixedCollection();
-mc.getKey = function(el){
-   return el.dom.id;
-};
-mc.add(someEl);
-mc.add(otherEl);
-
-// or via the constructor
-var mc = new Ext.util.MixedCollection(false, function(el){
-   return el.dom.id;
-});
-mc.add(someEl);
-mc.add(otherEl);
-     * </code></pre>
+     * MixedCollection has a generic way to fetch keys if you implement getKey.  The default implementation
+     * simply returns *`item.id`* but you can provide your own implementation
+     * to return a different value as in the following examples:
+     *
+     *    // normal way
+     *    var mc = new Ext.util.MixedCollection();
+     *    mc.add(someEl.dom.id, someEl);
+     *    mc.add(otherEl.dom.id, otherEl);
+     *    //and so on
+     *
+     *    // using getKey
+     *    var mc = new Ext.util.MixedCollection({
+     *        getKey: function(el){
+     *            return el.dom.id;
+     *        }
+     *    });
+     *    mc.add(someEl);
+     *    mc.add(otherEl);
+     *
      * @param {Object} item The item for which to find the key.
      * @return {Object} The key for the passed item.
      * @since Ext 1
      */
-    getKey : function(o){
+    getKey : function(o) {
          return o.id;
     },
 
     /**
      * Replaces an item in the collection. Fires the {@link #event-replace} event when complete.
-     * @param {String} key <p>The key associated with the item to replace, or the replacement item.</p>
-     * <p>If you supplied a {@link #getKey} implementation for this MixedCollection, or if the key
-     * of your stored items is in a property called <code><b>id</b></code>, then the MixedCollection
+     * @param {String} key The key associated with the item to replace, or the replacement item.
+     * 
+     * If you supplied a {@link #getKey} implementation for this MixedCollection, or if the key
+     * of your stored items is in a property called *`id`*, then the MixedCollection
      * will be able to <i>derive</i> the key of the replacement item. If you want to replace an item
-     * with one having the same key value, then just pass the replacement item in this parameter.</p>
+     * with one having the same key value, then just pass the replacement item in this parameter.
+     * 
      * @param o {Object} o (optional) If the first parameter passed was a key, the item to associate
      * with that key.
      * @return {Object}  The new item.
      * @since Ext 1
      */
-    replace : function(key, o){
+    replace : function(key, o) {
         var me = this,
             old,
             index;
@@ -190,22 +183,16 @@ mc.add(otherEl);
      * Adds all elements of an Array or an Object to the collection.
      * @param {Object/Array} objs An Object containing properties which will be added
      * to the collection, or an Array of values, each of which are added to the collection.
-     * Functions references will be added to the collection if <code>{@link #allowFunctions}</code>
-     * has been set to <code>true</code>.
+     * Functions references will be added to the collection if `{@link #allowFunctions}`
+     * has been set to `true`.
      * @since Ext 1
      */
-    addAll : function(objs){
+    addAll : function(objs) {
         var me = this,
-            i = 0,
-            args,
-            len,
             key;
 
         if (arguments.length > 1 || Ext.isArray(objs)) {
-            args = arguments.length > 1 ? arguments : objs;
-            for (len = args.length; i < len; i++) {
-                me.add(args[i]);
-            }
+            me.insert(me.length, arguments.length > 1 ? arguments : objs);
         } else {
             for (key in objs) {
                 if (objs.hasOwnProperty(key)) {
@@ -320,45 +307,69 @@ mc.add(otherEl);
      */
     insert : function(index, key, obj) {
         if (Ext.isIterable(key)) {
-            var i, len = key.length, result = [];
-            for (i = 0; i < len; i++) {
-                result.push(obj ? this.doInsert(index + i, key[i], obj[i]) : this.doInsert(index + i, key[i]));
-            }
-            return result;
-        } else {
-            return this.doInsert.apply(this, arguments);
+            return this.doInsert(index, key, obj);
         }
+        return (obj ? this.doInsert(index, [key], [obj]) : this.doInsert(index, [key]))[0];
     },
-
-    // private implementation
-    doInsert: function(index, key, obj) {
+ 
+    // Private multi insert implementation.
+    doInsert : function(index, keys, objects) {
         var me = this,
-            myKey = key,
-            myObj = obj;
+            itemKey,
+            removeIndex,
+            i, len = keys.length,
+            fireAdd = me.hasListeners.add,
+            syncIndices;
 
-        if (arguments.length == 2) {
-            myObj = myKey;
-            myKey = me.getKey(myObj);
+        // Calculate keys array if not passed
+        if (objects == null) {
+            objects = keys;
+            keys = new Array(len);
+            for (i = 0; i < len; i++) {
+                keys[i] = this.getKey(objects[i]);
+            }
         }
-        if (me.containsKey(myKey)) {
-            me.suspendEvents();
-            me.removeAtKey(myKey);
-            me.resumeEvents();
+
+        // First, remove duplicates of the keys. If a removal point is less than insertion index, decr insertion index
+        me.suspendEvents();
+        for (i = 0; i < len; i++) {
+            // Must use indexOf - map might be out of sync
+            removeIndex = me.indexOfKey(keys[i]);
+            if (removeIndex !== -1) {
+                if (removeIndex < index) {
+                    index--;
+                }
+                me.removeAt(removeIndex);
+            }
         }
-        if (index >= me.length) {
-            return me.add(myKey, myObj);
-        }
+        me.resumeEvents();
+
+        // If we are appending and the indices are in sync, its cheap to kep them that way
+        syncIndices = index === me.length && me.indexGeneration === me.generation;
+
+        // Insert the new items and new keys in at the insertion point
+        Ext.Array.insert(me.items, index, objects);
+        Ext.Array.insert(me.keys,  index, keys);
+        me.length += len;
         me.generation++;
-        me.length++;
-        Ext.Array.splice(me.items, index, 0, myObj);
-        if (typeof myKey != 'undefined' && myKey !== null) {
-            me.map[myKey] = myObj;
+        if (syncIndices) {
+            me.indexGeneration = me.generation;
         }
-        Ext.Array.splice(me.keys, index, 0, myKey);
-        if (me.hasListeners.add) {
-            me.fireEvent('add', index, myObj, myKey);
+        for (i = 0; i < len; i++, index++) {
+            itemKey = keys[i];
+            if (itemKey != null) {
+                me.map[itemKey] = objects[i];
+
+                // If the index is still in sync, keep it that way
+                if (syncIndices) {
+                    me.indexMap[itemKey] = index;
+                }
+            }
+            if (fireAdd) {
+                me.fireEvent('add', index, objects[i], itemKey);
+            }
         }
-        return myObj;
+        return objects;
     },
 
     /**
@@ -368,11 +379,24 @@ mc.add(otherEl);
      * @since Ext 1
      */
     remove : function(o) {
-        var result = this.removeAt(this.indexOf(o));
-        if (result) {
-            this.generation++;
+        var me = this,
+            removeKey,
+            index;
+        
+        // If the indexMap is up to date, then attempt to extract the key to
+        // look for in the indexMap.
+        // If the object yields a key, we can find its index quickly in the indexMap
+        // Note that the getKey is only called if the indexMap is in sync
+        if (me.indexGeneration === me.generation && (removeKey = me.getKey(o))) {
+            index = me.indexMap[removeKey];
         }
-        return result;
+
+        // Otherwise we have to do it the slow way with a lniear search
+        else {
+            index = Ext.Array.indexOf(me.items, o);
+        }
+
+        return (index === -1) ? false : me.removeAt(index);
     },
 
     /**
@@ -399,34 +423,75 @@ mc.add(otherEl);
         } else {
             me.length = me.items.length = me.keys.length = 0;
             me.map = {};
+            me.indexMap = {};
             me.generation++;
+            me.indexGeneration = me.generation;
         }
     },
 
     /**
-     * Remove an item from a specified index in the collection. Fires the {@link #event-remove} event when complete.
+     * Remove an item or multiple items starting at a specified index in the collection.
+     * Fires the {@link #event-remove} for each item removed.
      * @param {Number} index The index within the collection of the item to remove.
-     * @return {Object} The item removed or false if no item was removed.
+     * @param {Number} [removeCount=1] The nuber of items to remove beginning at the specified index.
+     * @return {Object} The last item removed or false if no item was removed.
      * @since Ext 1
      */
-    removeAt : function(index) {
+    removeAt : function(index, removeCount) {
         var me = this,
             o,
-            key;
+            key,
+            i,
+            limit,
+            fireRemove = me.hasListeners.remove,
+            syncIndices,
+            trimming;
 
         if (index < me.length && index >= 0) {
-            me.length--;
-            o = me.items[index];
-            Ext.Array.erase(me.items, index, 1);
-            key = me.keys[index];
-            if (typeof key != 'undefined') {
-                delete me.map[key];
+            if (!removeCount) {
+                removeCount = 1;
             }
-            Ext.Array.erase(me.keys, index, 1);
-            if (me.hasListeners.remove) {
-                me.fireEvent('remove', o, key);
+            limit = Math.min(index + removeCount, me.length);
+
+            // If we are removing from end and the indices are in sync, its cheap to kep them that way
+            trimming = limit === me.length;
+            syncIndices = trimming && me.indexGeneration === me.generation;
+
+            // Loop through the to remove indices deleting from the key hashes
+            for (i = index; i < limit; i++) {
+                key = me.keys[i];
+                if (key != null) {
+                    delete me.map[key];
+                    if (syncIndices) {
+                        delete me.indexMap[key];
+                    }
+                }
+                // Fire the event if anybody is interested
+                if (fireRemove) {
+                    me.fireEvent('remove', me.items[i], key);
+                }
             }
+            // Last item encountered
+            o = me.items[i - 1];
+            
+            me.length -= removeCount;
             me.generation++;
+            if (syncIndices) {
+                me.indexGeneration = me.generation;
+            }
+
+            // Chop items and keys arrays.
+            // If trimming the trailing end, we can just truncate the array.
+            // We can use splice directly. The IE8 bug which Ext.Array works around only affects *insertion*
+            // http://social.msdn.microsoft.com/Forums/en-US/iewebdevelopment/thread/6e946d03-e09f-4b22-a4dd-cd5e276bf05a/
+            if (trimming) {
+                me.items.length = me.keys.length = me.length;
+            } else {
+                me.items.splice(index, removeCount);
+                me.keys.splice(index, removeCount);
+            }
+
+            // Return last object removed
             return o;
         }
         return false;
@@ -437,7 +502,7 @@ mc.add(otherEl);
      * @param {String} key The key of the item to remove.
      * @return {Object} The item removed or false if no item was removed.
      */
-    removeAtKey : function(key){
+    removeAtKey : function(key) {
         return this.removeAt(this.indexOfKey(key));
     },
 
@@ -446,7 +511,7 @@ mc.add(otherEl);
      * @return {Number} the number of items in the collection.
      * @since Ext 1
      */
-    getCount : function(){
+    getCount : function() {
         return this.length;
     },
 
@@ -456,8 +521,8 @@ mc.add(otherEl);
      * @return {Number} index of the item. Returns -1 if not found.
      * @since Ext 1
      */
-    indexOf : function(o){
-        return Ext.Array.indexOf(this.items, o);
+    indexOf : function(o) {
+        return o ? this.indexOfKey(this.getKey(o)) : -1;
     },
 
     /**
@@ -466,8 +531,27 @@ mc.add(otherEl);
      * @return {Number} index of the key.
      * @since Ext 1
      */
-    indexOfKey : function(key){
-        return Ext.Array.indexOf(this.keys, key);
+    indexOfKey : function(key) {
+        if (this.map[key] == null) {
+            return -1;
+        }
+        if (this.indexGeneration !== this.generation) {
+            this.rebuildIndexMap();
+        }
+        return this.indexMap[key];
+    },
+    
+    rebuildIndexMap: function() {
+        var me = this,
+            indexMap = me.indexMap = {},
+            keys = this.keys,
+            len = keys.length,
+            i;
+
+        for (i = 0; i < len; i++) {
+            indexMap[keys[i]] = i;
+        }
+        me.indexGeneration = me.generation;
     },
 
     /**
@@ -510,8 +594,8 @@ mc.add(otherEl);
      * @return {Boolean} True if the collection contains the Object as an item.
      * @since Ext 1
      */
-    contains : function(o){
-        return typeof this.map[this.getKey(o)] != 'undefined';
+    contains : function(o) {
+        return this.map[this.getKey(o)] != null;
     },
 
     /**
@@ -520,22 +604,25 @@ mc.add(otherEl);
      * @return {Boolean} True if the collection contains the Object as a key.
      * @since Ext 1
      */
-    containsKey : function(key){
-        return typeof this.map[key] != 'undefined';
+    containsKey : function(key) {
+        return this.map[key] != null;
     },
 
     /**
      * Removes all items from the collection.  Fires the {@link #event-clear} event when complete.
      * @since Ext 1
      */
-    clear : function(){
+    clear : function() {
         var me = this;
 
         me.length = 0;
         me.items = [];
         me.keys = [];
         me.map = {};
+        me.indexMap = {};
+
         me.generation++;
+        me.indexGeneration = me.generation;
         if (me.hasListeners.clear) {
             me.fireEvent('clear');
         }
@@ -659,7 +746,7 @@ mc.add(otherEl);
         }
 
         start = start || 0;
-        end = Math.min(typeof end == 'undefined' ? me.length - 1 : end, me.length - 1);
+        end = Math.min(end == null ? me.length - 1 : end, me.length - 1);
         if (start <= end) {
             return items.slice(start, end + 1);
         } else {
@@ -675,20 +762,18 @@ mc.add(otherEl);
      * property/value pair with optional parameters for substring matching and case sensitivity. See
      * {@link Ext.util.Filter Filter} for an example of using Filter objects (preferred). Alternatively,
      * MixedCollection can be easily filtered by property like this:</p>
-<pre><code>
-//create a simple store with a few people defined
-var people = new Ext.util.MixedCollection();
-people.addAll([
-    {id: 1, age: 25, name: 'Ed'},
-    {id: 2, age: 24, name: 'Tommy'},
-    {id: 3, age: 24, name: 'Arne'},
-    {id: 4, age: 26, name: 'Aaron'}
-]);
-
-//a new MixedCollection containing only the items where age == 24
-var middleAged = people.filter('age', 24);
-</code></pre>
      *
+     *    //create a simple store with a few people defined
+     *    var people = new Ext.util.MixedCollection();
+     *    people.addAll([
+     *        {id: 1, age: 25, name: 'Ed'},
+     *        {id: 2, age: 24, name: 'Tommy'},
+     *        {id: 3, age: 24, name: 'Arne'},
+     *        {id: 4, age: 26, name: 'Aaron'}
+     *    ]);
+     *    
+     *    //a new MixedCollection containing only the items where age == 24
+     *    var middleAged = people.filter('age', 24);
      *
      * @param {Ext.util.Filter[]/String} property A property on your objects, or an array of {@link Ext.util.Filter Filter} objects
      * @param {String/RegExp} value Either string that the property values
@@ -832,16 +917,9 @@ var middleAged = people.filter('age', 24);
      */
     clone : function() {
         var me = this,
-            copy = new this.self(),
-            keys = me.keys,
-            items = me.items,
-            i = 0,
-            len = items.length;
+            copy = new this.self(me.initialConfig);
 
-        for(; i < len; i++){
-            copy.add(keys[i], items[i]);
-        }
-        copy.getKey = me.getKey;
+        copy.add(me.keys, me.items);
         return copy;
     }
 });

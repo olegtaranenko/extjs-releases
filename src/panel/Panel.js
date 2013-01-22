@@ -1458,9 +1458,11 @@ Ext.define('Ext.panel.Panel', {
             header = me.header,
             reExpander;
 
-        collapseMemento.restore(['minHeight', 'minWidth', restoreDimension]);
-        if (lastBox) {
-            collapseMemento.restore(restoreDimension, true, lastBox, 'last.');
+        if (collapseMemento) {
+            collapseMemento.restore(['minHeight', 'minWidth', restoreDimension]);
+            if (lastBox) {
+                collapseMemento.restore(restoreDimension, true, lastBox, 'last.');
+            }
         }
 
         if (me.ownerCt) {
@@ -2196,6 +2198,7 @@ Ext.define('Ext.panel.Panel', {
         } else {
             ghostPanel.el.show();
         }
+        me.ghostPanel.hidden = false;
         ghostPanel.floatParent = me.floatParent;
         if (me.floating) {
             ghostPanel.setZIndex(Ext.Number.from(me.el.getStyle('zIndex'), 0));
@@ -2241,6 +2244,7 @@ Ext.define('Ext.panel.Panel', {
             Ext.defer(me.focus, 10, me);
         }
         me.ghostPanel.el.hide();
+        me.ghostPanel.hidden = true;
     },
 
     beginDrag: function() {

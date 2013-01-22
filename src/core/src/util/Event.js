@@ -6,7 +6,13 @@
  *
  * @private
  */
-Ext.define('Ext.util.Event', {
+Ext.define('Ext.util.Event', function() {
+  var arraySlice = Array.prototype.slice,
+      arrayInsert = Ext.Array.insert,
+      toArray = Ext.Array.toArray,
+      DelayedTask = Ext.util.DelayedTask;
+
+  return {
     requires: 'Ext.util.DelayedTask',
 
     /**
@@ -19,7 +25,7 @@ Ext.define('Ext.util.Event', {
     suspended: 0,
 
     noOptions: {},
-    
+
     constructor: function(observable, name) {
         this.name = name;
         this.observable = observable;
@@ -29,8 +35,9 @@ Ext.define('Ext.util.Event', {
     addListener: function(fn, scope, options) {
         var me = this,
             listeners, listener, priority, isNegativePriority, highestNegativePriorityIndex,
-            hasNegativePriorityIndex, length, index, i;
-            scope = scope || me.observable;
+            hasNegativePriorityIndex, length, index, i, listenerPriority;
+
+        scope = scope || me.observable;
 
         //<debug error>
         if (!fn) {
@@ -65,7 +72,9 @@ Ext.define('Ext.util.Event', {
                     // order index at the index of the highest existing negative priority
                     // listener, otherwise begin at 0
                     for(i = (isNegativePriority ? highestNegativePriorityIndex : 0); i < length; i++) {
-                        if ((listeners[i].o.priority || 0) < priority) {
+                        // Listeners created without options will have no "o" property
+                        listenerPriority = listeners[i].o ? listeners[i].o.priority||0 : 0;
+                        if (listenerPriority < priority) {
                             index = i;
                             break;
                         }
@@ -87,36 +96,41 @@ Ext.define('Ext.util.Event', {
             if (!isNegativePriority && index <= highestNegativePriorityIndex) {
                 me._highestNegativePriorityIndex ++;
             }
-            Ext.Array.splice(me.listeners, index, 0, listener);
+            if (index === length) {
+                me.listeners[length] = listener;
+            } else {
+                arrayInsert(me.listeners, index, [listener]);
+            }
         }
     },
 
     createListener: function(fn, scope, o) {
-        o = o || {};
         scope = scope || this.observable;
 
         var me = this,
             listener = {
                 fn: fn,
                 scope: scope,
-                o: o,
                 ev: me
             },
             handler = fn;
 
         // The order is important. The 'single' wrapper must be wrapped by the 'buffer' and 'delayed' wrapper
         // because the event removal that the single listener does destroys the listener's DelayedTask(s)
-        if (o.single) {
-            handler = me.createSingle(handler, listener, o, scope);
-        }
-        if (o.target) {
-            handler = me.createTargeted(handler, listener, o, scope);
-        }
-        if (o.delay) {
-            handler = me.createDelayed(handler, listener, o, scope);
-        }
-        if (o.buffer) {
-            handler = me.createBuffered(handler, listener, o, scope);
+        if (o) {
+            listener.o = o;
+            if (o.single) {
+                handler = me.createSingle(handler, listener, o, scope);
+            }
+            if (o.target) {
+                handler = me.createTargeted(handler, listener, o, scope);
+            }
+            if (o.delay) {
+                handler = me.createDelayed(handler, listener, o, scope);
+            }
+            if (o.buffer) {
+                handler = me.createBuffered(handler, listener, o, scope);
+            }
         }
 
         listener.fireFn = handler;
@@ -180,8 +194,10 @@ Ext.define('Ext.util.Event', {
                 delete listener.tasks;
             }
 
-            // remove this listener from the listeners array
-            Ext.Array.erase(me.listeners, index, 1);
+            // Remove this listener from the listeners array
+            // We can use splice directly. The IE8 bug which Ext.Array works around only affects *insertion*
+            // http://social.msdn.microsoft.com/Forums/en-US/iewebdevelopment/thread/6e946d03-e09f-4b22-a4dd-cd5e276bf05a/
+            me.listeners.splice(index, 1);
 
             // if the listeners array contains negative priority listeners, adjust the
             // internal index if needed.
@@ -224,15 +240,17 @@ Ext.define('Ext.util.Event', {
             count = listeners.length,
             i,
             args,
-            listener;
+            listener,
+            len;
 
         if (!me.suspended && count > 0) {
             me.firing = true;
+            args = arguments.length ? arraySlice.call(arguments, 0) : []
+            len = args.length;
             for (i = 0; i < count; i++) {
                 listener = listeners[i];
-                args = arguments.length ? Array.prototype.slice.call(arguments, 0) : [];
                 if (listener.o) {
-                    args.push(listener.o);
+                    args[len] = listener.o;
                 }
                 if (listener && listener.fireFn.apply(listener.scope || me.observable, args) === false) {
                     return (me.firing = false);
@@ -252,20 +270,20 @@ Ext.define('Ext.util.Event', {
     },
 
     createBuffered: function (handler, listener, o, scope) {
-        listener.task = new Ext.util.DelayedTask();
+        listener.task = new DelayedTask();
         return function() {
-            listener.task.delay(o.buffer, handler, scope, Ext.Array.toArray(arguments));
+            listener.task.delay(o.buffer, handler, scope, toArray(arguments));
         };
     },
 
     createDelayed: function (handler, listener, o, scope) {
         return function() {
-            var task = new Ext.util.DelayedTask();
+            var task = new DelayedTask();
             if (!listener.tasks) {
                 listener.tasks = [];
             }
             listener.tasks.push(task);
-            task.delay(o.delay || 10, handler, scope, Ext.Array.toArray(arguments));
+            task.delay(o.delay || 10, handler, scope, toArray(arguments));
         };
     },
 
@@ -282,4 +300,5 @@ Ext.define('Ext.util.Event', {
             return handler.apply(scope, arguments);
         };
     }
+  };
 });

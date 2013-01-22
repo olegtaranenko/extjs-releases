@@ -154,7 +154,7 @@ Ext.define('Ext.dd.DragZone', {
 <span id='Ext-dd-DragZone-method-destroy'>    destroy : function(){
 </span>        this.callParent();
         if (this.containerScroll) {
-            Ext.dd.ScrollManager.unregister(this.el);
+            Ext.dd.ScrollManager.unregister(this.scrollEl || this.el);
         }
     }
 });

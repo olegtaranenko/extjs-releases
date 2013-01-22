@@ -25,9 +25,9 @@ Ext.onReady(function(){
         // configs for BasicForm
         api: {
             // The server-side method to call for load() requests
-            load: Profile.getBasicInfo,
+            load: 'Profile.getBasicInfo',
             // The server-side must mark the submit handler as a 'formHandler'
-            submit: Profile.updateBasicInfo
+            submit: 'Profile.updateBasicInfo'
         },
         // specify the order for the passed params
         paramOrder: ['uid', 'foo'],

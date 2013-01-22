@@ -33,11 +33,15 @@ Ext.onReady(function() {
         override: "Ext.form.field.Base",
         invalidText: "Der Wert des Feldes ist nicht korrekt"
     });
+    
+    Ext.define("Ext.locale.de.LoadMask", {
+        override: "Ext.LoadMask",
+        msg: "Lade Daten..."
+    });
 
-    // changing the msg text below will affect the LoadMask
     Ext.define("Ext.locale.de.view.AbstractView", {
         override: "Ext.view.AbstractView",
-        msg: "Übertrage Daten..."
+        loadingText: "Lade Daten..."
     });
 
     if (Ext.Date) {
@@ -278,7 +282,7 @@ Ext.onReady(function() {
     });
 
     Ext.define("Ext.locale.de.grid.GroupingFeature", {
-        override: "Ext.grid.GroupingFeature",
+        override: "Ext.grid.feature.Grouping",
         emptyGroupText: '(Keine)',
         groupByText: 'Dieses Feld gruppieren',
         showGroupsText: 'In Gruppen anzeigen'

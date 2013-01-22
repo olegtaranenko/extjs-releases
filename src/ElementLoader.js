@@ -254,13 +254,11 @@ Ext.define('Ext.ElementLoader', {
         options = Ext.apply({}, options);
 
         var me = this,
-            target = me.target,
             mask = Ext.isDefined(options.loadMask) ? options.loadMask : me.loadMask,
             params = Ext.apply({}, options.params),
             ajaxOptions = Ext.apply({}, options.ajaxOptions),
             callback = options.callback || me.callback,
-            scope = options.scope || me.scope || me,
-            request;
+            scope = options.scope || me.scope || me;
 
         Ext.applyIf(ajaxOptions, me.ajaxOptions);
         Ext.applyIf(options, ajaxOptions);
@@ -324,25 +322,25 @@ Ext.define('Ext.ElementLoader', {
     onComplete: function(options, success, response) {
         var me = this,
             active = me.active,
-            scope = active.scope,
-            renderer = me.getRenderer(active.renderer);
+            scope;
 
+        if (active) {
+            scope = active.scope;
+            if (success) {
+                success = me.getRenderer(active.renderer).call(me, me, response, active) !== false;
+            }
 
-        if (success) {
-            success = renderer.call(me, me, response, active) !== false;
-        }
-
-        if (success) {
-            Ext.callback(active.success, scope, [me, response, options]);
-            me.fireEvent('load', me, response, options);
-        } else {
-            Ext.callback(active.failure, scope, [me, response, options]);
-            me.fireEvent('exception', me, response, options);
-        }
-        Ext.callback(active.callback, scope, [me, success, response, options]);
-
-        if (active.mask) {
-            me.removeMask();
+            if (success) {
+                Ext.callback(active.success, scope, [me, response, options]);
+                me.fireEvent('load', me, response, options);
+            } else {
+                Ext.callback(active.failure, scope, [me, response, options]);
+                me.fireEvent('exception', me, response, options);
+            }
+            Ext.callback(active.callback, scope, [me, success, response, options]);
+            if (active.mask) {
+                me.removeMask();
+            }
         }
 
         delete me.active;

@@ -108,9 +108,6 @@ Ext.define('Ext.window.MessageBox', {
     closeAction: 'hide',
     resizable: false,
     title: '&#160;',
-
-    width: 600,
-    height: 500,
     
     defaultMinWidth: 250,
     defaultMaxWidth: 600,
@@ -124,6 +121,9 @@ Ext.define('Ext.window.MessageBox', {
         type: 'vbox',
         align: 'stretch'
     },
+    
+    // We want to shrinkWrap around all docked items
+    shrinkWrapDock: true,
 
     /**
      * @property
@@ -174,6 +174,7 @@ Ext.define('Ext.window.MessageBox', {
     //</locale>
 
     iconHeight: 35,
+    iconWidth: 50,
 
     makeButton: function(btnIdx) {
         var btnId = this.buttonIds[btnIdx];
@@ -208,18 +209,21 @@ Ext.define('Ext.window.MessageBox', {
     },
 
     hide: function() {
-        var me = this;
+        var me = this,
+            cls = me.cfg.cls;
+            
         me.dd.endDrag();
         me.progressBar.reset();
-        me.removeCls(me.cfg.cls);
+        if (cls) {
+            me.removeCls(cls);
+        }
         me.callParent(arguments);
     },
 
     initComponent: function() {
         var me = this,
             baseId = me.id,
-            i, button,
-            tbLayout;
+            i, button;
 
         me.title = '&#160;';
         
@@ -228,24 +232,20 @@ Ext.define('Ext.window.MessageBox', {
         me.minHeight = me.defaultMinHeight;
         me.maxHeight = me.defaultMaxHeight;
         
-
         me.topContainer = new Ext.container.Container({
             layout: 'hbox',
+            padding: 10,
             style: {
-                padding: '10px',
                 overflow: 'hidden'
             },
             items: [
                 me.iconComponent = new Ext.Component({
-                    cls: me.baseCls + '-icon',
-                    width: 50,
+                    width: me.iconWidth,
                     height: me.iconHeight
                 }),
                 me.promptContainer = new Ext.container.Container({
                     flex: 1,
-                    layout: {
-                        type: 'anchor'
-                    },
+                    layout: 'anchor',
                     items: [
                         me.msg = new Ext.form.field.Display({
                             id: baseId + '-displayfield',
@@ -271,7 +271,7 @@ Ext.define('Ext.window.MessageBox', {
         });
         me.progressBar = new Ext.ProgressBar({
             id: baseId + '-progressbar',
-            margins: '0 10 0 10'
+            margins: '0 10'
         });
 
         me.items = [me.topContainer, me.progressBar];
@@ -298,14 +298,7 @@ Ext.define('Ext.window.MessageBox', {
             ]
         });
         me.dockedItems = [me.bottomTb];
-
-        // Get control at Toolbar's finishedLayout call and snag the contentWidth to contribute to our auto width calculation
-        tbLayout = me.bottomTb.getLayout();
-        tbLayout.finishedLayout = Ext.Function.createInterceptor(tbLayout.finishedLayout, function(ownerContext) {
-            me.tbWidth = ownerContext.getProp('contentWidth');
-        });
         me.on('close', me.onClose, me);
-
         me.callParent();
     },
     
@@ -340,9 +333,9 @@ Ext.define('Ext.window.MessageBox', {
         var me = this,
             buttons = 0,
             hideToolbar = true,
-            initialWidth = me.maxWidth,
             oldButtonText = me.buttonText,
-            i;
+            width, height, i, textArea, textField,
+            msg, progressBar, msgButtons;
 
         // Restore default buttonText before reconfiguring.
         me.updateButtonText();
@@ -350,7 +343,11 @@ Ext.define('Ext.window.MessageBox', {
         cfg = cfg || {};
         me.cfg = cfg;
         if (cfg.width) {
-            initialWidth = cfg.width;
+            width = cfg.width;
+        }
+        
+        if (cfg.height) {
+            height = cfg.height;
         }
         
         me.minWidth = cfg.minWidth || me.defaultMinWidth;
@@ -360,6 +357,9 @@ Ext.define('Ext.window.MessageBox', {
 
         // Default to allowing the Window to take focus.
         delete me.defaultFocus;
+        if (cfg.defaultFocus) {
+            me.defaultFocus = cfg.defaultFocus;
+        }
 
         // clear any old animateTarget
         me.animateTarget = cfg.animateTarget || undefined;
@@ -390,22 +390,20 @@ Ext.define('Ext.window.MessageBox', {
         // During the on render, or size resetting layouts, and in subsequent hiding and showing, we need to
         // suspend layouts, and flush at the end when the Window's children are at their final visibility.
         Ext.suspendLayouts();
+        delete me.width;
+        delete me.height;
+        if (width || height) {
+            if (width) {
+                me.setWidth(width);
+            }
+            
+            if (height) {
+                me.setHeight(height);
+            }
+        }
         me.hidden = false;
         if (!me.rendered) {
-            me.width = initialWidth;
-
-            // The Window is rendered with the x-hide-offsets class in the el.
-            // But it isn't hidden, so it gets a layout so it can be measured. The Layer constructor explicitly *shows*
-            // the element, so get the render process to set the el up with visibility mode DISPLAY so that it doesn't
-            // move it into view.
-            me.hideMode = 'display';
             me.render(Ext.getBody());
-
-            // Reset back to the correct settings.
-            delete me.hideMode;
-            me.el.setVisibilityMode(Ext.Element.OFFSETS)
-        } else {
-            me.setSize(initialWidth, me.maxHeight);
         }
 
         // Hide or show the close tool
@@ -426,64 +424,64 @@ Ext.define('Ext.window.MessageBox', {
         me.userCallback = Ext.Function.bind(cfg.callback ||cfg.fn || Ext.emptyFn, cfg.scope || Ext.global);
 
         // Hide or show the icon Component
-        me.setIcon(cfg.icon);
+        me.setIcon(cfg.icon, cfg.iconWidth, cfg.iconHeight);
 
         // Hide or show the message area
+        msg = me.msg;
         if (cfg.msg) {
-            me.msg.setValue(cfg.msg);
-            me.msg.show();
+            msg.setValue(cfg.msg);
+            msg.show();
         } else {
-            me.msg.hide();
+            msg.hide();
         }
 
-        // flush the layout here to pick up
-        // height adjustments on the msg field
-        Ext.resumeLayouts(true);
-        Ext.suspendLayouts();
-
         // Hide or show the input field
+        textArea = me.textArea;
+        textField = me.textField;
         if (cfg.prompt || cfg.multiline) {
             me.multiline = cfg.multiline;
             if (cfg.multiline) {
-                me.textArea.setValue(cfg.value);
-                me.textArea.setHeight(cfg.defaultTextHeight || me.defaultTextHeight);
-                me.textArea.show();
-                me.textField.hide();
-                me.defaultFocus = me.textArea;
+                textArea.setValue(cfg.value);
+                textArea.setHeight(cfg.defaultTextHeight || me.defaultTextHeight);
+                textArea.show();
+                textField.hide();
+                me.defaultFocus = textArea;
             } else {
-                me.textField.setValue(cfg.value);
-                me.textArea.hide();
-                me.textField.show();
-                me.defaultFocus = me.textField;
+                textField.setValue(cfg.value);
+                textArea.hide();
+                textField.show();
+                me.defaultFocus = textField;
             }
         } else {
-            me.textArea.hide();
-            me.textField.hide();
+            textArea.hide();
+            textField.hide();
         }
 
         // Hide or show the progress bar
+        progressBar = me.progressBar;
         if (cfg.progress || cfg.wait) {
-            me.progressBar.show();
+            progressBar.show();
             me.updateProgress(0, cfg.progressText);
             if(cfg.wait === true){
-                me.progressBar.wait(cfg.waitConfig);
+                progressBar.wait(cfg.waitConfig);
             }
         } else {
-            me.progressBar.hide();
+            progressBar.hide();
         }
 
         // Hide or show buttons depending on flag value sent.
+        msgButtons = me.msgButtons;
         for (i = 0; i < 4; i++) {
             if (buttons & Math.pow(2, i)) {
 
                 // Default to focus on the first visible button if focus not already set
                 if (!me.defaultFocus) {
-                    me.defaultFocus = me.msgButtons[i];
+                    me.defaultFocus = msgButtons[i];
                 }
-                me.msgButtons[i].show();
+                msgButtons[i].show();
                 hideToolbar = false;
             } else {
-                me.msgButtons[i].hide();
+                msgButtons[i].hide();
             }
         }
 
@@ -619,6 +617,10 @@ Ext.define('Ext.window.MessageBox', {
      *
      * @param {String} config.iconCls
      * The standard {@link Ext.window.Window#iconCls} to add an optional header icon (defaults to '')
+     * 
+     * @param {String} config.defaultFocus
+     * The button to focus when showing the dialog. If not specified, defaults to
+     * the first visible button.
      *
      * @param {Number} config.maxWidth
      * The maximum width in pixels of the message box (defaults to 600)
@@ -681,8 +683,9 @@ Ext.define('Ext.window.MessageBox', {
         }
 
         me.reconfigure(cfg);
-        me.addCls(cfg.cls);
-        me.doAutoSize();
+        if (cfg.cls) {
+            me.addCls(cfg.cls);
+        }
 
         // Do not steal focus from anything that may be focused if the MessageBox has no visible focusable
         // items. For example, a "wait" message box should not get focus.
@@ -701,39 +704,8 @@ Ext.define('Ext.window.MessageBox', {
         this.center();
     },
 
-    doAutoSize: function() {
-        var me = this,
-            headerVisible = me.header.rendered && me.header.isVisible(),
-            footerVisible = me.bottomTb.rendered && me.bottomTb.isVisible(),
-            width,
-            height;
-
-        if (!Ext.isDefined(me.frameWidth)) {
-            me.frameWidth = me.el.getWidth() - me.body.getWidth();
-        }
-
-        // Allow per-invocation override of minWidth
-        me.minWidth = me.cfg.minWidth || Ext.getClass(this).prototype.minWidth;
-
-        // Width must be max of titleWidth, message+icon width, and total button width
-        width = Math.max(
-            headerVisible ? me.header.getMinWidth() : 0,                            // title width
-            me.cfg.width || me.msg.getWidth() + me.iconComponent.getWidth() + 25,   // msg + icon width + topContainer's layout padding */
-            (footerVisible ? me.tbWidth : 0)// total button width
-        );
-
-        height = (headerVisible ? me.header.getHeight() : 0) +
-            me.topContainer.getHeight() +
-            me.progressBar.getHeight() +
-            (footerVisible ? me.bottomTb.getHeight() + me.bottomTb.el.getMargin('tb') : 0);
-
-        me.setSize(width + me.frameWidth, height + me.frameWidth);
-        return me;
-    },
-
     updateText: function(text) {
         this.msg.setValue(text);
-        return this.doAutoSize(true);
     },
 
     /**
@@ -748,18 +720,27 @@ Ext.define('Ext.window.MessageBox', {
      *     Ext.window.MessageBox.ERROR
      *
      * @param {String} icon A CSS classname specifying the icon's background image url, or empty string to clear the icon
+     * @param {Number} [width] The width of the icon. If not specified, the default is used
+     * @param {Number} [height] The height of the icon. If not specified, the default is used
      * @return {Ext.window.MessageBox} this
      */
-    setIcon : function(icon) {
-        var me = this;
-        me.iconComponent.removeCls(me.messageIconCls);
+    setIcon : function(icon, width, height) {
+        var me = this,
+            iconCmp = me.iconComponent,
+            cls = me.messageIconCls;
+            
+        if (cls) {
+            iconCmp.removeCls(cls);
+        }
+        
         if (icon) {
-            me.iconComponent.show();
-            me.iconComponent.addCls(Ext.baseCSSPrefix + 'dlg-icon');
-            me.iconComponent.addCls(me.messageIconCls = icon);
+            iconCmp.show();
+            iconCmp.setSize(width || me.iconWidth, height || me.iconHeight);
+            iconCmp.addCls(Ext.baseCSSPrefix + 'dlg-icon');
+            iconCmp.addCls(me.messageIconCls = icon);
         } else {
-            me.iconComponent.removeCls(Ext.baseCSSPrefix + 'dlg-icon');
-            me.iconComponent.hide();
+            iconCmp.removeCls(Ext.baseCSSPrefix + 'dlg-icon');
+            iconCmp.hide();
         }
         return me;
     },

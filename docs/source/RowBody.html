@@ -203,9 +203,10 @@ Ext.define('Ext.grid.feature.RowBody', {
             items[i].colSpan = colspan;
         }
     },
-
-<span id='Ext-grid-feature-RowBody-method-setupRowData'>    /**
-</span>     * Provides additional data to the prepareData call within the grid view.
+    
+<span id='Ext-grid-feature-RowBody-method-getAdditionalData'>    /**
+</span>     * @method getAdditionalData
+     * Provides additional data to the prepareData call within the grid view.
      * The rowbody feature adds 3 additional variables into the grid view's template.
      * These are rowBodyCls, rowBodyColspan, and rowBody.
      * @param {Object} data The data for this particular record.

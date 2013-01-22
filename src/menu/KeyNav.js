@@ -6,11 +6,11 @@ Ext.define('Ext.menu.KeyNav', {
 
     requires: ['Ext.FocusManager'],
     
-    constructor: function(menu) {
+    constructor: function(config) {
         var me = this;
 
-        me.menu = menu;
-        me.callParent([menu.el, {
+        me.menu = config.target;
+        me.callParent([Ext.apply({
             down: me.down,
             enter: me.enter,
             esc: me.escape,
@@ -19,7 +19,7 @@ Ext.define('Ext.menu.KeyNav', {
             space: me.enter,
             tab: me.tab,
             up: me.up
-        }]);
+        }, config)]);
     },
 
     down: function(e) {
@@ -82,8 +82,7 @@ Ext.define('Ext.menu.KeyNav', {
 
     left: function(e) {
         var menu = this.menu,
-            fi = menu.focusedItem,
-            ai = menu.activeItem;
+            fi = menu.focusedItem;
 
         if (fi && this.isWhitelisted(fi)) {
             return true;
@@ -109,9 +108,7 @@ Ext.define('Ext.menu.KeyNav', {
             am = menu.activeItem.menu;
             if (am) {
                 ai.expandMenu(0);
-                Ext.defer(function() {
-                    am.setActiveItem(am.items.getAt(0));
-                }, 25);
+                am.setActiveItem(am.child(':focusable'));
             }
         }
     },

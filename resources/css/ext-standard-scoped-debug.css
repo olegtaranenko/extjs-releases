@@ -1,7 +1,7 @@
 /*
 This file is part of Ext JS 4.2
 
-Copyright (c) 2011-2012 Sencha Inc
+Copyright (c) 2011-2013 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
@@ -13,7 +13,7 @@ Ext license terms. Public redistribution is prohibited.
 
 For early licensing, please contact us at licensing@sencha.com
 
-Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
+Build date: 2013-01-08 23:25:56 (f0a3d96f987988f3e7bc5b0c0a7355723a686090)
 */
 /**
  * @class Global_CSS
@@ -2718,44 +2718,46 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
       color: null;
       font: normal 11px/15px tahoma, arial, verdana, sans-serif;
       background-color: white;
-      border-color: #ededed;
+      border-color: white;
       border-style: solid;
-      border-top-color: #fafafa;
-      border-width: 0; }
-  /* line 269, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+      border-width: 1px 0; }
+  /* line 268, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-with-row-lines .x-grid-cell {
-    border-width: 1px 0; }
-  /* line 273, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    border-width: 1px 0;
+    border-top-color: #fafafa;
+    border-bottom-color: #ededed; }
+  /* line 274, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-rowwrap {
     border-width: 1px 0;
     border-color: #ededed;
     border-style: solid;
     border-top-color: #fafafa;
     overflow: hidden; }
-  /* line 283, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 284, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-alt .x-grid-cell,
   .x-reset .x-grid-row-alt .x-grid-rowwrap {
     background-color: #fafafa; }
-  /* line 288, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 289, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-over .x-grid-cell,
   .x-reset .x-grid-row-over .x-grid-rowwrap {
     border-color: #dddddd;
     background-color: #efefef; }
-  /* line 295, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 296, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-focused .x-grid-cell,
   .x-reset .x-grid-row-focused .x-grid-rowwrap {
-    border-color: #dddddd;
+    border-top: 1px dotted #464646 !important;
+    border-bottom: 1px dotted #464646 !important;
     background-color: #efefef; }
-  /* line 303, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 304, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-selected .x-grid-cell,
   .x-reset .x-grid-row-selected .x-grid-rowwrap {
     border-style: dotted;
     border-color: #a3bae9;
     background-color: #dfe8f6 !important; }
-  /* line 308, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 309, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-selected .x-grid-rowbody {
     background-color: #dfe8f6 !important; }
-  /* line 316, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 317, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-summary .x-grid-cell,
   .x-reset .x-grid-row-summary .x-grid-rowwrap,
   .x-reset .x-grid-row-summary .x-grid-cell-rowbody {
@@ -2763,47 +2765,48 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     background-color: transparent !important;
     border-top-width: 0;
     font: normal 11px/15px tahoma, arial, verdana, sans-serif; }
-  /* line 326, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 327, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-rowwrap .x-grid-cell,
   .x-reset .x-grid-rowwrap .x-grid-cell-inner {
     border-width: 0;
     background-color: transparent; }
-  /* line 332, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 333, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-body-hidden {
     display: none; }
-  /* line 336, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 337, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-rowbody {
     font: normal 11px/13px tahoma, arial, verdana, sans-serif;
     padding: 0; }
-    /* line 341, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 342, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-rowbody p {
       margin: 5px 5px 10px 5px; }
-  /* line 347, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 354, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-cell {
-    overflow: hidden; }
-  /* line 351, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    overflow: hidden;
+    border-color: white; }
+  /* line 359, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-cell-inner {
     overflow: hidden;
     -o-text-overflow: ellipsis;
     text-overflow: ellipsis;
     padding: 2px 6px 3px;
     white-space: nowrap; }
-  /* line 362, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 370, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-with-row-lines .x-grid-cell-inner {
     line-height: 13px;
     padding-bottom: 4px; }
-  /* line 368, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 376, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-action-col-cell .x-grid-cell-inner {
     line-height: 0;
-    padding: 2px; }
-  /* line 373, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    padding: 1px 2px 1px 2px!important; }
+  /* line 382, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-action-col-cell .x-item-disabled {
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=30);
     opacity: 0.3; }
-  /* line 377, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 386, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-with-row-lines .x-action-col-cell .x-grid-cell-inner {
     padding-top: 1px; }
-  /* line 381, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 390, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row .x-grid-cell-special {
     padding: 0;
     border-right: 1px solid #d0d0d0;
@@ -2815,10 +2818,10 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     background-image: -o-linear-gradient(left, #f6f6f6, #e9e9e9);
     background-image: -ms-linear-gradient(left, #f6f6f6, #e9e9e9);
     background-image: linear-gradient(left, #f6f6f6, #e9e9e9); }
-  /* line 394, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 403, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row .x-grid-cell-row-checker {
     vertical-align: middle; }
-  /* line 398, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 407, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-selected .x-grid-cell-special {
     border-right: 1px solid #aaccf6;
     background-image: none;
@@ -2829,54 +2832,54 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     background-image: -o-linear-gradient(left, #dfe8f6, #cbdaf0);
     background-image: -ms-linear-gradient(left, #dfe8f6, #cbdaf0);
     background-image: linear-gradient(left, #dfe8f6, #cbdaf0); }
-  /* line 404, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 413, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-dirty-cell {
     background-image: url('../../resources/themes/images/default/grid/dirty.gif');
     background-position: 0 0;
     background-repeat: no-repeat; }
-  /* line 417, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 426, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-cell-selected {
     background-color: #B8CFEE !important; }
-  /* line 423, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 432, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-nlg .x-grid-cell-special {
     background-repeat: repeat-y;
     background-position: top right; }
-  /* line 429, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 438, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-nlg .x-grid-row .x-grid-cell-special,
   .x-reset .x-nlg .x-grid-row-over .x-grid-cell-special {
     background-image: url('../../resources/themes/images/default/grid/cell-special-bg.gif'); }
-  /* line 435, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 444, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-nlg .x-grid-row-focused .x-grid-cell-special,
   .x-reset .x-nlg .x-grid-row-selected .x-grid-cell-special {
     background-image: url('../../resources/themes/images/default/grid/cell-special-selected-bg.gif'); }
-  /* line 441, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 450, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-with-col-lines .x-grid-cell {
     padding-right: 0;
     border-right: 1px solid #d0d0d0; }
-  /* line 448, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 457, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-property-grid .x-grid-row .x-grid-property-name .x-grid-cell-inner,
   .x-reset .x-property-grid .x-grid-row-over .x-grid-property-name .x-grid-cell-inner {
     padding-left: 12px;
     background-image: url('../../resources/themes/images/default/grid/property-cell-bg.gif');
     background-repeat: no-repeat;
     background-position: -16px 2px; }
-  /* line 458, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 467, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-with-row-lines.x-property-grid .x-grid-row .x-grid-property-name .x-grid-cell-inner,
   .x-reset .x-grid-with-row-lines.x-property-grid .x-grid-row-over .x-grid-property-name .x-grid-cell-inner {
     background-position: -16px 1px; }
-  /* line 469, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 478, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-body-hidden, .x-reset .x-grid-group-collapsed {
     display: none; }
-  /* line 475, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 484, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-view .x-grid-td-expander {
     vertical-align: top; }
-  /* line 480, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 489, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-td-expander {
     background: repeat-y right transparent; }
-  /* line 486, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 495, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-view .x-grid-td-expander .x-grid-cell-inner {
     padding: 0 !important; }
-  /* line 492, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 501, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-expander {
     background-image: url('../../resources/themes/images/default/grid/group-collapse.gif');
     background-color: transparent;
@@ -2885,17 +2888,17 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     margin-left: 3px;
     background-repeat: no-repeat;
     background-position: 0 -2px; }
-  /* line 506, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 515, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-collapsed .x-grid-row-expander {
     background-image: url('../../resources/themes/images/default/grid/group-expand.gif'); }
-  /* line 511, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 520, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-resize-marker {
     position: absolute;
     z-index: 5;
     top: 0;
     width: 1px;
     background-color: #0f0f0f; }
-  /* line 521, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 530, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .col-move-top, .x-reset .col-move-bottom {
     width: 9px;
     height: 9px;
@@ -2906,64 +2909,65 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     overflow: hidden;
     z-index: 20000;
     background: no-repeat left top transparent; }
-  /* line 533, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 542, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .col-move-top {
     background-image: url('../../resources/themes/images/default/grid/col-move-top.gif'); }
-  /* line 537, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 546, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .col-move-bottom {
     background-image: url('../../resources/themes/images/default/grid/col-move-bottom.gif'); }
-  /* line 542, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 551, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-tbar-page-number {
     width: 30px; }
-  /* line 549, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 558, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group,
   .x-reset .x-grid-group-body,
   .x-reset .x-grid-group-hd {
     zoom: 1; }
-  /* line 553, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 562, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group-hd {
     padding: 10px 4px 4px 4px;
     background: white;
     border-width: 0 0 2px 0;
     border-style: solid;
     border-color: #99bbe8;
-    cursor: pointer; }
-  /* line 566, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    cursor: pointer;
+    white-space: nowrap; }
+  /* line 576, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group-hd-not-collapsible {
     cursor: default; }
-  /* line 571, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 581, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group-hd-collapsible .x-grid-group-title {
     background: transparent no-repeat 0 -1px;
     background-image: url('../../resources/themes/images/default/grid/group-collapse.gif');
     padding: 0 0 0 14px; }
-  /* line 578, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 588, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group-title {
     color: #3764a0;
     font: bold 11px tahoma, arial, verdana, sans-serif; }
-  /* line 584, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 594, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group-hd-collapsed .x-grid-group-title {
     background-image: url('../../resources/themes/images/default/grid/group-expand.gif'); }
-  /* line 589, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 599, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group-collapsed .x-grid-group-body {
     display: none; }
-  /* line 593, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 603, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-group-collapsed .x-grid-group-title {
     background-image: url('../../resources/themes/images/default/grid/group-expand.gif'); }
-  /* line 597, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 607, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-group-by-icon {
     background-image: url('../../resources/themes/images/default/grid/group-by.gif'); }
-  /* line 601, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 611, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-show-groups-icon {
     background-image: url('../../resources/themes/images/default/grid/group-by.gif'); }
-  /* line 605, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 615, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-column-header-checkbox .x-column-header-inner {
     padding: 0;
     line-height: 0; }
-  /* line 610, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 620, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-cell-special .x-grid-cell-inner {
     padding-left: 4px;
     padding-right: 4px; }
-  /* line 616, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 626, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-checker,
   .x-reset .x-column-header-checkbox .x-column-header-text {
     height: 14px;
@@ -2973,88 +2977,88 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     background-position: -1px -1px;
     background-repeat: no-repeat;
     background-color: transparent; }
-  /* line 628, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 638, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-column-header-checkbox .x-column-header-text {
     display: block;
     margin-left: 5px; }
-  /* line 650, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 660, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-hd-checker-on .x-column-header-text {
     background-image: url('../../resources/themes/images/default/grid/checked.gif'); }
-  /* line 654, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 664, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-cell-row-checker .x-grid-cell-inner {
     padding-top: 4px;
     padding-bottom: 2px;
     line-height: 14px; }
-  /* line 659, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 669, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-with-row-lines .x-grid-cell-row-checker .x-grid-cell-inner {
     padding-top: 3px; }
-  /* line 662, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 672, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-checker {
     margin-left: 1px;
     background-position: 50% -2px; }
-  /* line 669, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 679, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-selected .x-grid-row-checker,
   .x-reset .x-grid-row-checked .x-grid-row-checker {
     background-image: url('../../resources/themes/images/default/grid/checked.gif'); }
-  /* line 674, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 684, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-tbar-page-first {
     background-image: url('../../resources/themes/images/default/grid/page-first.gif') !important; }
-  /* line 678, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 688, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-tbar-loading {
     background-image: url('../../resources/themes/images/default/grid/refresh.gif') !important; }
-  /* line 682, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 692, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-tbar-page-last {
     background-image: url('../../resources/themes/images/default/grid/page-last.gif') !important; }
-  /* line 686, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 696, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-tbar-page-next {
     background-image: url('../../resources/themes/images/default/grid/page-next.gif') !important; }
-  /* line 690, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 700, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-tbar-page-prev {
     background-image: url('../../resources/themes/images/default/grid/page-prev.gif') !important; }
-  /* line 695, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 705, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-item-disabled .x-tbar-loading {
     background-image: url('../../resources/themes/images/default/grid/refresh-disabled.gif') !important; }
-  /* line 699, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 709, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-item-disabled .x-tbar-page-first {
     background-image: url('../../resources/themes/images/default/grid/page-first-disabled.gif') !important; }
-  /* line 703, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 713, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-item-disabled .x-tbar-page-last {
     background-image: url('../../resources/themes/images/default/grid/page-last-disabled.gif') !important; }
-  /* line 707, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 717, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-item-disabled .x-tbar-page-next {
     background-image: url('../../resources/themes/images/default/grid/page-next-disabled.gif') !important; }
-  /* line 711, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 721, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-item-disabled .x-tbar-page-prev {
     background-image: url('../../resources/themes/images/default/grid/page-prev-disabled.gif') !important; }
-  /* line 717, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 727, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-hmenu-sort-asc .x-menu-item-icon {
     background-image: url('../../resources/themes/images/default/grid/hmenu-asc.gif'); }
-  /* line 721, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 731, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-hmenu-sort-desc .x-menu-item-icon {
     background-image: url('../../resources/themes/images/default/grid/hmenu-desc.gif'); }
-  /* line 725, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 735, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-hmenu-lock .x-menu-item-icon {
     background-image: url('../../resources/themes/images/default/grid/hmenu-lock.gif'); }
-  /* line 729, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 739, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-hmenu-unlock .x-menu-item-icon {
     background-image: url('../../resources/themes/images/default/grid/hmenu-unlock.gif'); }
-  /* line 733, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 743, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-group-by-icon {
     background-image: url('../../resources/themes/images/default/grid/group-by.gif'); }
-  /* line 737, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 747, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-cols-icon .x-menu-item-icon {
     background-image: url('../../resources/themes/images/default/grid/columns.gif'); }
-  /* line 741, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 751, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-show-groups-icon {
     background-image: url('../../resources/themes/images/default/grid/group-by.gif'); }
-  /* line 746, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 756, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-drop-indicator {
     position: absolute;
     height: 1px;
     line-height: 0px;
     background-color: #77BC71;
     overflow: visible; }
-    /* line 753, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 763, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-drop-indicator .x-grid-drop-indicator-left {
       position: absolute;
       top: -8px;
@@ -3062,7 +3066,7 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
       background-image: url('../../resources/themes/images/default/grid/dd-insert-arrow-right.png');
       height: 16px;
       width: 16px; }
-    /* line 762, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 772, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-drop-indicator .x-grid-drop-indicator-right {
       position: absolute;
       top: -8px;
@@ -3070,84 +3074,84 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
       background-image: url('../../resources/themes/images/default/grid/dd-insert-arrow-left.png');
       height: 16px;
       width: 16px; }
-  /* line 773, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 783, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-ie6 .x-grid-drop-indicator-left {
     background-image: url('../../resources/themes/images/default/grid/dd-insert-arrow-right.gif'); }
-  /* line 777, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 787, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-ie6 .x-grid-drop-indicator-right {
     background-image: url('../../resources/themes/images/default/grid/dd-insert-arrow-left.gif'); }
-  /* line 785, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 795, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-editor .x-form-text {
     padding: 0 4px; }
-  /* line 788, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 798, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-editor .x-form-cb-wrap {
     padding-top: 3px; }
-  /* line 794, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 804, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor {
     position: absolute !important;
     z-index: 1;
     zoom: 1;
     overflow: visible !important; }
-    /* line 800, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 810, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-row-editor .x-form-text {
       padding: 0 2px; }
-    /* line 803, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 813, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-row-editor .x-form-cb-wrap {
       padding-top: 0; }
-    /* line 806, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 816, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-row-editor .x-form-checkbox {
       margin-left: -4px; }
-    /* line 809, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 819, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-row-editor .x-form-display-field {
       font: normal 11px/15px tahoma, arial, verdana, sans-serif;
       padding-top: 0;
       padding-left: 2px; }
-    /* line 815, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 825, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-reset .x-grid-row-editor .x-panel-body {
       background-color: #eaf1fb;
       border-top: 1px solid #99bce8 !important;
       border-bottom: 1px solid #99bce8 !important; }
-  /* line 825, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 835, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-editor .x-form-cb-wrap, .x-reset .x-grid-row-editor .x-form-cb-wrap {
     text-align: center; }
-  /* line 828, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 838, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-editor .x-form-trigger, .x-reset .x-grid-row-editor .x-form-trigger {
     height: 19px; }
-  /* line 832, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 842, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-editor .x-form-trigger-wrap .x-form-spinner-up, .x-reset .x-grid-editor .x-form-trigger-wrap .x-form-spinner-down, .x-reset .x-grid-row-editor .x-form-trigger-wrap .x-form-spinner-up, .x-reset .x-grid-row-editor .x-form-trigger-wrap .x-form-spinner-down {
     background-image: url('../../resources/themes/images/default/form/spinner-small.gif');
     height: 10px !important; }
-  /* line 846, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 856, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-editor .x-form-text, .x-reset .x-grid-row-editor .x-form-text {
     font: normal 11px/15px tahoma, arial, verdana, sans-serif;
     height: 18px; }
-  /* line 854, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 864, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-border-box .x-grid-editor .x-form-trigger,
   .x-reset .x-border-box .x-grid-row-editor .x-form-trigger {
     height: 20px; }
-  /* line 857, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 867, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-border-box .x-grid-editor .x-form-text,
   .x-reset .x-border-box .x-grid-row-editor .x-form-text {
     height: 20px;
     padding-bottom: 1px; }
-  /* line 896, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 906, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-opera .x-grid-editor .x-form-text {
     padding-left: 5px; }
-  /* line 899, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 909, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-opera .x-grid-row-editor .x-form-text {
     padding-left: 3px; }
-  /* line 906, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 916, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons {
     background-color: #eaf1fb;
     position: absolute;
     bottom: -31px;
     padding: 4px;
     height: 32px; }
-    /* line 913, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+    /* line 923, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
     .x-strict .x-ie7m .x-reset .x-grid-row-editor-buttons {
       width: 192px;
       height: 24px; }
-  /* line 923, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 933, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-ml,
   .x-reset .x-grid-row-editor-buttons-mr,
   .x-reset .x-grid-row-editor-buttons-bl,
@@ -3155,22 +3159,22 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
   .x-reset .x-grid-row-editor-buttons-bc {
     position: absolute;
     overflow: hidden; }
-  /* line 929, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 939, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-bl,
   .x-reset .x-grid-row-editor-buttons-br {
     width: 4px;
     height: 4px;
     bottom: 0px;
     background-image: url('../../resources/themes/images/default/panel/panel-default-framed-corners.gif'); }
-  /* line 935, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 945, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-bl {
     left: 0px;
     background-position: 0px -16px; }
-  /* line 939, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 949, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-br {
     right: 0px;
     background-position: 0px -20px; }
-  /* line 944, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 954, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-bc {
     position: absolute;
     left: 4px;
@@ -3178,31 +3182,31 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     width: 192px;
     height: 1px;
     background-color: #99bce8; }
-  /* line 954, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 964, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-ml,
   .x-reset .x-grid-row-editor-buttons-mr {
     height: 27px;
     width: 1px;
     top: 1px;
     background-color: #99bce8; }
-  /* line 960, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 970, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-ml {
     left: 0px; }
-  /* line 963, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 973, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-buttons-mr {
     background-position: 0px -20px;
     right: 0px; }
-  /* line 969, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 979, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-errors ul {
     margin-left: 5px; }
-  /* line 972, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 982, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-row-editor-errors li {
     list-style: disc;
     margin-left: 15px; }
-  /* line 982, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 992, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-inner-locked .x-column-header-last {
     border-right: 0 none; }
-  /* line 985, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
+  /* line 995, ../themes/stylesheets/ext4/default/widgets/_grid.scss */
   .x-reset .x-grid-inner-locked .x-grid-cell-last {
     border-right: 0 none; }
   /* line 9, ../themes/stylesheets/ext4/default/widgets/form/_all.scss */
@@ -3653,107 +3657,108 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
   /* line 206, ../themes/stylesheets/ext4/default/widgets/form/_triggerfield.scss */
   .x-reset .x-form-search-trigger {
     background-image: url('../../resources/themes/images/default/form/search-trigger.gif'); }
-  /* line 6, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
-  .x-reset .x-html-editor-wrap {
-    border: 1px solid #b5b8c8; }
-    /* line 9, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
-    .x-reset .x-html-editor-wrap .x-toolbar {
-      border-top-width: 0;
-      border-left-width: 0;
-      border-right-width: 0; }
-    /* line 15, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
-    .x-reset .x-html-editor-wrap textarea {
-      background-color: white; }
-  /* line 20, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 8, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  .x-reset .x-html-editor-wrap .x-toolbar {
+    border-left-color: #b5b8c8;
+    border-top-color: #b5b8c8;
+    border-right-color: #b5b8c8; }
+  /* line 14, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  .x-reset .x-html-editor-wrap .x-html-editor-input {
+    border: 1px solid #b5b8c8;
+    border-top-width: 0; }
+  /* line 19, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  .x-reset .x-html-editor-wrap textarea {
+    background-color: white; }
+  /* line 24, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-btn-text {
     background: transparent no-repeat;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 26, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 30, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-bold,
   .x-reset .x-menu-item img.x-edit-bold {
     background-position: 0 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 32, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 36, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-italic,
   .x-reset .x-menu-item img.x-edit-italic {
     background-position: -16px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 38, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 42, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-underline,
   .x-reset .x-menu-item img.x-edit-underline {
     background-position: -32px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 44, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 48, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-forecolor,
   .x-reset .x-menu-item img.x-edit-forecolor {
     background-position: -160px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 50, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 54, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-backcolor,
   .x-reset .x-menu-item img.x-edit-backcolor {
     background-position: -176px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 56, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 60, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-justifyleft,
   .x-reset .x-menu-item img.x-edit-justifyleft {
     background-position: -112px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 62, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 66, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-justifycenter,
   .x-reset .x-menu-item img.x-edit-justifycenter {
     background-position: -128px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 68, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 72, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-justifyright,
   .x-reset .x-menu-item img.x-edit-justifyright {
     background-position: -144px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 74, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 78, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-insertorderedlist,
   .x-reset .x-menu-item img.x-edit-insertorderedlist {
     background-position: -80px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 80, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 84, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-insertunorderedlist,
   .x-reset .x-menu-item img.x-edit-insertunorderedlist {
     background-position: -96px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 86, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 90, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-increasefontsize,
   .x-reset .x-menu-item img.x-edit-increasefontsize {
     background-position: -48px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 92, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 96, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-decreasefontsize,
   .x-reset .x-menu-item img.x-edit-decreasefontsize {
     background-position: -64px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 98, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 102, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-sourceedit,
   .x-reset .x-menu-item img.x-edit-sourceedit {
     background-position: -192px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 104, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 108, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-edit-createlink,
   .x-reset .x-menu-item img.x-edit-createlink {
     background-position: -208px 0;
     background-image: url('../../resources/themes/images/default/editor/tb-sprite.gif'); }
-  /* line 109, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 113, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tip .x-tip-bd .x-tip-bd-inner {
     padding: 5px;
     padding-bottom: 1px; }
-  /* line 115, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 119, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-toolbar {
     position: static !important; }
-  /* line 118, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 122, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-tb .x-font-select {
     font-size: 11px; }
-  /* line 123, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 127, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-html-editor-wrap textarea {
     border: 0;
     padding: 3px 2px;
     overflow: auto; }
-  /* line 129, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
+  /* line 133, ../themes/stylesheets/ext4/default/widgets/form/_htmleditor.scss */
   .x-reset .x-htmleditor-iframe {
     display: block;
     overflow: auto; }
@@ -4731,7 +4736,7 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     background-image: url('../../resources/themes/images/default/toolbar/more.gif') !important;
     background-position: 2px center !important;
     background-repeat: no-repeat; }
-  /* line 144, ../themes/stylesheets/ext4/default/widgets/_toolbar.scss */
+  /* line 150, ../themes/stylesheets/ext4/default/widgets/_toolbar.scss */
   .x-reset .x-toolbar-default {
     border-color: #99bce8;
     background-image: none;
@@ -4742,11 +4747,11 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     background-image: -o-linear-gradient(top, #dfe9f5, #d3e1f1);
     background-image: -ms-linear-gradient(top, #dfe9f5, #d3e1f1);
     background-image: linear-gradient(top, #dfe9f5, #d3e1f1); }
-  /* line 155, ../themes/stylesheets/ext4/default/widgets/_toolbar.scss */
+  /* line 161, ../themes/stylesheets/ext4/default/widgets/_toolbar.scss */
   .x-reset .x-nlg .x-toolbar-default {
     background-image: url('../../resources/themes/images/default/toolbar/toolbar-default-bg.gif') !important;
     background-repeat: repeat-x; }
-  /* line 123, ../themes/stylesheets/ext4/default/widgets/_toolbar.scss */
+  /* line 129, ../themes/stylesheets/ext4/default/widgets/_toolbar.scss */
   .x-reset .x-toolbar-plain {
     border: 0; }
   /* line 6, ../themes/stylesheets/ext4/default/widgets/_window.scss */
@@ -5131,29 +5136,25 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
   /* line 7, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
   .x-reset .x-message-box .x-progress-wrap {
     margin-top: 4px; }
-  /* line 11, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
-  .x-reset .x-message-box-icon {
-    width: 47px;
-    height: 32px; }
-  /* line 19, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
+  /* line 14, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
   .x-reset .x-message-box-info,
   .x-reset .x-message-box-warning,
   .x-reset .x-message-box-question,
   .x-reset .x-message-box-error {
     background: transparent no-repeat top left; }
-  /* line 34, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
+  /* line 29, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
   .x-reset .x-message-box .x-msg-box-wait {
     background-image: url('../../resources/themes/images/default/shared/blue-loading.gif'); }
-  /* line 38, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
+  /* line 33, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
   .x-reset .x-message-box-info {
     background-image: url('../../resources/themes/images/default/shared/icon-info.gif'); }
-  /* line 42, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
+  /* line 37, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
   .x-reset .x-message-box-warning {
     background-image: url('../../resources/themes/images/default/shared/icon-warning.gif'); }
-  /* line 46, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
+  /* line 41, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
   .x-reset .x-message-box-question {
     background-image: url('../../resources/themes/images/default/shared/icon-question.gif'); }
-  /* line 50, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
+  /* line 45, ../themes/stylesheets/ext4/default/util/_messagebox.scss */
   .x-reset .x-message-box-error {
     background-image: url('../../resources/themes/images/default/shared/icon-error.gif'); }
   /* line 73, ../themes/stylesheets/ext4/default/widgets/_tabbar.scss */
@@ -5622,53 +5623,55 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     width: auto!important; }
   /* line 14, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-expander {
-    cursor: pointer; }
-  /* line 20, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+    cursor: pointer;
+    position: relative;
+    top: -2px; }
+  /* line 22, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-arrows .x-tree-expander {
     background: url('../../resources/themes/images/default/tree/arrows.gif') no-repeat 0 0; }
-  /* line 24, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 26, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-arrows .x-tree-expander-over .x-tree-expander {
     background-position: -32px 0; }
-  /* line 28, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 30, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-arrows .x-grid-tree-node-expanded .x-tree-expander {
     background-position: -16px 0; }
-  /* line 32, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 34, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-arrows .x-grid-tree-node-expanded .x-tree-expander-over .x-tree-expander {
     background-position: -48px 0; }
-  /* line 57, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 59, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-lines .x-tree-elbow {
     background-image: url('../../resources/themes/images/default/tree/elbow.gif'); }
-  /* line 61, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 63, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-lines .x-tree-elbow-end {
     background-image: url('../../resources/themes/images/default/tree/elbow-end.gif'); }
-  /* line 65, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 67, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-lines .x-tree-elbow-plus {
     background-image: url('../../resources/themes/images/default/tree/elbow-plus.gif'); }
-  /* line 69, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 71, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-lines .x-tree-elbow-end-plus {
     background-image: url('../../resources/themes/images/default/tree/elbow-end-plus.gif'); }
-  /* line 73, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 75, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-plus {
     background-image: url('../../resources/themes/images/default/tree/elbow-minus.gif'); }
-  /* line 77, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 79, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
     background-image: url('../../resources/themes/images/default/tree/elbow-end-minus.gif'); }
-  /* line 81, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 83, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-lines .x-tree-elbow-line {
     background-image: url('../../resources/themes/images/default/tree/elbow-line.gif'); }
-  /* line 117, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 119, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-no-lines .x-tree-expander {
     background-image: url('../../resources/themes/images/default/tree/elbow-plus-nl.gif'); }
-  /* line 121, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 123, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-no-lines .x-grid-tree-node-expanded .x-tree-expander {
     background-image: url('../../resources/themes/images/default/tree/elbow-minus-nl.gif'); }
-  /* line 136, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 138, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-icon {
-    margin: 2px 3px 0 0; }
-  /* line 146, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+    margin: 1px 3px 0 0; }
+  /* line 148, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-with-row-lines .x-tree-icon {
-    margin-top: 1px; }
-  /* line 155, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+    margin-top: 0px; }
+  /* line 157, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-elbow,
   .x-reset .x-tree-elbow-end,
   .x-reset .x-tree-elbow-plus,
@@ -5677,7 +5680,7 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
   .x-reset .x-tree-elbow-line {
     height: 20px;
     width: 16px; }
-  /* line 166, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 168, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-with-row-lines .x-tree-elbow,
   .x-reset .x-grid-with-row-lines .x-tree-elbow-end,
   .x-reset .x-grid-with-row-lines .x-tree-elbow-plus,
@@ -5687,42 +5690,48 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     height: 19px;
     position: relative;
     top: -1px; }
-  /* line 173, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 175, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-icon-leaf {
     width: 16px;
     background-image: url('../../resources/themes/images/default/tree/leaf.gif'); }
-  /* line 184, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 186, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-icon-parent {
     width: 16px;
     background-image: url('../../resources/themes/images/default/tree/folder.gif'); }
-  /* line 195, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 197, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-tree-node-expanded .x-tree-icon-parent {
     background-image: url('../../resources/themes/images/default/tree/folder-open.gif'); }
-  /* line 205, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
-  .x-reset .x-grid-cell-treecolumn .x-grid-cell-inner {
-    padding: 0;
-    line-height: 19px; }
-  /* line 210, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 207, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-with-row-lines .x-grid-cell-treecolumn .x-grid-cell-inner {
     line-height: 17px; }
-  /* line 214, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 211, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-panel .x-grid-cell-inner {
-    cursor: pointer; }
-    /* line 216, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+    cursor: pointer;
+    padding: 1px 6px 2px; }
+    /* line 213, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
     .x-reset .x-tree-panel .x-grid-cell-inner img {
       display: inline-block;
       vertical-align: top; }
-  /* line 237, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 221, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  .x-reset .x-grid-cell-treecolumn {
+    overflow: visible; }
+  /* line 226, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  .x-reset .x-grid-cell-treecolumn .x-grid-cell-inner {
+    padding: 0;
+    height: 19px;
+    line-height: 18px;
+    overflow: visible; }
+  /* line 249, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-editor-on-text-node .x-form-text {
     padding-left: 1px;
     padding-right: 1px; }
-  /* line 250, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 262, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-opera .x-grid-editor-on-text-node .x-form-text {
     padding-left: 2px;
     padding-right: 2px; }
-  /* line 256, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 268, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-checkbox {
-    margin: 4px 3px 0 0;
+    margin: 3px 3px 0 0;
     display: inline-block;
     vertical-align: top;
     width: 13px;
@@ -5732,42 +5741,42 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     overflow: hidden;
     padding: 0;
     border: 0; }
-    /* line 269, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+    /* line 281, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
     .x-reset .x-tree-checkbox::-moz-focus-inner {
       padding: 0;
       border: 0; }
-  /* line 281, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 293, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-with-row-lines .x-tree-checkbox {
-    margin-top: 3px; }
-  /* line 285, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+    margin-top: 2px; }
+  /* line 297, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-checkbox-checked {
     background-position: 0 -13px; }
-  /* line 289, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 301, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-drop-ok-append .x-dd-drop-icon {
     background-image: url('../../resources/themes/images/default/tree/drop-append.gif'); }
-  /* line 293, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 305, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-drop-ok-above .x-dd-drop-icon {
     background-image: url('../../resources/themes/images/default/tree/drop-above.gif'); }
-  /* line 297, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 309, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-drop-ok-below .x-dd-drop-icon {
     background-image: url('../../resources/themes/images/default/tree/drop-below.gif'); }
-  /* line 301, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 313, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-drop-ok-between .x-dd-drop-icon {
     background-image: url('../../resources/themes/images/default/tree/drop-between.gif'); }
-  /* line 305, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 317, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-tree-loading .x-tree-icon {
     background-image: url('../../resources/themes/images/default/tree/loading.gif'); }
-  /* line 315, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 327, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-ddindicator {
     height: 1px;
     border-width: 1px 0px 0px;
     border-style: dotted;
     border-color: green; }
-  /* line 322, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 334, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-grid-tree-loading span {
     font-style: italic;
     color: #444444; }
-  /* line 327, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
+  /* line 339, ../themes/stylesheets/ext4/default/widgets/_tree.scss */
   .x-reset .x-tree-animator-wrap {
     overflow: hidden; }
   /* line 6, ../themes/stylesheets/ext4/default/widgets/_drawcomponent.scss */
@@ -5839,17 +5848,19 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     overflow: hidden;
     height: 100%;
     position: static; }
-  /* line 3, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
-  .x-reset .x-dd-drag-proxy {
-    z-index: 1000000!important; }
-  /* line 8, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 6, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  .x-reset .x-dd-drag-proxy,
+  .x-reset .x-dd-drag-current {
+    z-index: 1000000!important;
+    pointer-events: none; }
+  /* line 12, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-dd-drag-repair .x-dd-drag-ghost {
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=60);
     opacity: 0.6; }
-  /* line 12, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 16, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-dd-drag-repair .x-dd-drop-icon {
     display: none; }
-  /* line 17, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 21, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-dd-drag-ghost {
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=85);
     opacity: 0.85;
@@ -5861,7 +5872,7 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     border: 1px solid;
     border-color: #ddd #bbb #bbb #ddd;
     background-color: #fff; }
-  /* line 34, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 38, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-dd-drop-icon {
     position: absolute;
     top: 3px;
@@ -5873,7 +5884,7 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     background-position: center;
     background-repeat: no-repeat;
     z-index: 1; }
-  /* line 68, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 72, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-view-selector {
     position: absolute;
     left: 0;
@@ -5884,13 +5895,13 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
     filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=50);
     opacity: 0.5;
     zoom: 1; }
-  /* line 83, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 87, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-dd-drop-nodrop .x-dd-drop-icon {
     background-image: url('../../resources/themes/images/default/dd/drop-no.gif'); }
-  /* line 87, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 91, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-dd-drop-ok .x-dd-drop-icon {
     background-image: url('../../resources/themes/images/default/dd/drop-yes.gif'); }
-  /* line 91, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
+  /* line 95, ../themes/stylesheets/ext4/default/util/_dragdrop.scss */
   .x-reset .x-dd-drop-ok-add .x-dd-drop-icon {
     background-image: url('../../resources/themes/images/default/dd/drop-add.gif'); }
   /* line 2, ../themes/stylesheets/ext4/default/util/_resizable.scss */
@@ -6316,12 +6327,12 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
   /* line 247, ../themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-reset .x-horizontal-box-overflow-body {
     float: left; }
-  /* line 250, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+  /* line 257, ../themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-reset .x-box-scroller-right {
     float: right;
     height: 100%;
     z-index: 5; }
-    /* line 257, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+    /* line 264, ../themes/stylesheets/ext4/default/layout/_layout.scss */
     .x-reset .x-box-scroller-right .x-toolbar-scroll-right,
     .x-reset .x-box-scroller-right .x-tabbar-scroll-right {
       width: 18px;
@@ -6330,55 +6341,55 @@ Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
       height: 20px;
       background: transparent no-repeat 0 0;
       background-image: url('../../resources/themes/images/default/tab-bar/scroll-right.gif'); }
-    /* line 265, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+    /* line 272, ../themes/stylesheets/ext4/default/layout/_layout.scss */
     .x-reset .x-box-scroller-right .x-toolbar-scroll-right-hover {
       background-position: -18px 0; }
-    /* line 269, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+    /* line 276, ../themes/stylesheets/ext4/default/layout/_layout.scss */
     .x-reset .x-box-scroller-right .x-toolbar-scroll-right-disabled,
     .x-reset .x-box-scroller-right .x-tabbar-scroll-right-disabled {
       background-position: 0 0;
       filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=50);
       opacity: 0.5;
       cursor: default; }
-    /* line 276, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+    /* line 283, ../themes/stylesheets/ext4/default/layout/_layout.scss */
     .x-reset .x-box-scroller-right .x-toolbar-scroll-right {
       background-image: url('../../resources/themes/images/default/toolbar/scroll-right.gif'); }
-    /* line 279, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+    /* line 286, ../themes/stylesheets/ext4/default/layout/_layout.scss */
     .x-reset .x-box-scroller-right .x-toolbar-scroll-right-hover {
       background-position: -14px 0; }
-    /* line 282, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+    /* line 289, ../themes/stylesheets/ext4/default/layout/_layout.scss */
     .x-reset .x-box-scroller-right .x-toolbar-scroll-right-disabled {
       background-position: 0 0; }
-    /* line 286, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+    /* line 293, ../themes/stylesheets/ext4/default/layout/_layout.scss */
     .x-reset .x-box-scroller-right .x-toolbar-scroll-right {
       width: 14px;
       height: 22px;
       border-bottom: 1px solid #8db2e3; }
-  /* line 296, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+  /* line 303, ../themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-reset .x-box-scroller-top .x-box-scroller {
     line-height: 0;
     font-size: 0; }
-  /* line 300, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+  /* line 307, ../themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-reset .x-box-scroller-top .x-menu-scroll-top {
     background: transparent no-repeat center center;
     background-image: url('../../resources/themes/images/default/layout/mini-top.gif');
     height: 8px;
     cursor: pointer; }
-  /* line 308, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+  /* line 315, ../themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-reset .x-box-scroller-bottom .x-box-scroller {
     line-height: 0;
     font-size: 0; }
-  /* line 312, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+  /* line 319, ../themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-reset .x-box-scroller-bottom .x-menu-scroll-bottom {
     background: transparent no-repeat center center;
     background-image: url('../../resources/themes/images/default/layout/mini-bottom.gif');
     height: 8px;
     cursor: pointer; }
-  /* line 320, ../themes/stylesheets/ext4/default/layout/_layout.scss */
-  .x-reset .x-box-menu-right {
+  /* line 327, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+  .x-reset .x-box-menu-after {
     float: right;
     padding-right: 2px; }
-  /* line 325, ../themes/stylesheets/ext4/default/layout/_layout.scss */
+  /* line 340, ../themes/stylesheets/ext4/default/layout/_layout.scss */
   .x-reset .x-column {
     float: left; }
   /* line 2, ../themes/stylesheets/ext4/default/util/_tool.scss */

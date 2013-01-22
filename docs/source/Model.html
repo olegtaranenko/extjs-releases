@@ -45,7 +45,7 @@
  * The fields array is turned into a {@link Ext.util.MixedCollection MixedCollection} automatically by the {@link
  * Ext.ModelManager ModelManager}, and all other functions and properties are copied to the new Model's prototype.
  * 
- * By default, the built in numeric and boolean field types have a (@link Ext.data.Field#convert} function which coerces string
+ * By default, the built in numeric and boolean field types have a {@link Ext.data.Field#convert} function which coerces string
  * values in raw data into the field's type. For better performance with {@link Ext.data.reader.Json Json} or {@link Ext.data.reader.Array Array}
  * readers *if you are in control of the data fed into this Model*, you can null out the default convert function which will cause
  * the raw property to be copied directly into the Field's value.
@@ -299,7 +299,15 @@ Ext.define('Ext.data.Model', {
 
                 associationConfig, i, ln,
                 dependencies = [],
-                idProperty = data.idProperty || cls.prototype.idProperty,
+
+                // Use the idProperty from the configuration if there is one, else fall back to the default from the prototype
+                idProperty = 'idProperty' in data ? data.idProperty : prototype.idProperty,
+
+                // If an idProperty was specified, we create an idField
+                idField = idProperty ? (idProperty.isField ? idProperty : new Ext.data.Field(idProperty)) : null,
+
+                // Set if there is a Field in the defined fields which encapsulates the idProperty
+                idFieldDefined = false,
 
                 // Process each Field upon add into the collection
                 onFieldAddReplace = function(arg0, arg1, arg2) {
@@ -320,10 +328,12 @@ Ext.define('Ext.data.Model', {
                     // compareConvertFields changes the order due to some fields having custom convert functions.
                     newField.originalIndex = pos;
 
-                    // The field(s) which encapsulates the idProperty must never have a default value set
-                    // if no value arrives from the server side. So override any possible prototype-provided
-                    // defaultValue with undefined which will inhibit generation of defaulting code in Reader.buildRecordDataExtractor
-                    if (newField.mapping === idProperty || (newField.mapping == null &amp;&amp; newField.name === idProperty)) {
+                    // If a defined Field encapsulates the idProperty, then we do not have to create a separate identifying field.
+                    // Also, this field must never have a default value set if no value arrives from the server side.
+                    // So override any possible prototype-provided defaultValue with undefined which will inhibit generation of defaulting code in Reader.buildRecordDataExtractor
+                    if (idField &amp;&amp; ((newField.mapping &amp;&amp; (newField.mapping === idField.mapping)) || (newField.name === idField.name))) {
+                        prototype.idField = newField;
+                        idFieldDefined = true,
                         newField.defaultValue = undefined;
                     }
                 },
@@ -361,8 +371,14 @@ Ext.define('Ext.data.Model', {
                 field = fields[i];
                 fieldsMixedCollection.add(field.isField ? field : new Ext.data.Field(field));
             }
-            if (!fieldsMixedCollection.get(idProperty)) {
-                fieldsMixedCollection.add(new Ext.data.Field(idProperty));
+
+            // If there was an idProperty specified, and there has *not* been a field defined which encapsulates that property,
+            // then create a field which encapsulates that property.
+            // This must never provide a default value.
+            if (idField &amp;&amp; !idFieldDefined) {
+                prototype.idField = idField;
+                idField.defaultValue = undefined;
+                fieldsMixedCollection.add(idField);
             }
 
             // Ensure the Fields are on correct order: Fields with custom convert function last
@@ -491,14 +507,20 @@ Ext.define('Ext.data.Model', {
          */
         setFields: function(fields, idProperty, clientIdProperty) {
             var me = this,
+                newField,
+                idField,
+                idFieldDefined = false,
                 proto = me.prototype,
                 prototypeFields = proto.fields,
+                superFields = proto.superclass.fields,
                 len = fields ? fields.length : 0,
                 i = 0;
 
 
             if (idProperty) {
                 proto.idProperty = idProperty;
+                idField = idProperty.isField ? idProperty : new Ext.data.Field(idProperty);
+
             }
             if (clientIdProperty) {
                 proto.clientIdProperty = clientIdProperty;
@@ -512,12 +534,31 @@ Ext.define('Ext.data.Model', {
                     return field.name;
                 });
             }
+            
+            // Merge the fields of the superclass and the passed in fields
+            if (superFields) {
+                fields = superFields.items.concat(fields);
+            }
 
             for (; i &lt; len; i++) {
-                prototypeFields.add(new Ext.data.Field(fields[i]));
+                newField = new Ext.data.Field(fields[i]);
+                    
+                // If a defined Field encapsulates the idProperty, then we do not have to create a separate identifying field.
+                // Also, this field must never have a default value set if no value arrives from the server side.
+                // So override any possible prototype-provided defaultValue with undefined which will inhibit generation of defaulting code in Reader.buildRecordDataExtractor
+                if (idField &amp;&amp; ((newField.mapping &amp;&amp; (newField.mapping === idField.mapping)) || (newField.name === idField.name))) {
+                    idFieldDefined = true,
+                    newField.defaultValue = undefined;
+                }
+                prototypeFields.add(newField);
             }
-            if (!prototypeFields.get(proto.idProperty)) {
-                prototypeFields.add(new Ext.data.Field(proto.idProperty));
+
+            // If there was an idProperty specified, and there has *not* been a field defined which encapsulates that property,
+            // then create a field which encapsulates that property.
+            // This must never provide a default value.
+            if (idField &amp;&amp; !idFieldDefined) {
+                idField.defaultValue = undefined;
+                prototypeFields.add(idField);
             }
 
             me.fields = prototypeFields;
@@ -764,14 +805,18 @@ Ext.define('Ext.data.Model', {
     phantom : false,
 
 <span id='Ext-data-Model-cfg-idProperty'>    /**
-</span>     * @cfg {String} idProperty
+</span>     * @cfg {String/Object/Ext.data.Field} idProperty
      * The name of the field treated as this Model's unique id. Defaults to 'id'.
-     * 
-     * {@link Ext.view.AbstractView View} {@link Ext.selection.Model selection models} use this identifier
-     * by preference to track which records in a store are selected. So if using {@link Ext.toolbar.Paging paging}
-     * or a {@link Ext.data.Store#buffered buffered (sparsely populated)} store which may prune
-     * unused pages of records from its cache, then when a page is returned to, or a page is returned into the cache,
-     * this unique identifier will allow the selection model to detect the selected state.
+     *
+     * This may also be specified as a Field config object. This means that the identifying field can be calculated
+     * using a {@link Ext.data.Field#convert convert} function which might aggregate several values from the
+     * raw data object to use as an identifier.
+     *
+     * The resulting {@link Ext.data.Field Field} is added to the Model's field collection unless there is already
+     * a configured field with a mapping that reads the same property.
+     *
+     * If defining an **abstract** base Model class, the `idProperty` may be configured as `null` which will mean that
+     * no identifying field will be generated.
      */
     idProperty: 'id',
 
@@ -847,9 +892,12 @@ Ext.define('Ext.data.Model', {
      */
     constructor: function(data, id, raw, convertedData) {
         // id, raw and convertedData not documented intentionally, meant to be used internally.
-        // TODO: find where &quot;raw&quot; is used and remove it. The first parameter, &quot;data&quot; is raw, unconverted data. &quot;raw&quot; is redundant.
+        // TODO: find where &quot;raw&quot; is used and remove it. The first parameter, &quot;data&quot; is raw, unconverted data.
+        // 
         // The &quot;convertedData&quot; parameter is a converted object hash with all properties corresponding to defined Fields
         // and all values of the defined type. It is used directly as this record's data property.
+        // When the cponvertedData parameter is used, raw data is passed in using the &quot;raw&quot; parameter and
+        // is not processed
         data = data || {};
 
         // If no ID passed, use the id property from the passed data
@@ -880,10 +928,6 @@ Ext.define('Ext.data.Model', {
 </span>         * @property {Object} raw The raw data used to create this model if created via a reader.
          */
         me.raw = raw || data; // If created using data in constructor, use data
-
-        if (!me.data) {
-            me.data = {};
-        }
 
 <span id='Ext-data-Model-property-modified'>        /**
 </span>         * @property {Object} modified Key: value pairs of all fields whose values have changed
@@ -970,10 +1014,6 @@ Ext.define('Ext.data.Model', {
                 me.phantom = true;
             }
         }
-
-        // clear any dirty/modified since we're initializing
-        me.dirty = false;
-        me.modified = {};
 
         if (typeof me.init == 'function') {
             me.init();
@@ -1144,9 +1184,10 @@ Ext.define('Ext.data.Model', {
      * @param {Object} b The second value
      * @return {Boolean} True if the values are equal
      */
-    isEqual: function(a, b){
-        if (Ext.isDate(a) &amp;&amp; Ext.isDate(b)) {
-            return Ext.Date.isEqual(a, b);
+    isEqual: function(a, b) {
+        // instanceof is ~10 times faster then Ext.isDate. Values here will not be cross-document objects
+        if (a instanceof Date &amp;&amp; b instanceof Date) {
+            return a.getTime() === b.getTime();
         }
         return a === b;
     },
@@ -1194,9 +1235,7 @@ Ext.define('Ext.data.Model', {
             me.modified = me.modifiedSave;
             me[me.persistenceProperty] = me.dataSave;
             me.dirty = me.dirtySave;
-            delete me.modifiedSave;
-            delete me.dataSave;
-            delete me.dirtySave;
+            me.modifiedSave = me.dataSave = me.dirtySave = null;
         }
     },
 
@@ -1215,9 +1254,7 @@ Ext.define('Ext.data.Model', {
         if (me.editing) {
             me.editing = false;
             dataSave = me.dataSave;
-            delete me.modifiedSave;
-            delete me.dataSave;
-            delete me.dirtySave;
+            me.modifiedSave = me.dataSave = me.dirtySave = null;
             if (!silent) {
                 if (!modifiedFieldNames) {
                     modifiedFieldNames = me.getModifiedFieldNames(dataSave);
@@ -1383,7 +1420,7 @@ Ext.define('Ext.data.Model', {
         var me = this;
 
         // Use raw data as the data param.
-        // Pass a copy iof our converted data in to be used as the new record's convertedData
+        // Pass a copy of our converted data in to be used as the new record's convertedData
         return new me.self(me.raw, newId, null, Ext.apply({}, me[me.persistenceProperty]));
     },
 
@@ -1519,7 +1556,7 @@ Ext.define('Ext.data.Model', {
         var me = this,
             isNotPhantom = me.phantom !== true,
             scope  = options.scope || me,
-            stores = me.stores,
+            stores,
             i = 0,
             storeCount,
             store,
@@ -1531,12 +1568,18 @@ Ext.define('Ext.data.Model', {
 
         callback = function(operation) {
             args = [me, operation];
+
+            // The stores property will be mutated, so clone it first
+            stores = Ext.Array.clone(me.stores);
             if (operation.wasSuccessful()) {
-                for(storeCount = stores.length; i &lt; storeCount; i++) {
+                for (storeCount = stores.length; i &lt; storeCount; i++) {
                     store = stores[i];
-                    
-                    // Remove this record from Store. Avoid Store handling anything by passing the &quot;isMove&quot; flag
-                    store.remove(me, true);
+
+                    // If the store has a remove (it's not a TreeStore), then
+                    // remove this record from Store. Avoid Store handling anything by passing the &quot;isMove&quot; flag
+                    if (store.remove) {
+                        store.remove(me, true);
+                    }
                     if (isNotPhantom) {
                         store.fireEvent('write', store, operation);
                     }
@@ -1568,7 +1611,7 @@ Ext.define('Ext.data.Model', {
      * @return {Number/String} The id
      */
     getId: function() {
-        return this.get(this.idProperty);
+        return this.get(this.idField.name);
     },
 
 <span id='Ext-data-Model-method-getObservableId'>    /**
@@ -1606,7 +1649,14 @@ Ext.define('Ext.data.Model', {
      * @param {Ext.data.Store} store The store to which this model has been added.
      */
     join : function(store) {
-        Ext.Array.include(this.stores, store);
+        var me = this;
+        
+        // Code for the 99% use case using fast way!
+        if (!me.stores.length) {
+            me.stores[0] = store;
+        } else {
+            Ext.Array.include(this.stores, store);
+        }
 
 <span id='Ext-data-Model-property-store'>        /**
 </span>         * @property {Ext.data.Store} store

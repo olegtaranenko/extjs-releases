@@ -2,13 +2,14 @@
  * Controllers are the glue that binds an application together. All they really do is listen for events (usually from
  * views) and take some action. Here's how we might create a Controller to manage Users:
  *
- *     Ext.define('MyApp.controller.Users', {
- *         extend: 'Ext.app.Controller',
+ *      Ext.define('MyApp.controller.Users', {
+ *          extend: 'Ext.app.Controller',
  *
- *         init: function() {
- *             console.log('Initialized Users! This happens before the Application launch function is called');
- *         }
- *     });
+ *          init: function() {
+ *              console.log('Initialized Users! This happens before ' +
+ *                          'the Application launch() function is called');
+ *          }
+ *      });
  *
  * The init function is a special method that is called when your application boots. It is called before the
  * {@link Ext.app.Application Application}'s launch function is executed so gives a hook point to run any code before
@@ -19,59 +20,69 @@
  * makes it easy to listen to events on your view classes and take some action with a handler function. Let's update
  * our Users controller to tell us when the panel is rendered:
  *
- *     Ext.define('MyApp.controller.Users', {
- *         extend: 'Ext.app.Controller',
+ *      Ext.define('MyApp.controller.Users', {
+ *          extend: 'Ext.app.Controller',
  *
- *         init: function() {
- *             this.control({
- *                 'viewport > panel': {
- *                     render: this.onPanelRendered
- *                 }
- *             });
- *         },
+ *          init: function() {
+ *              this.control({
+ *                  'viewport > panel': {
+ *                      render: this.onPanelRendered
+ *                  }
+ *              });
+ *          },
  *
- *         onPanelRendered: function() {
- *             console.log('The panel was rendered');
- *         }
- *     });
+ *          onPanelRendered: function() {
+ *              console.log('The panel was rendered');
+ *          }
+ *      });
  *
- * We've updated the init function to use this.control to set up listeners on views in our application. The control
- * function uses the ComponentQuery engine to quickly and easily get references to components on the page. If you
- * are not familiar with ComponentQuery yet, be sure to check out the {@link Ext.ComponentQuery documentation}. In brief though,
- * it allows us to pass a CSS-like selector that will find every matching component on the page.
+ * We've updated the init function to use {@link Ext.app.Controller#control control method} to set up listeners on views
+ * in our application. The control method uses the ComponentQuery engine to quickly and easily get references to components
+ * on the page. If you are not familiar with ComponentQuery yet, be sure to check out the
+ * {@link Ext.ComponentQuery documentation}. In brief though, it allows us to pass a CSS-like selector that will find
+ * every matching component on the page.
  *
  * In our init function above we supplied 'viewport > panel', which translates to "find me every Panel that is a direct
  * child of a Viewport". We then supplied an object that maps event names (just 'render' in this case) to handler
  * functions. The overall effect is that whenever any component that matches our selector fires a 'render' event, our
  * onPanelRendered function is called.
  *
+ * ## Event domains
+ *
+ * In Ext JS 4.2, we introduced the concept of event domains. In terms of MVC, an event domain
+ * is one or more base classes that fire events to which a Controller wants to listen. Besides
+ * Component event domain that encompass {@link Ext.Component}-descended Views, Controllers now
+ * can listen to events from data Stores, Ext.Direct Providers, other Controllers, and Ext.globalEvents.
+ * This feature provides a way to communicate between parts of the whole application without the need
+ * to bind controllers together tightly, and allows to develop and test application parts in isolation.
+ *
+ * See usage examples in {@link #listen} method documentation.
+ *
  * ## Using refs
  *
- * One of the most useful parts of Controllers is the new ref system. These use the new {@link Ext.ComponentQuery} to
+ * One of the most useful parts of Controllers is the ref system. These use the {@link Ext.ComponentQuery} to
  * make it really easy to get references to Views on your page. Let's look at an example of this now:
  *
- *     Ext.define('MyApp.controller.Users', {
- *         extend: 'Ext.app.Controller',
- *
- *         refs: [
- *             {
- *                 ref: 'list',
- *                 selector: 'grid'
- *             }
- *         ],
- *
- *         init: function() {
- *             this.control({
- *                 'button': {
- *                     click: this.refreshGrid
- *                 }
- *             });
- *         },
- *
- *         refreshGrid: function() {
- *             this.getList().store.load();
- *         }
- *     });
+ *      Ext.define('MyApp.controller.Users', {
+ *          extend: 'Ext.app.Controller',
+ *          
+ *          refs: [{
+ *              ref: 'list',
+ *              selector: 'grid'
+ *          }],
+ *          
+ *          init: function() {
+ *              this.control({
+ *                  'button': {
+ *                      click: this.refreshGrid
+ *                  }
+ *              });
+ *          },
+ *          
+ *          refreshGrid: function() {
+ *              this.getList().store.load();
+ *          }
+ *      });
  *
  * This example assumes the existence of a {@link Ext.grid.Panel Grid} on the page, which contains a single button to
  * refresh the Grid when clicked. In our refs array, we set up a reference to the grid. There are two parts to this -
@@ -101,20 +112,22 @@
  * Refs aren't the only thing that generate convenient getter methods. Controllers often have to deal with Models and
  * Stores so the framework offers a couple of easy ways to get access to those too. Let's look at another example:
  *
- *     Ext.define('MyApp.controller.Users', {
- *         extend: 'Ext.app.Controller',
+ *      Ext.define('MyApp.controller.Users', {
+ *          extend: 'Ext.app.Controller',
  *
- *         models: ['User'],
- *         stores: ['AllUsers', 'AdminUsers'],
+ *          models: ['User'],
+ *          stores: ['AllUsers', 'AdminUsers'],
  *
- *         init: function() {
- *             var User = this.getUserModel(),
- *                 allUsers = this.getAllUsersStore();
+ *          init: function() {
+ *              var User, allUsers, ed;
+ *              
+ *              User = this.getUserModel();
+ *              allUsers = this.getAllUsersStore();
  *
- *             var ed = new User({name: 'Ed'});
- *             allUsers.add(ed);
- *         }
- *     });
+ *              ed = new User({ name: 'Ed' });
+ *              allUsers.add(ed);
+ *          }
+ *      });
  *
  * By specifying Models and Stores that the Controller cares about, it again dynamically loads them from the appropriate
  * locations (app/model/User.js, app/store/AllUsers.js and app/store/AdminUsers.js in this case) and creates getter
@@ -125,19 +138,24 @@
  * ## Further Reading
  *
  * For more information about writing Ext JS 4 applications, please see the
- * [application architecture guide](#/guide/application_architecture). Also see the {@link Ext.app.Application} documentation.
+ * [application architecture guide](#/guide/application_architecture). Also see the {@link Ext.app.Application}
+ * documentation.
  *
  * @docauthor Ed Spencer
  */
 Ext.define('Ext.app.Controller', {
     requires: [
-        'Ext.app.EventBus'
-    ],
-
-    uses: [
+        'Ext.app.EventBus',
         'Ext.ModelManager',
         'Ext.data.StoreManager',
-        'Ext.ComponentManager'
+        'Ext.ComponentManager',
+        'Ext.app.domain.Global',
+        'Ext.app.domain.Component',
+        'Ext.app.domain.Store'
+    ],
+    
+    uses: [
+        'Ext.app.domain.Controller'
     ],
 
     mixins: {
@@ -216,7 +234,7 @@ Ext.define('Ext.app.Controller', {
 
             var me = this,
                 strings = me.strings[kind],
-                o, absoluteName, shortName, name, j, subLn, getterName;
+                o, absoluteName, shortName, name, j, subLn, getterName, getter;
 
             for (j = 0, subLn = names.length; j < subLn; j++) {
                 name = names[j];
@@ -226,11 +244,15 @@ Ext.define('Ext.app.Controller', {
 
                 requires.push(absoluteName);
                 getterName = me.getGetterName(shortName, strings.upper);
-                cls[getterName] = me.createGetter(strings.getter, name);
+                cls[getterName] = getter = me.createGetter(strings.getter, name);
 
                 // Application class will init the controller getters
                 if (kind !== 'controller') {
-                    cls[getterName].$ext_getter = true;
+                    // This marker allows the constructor to easily/cheaply identify the
+                    // generated getter methods since they all need to be called to get
+                    // things initialized. We use a property name that deliberately does
+                    // not work with dot-access to reduce any chance of collision.
+                    getter['Ext.app.getter'] = true;
                 }
             }
         },
@@ -289,28 +311,38 @@ Ext.define('Ext.app.Controller', {
             };
         }
     },
+    
+    /**
+     * The {@link Ext.app.Application} for this controller.
+     *
+     * @property {Ext.app.Application}
+     * @readonly
+     */
+    application: null,
 
     /**
      * @cfg {String[]} models
      * Array of models to require from AppName.model namespace. For example:
      *
-     *     Ext.define("MyApp.controller.Foo", {
-     *         extend: "Ext.app.Controller",
-     *         models: ['User', 'Vehicle']
-     *     });
+     *      Ext.define("MyApp.controller.Foo", {
+     *          extend: "Ext.app.Controller",
+     *          models: ['User', 'Vehicle']
+     *      });
      *
      * This is equivalent of:
      *
-     *     Ext.define("MyApp.controller.Foo", {
-     *         extend: "Ext.app.Controller",
-     *         requires: ['MyApp.model.User', 'MyApp.model.Vehicle'],
-     *         getUserModel: function() {
-     *             return this.getModel("User");
-     *         },
-     *         getVehicleModel: function() {
-     *             return this.getModel("Vehicle");
-     *         }
-     *     });
+     *      Ext.define("MyApp.controller.Foo", {
+     *          extend: "Ext.app.Controller",
+     *          requires: ['MyApp.model.User', 'MyApp.model.Vehicle'],
+     *          
+     *          getUserModel: function() {
+     *              return this.getModel("User");
+     *          },
+     *          
+     *          getVehicleModel: function() {
+     *              return this.getModel("Vehicle");
+     *          }
+     *      });
      *
      */
 
@@ -319,24 +351,25 @@ Ext.define('Ext.app.Controller', {
      * Array of views to require from AppName.view namespace and to generate getter methods for.
      * For example:
      *
-     *     Ext.define("MyApp.controller.Foo", {
-     *         extend: "Ext.app.Controller",
-     *         views: ['List', 'Detail']
-     *     });
+     *      Ext.define("MyApp.controller.Foo", {
+     *          extend: "Ext.app.Controller",
+     *          views: ['List', 'Detail']
+     *      });
      *
      * This is equivalent of:
      *
-     *     Ext.define("MyApp.controller.Foo", {
-     *         extend: "Ext.app.Controller",
-     *         requires: ['MyApp.view.List', 'MyApp.view.Detail'],
-     *         getListView: function() {
-     *             return this.getView("List");
-     *         },
-     *         getDetailView: function() {
-     *             return this.getView("Detail");
-     *         }
-     *     });
-     *
+     *      Ext.define("MyApp.controller.Foo", {
+     *          extend: "Ext.app.Controller",
+     *          requires: ['MyApp.view.List', 'MyApp.view.Detail'],
+     *          
+     *          getListView: function() {
+     *              return this.getView("List");
+     *          },
+     *          
+     *          getDetailView: function() {
+     *              return this.getView("Detail");
+     *          }
+     *      });
      */
 
     /**
@@ -344,39 +377,43 @@ Ext.define('Ext.app.Controller', {
      * Array of stores to require from AppName.store namespace and to generate getter methods for.
      * For example:
      *
-     *     Ext.define("MyApp.controller.Foo", {
-     *         extend: "Ext.app.Controller",
-     *         stores: ['Users', 'Vehicles']
-     *     });
+     *      Ext.define("MyApp.controller.Foo", {
+     *          extend: "Ext.app.Controller",
+     *          stores: ['Users', 'Vehicles']
+     *      });
      *
-     * This is equivalent of:
+     * This is equivalent to:
      *
-     *     Ext.define("MyApp.controller.Foo", {
-     *         extend: "Ext.app.Controller",
-     *         requires: ['MyApp.store.Users', 'MyApp.store.Vehicles']
-     *         getUsersStore: function() {
-     *             return this.getView("Users");
-     *         },
-     *         getVehiclesStore: function() {
-     *             return this.getView("Vehicles");
-     *         }
-     *     });
+     *      Ext.define("MyApp.controller.Foo", {
+     *          extend: "Ext.app.Controller",
+     *         
+     *          requires: [
+     *              'MyApp.store.Users',
+     *              'MyApp.store.Vehicles'
+     *          ]
+     *         
+     *          getUsersStore: function() {
+     *              return this.getStore("Users");
+     *          },
      *
+     *          getVehiclesStore: function() {
+     *              return this.getStore("Vehicles");
+     *          }
+     *      });
      */
 
     /**
      * @cfg {Object[]} refs
      * Array of configs to build up references to views on page. For example:
      *
-     *     Ext.define("MyApp.controller.Foo", {
-     *         extend: "Ext.app.Controller",
-     *         refs: [
-     *             {
-     *                 ref: 'list',
-     *                 selector: 'grid'
-     *             }
-     *         ],
-     *     });
+     *      Ext.define("MyApp.controller.Foo", {
+     *          extend: "Ext.app.Controller",
+     *          
+     *          refs: [{
+     *              ref: 'list',
+     *              selector: 'grid'
+     *          }],
+     *      });
      *
      * This will add method `getList` to the controller which will internally use
      * Ext.ComponentQuery to reference the grid component on page.
@@ -441,32 +478,23 @@ Ext.define('Ext.app.Controller', {
 
     /**
      * Creates new Controller.
-     * @param {Object} config (optional) Config object.
+     *
+     * @param {Object} [config] Configuration object.
      */
-    constructor: function(config) {
-        var me = this,
-            prop, fn;
+    constructor: function (config) {
+        var me = this;
 
         me.mixins.observable.constructor.call(me, config);
-
-        Ext.apply(me, config);
 
         if (me.refs) {
             me.ref(me.refs);
         }
 
-        me.initEventBus();
+        me.eventbus = Ext.app.EventBus;
+        
         me.initAutoGetters();
     },
-
-    /**
-     * Initializes EventBus reference for this Controller. By default it uses global
-     * EventBus instance but can be overridden in your application to do something else.
-     */
-    initEventBus: function() {
-        this.eventbus = Ext.app.EventBus.instance;
-    },
-
+    
     initAutoGetters: function() {
         var proto = this.self.prototype,
             prop, fn;
@@ -474,7 +502,9 @@ Ext.define('Ext.app.Controller', {
         for (prop in proto) {
             fn = proto[prop];
 
-            if (Ext.isFunction(fn) && fn.$ext_getter) {
+            // Look for the marker placed on the getters by processDependencies so that
+            // we can know what to call cheaply:
+            if (fn && fn['Ext.app.getter']) {
                 fn.call(this);
             }
         }
@@ -491,19 +521,22 @@ Ext.define('Ext.app.Controller', {
 
     /**
      * A template method that is called when your application boots. It is called before the
-     * {@link Ext.app.Application Application}'s launch function is executed so gives a hook point to run any code before
-     * your Viewport is created.
+     * {@link Ext.app.Application Application}'s launch function is executed so gives a hook point
+     * to run any code before your Viewport is created.
      *
      * @param {Ext.app.Application} application
+     *
      * @template
      */
     init: Ext.emptyFn,
 
     /**
      * A template method like {@link #init}, but called after the viewport is created.
-     * This is called after the {@link Ext.app.Application#launch launch} method of Application is executed.
+     * This is called after the {@link Ext.app.Application#launch launch} method of Application
+     * is executed.
      *
      * @param {Ext.app.Application} application
+     *
      * @template
      */
     onLaunch: Ext.emptyFn,
@@ -532,6 +565,7 @@ Ext.define('Ext.app.Controller', {
 
     /**
      * Registers a {@link #refs reference}.
+     *
      * @param {Object} ref
      */
     addRef: function(ref) {
@@ -539,7 +573,10 @@ Ext.define('Ext.app.Controller', {
     },
 
     getRef: function(ref, info, config) {
-        this.refCache = this.refCache || {};
+        var me = this,
+            refCache = me.refCache || (me.refCache = {}),
+            cached = refCache[ref];
+
         info = info || {};
         config = config || {};
 
@@ -549,17 +586,18 @@ Ext.define('Ext.app.Controller', {
             return Ext.ComponentManager.create(info, 'component');
         }
 
-        var me = this,
-            cached = me.refCache[ref];
-
         if (!cached) {
-            me.refCache[ref] = cached = Ext.ComponentQuery.query(info.selector)[0];
-            if (!cached && info.autoCreate) {
-                me.refCache[ref] = cached = Ext.ComponentManager.create(info, 'component');
+            if (info.selector) {
+                refCache[ref] = cached = Ext.ComponentQuery.query(info.selector)[0];
             }
+            
+            if (!cached && info.autoCreate) {
+                refCache[ref] = cached = Ext.ComponentManager.create(info, 'component');
+            }
+            
             if (cached) {
                 cached.on('beforedestroy', function() {
-                    me.refCache[ref] = null;
+                    refCache[ref] = null;
                 });
             }
         }
@@ -568,7 +606,8 @@ Ext.define('Ext.app.Controller', {
     },
 
     /**
-     * Returns true if a {@link #refs reference} is registered.
+     * Returns `true` if a {@link #refs reference} is registered.
+     *
      * @return {Boolean}
      */
     hasRef: function(ref) {
@@ -583,25 +622,25 @@ Ext.define('Ext.app.Controller', {
      * In the following example the `updateUser` function is mapped to to the `click`
      * event on a button component, which is a child of the `useredit` component.
      *
-     *     Ext.define('AM.controller.Users', {
-     *         init: function() {
-     *             this.control({
-     *                 'useredit button[action=save]': {
-     *                     click: this.updateUser
-     *                 }
-     *             });
-     *         },
-     *
-     *         updateUser: function(button) {
-     *             console.log('clicked the Save button');
-     *         }
-     *     });
+     *      Ext.define('AM.controller.Users', {
+     *          init: function() {
+     *              this.control({
+     *                  'useredit button[action=save]': {
+     *                      click: this.updateUser
+     *                  }
+     *              });
+     *          },
+     *          
+     *          updateUser: function(button) {
+     *              console.log('clicked the Save button');
+     *          }
+     *      });
      *
      * Or alternatively one call `control` with two arguments:
      *
-     *     this.control('useredit button[action=save]', {
-     *         click: this.updateUser
-     *     });
+     *      this.control('useredit button[action=save]', {
+     *          click: this.updateUser
+     *      });
      *
      * See {@link Ext.ComponentQuery} for more information on component selectors.
      *
@@ -609,8 +648,146 @@ Ext.define('Ext.app.Controller', {
      * listeners, otherwise an object of selectors -> listeners is assumed
      * @param {Object} [listeners] Config for listeners.
      */
-    control: function(selectors, listeners, controller) {
-        this.eventbus.control(selectors, listeners, controller || this);
+    control: function (selectors, listeners, controller) {
+        var me = this,
+            ctrl = controller,
+            obj;
+
+        if (Ext.isString(selectors)) {
+            obj = {};
+            obj[selectors] = listeners;
+        }
+        else {
+            obj = selectors;
+            ctrl = listeners;
+        }
+
+        me.eventbus.control(obj, ctrl || me);
+    },
+
+    /**
+     * Adds listeners to different event sources (also called "event domains"). The
+     * primary event domain is that of components, but there are also other event domains:
+     * {@link Ext.app.domain.Global Global} domain that intercepts events fired from
+     * {@link Ext#globalEvents} Observable instance, {@link Ext.app.domain.Controller Controller}
+     * domain can be used to listen to events fired by other Controllers,
+     * {@link Ext.app.domain.Store Store} domain gives access to Store events, and
+     * {@link Ext.app.domain.Direct Direct} domain can be used with Ext.Direct Providers
+     * to listen to their events.
+     * 
+     * To listen to "bar" events fired by a controller with id="foo":
+     *
+     *      Ext.define('AM.controller.Users', {
+     *          init: function() {
+     *              this.listen({
+     *                  controller: {
+     *                      foo: {
+     *                         bar: this.onFooBar
+     *                      }
+     *                  }
+     *              });
+     *          },
+     *          ...
+     *      });
+     * 
+     * To listen to "bar" events fired by any controller, and "baz" events
+     * fired by Store with storeId="baz":
+     *
+     *      Ext.define('AM.controller.Users', {
+     *          init: function() {
+     *              this.listen({
+     *                  controller: {
+     *                      '*': {
+     *                         bar: this.onAnyControllerBar
+     *                      }
+     *                  },
+     *                  store: {
+     *                      'baz': {
+     *                          baz: this.onStoreBaz
+     *                      }
+     *                  }
+     *              });
+     *          },
+     *          ...
+     *      });
+     *
+     * To listen to "idle" events fired by {@link Ext#globalEvents} when other event
+     * processing is complete and Ext JS is about to return control to the browser:
+     *
+     *      Ext.define('AM.controller.Users', {
+     *          init: function() {
+     *              this.listen({
+     *                  global: {               // Global events are always fired
+     *                      idle: this.onIdle   // from the same object, so there
+     *                  }                       // are no selectors
+     *              });
+     *          }
+     *      });
+     * 
+     * As this relates to components, the following example:
+     *
+     *      Ext.define('AM.controller.Users', {
+     *          init: function() {
+     *              this.listen({
+     *                  component: {
+     *                      'useredit button[action=save]': {
+     *                         click: this.updateUser
+     *                      }
+     *                  }
+     *              });
+     *          },
+     *          ...
+     *      });
+     * 
+     * Is equivalent to:
+     *
+     *      Ext.define('AM.controller.Users', {
+     *          init: function() {
+     *              this.control({
+     *                  'useredit button[action=save]': {
+     *                     click: this.updateUser
+     *                  }
+     *              });
+     *          },
+     *          ...
+     *      });
+     *
+     * Of course, these can all be combined in a single call and used instead of
+     * `control`, like so:
+     *
+     *      Ext.define('AM.controller.Users', {
+     *          init: function() {
+     *              this.listen({
+     *                  global: {
+     *                      idle: this.onIdle
+     *                  },
+     *                  controller: {
+     *                      '*': {
+     *                         foobar: this.onAnyFooBar
+     *                      },
+     *                      foo: {
+     *                         bar: this.onFooBar
+     *                      }
+     *                  },
+     *                  component: {
+     *                      'useredit button[action=save]': {
+     *                         click: this.updateUser
+     *                      }
+     *                  },
+     *                  store: {
+     *                      'qux': {
+     *                          load: this.onQuxLoad
+     *                      }
+     *                  }
+     *              });
+     *          },
+     *          ...
+     *      });
+     *
+     * @param {Object} to Config object containing domains, selectors and listeners.
+     */
+    listen: function (to, controller) {
+        this.eventbus.listen(to, controller || this);
     },
 
     /**
@@ -621,20 +798,18 @@ Ext.define('Ext.app.Controller', {
      * in that case we always return the instance even if Application is no available.
      *
      * @param {String} id
+     *
      * @return {Ext.app.Controller} controller instance or undefined.
      */
     getController: function(id) {
-        var me = this;
-        
+        var me = this,
+            app = me.application;
+
         if (id === me.id) {
             return me;
         }
-        else if (me.application) {
-            return me.application.getController(id);
-        }
-        else {
-            return;
-        }
+
+        return app && app.getController(id);
     },
 
     /**
@@ -642,12 +817,13 @@ Ext.define('Ext.app.Controller', {
      * When store doesn't exist yet, it's created.
      *
      * @param {String} name
+     *
      * @return {Ext.data.Store} a store instance.
      */
     getStore: function(name) {
         var storeId, store;
 
-        storeId = (name.indexOf("@") == -1) ? name : name.split("@")[0];
+        storeId = (name.indexOf('@') == -1) ? name : name.split('@')[0];
         store   = Ext.StoreManager.get(storeId);
 
         if (!store) {
@@ -668,6 +844,7 @@ Ext.define('Ext.app.Controller', {
      * A shorthand for using {@link Ext.ModelManager#getModel}.
      *
      * @param {String} name
+     *
      * @return {Ext.data.Model} a model class.
      */
     getModel: function(model) {
@@ -683,6 +860,7 @@ Ext.define('Ext.app.Controller', {
      *     this.getView('Viewport').create();
      *
      * @param {String} name
+     *
      * @return {Ext.Base} a view class.
      */
     getView: function(view) {

@@ -52,7 +52,17 @@ Ext.define('Ext.view.View', {
     alternateClassName: 'Ext.DataView',
     alias: 'widget.dataview',
 
+    // private delay to buffer row highlighting/unhighlighting on mouse move.
+    // This is ignored if the public mouseOverOutBuffer remains a non-zero value
     deferHighlight: Ext.isIE7m ? 100 : 0,
+
+    /**
+     * @cfg {Number} [mouseOverOutBuffer=50]
+     * The number of milliseconds to buffer mouseover and mouseout event handling on view items.
+     * 
+     * Configure this as `false` to process mouseover and mouseout events immediately.
+     */
+    mouseOverOutBuffer: 50,
 
     inputTagRe: /^textarea$|^input$/i,
 
@@ -75,7 +85,16 @@ Ext.define('Ext.view.View', {
     initComponent: function() {
         var me = this;
         me.callParent();
-        if (me.deferHighlight){
+        
+        // 
+        if (me.mouseOverOutBuffer) {
+            me.handleMouseOverOrOut = 
+                Ext.Function.createBuffered(me.handleMouseOverOrOut, me.mouseOverOutBuffer, me);
+            me.lastMouseOverOutEvent = new Ext.EventObjectImpl();
+        }
+        
+        // Not buffering mouse over/out handling - buffer item highlighting.
+        else if (me.deferHighlight){
             me.setHighlightedItem =
                 Ext.Function.createBuffered(me.setHighlightedItem, me.deferHighlight, me);
         }
@@ -404,7 +423,9 @@ Ext.define('Ext.view.View', {
 
     // @private
     afterRender: function(){
-        var me = this;
+        var me = this,
+            onMouseOverOut = me.mouseOverOutBuffer ? me.onMouseOverOut : me.handleEvent;
+
         me.callParent();
         me.mon(me.getTargetEl(), {
             scope: me,
@@ -421,16 +442,43 @@ Ext.define('Ext.view.View', {
             dblclick: me.handleEvent,
             contextmenu: me.handleEvent,
             keydown: me.handleEvent,
-            // Buffer expensive events so that fast scrolling doesn't trigger them.
-            mouseover: {
-                fn: me.handleEvent,
-                buffer: 50
-            },
-            mouseout: {
-                fn: me.handleEvent,
-                buffer: 50
-            }
+            mouseover: onMouseOverOut,
+            mouseout:  onMouseOverOut
         });
+    },
+
+    onMouseOverOut: function(e) {
+        var me = this;
+
+        // Determining if we are entering or leaving view items is deferred until
+        // mouse move churn settles down.
+        me.lastMouseOverOutEvent.setEvent(e.browserEvent, true);
+        me.handleMouseOverOrOut(me.lastMouseOverOutEvent);
+    },
+
+    handleMouseOverOrOut: function(e) {
+        var me = this,
+            isMouseout = e.type === 'mouseout',
+            nowOverItem = e[isMouseout ? 'getRelatedTarget' : 'getTarget'](me.dataRowSelector||me.itemSelector);
+
+        // If the mouse event of whatever type tells use that we are no longer over the current mouseOverItem...
+        if (!me.mouseOverItem || nowOverItem !== me.mouseoverItem) {
+
+            // First fire mouseleave for the item we just left
+            if (me.mouseOverItem) {
+                e.item = me.mouseOverItem;
+                e.newType = 'mouseleave';
+                me.handleEvent(e);
+            }
+
+            // If we are over an item, fire the mouseenter
+            me.mouseOverItem = nowOverItem;
+            if (me.mouseOverItem) {
+                e.item = me.mouseOverItem;
+                e.newType = 'mouseenter';
+                me.handleEvent(e);
+            }
+        }
     },
 
     handleEvent: function(e) {
@@ -456,58 +504,33 @@ Ext.define('Ext.view.View', {
     processContainerEvent: Ext.emptyFn,
     processSpecialEvent: Ext.emptyFn,
 
-    /*
-     * Returns true if this mouseover/out event is still over the overItem.
-     */
-    stillOverItem: function (event, overItem) {
-        var nowOver;
-
-        // There is this weird bug when you hover over the border of a cell it is saying
-        // the target is the table.
-        // BrowserBug: IE6 & 7. If me.mouseOverItem has been removed and is no longer
-        // in the DOM then accessing .offsetParent will throw an "Unspecified error." exception.
-        // typeof'ng and checking to make sure the offsetParent is an object will NOT throw
-        // this hard exception.
-        if (overItem && typeof(overItem.offsetParent) === "object") {
-            // mouseout : relatedTarget == nowOver, target == wasOver
-            // mouseover: relatedTarget == wasOver, target == nowOver
-            nowOver = (event.type == 'mouseout') ? event.getRelatedTarget() : event.getTarget();
-            return Ext.fly(overItem).contains(nowOver);
-        }
-
-        return false;
-    },
-
     processUIEvent: function(e) {
         var me = this,
             item = e.getTarget(me.getItemSelector(), me.getTargetEl()),
             map = this.statics().EventMap,
             index, record,
             type = e.type,
-            overItem = me.mouseOverItem,
-            newType;
+            newType = e.type,
+            sm;
 
-        if (!item) {
-            if (type == 'mouseover' && me.stillOverItem(e, overItem)) {
-                item = overItem;
-            }
+        // If the event is a mouseover/mouseout event converted to a mouseenter/mouseleave,
+        // use that event type and ensure that the item is correct.
+        if (e.newType) {
+            newType = e.newType;
+            item = e.item;
+        }
 
-            // Try to get the selected item to handle the keydown event, otherwise we'll just fire a container keydown event
-            if (type == 'keydown') {
-                record = me.getSelectionModel().getLastSelected();
-                if (record) {
-                    item = me.getNode(record, true);
-                }
+        // For keydown events, try to get either the last focused item or the selected item.
+        // If we have not focused an item, we'll just fire a container keydown event.
+        if (!item && type == 'keydown') {
+            sm = me.getSelectionModel();
+            record = sm.lastFocused || sm.getLastSelected();
+            if (record) {
+                item = me.getNode(record, true);
             }
         }
 
         if (item) {
-            // Convert mouseover/mouseout to mouseenter and mouseleave if we changed items
-            newType = me.isNewItemEvent(item, e);
-            if (newType === false) {
-                return false;
-            }
-
             if (!record) {
                 record = me.getRecord(item);
             }
@@ -544,30 +567,6 @@ Ext.define('Ext.view.View', {
         }
 
         return true;
-    },
-
-    isNewItemEvent: function (item, e) {
-        var me = this,
-            overItem = me.mouseOverItem,
-            type = e.type;
-
-        switch (type) {
-            case 'mouseover':
-                if (item === overItem) {
-                    return false;
-                }
-                me.mouseOverItem = me.getNode(item, true);
-                return 'mouseenter';
-
-            case 'mouseout':
-                // If the currently mouseovered item contains the mouseover target, it's *NOT* a mouseleave
-                if (me.stillOverItem(e, overItem)) {
-                    return false;
-                }
-                me.mouseOverItem = null;
-                return 'mouseleave';
-        }
-        return type;
     },
 
     // @private

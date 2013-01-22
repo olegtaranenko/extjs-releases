@@ -68,6 +68,35 @@ Ext.define('Ext.grid.LockingView', {
             itemmouseleave: me.onItemMouseLeave,
             itemmouseenter: me.onItemMouseEnter
         });
+        
+        me.panel.on({
+            render: me.onPanelRender,
+            scope: me
+        });
+    },
+
+<span id='Ext-grid-LockingView-method-onPanelRender'>    onPanelRender: function() {
+</span>        var me = this,
+            mask = me.loadMask,
+            cfg = {
+                target: me.panel,
+                msg: me.loadingText,
+                msgCls: me.loadingCls,
+                useMsg: me.loadingUseMsg,
+                store: me.panel.store
+            };
+
+        if (mask) {
+            // either a config object 
+            if (Ext.isObject(mask)) {
+                cfg = Ext.apply(cfg, mask);
+            }
+            // Attach the LoadMask to a *Component* so that it can be sensitive to resizing during long loads.
+            // If this DataView is floating, then mask this DataView.
+            // Otherwise, mask its owning Container (or this, if there *is* no owning Container).
+            // LoadMask captures the element upon render.
+            me.loadMask = new Ext.LoadMask(cfg);
+        }
     },
 
 <span id='Ext-grid-LockingView-method-getGridColumns'>    getGridColumns: function() {

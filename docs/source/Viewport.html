@@ -153,6 +153,11 @@ Ext.define('Ext.container.Viewport', {
         me.renderTo = me.el;
     },
     
+<span id='Ext-container-Viewport-method-applyTargetCls'>    // override here to prevent an extraneous warning
+</span>    applyTargetCls: function(targetCls) {
+        this.el.addCls(targetCls);
+    },
+    
 <span id='Ext-container-Viewport-method-onRender'>    onRender: function() {
 </span>        var me = this;
 

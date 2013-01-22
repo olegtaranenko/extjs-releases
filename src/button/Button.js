@@ -260,7 +260,7 @@ Ext.define('Ext.button.Button', {
 
     /**
      * @cfg {String} menuAlign
-     * The position to align the menu to (see {@link Ext.Element#alignTo} for more details).
+     * The position to align the menu to (see {@link Ext.util.Positionable#alignTo} for more details).
      */
     menuAlign: 'tl-bl?',
     
@@ -611,9 +611,9 @@ Ext.define('Ext.button.Button', {
 
             // retrieve menu by id or instantiate instance if needed
             me.menu = Ext.menu.Manager.get(me.menu);
-            // button menu needs a floatParent so that it will be aligned correctly in rtl
-            // mode (hierarchical rtl-ness is determined from floatParent)
-            me.menu.ownerCt = me;
+
+            // Use ownerButton as the upward link. Menus *must have no ownerCt* - they are global floaters.
+            // Upward navigation is done using the up() method.
             me.menu.ownerButton = me;
         }
 
@@ -843,6 +843,21 @@ Ext.define('Ext.button.Button', {
             tabIndex : me.tabIndex,
             innerSpanStyle: innerSpanStyle
         };
+    },
+
+    /**
+     * *Only valid if this Button was configured with a {@link #cfg-href} and is therefore built around an anchor
+     * (`<a>`) element*
+     *
+     * Sets the href of the embedded anchor element to the passed URL.
+     *
+     * Also appends any configured {@link @cfg-baseparams} and parameters set through {@link #setParams}.
+     * @param {String} href The URL to set in the anchor element.
+     *
+     */
+    setHref: function(href) {
+        this.href = href;
+        this.btnEl.dom.href = this.getHref();
     },
 
     /**

@@ -112,6 +112,7 @@ Ext.define('Ext.form.Basic', {
         }
 
         me.checkValidityTask = new Ext.util.DelayedTask(me.checkValidity, me);
+        me.checkDirtyTask = new Ext.util.DelayedTask(me.checkDirty, me);
         
         reader = me.reader;
         if (reader && !reader.isReader) {
@@ -323,6 +324,7 @@ Ext.define('Ext.form.Basic', {
     destroy: function() {
         this.clearListeners();
         this.checkValidityTask.cancel();
+        this.checkDirtyTask.cancel();
     },
 
     /**
@@ -339,10 +341,9 @@ Ext.define('Ext.form.Basic', {
         function handleField(field) {
             // Listen for state change events on fields
             me[isAdding ? 'mon' : 'mun'](field, {
-                validitychange: me.checkValidity,
-                dirtychange: me.checkDirty,
-                scope: me,
-                buffer: 100 //batch up sequential calls to avoid excessive full-form validation
+                validitychange: me.checkValidityDelay,
+                dirtychange: me.checkDirtyDelay,
+                scope: me
             });
             // Flush the cached list of fields
             delete me._fields;
@@ -367,7 +368,7 @@ Ext.define('Ext.form.Basic', {
         // Check form bind, but only after initial add. Batch it to prevent excessive validation
         // calls when many fields are being added at once.
         if (me.initialized) {
-            me.checkValidityTask.delay(10);
+            me.checkValidityDelay();
         }
     },
 
@@ -446,6 +447,10 @@ Ext.define('Ext.form.Basic', {
             me.wasValid = valid;
         }
     },
+    
+    checkValidityDelay: function(){
+        this.checkValidityTask.delay(10);
+    },
 
     /**
      * @private
@@ -484,6 +489,10 @@ Ext.define('Ext.form.Basic', {
         return !!this.getFields().findBy(function(f) {
             return f.isDirty();
         });
+    },
+    
+    checkDirtyDelay: function(){
+        this.checkDirtyTask.delay(10);
     },
 
     /**

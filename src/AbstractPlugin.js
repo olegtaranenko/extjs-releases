@@ -20,13 +20,19 @@
 Ext.define('Ext.AbstractPlugin', {
     disabled: false,
 
+    /**
+     * @property {Boolean} isPlugin
+     * `true` in this class to identify an object as an instantiated Plugin, or subclass thereof.
+     */
+    isPlugin: true,
+
     constructor: function(config) {
-        this.initialConfig = config;
+        this.pluginConfig = config;
         Ext.apply(this, config);
     },
 
-    clone: function() {
-        return new this.self(this.initialConfig);
+    clonePlugin: function(overrideCfg) {
+        return new this.self(Ext.apply({}, overrideCfg, this.pluginConfig));
     },
 
     getCmp: function() {

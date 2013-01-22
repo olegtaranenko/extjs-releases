@@ -8,8 +8,8 @@ Ext.define('SimpleTasks.model.Task', {
         { name: 'id', type: 'int' },
         { name: 'title' },
         { name: 'list_id', type: 'int' },
-        { name: 'due', type: 'date'},
-        { name: 'reminder', type: 'date' },
+        { name: 'due', type: 'date', dateFormat: 'c' },
+        { name: 'reminder', type: 'date', dateFormat: 'c' },
         { name: 'done', type: 'boolean', defaultValue: false },
         { name: 'note' }
     ],

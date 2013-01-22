@@ -23,7 +23,13 @@
  *
  * @private
  */
-Ext.define('Ext.util.Event', {
+Ext.define('Ext.util.Event', function() {
+  var arraySlice = Array.prototype.slice,
+      arrayInsert = Ext.Array.insert,
+      toArray = Ext.Array.toArray,
+      DelayedTask = Ext.util.DelayedTask;
+
+  return {
     requires: 'Ext.util.DelayedTask',
 
 <span id='Ext-util-Event-property-isEvent'>    /**
@@ -32,22 +38,23 @@ Ext.define('Ext.util.Event', {
      */
     isEvent: true,
     
-<span id='Ext-util-Event-property-suspended'>    // Private. Event suspend count
-</span>    suspended: 0,
+    // Private. Event suspend count
+    suspended: 0,
 
-<span id='Ext-util-Event-property-noOptions'>    noOptions: {},
-</span>    
-<span id='Ext-util-Event-method-constructor'>    constructor: function(observable, name) {
-</span>        this.name = name;
+    noOptions: {},
+
+    constructor: function(observable, name) {
+        this.name = name;
         this.observable = observable;
         this.listeners = [];
     },
 
-<span id='Ext-util-Event-method-addListener'>    addListener: function(fn, scope, options) {
-</span>        var me = this,
+    addListener: function(fn, scope, options) {
+        var me = this,
             listeners, listener, priority, isNegativePriority, highestNegativePriorityIndex,
-            hasNegativePriorityIndex, length, index, i;
-            scope = scope || me.observable;
+            hasNegativePriorityIndex, length, index, i, listenerPriority;
+
+        scope = scope || me.observable;
 
         //&lt;debug error&gt;
         if (!fn) {
@@ -82,7 +89,9 @@ Ext.define('Ext.util.Event', {
                     // order index at the index of the highest existing negative priority
                     // listener, otherwise begin at 0
                     for(i = (isNegativePriority ? highestNegativePriorityIndex : 0); i &lt; length; i++) {
-                        if ((listeners[i].o.priority || 0) &lt; priority) {
+                        // Listeners created without options will have no &quot;o&quot; property
+                        listenerPriority = listeners[i].o ? listeners[i].o.priority||0 : 0;
+                        if (listenerPriority &lt; priority) {
                             index = i;
                             break;
                         }
@@ -104,44 +113,49 @@ Ext.define('Ext.util.Event', {
             if (!isNegativePriority &amp;&amp; index &lt;= highestNegativePriorityIndex) {
                 me._highestNegativePriorityIndex ++;
             }
-            Ext.Array.splice(me.listeners, index, 0, listener);
+            if (index === length) {
+                me.listeners[length] = listener;
+            } else {
+                arrayInsert(me.listeners, index, [listener]);
+            }
         }
     },
 
-<span id='Ext-util-Event-method-createListener'>    createListener: function(fn, scope, o) {
-</span>        o = o || {};
+    createListener: function(fn, scope, o) {
         scope = scope || this.observable;
 
         var me = this,
             listener = {
                 fn: fn,
                 scope: scope,
-                o: o,
                 ev: me
             },
             handler = fn;
 
         // The order is important. The 'single' wrapper must be wrapped by the 'buffer' and 'delayed' wrapper
         // because the event removal that the single listener does destroys the listener's DelayedTask(s)
-        if (o.single) {
-            handler = me.createSingle(handler, listener, o, scope);
-        }
-        if (o.target) {
-            handler = me.createTargeted(handler, listener, o, scope);
-        }
-        if (o.delay) {
-            handler = me.createDelayed(handler, listener, o, scope);
-        }
-        if (o.buffer) {
-            handler = me.createBuffered(handler, listener, o, scope);
+        if (o) {
+            listener.o = o;
+            if (o.single) {
+                handler = me.createSingle(handler, listener, o, scope);
+            }
+            if (o.target) {
+                handler = me.createTargeted(handler, listener, o, scope);
+            }
+            if (o.delay) {
+                handler = me.createDelayed(handler, listener, o, scope);
+            }
+            if (o.buffer) {
+                handler = me.createBuffered(handler, listener, o, scope);
+            }
         }
 
         listener.fireFn = handler;
         return listener;
     },
 
-<span id='Ext-util-Event-method-findListener'>    findListener: function(fn, scope) {
-</span>        var listeners = this.listeners,
+    findListener: function(fn, scope) {
+        var listeners = this.listeners,
         i = listeners.length,
         listener,
         s;
@@ -163,12 +177,12 @@ Ext.define('Ext.util.Event', {
         return - 1;
     },
 
-<span id='Ext-util-Event-method-isListening'>    isListening: function(fn, scope) {
-</span>        return this.findListener(fn, scope) !== -1;
+    isListening: function(fn, scope) {
+        return this.findListener(fn, scope) !== -1;
     },
 
-<span id='Ext-util-Event-method-removeListener'>    removeListener: function(fn, scope) {
-</span>        var me = this,
+    removeListener: function(fn, scope) {
+        var me = this,
             index,
             listener,
             highestNegativePriorityIndex,
@@ -197,8 +211,10 @@ Ext.define('Ext.util.Event', {
                 delete listener.tasks;
             }
 
-            // remove this listener from the listeners array
-            Ext.Array.erase(me.listeners, index, 1);
+            // Remove this listener from the listeners array
+            // We can use splice directly. The IE8 bug which Ext.Array works around only affects *insertion*
+            // http://social.msdn.microsoft.com/Forums/en-US/iewebdevelopment/thread/6e946d03-e09f-4b22-a4dd-cd5e276bf05a/
+            me.listeners.splice(index, 1);
 
             // if the listeners array contains negative priority listeners, adjust the
             // internal index if needed.
@@ -215,8 +231,8 @@ Ext.define('Ext.util.Event', {
         return false;
     },
 
-<span id='Ext-util-Event-method-clearListeners'>    // Iterate to stop any buffered/delayed events
-</span>    clearListeners: function() {
+    // Iterate to stop any buffered/delayed events
+    clearListeners: function() {
         var listeners = this.listeners,
             i = listeners.length;
 
@@ -225,31 +241,33 @@ Ext.define('Ext.util.Event', {
         }
     },
 
-<span id='Ext-util-Event-method-suspend'>    suspend: function() {
-</span>        this.suspended += 1;
+    suspend: function() {
+        this.suspended += 1;
     },
 
-<span id='Ext-util-Event-method-resume'>    resume: function() {
-</span>        if (this.suspended) {
+    resume: function() {
+        if (this.suspended) {
             this.suspended--;
         }
     },
 
-<span id='Ext-util-Event-method-fire'>    fire: function() {
-</span>        var me = this,
+    fire: function() {
+        var me = this,
             listeners = me.listeners,
             count = listeners.length,
             i,
             args,
-            listener;
+            listener,
+            len;
 
         if (!me.suspended &amp;&amp; count &gt; 0) {
             me.firing = true;
+            args = arguments.length ? arraySlice.call(arguments, 0) : []
+            len = args.length;
             for (i = 0; i &lt; count; i++) {
                 listener = listeners[i];
-                args = arguments.length ? Array.prototype.slice.call(arguments, 0) : [];
                 if (listener.o) {
-                    args.push(listener.o);
+                    args[len] = listener.o;
                 }
                 if (listener &amp;&amp; listener.fireFn.apply(listener.scope || me.observable, args) === false) {
                     return (me.firing = false);
@@ -260,34 +278,34 @@ Ext.define('Ext.util.Event', {
         return true;
     },
 
-<span id='Ext-util-Event-method-createTargeted'>    createTargeted: function (handler, listener, o, scope) {
-</span>        return function(){
+    createTargeted: function (handler, listener, o, scope) {
+        return function(){
             if (o.target === arguments[0]){
                 handler.apply(scope, arguments);
             }
         };
     },
 
-<span id='Ext-util-Event-method-createBuffered'>    createBuffered: function (handler, listener, o, scope) {
-</span>        listener.task = new Ext.util.DelayedTask();
+    createBuffered: function (handler, listener, o, scope) {
+        listener.task = new DelayedTask();
         return function() {
-            listener.task.delay(o.buffer, handler, scope, Ext.Array.toArray(arguments));
+            listener.task.delay(o.buffer, handler, scope, toArray(arguments));
         };
     },
 
-<span id='Ext-util-Event-method-createDelayed'>    createDelayed: function (handler, listener, o, scope) {
-</span>        return function() {
-            var task = new Ext.util.DelayedTask();
+    createDelayed: function (handler, listener, o, scope) {
+        return function() {
+            var task = new DelayedTask();
             if (!listener.tasks) {
                 listener.tasks = [];
             }
             listener.tasks.push(task);
-            task.delay(o.delay || 10, handler, scope, Ext.Array.toArray(arguments));
+            task.delay(o.delay || 10, handler, scope, toArray(arguments));
         };
     },
 
-<span id='Ext-util-Event-method-createSingle'>    createSingle: function (handler, listener, o, scope) {
-</span>        return function() {
+    createSingle: function (handler, listener, o, scope) {
+        return function() {
             var event = listener.ev;
 
             if (event.removeListener(listener.fn, scope) &amp;&amp; event.observable) {
@@ -299,6 +317,7 @@ Ext.define('Ext.util.Event', {
             return handler.apply(scope, arguments);
         };
     }
+  };
 });
 </pre>
 </body>

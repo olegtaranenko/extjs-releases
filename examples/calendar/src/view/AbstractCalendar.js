@@ -13,6 +13,10 @@
 Ext.define('Ext.calendar.view.AbstractCalendar', {
     extend: 'Ext.Component',
     alias: 'widget.calendarview',
+    requires: [
+        'Ext.calendar.util.Date',
+        'Ext.calendar.data.EventMappings'
+    ],
     /**
      * @cfg {Number} startDay
      * The 0-based index for the day on which the calendar week begins (0=Sunday, which is the default)
@@ -286,7 +290,6 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
     prepareData: function() {
         var lastInMonth = Ext.Date.getLastDateOfMonth(this.startDate),
         w = 0,
-        row = 0,
         dt = Ext.Date.clone(this.viewStart),
         weeks = this.weekCount < 1 ? 6: this.weekCount;
 
@@ -444,6 +447,7 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
 
     // private
     onResize: function() {
+        this.callParent(arguments);
         this.refresh();
     },
 

@@ -1056,7 +1056,7 @@ Ext.define('Ext.dom.Element', function(Element) {
         replaceScriptTagRe = /(?:&lt;script.*?&gt;)((\n|\r|.)*?)(?:&lt;\/script&gt;)/ig,
         srcRe           = /\ssrc=([\'\&quot;])(.*?)\1/i,
         typeRe          = /\stype=([\'\&quot;])(.*?)\1/i,
-        useDocForId     = Ext.isIE8m,
+        useDocForId     = !Ext.isIE8m,
         internalFly;
 
     Element.boxMarkup = '&lt;div class=&quot;{0}-tl&quot;&gt;&lt;div class=&quot;{0}-tr&quot;&gt;&lt;div class=&quot;{0}-tc&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;{0}-ml&quot;&gt;&lt;div class=&quot;{0}-mr&quot;&gt;&lt;div class=&quot;{0}-mc&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;{0}-bl&quot;&gt;&lt;div class=&quot;{0}-br&quot;&gt;&lt;div class=&quot;{0}-bc&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;';

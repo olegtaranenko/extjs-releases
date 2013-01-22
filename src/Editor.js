@@ -103,13 +103,13 @@ Ext.define('Ext.Editor', {
 
     /**
      * @cfg {String} alignment
-     * The position to align to (see {@link Ext.Element#alignTo} for more details).
+     * The position to align to (see {@link Ext.util.Positionable#alignTo} for more details).
      */
     alignment: 'c-c?',
 
     /**
      * @cfg {Number[]} offsets
-     * The offsets to use when aligning (see {@link Ext.Element#alignTo} for more details.
+     * The offsets to use when aligning (see {@link Ext.util.Positionable#alignTo} for more details.
      */
     offsets: [0, 0],
 

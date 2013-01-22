@@ -97,9 +97,10 @@ Ext.define('Ext.form.action.DirectSubmit', {
     doSubmit: function() {
         var me = this,
             callback = Ext.Function.bind(me.onComplete, me),
-            formEl = me.buildForm();
-        me.form.api.submit(formEl, callback, me);
-        Ext.removeNode(formEl);
+            formInfo = me.buildForm();
+            
+        me.form.api.submit(formInfo.formEl, callback, me);
+        me.cleanup(formInfo);
     },
 
     // Direct actions have already been processed and therefore

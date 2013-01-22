@@ -10,20 +10,44 @@ Ext.define('Ext.selection.TreeModel', {
     /**
      * @cfg {Boolean} pruneRemoved @hide
      */
-    /**
-     * @property {Boolean} pruneRemoved
-     * Typically, selection models prune records from the selection
-     * model when records are removed from a view's associated Store.
-     *
-     * However, because the TreeView constantly adds/removes records as branch nodes
-     * are expanded/collapsed, this property is set to `false` in this class.
-     */
-    pruneRemoved: false,
+
+    constructor: function(config) {
+        this.callParent(arguments);
+
+        // If pruneRemoved is required, we must listen to the *TreeStore* to know when nodes
+        // are added and removed
+        if (this.pruneRemoved) {
+            this.pruneRemoved = false;
+            this.pruneRemovedNodes = true;
+        }
+    },
+
+    // binds the store to the selModel.
+    bindStore: function(store, initial) {
+        var me = this;
+        me.callParent(arguments);
+
+        // TreePanel should have injected a reference to the TreeStore so that we can
+        // listen for node removal.
+        if (me.pruneRemovedNodes) {
+            me.view.mon(me.treeStore, {
+                remove: me.onNodeRemove,
+                scope: me
+            });
+        }
+    },
+
+    onNodeRemove: function(parent, node, isMove) {
+        // deselection of deleted records done in base Model class
+        if (!isMove) {
+            this.deselectDeletedRecords([node]);
+        }
+    },
 
     onKeyRight: function(e, t) {
         var focused = this.getLastFocused(),
             view    = this.view;
-  
+
         if (focused) {
             // tree node is already expanded, go down instead
             // this handles both the case where we navigate to firstChild and if
@@ -32,35 +56,45 @@ Ext.define('Ext.selection.TreeModel', {
                 this.onKeyDown(e, t);
             // if its not a leaf node, expand it
             } else if (focused.isExpandable()) {
+                // If we are the normal side of a locking pair, only the tree view can do expanding
+                if (!view.isTreeView) {
+                    view = view.lockingPartner;
+                }
+
                 view.expand(focused);
             }
         }
     },
 
     onKeyLeft: function(e, t) {
-        var focused = this.getLastFocused(),
+        var me = this,
+            focused = this.getLastFocused(),
             view    = this.view,
-            viewSm  = view.getSelectionModel(),
             parentNode;
 
         if (focused) {
             parentNode = focused.parentNode;
             // if focused node is already expanded, collapse it
             if (focused.isExpanded()) {
+                // If we are the normal side of a locking pair, only the tree view can do collapsing
+                if (!view.isTreeView) {
+                    view = view.lockingPartner;
+                }
+
                 view.collapse(focused);
             // has a parentNode and its not root
             // TODO: this needs to cover the case where the root isVisible
             } else if (parentNode && !parentNode.isRoot()) {
                 // Select a range of records when doing multiple selection.
                 if (e.shiftKey) {
-                    viewSm.selectRange(parentNode, focused, e.ctrlKey, 'up');
-                    viewSm.setLastFocused(parentNode);
+                    me.selectRange(parentNode, focused, e.ctrlKey, 'up');
+                    me.setLastFocused(parentNode);
                 // just move focus, not selection
                 } else if (e.ctrlKey) {
-                    viewSm.setLastFocused(parentNode);
+                    me.setLastFocused(parentNode);
                 // select it
                 } else {
-                    viewSm.select(parentNode);
+                    me.select(parentNode);
                 }
             }
         }
@@ -74,11 +108,18 @@ Ext.define('Ext.selection.TreeModel', {
         this.toggleCheck(e);
     },
     
-    toggleCheck: function(e){
+    toggleCheck: function(e) {
+        var view = this.view,
+            selected = this.getLastSelected();
+
         e.stopEvent();
-        var selected = this.getLastSelected();
         if (selected) {
-            this.view.onCheckChange(selected);
+            // If we are the normal side of a locking pair, only the tree view can do on heckChange
+            if (!view.isTreeView) {
+                view = view.lockingPartner;
+            }
+
+            view.onCheckChange(selected);
         }
     }
 });

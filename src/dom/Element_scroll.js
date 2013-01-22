@@ -47,6 +47,56 @@ Ext.define('Ext.dom.Element_scroll', {
             top: top
         };
     },
+    
+    /**
+     * Gets the left scroll position
+     * @return {Number} The left scroll position
+     */
+    getScrollLeft: function() {
+        var dom = this.dom,
+            doc = document;
+            
+        if (dom === doc || dom === doc.body) {
+            return this.getScroll().left;
+        } else {
+            return dom.scrollLeft;
+        }
+    },
+    
+    /**
+     * Gets the top scroll position
+     * @return {Number} The top scroll position
+     */
+    getScrollTop: function(){
+        var dom = this.dom,
+            doc = document;
+            
+        if (dom === doc || dom === doc.body) {
+            return this.getScroll().top;
+        } else {
+            return dom.scrollTop;
+        }
+    },
+    
+    /**
+     * Sets the left scroll position
+     * @param {Number} left The left scroll position
+     * @return {Ext.dom.Element} this
+     */
+    setScrollLeft: function(left){
+        this.dom.scrollLeft = left;
+        return this;
+    },
+    
+    /**
+     * Sets the top scroll position
+     * @param {Number} top The top scroll position
+     * @return {Ext.dom.Element} this
+     */
+    setScrollTop: function(top) {
+        this.dom.scrollTop = top;
+        return this;
+    },
 
     /**
      * Scrolls this element by the passed delta values, optionally animating.

@@ -72,11 +72,11 @@ Ext.define('Ext.form.field.FileButton', {
      * invisible, and floated on top of the button's other content so that it will receive the
      * button's clicks.
      */
-    createFileInput : function() {
+    createFileInput : function(isTemporary) {
         var me = this;
         me.fileInputEl = me.el.createChild({
             name: me.inputName,
-            id: me.id + '-fileInputEl',
+            id: !isTemporary ? me.id + '-fileInputEl' : undefined,
             cls: me.inputCls,
             tag: 'input',
             type: 'file',
@@ -85,9 +85,18 @@ Ext.define('Ext.form.field.FileButton', {
         me.fileInputEl.on('change', me.fireChange, me);  
     },
     
-<span id='Ext-form-field-FileButton-method-reset'>    reset: function(){
+<span id='Ext-form-field-FileButton-method-reset'>    reset: function(remove){
+</span>        if (remove) {
+            this.fileInputEl.remove();
+        }
+        this.createFileInput(!remove);
+    },
+    
+<span id='Ext-form-field-FileButton-method-restoreInput'>    restoreInput: function(el){
 </span>        this.fileInputEl.remove();
-        this.createFileInput();
+        el = Ext.get(el);
+        this.el.appendChild(el);
+        this.fileInputEl = el;
     },
     
 <span id='Ext-form-field-FileButton-method-onDisable'>    onDisable: function(){

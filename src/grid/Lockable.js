@@ -265,6 +265,7 @@ Ext.define('Ext.grid.Lockable', {
         normalGrid.flex = 1;
         lockedGrid.viewConfig = me.lockedViewConfig || {};
         lockedGrid.viewConfig.loadingUseMsg = false;
+        lockedGrid.viewConfig.loadMask = false;
 
         // Padding below locked grid body only if there are scrollbars on this system
         // This takes the place of any spacer element.
@@ -276,6 +277,7 @@ Ext.define('Ext.grid.Lockable', {
         }
 
         normalGrid.viewConfig = me.normalViewConfig || {};
+        normalGrid.viewConfig.loadMask = false;
 
         //<debug>
         if (me.viewConfig && me.viewConfig.id) {
@@ -288,8 +290,8 @@ Ext.define('Ext.grid.Lockable', {
 
         me.lockedGrid = Ext.ComponentManager.create(lockedGrid);
 
-        // The normal side is just a gridpanel, so needs the flat NodeStore
-        if (me.xtype === 'treepanel') {
+        // When this is a locked tree, the normal side is just a gridpanel, so needs the flat NodeStore
+        if (me.isTree) {
             me.lockedGrid.getView().animate = false;
             normalGrid.store = me.lockedGrid.view.store;
             normalGrid.viewConfig.stripeRows = me.lockedGrid.view.stripeRows;
@@ -303,6 +305,10 @@ Ext.define('Ext.grid.Lockable', {
         lockedView.lockingPartner = normalView = me.normalGrid.getView();
 
         me.view = new Ext.grid.LockingView({
+            loadingText: normalView.loadingText,
+            loadingCls: normalView.loadingCls,
+            loadingUseMsg: normalView.loadingUseMsg,
+            loadMask: me.loadMask !== false,
             locked: me.lockedGrid,
             normal: me.normalGrid,
             panel: me
@@ -465,9 +471,7 @@ Ext.define('Ext.grid.Lockable', {
         var me = this,
             lockedView = me.lockedGrid.getView(),
             lockedViewEl = lockedView.el.dom,
-            normalGrid = me.normalGrid,
-            normalViewEl = normalGrid.getView().el.dom,
-            spacerHeight = (this.normalGrid.headerCt.getVisibleGridColumns().length && normalViewEl.scrollWidth > normalViewEl.clientWidth ? Ext.getScrollbarSize().height : 0);
+            spacerHeight = (me.normalGrid.headerCt.tooNarrow ? Ext.getScrollbarSize().height : 0);
 
         // If locked view is configured to scroll horizontally, and it overflows horizontally, then we do not need the spacer
         if (lockedView.scrollFlags.x && lockedViewEl.scrollWidth > lockedViewEl.clientWidth) {
@@ -475,6 +479,12 @@ Ext.define('Ext.grid.Lockable', {
         }
 
         lockedView.el.dom.style.borderBottomWidth = spacerHeight + 'px';
+
+        // Legacy IE browsers which cannot be forced to use the sensible border box model.
+        // We have to account in the element's style height for flip-flopping border width
+        if (!Ext.isBorderBox) {
+            lockedView.el.setHeight(lockedView.lastBox.height);
+        }
     },
 
     /**
@@ -1016,36 +1026,50 @@ Ext.define('Ext.grid.Lockable', {
     constructLockablePlugins: function() {
         var plugins = this.plugins,
             plugin,
-            pluginClone,
+            normalPlugin,
+            lockedPlugin,
             topPlugins,
             lockedPlugins,
             normalPlugins,
-            i = 0, len;
-        
+            i = 0, len,
+            destroyPlugin;
+
         if (plugins) {
             topPlugins = [];
             lockedPlugins = [];
             normalPlugins = [];
             len = plugins.length;
             for (; i < len; i++) {
-                plugin = this.constructPlugin(plugins[i]);
+                // Plugin will already have been instantiated by the AbstractComponent constructor
+                plugin = plugins[i];
+
+                // If the plugin has to be propagated down to one side or both, a new plugin config object must be given to that side
+                // and this plugin must be destroyed.
+                destroyPlugin = true;
+
                 switch (plugin.lockableScope) {
                     case 'both':
-                        lockedPlugins.push(plugin);
-                        normalPlugins.push(pluginClone = plugin.clone());
+                        lockedPlugins.push(lockedPlugin = plugin.clonePlugin());
+                        normalPlugins.push(normalPlugin = plugin.clonePlugin());
 
                         // When cloned to both sides, each gets a "lockingPartner" reference to the other
-                        plugin.lockingPartner = pluginClone;
-                        pluginClone.lockingPartner = plugin;
+                        lockedPlugin.lockingPartner = normalPlugin;
+                        normalPlugin.lockingPartner = lockedPlugin;
                         break;
                     case 'locked':
-                        lockedPlugins.push(plugin);
+                        lockedPlugins.push(plugin.clonePlugin());
                         break;
                     case 'normal':
-                        normalPlugins.push(plugin);
+                        normalPlugins.push(plugin.clonePlugin());
                         break;
                     default:
+                        destroyPlugin = false;
                         topPlugins.push(plugin);
+                }
+
+                // If the plugin was not for the top level, destroy the top level's plugin
+                if (destroyPlugin) {
+                    Ext.destroy(plugin);
                 }
             }
         }

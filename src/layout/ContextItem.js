@@ -799,6 +799,7 @@ Ext.define('Ext.layout.ContextItem', {
     },
 
     /**
+     * @member Ext.layout.ContextItem
      * Returns the context item for an owned element. This should only be called on a
      * component's item. The list of child items is used to manage invalidating calculated
      * results.
@@ -806,7 +807,7 @@ Ext.define('Ext.layout.ContextItem', {
      * @param {Ext.layout.container.Container/Ext.Component} [owner] The owner of the
      * named element if the passed "nameOrEl" parameter is a String. Defaults to this
      * ContextItem's "target" property.  For more details on owned elements see
-     * {@link Ext.Component#childEls childEls} and
+     * {@link Ext.Component#cfg-childEls childEls} and
      * {@link Ext.Component#renderSelectors renderSelectors}
      * @return {Ext.layout.ContextItem}
      */

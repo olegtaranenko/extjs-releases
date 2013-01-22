@@ -32,7 +32,6 @@ Ext.define('Ext.grid.feature.GroupStore', {
         }
         if (store) {
             me.storeListeners = store.on({
-                remove: me.onRemove,
                 bulkremove: me.onBulkRemove,
                 add: me.onAdd,
                 update: me.onUpdate,
@@ -162,11 +161,6 @@ Ext.define('Ext.grid.feature.GroupStore', {
     },
 
     onRefresh: function(store) {
-        this.processStore(this.store);
-        this.fireEvent('refresh', this);
-    },
-
-    onRemove: function(store, record, index) {
         this.processStore(this.store);
         this.fireEvent('refresh', this);
     },

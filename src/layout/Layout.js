@@ -618,7 +618,7 @@ Ext.define('Ext.layout.Layout', {
         me.fixed = !(me.auto = me.natural || me.shrinkWrap);
 
         /**
-         * @prop {Number} ordinal
+         * @property {Number} ordinal
          * The 0-based ordinal for this `SizeModel` instance.
          * @readonly
          */
@@ -779,7 +779,16 @@ Ext.define('Ext.layout.Layout', {
         name: 'constrainedMin',
         configured: true,
         constrained: true,
+        constrainedByMin: true,
         names: { width: 'minWidth', height: 'minHeight' }
+    });
+    
+    new SizeModel({
+        name: 'constrainedDock',
+        configured: true,
+        constrained: true,
+        constrainedByMin: true,
+        names: { width: 'dockConstrainedWidth', height: 'dockConstrainedHeight' }
     });
 
     for (i = 0, n = sizeModelsArray.length; i < n; ++i) {

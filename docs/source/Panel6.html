@@ -235,6 +235,10 @@ Ext.define('Ext.tree.Panel', {
 
         me.callParent();
 
+        // TreeModel has to know about the TreeStore so that pruneRemoved can work properly upon removal
+        // of nodes.
+        me.selModel.treeStore = me.store;
+
         view = me.getView();
 
         me.relayEvents(view, [

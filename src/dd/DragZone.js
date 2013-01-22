@@ -137,7 +137,7 @@ Ext.define('Ext.dd.DragZone', {
     destroy : function(){
         this.callParent();
         if (this.containerScroll) {
-            Ext.dd.ScrollManager.unregister(this.el);
+            Ext.dd.ScrollManager.unregister(this.scrollEl || this.el);
         }
     }
 });

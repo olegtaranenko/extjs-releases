@@ -35,6 +35,15 @@ Ext.define('Ext.data.Tree', {
         if (root) {
             me.setRootNode(root);
         }
+        
+        // All these events from tree nodes bubbble up and fire on this Tree
+        me.on({
+            scope: me,
+            idchanged: me.onNodeIdChanged,
+            insert: me.onNodeInsert,
+            append: me.onNodeAppend,
+            remove: me.onNodeRemove
+        });
     },
 
     /**
@@ -68,111 +77,79 @@ Ext.define('Ext.data.Tree', {
         // Insert upward link to owning Tree
         node.rootOf = me;
 
-        if (me.fireEvent('beforeappend', null, node) !== false) {
+        if (node.fireEvent('beforeappend', [null, node]) !== false) {
             node.set('root', true);
-            node.updateInfo();
             // root node should never be phantom or dirty, so commit it
-            node.commit();
-
-            node.on({
-                scope: me,
-                insert: me.onNodeInsert,
-                append: me.onNodeAppend,
-                remove: me.onNodeRemove
+            node.updateInfo(true, {
+                isFirst: true,
+                isLast: true,
+                depth: 0,
+                index: 0,
+                parentId: null
             });
 
-            // Capture the relayer functions so that if the root is removed, the listeners can be removed.
-            me.rootRelayers = me.relayEvents(node, [
-                /**
-                 * @event append
-                 * @inheritdoc Ext.data.NodeInterface#append
-                 */
-                "append",
-
-                /**
-                 * @event remove
-                 * @inheritdoc Ext.data.NodeInterface#remove
-                 */
-                "remove",
-
-                /**
-                 * @event move
-                 * @inheritdoc Ext.data.NodeInterface#move
-                 */
-                "move",
-
-                /**
-                 * @event insert
-                 * @inheritdoc Ext.data.NodeInterface#insert
-                 */
-                "insert",
-
-                /**
-                 * @event beforeappend
-                 * @inheritdoc Ext.data.NodeInterface#beforeappend
-                 */
-                "beforeappend",
-
-                /**
-                 * @event beforeremove
-                 * @inheritdoc Ext.data.NodeInterface#beforeremove
-                 */
-                "beforeremove",
-
-                /**
-                 * @event beforemove
-                 * @inheritdoc Ext.data.NodeInterface#beforemove
-                 */
-                "beforemove",
-
-                /**
-                 * @event beforeinsert
-                 * @inheritdoc Ext.data.NodeInterface#beforeinsert
-                 */
-                "beforeinsert",
-
-                /**
-                 * @event expand
-                 * @inheritdoc Ext.data.NodeInterface#expand
-                 */
-                "expand",
-
-                /**
-                 * @event collapse
-                 * @inheritdoc Ext.data.NodeInterface#collapse
-                 */
-                "collapse",
-
-                /**
-                 * @event beforeexpand
-                 * @inheritdoc Ext.data.NodeInterface#beforeexpand
-                 */
-                "beforeexpand",
-
-                /**
-                 * @event beforecollapse
-                 * @inheritdoc Ext.data.NodeInterface#beforecollapse
-                 */
-                "beforecollapse" ,
-
-                /**
-                 * @event sort
-                 * @inheritdoc Ext.data.NodeInterface#event-sort
-                 */
-                "sort",
-
-                /**
-                 * @event rootchange
-                 * Fires whenever the root node is changed in the tree.
-                 * @param {Ext.data.Model} root The new root
-                 */
-                "rootchange"
-            ]);
+            // The following events are fired on this TreePanel by the bubbling from NodeInterface.fireEvent
+            /**
+             * @event append
+             * @inheritdoc Ext.data.NodeInterface#append
+             */
+            /**
+             * @event remove
+             * @inheritdoc Ext.data.NodeInterface#remove
+             */
+            /**
+             * @event move
+             * @inheritdoc Ext.data.NodeInterface#move
+             */
+            /**
+             * @event insert
+             * @inheritdoc Ext.data.NodeInterface#insert
+             */
+            /**
+             * @event beforeappend
+             * @inheritdoc Ext.data.NodeInterface#beforeappend
+             */
+            /**
+             * @event beforeremove
+             * @inheritdoc Ext.data.NodeInterface#beforeremove
+             */
+            /**
+             * @event beforemove
+             * @inheritdoc Ext.data.NodeInterface#beforemove
+             */
+            /**
+             * @event beforeinsert
+             * @inheritdoc Ext.data.NodeInterface#beforeinsert
+             */
+            /**
+             * @event expand
+             * @inheritdoc Ext.data.NodeInterface#expand
+             */
+            /**
+             * @event collapse
+             * @inheritdoc Ext.data.NodeInterface#collapse
+             */
+            /**
+             * @event beforeexpand
+             * @inheritdoc Ext.data.NodeInterface#beforeexpand
+             */
+            /**
+             * @event beforecollapse
+             * @inheritdoc Ext.data.NodeInterface#beforecollapse
+             */
+            /**
+             * @event sort
+             * @inheritdoc Ext.data.NodeInterface#event-sort
+             */
+            /**
+             * @event rootchange
+             * Fires whenever the root node is changed in the tree.
+             * @param {Ext.data.Model} root The new root
+            */
 
             me.nodeHash = {};
-            me.registerNode(node, true);
-            me.fireEvent('append', null, node);
-            me.fireEvent('rootchange', node);
+            node.fireEvent('append', null, node);
+            node.fireEvent('rootchange', node);
         }
 
         return node;
@@ -187,25 +164,12 @@ Ext.define('Ext.data.Tree', {
             root = me.root;
 
         root.set('root', false);
-        delete root.rootOf;
-        delete me.root;
+        root.fireEvent('remove', null, root, false);
+        root.fireEvent('rootchange', null);
 
-        // Remove listeners
-        root.un({
-            scope: me,
-            insert: me.onNodeInsert,
-            append: me.onNodeAppend,
-            remove: me.onNodeRemove
-        });
-
-        // Remove the relaying listeners through which we relay the root's events
-        Ext.destroy(me.rootRelayers);
-
-        // Unregister the root and all its descendants
-        me.unregisterNode(root, true);
-
-        me.fireEvent('remove', null, root, false);
-        me.fireEvent('rootchange', null);
+        // Unlink root after events so that the required bubbling propagates to all handlers.
+        // This unregisters the node and its descendants.
+        root.rootOf = me.root = null;
         return root;
     },
 
@@ -278,14 +242,16 @@ Ext.define('Ext.data.Tree', {
      * @param {Boolean} [includeChildren] True to unregister any child nodes
      */
     registerNode : function(node, includeChildren) {
-        var me = this;
+        var me = this,
+            children, length, i;
 
-        me.nodeHash[node.getId() || node.internalId] = node;
-        node.on('idchanged', me.onNodeIdChanged, me);
+        me.nodeHash[node.internalId] = node;
         if (includeChildren === true) {
-            node.eachChild(function(child){
-                me.registerNode(child, true);
-            });
+            children = node.childNodes;
+            length = children.length;
+            for (i = 0; i < length; i++) {
+                me.registerNode(children[i], true);
+            }
         }
     },
 
@@ -296,14 +262,16 @@ Ext.define('Ext.data.Tree', {
      * @param {Boolean} [includeChildren] True to unregister any child nodes
      */
     unregisterNode : function(node, includeChildren) {
-        var me = this;
+        var me = this,
+            children, length, i;
 
-        delete this.nodeHash[node.getId() || node.internalId];
-        node.un('idchanged', me.onNodeIdChanged, me);
+        delete me.nodeHash[node.internalId];
         if (includeChildren === true) {
-            node.eachChild(function(child){
-                me.unregisterNode(child, true);
-            });
+            children = node.childNodes;
+            length = children.length;
+            for (i = 0; i < length; i++) {
+                me.unregisterNode(children[i], true);
+            }
         }
     },
 

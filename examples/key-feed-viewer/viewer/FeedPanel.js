@@ -146,7 +146,9 @@ Ext.define('FeedViewer.FeedPanel', {
     onSelectionChange: function(){
         var selected = this.getSelectedItem();
         this.toolbar.getComponent('remove').setDisabled(!selected);
-        this.loadFeed(selected);
+        if (selected) {
+            this.loadFeed(selected);
+        }
     },
 
     /**
@@ -197,14 +199,17 @@ Ext.define('FeedViewer.FeedPanel', {
         var active = this.menu.activeFeed || this.getSelectedItem();
 
 
-        this.animateNode(this.view.getNode(active), 1, 0, {
-            scope: this,
-            afteranimate: function(){
-                this.view.store.remove(active);
-            }
-        });
-        this.fireEvent('feedremove', this, active.get('title'), active.get('url'));
+        if (active) {
+            this.view.getSelectionModel().deselectAll();
+            this.animateNode(this.view.getNode(active), 1, 0, {
+                scope: this,
+                afteranimate: function() {
+                    this.view.store.remove(active);
 
+                }
+            });
+            this.fireEvent('feedremove', this, active.get('title'), active.get('url'));
+        }
     },
 
     /**

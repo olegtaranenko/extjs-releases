@@ -87,7 +87,7 @@ Ext.define('Ext.ux.CellDragDrop', {
                     var view = this.view,
                         item = e.getTarget(view.getItemSelector()),
                         record = view.getRecord(item),
-                        clickedEl = e.getTarget('td.x-grid-cell'),
+                        clickedEl = e.getTarget(view.getCellSelector()),
                         dragEl;
 
                     if (item) {
@@ -111,7 +111,6 @@ Ext.define('Ext.ux.CellDragDrop', {
                         view = self.view,
                         selectionModel = view.getSelectionModel(),
                         record = data.record,
-                        e = data.event,
                         el = data.ddel;
 
                     // Update the selection to match what would have been selected if the user had
@@ -157,7 +156,9 @@ Ext.define('Ext.ux.CellDragDrop', {
 
                 // On Node enter, see if it is valid for us to drop the field on that type of column.
                 onNodeEnter: function (target, dd, e, dragData) {
-                    var self = this;
+                    var self = this,
+                        destType = target.record.fields.get(target.columnName).type.type.toUpperCase(),
+                        sourceType = dragData.record.fields.get(dragData.columnName).type.type.toUpperCase();
 
                     delete self.dropOK;
 
@@ -168,26 +169,19 @@ Ext.define('Ext.ux.CellDragDrop', {
 
                     // Check whether the data type of the column being dropped on accepts the
                     // dragged field type. If so, set dropOK flag, and highlight the target node.
-                    var destType = target.record.fields.get(target.columnName).type.type.toUpperCase(),
-                        sourceType = dragData.record.fields.get(dragData.columnName).type.type.toUpperCase(),
-                        types = Ext.data.Types,
-                        value;
+                    if (me.enforceType && destType !== sourceType) {
 
-                    if (me.enforceType) {
-                        if (destType !== sourceType) {
+                        self.dropOK = false;
 
-                            self.dropOK = false;
-
-                            if (me.noDropCls) {
-                                Ext.fly(target.node).addCls(me.noDropCls);
-                            } else {
-                                Ext.fly(target.node).applyStyles({
-                                    backgroundColor: me.noDropBackgroundColor
-                                });
-                            }
-
-                            return;
+                        if (me.noDropCls) {
+                            Ext.fly(target.node).addCls(me.noDropCls);
+                        } else {
+                            Ext.fly(target.node).applyStyles({
+                                backgroundColor: me.noDropBackgroundColor
+                            });
                         }
+
+                        return;
                     }
 
                     self.dropOK = true;
@@ -204,9 +198,7 @@ Ext.define('Ext.ux.CellDragDrop', {
                 // Return the class name to add to the drag proxy. This provides a visual indication
                 // of drop allowed or not allowed.
                 onNodeOver: function (target, dd, e, dragData) {
-                    var self = this;
-
-                    return self.dropOK ? self.dropAllowed : self.dropNotAllowed;
+                    return this.dropOK ? this.dropAllowed : this.dropNotAllowed;
                 },
 
                 // Highlight the target node.
@@ -224,13 +216,8 @@ Ext.define('Ext.ux.CellDragDrop', {
 
                 // Process the drop event if we have previously ascertained that a drop is OK.
                 onNodeDrop: function (target, dd, e, dragData) {
-                    var self = this,
-                        convert, value;
-
-                    if (self.dropOK) {
-                        value = dragData.record.get(dragData.columnName);
-
-                        target.record.set(target.columnName, value);
+                    if (this.dropOK) {
+                        target.record.set(target.columnName, dragData.record.get(dragData.columnName));
                         if (me.applyEmptyText) {
                             dragData.record.set(dragData.columnName, me.emptyText);
                         }

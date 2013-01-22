@@ -131,6 +131,9 @@ Ext.define('Ext.menu.CheckItem', {
 
 <span id='Ext-menu-CheckItem-method-initComponent'>    initComponent: function() {
 </span>        var me = this;
+        
+        // coerce to bool straight away
+        me.checked = !!me.checked;
         me.addEvents(
 <span id='Ext-menu-CheckItem-event-beforecheckchange'>            /**
 </span>             * @event beforecheckchange

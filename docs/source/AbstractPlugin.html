@@ -37,13 +37,19 @@
 Ext.define('Ext.AbstractPlugin', {
 <span id='Ext-AbstractPlugin-property-disabled'>    disabled: false,
 </span>
+<span id='Ext-AbstractPlugin-property-isPlugin'>    /**
+</span>     * @property {Boolean} isPlugin
+     * `true` in this class to identify an object as an instantiated Plugin, or subclass thereof.
+     */
+    isPlugin: true,
+
 <span id='Ext-AbstractPlugin-method-constructor'>    constructor: function(config) {
-</span>        this.initialConfig = config;
+</span>        this.pluginConfig = config;
         Ext.apply(this, config);
     },
 
-<span id='Ext-AbstractPlugin-method-clone'>    clone: function() {
-</span>        return new this.self(this.initialConfig);
+<span id='Ext-AbstractPlugin-method-clonePlugin'>    clonePlugin: function(overrideCfg) {
+</span>        return new this.self(Ext.apply({}, overrideCfg, this.pluginConfig));
     },
 
 <span id='Ext-AbstractPlugin-method-getCmp'>    getCmp: function() {

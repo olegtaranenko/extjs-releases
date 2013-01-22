@@ -99,7 +99,38 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
     constructor: function(config) {
         var me = this;
         Ext.apply(me, config);
+
+        // If we are going to be handling a NodeStore then it's driven by node addition and removal, *not* refreshing
+        // so we have to change the view's listeners. Adding and removing must be processed by a refresh of the view.
+        if (me.cmp.isTree || me.cmp.ownerLockable && me.cmp.ownerLockable.isTree) {
+            me.injectTreeViewListenerFn(me.cmp);
+        }
         me.callParent(arguments);
+    },
+
+    // If we are scrolling a Tree...
+    // The additions and removals caused by expansion and collapsing must just refresh the view.
+    // Scroll position must be preserved across refresh.
+    injectTreeViewListenerFn: function(grid) {
+        var viewConfig = grid.viewConfig || (grid.viewConfig = {});
+
+        viewConfig.getStoreListeners = function() {
+            // NB: "this" refers to the view here.
+            return {
+                refresh: this.onDataRefresh,
+                expandcomplete: this.onDataRefresh,
+                collapsecomplete: this.onDataRefresh,
+
+                // Adding and removing cause a refresh of the buffered portion of the view
+                add: this.onDataRefresh,
+                bulkremove: this.onDataRefresh,
+                update: this.onUpdate,
+                clear: this.refresh
+            };
+        };
+        viewConfig.blockRefresh = false;
+        viewConfig.loadMask = true;
+        viewConfig.preserveScrollOnRefresh = true;
     },
 
     // Initialize this as a plugin
@@ -112,8 +143,9 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
                     element: 'el',
                     scope: me
                 },
-                refresh: me.onViewRefresh,
+                boxready: me.onViewResize,
                 resize: me.onViewResize,
+                refresh: me.onViewRefresh,
                 scope: me,
                 destroyable: true
             };
@@ -134,7 +166,7 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
 
         me.viewListeners = view.on(viewListeners);
     },
-    
+
     bindStore: function(store) {
         var me = this;
         if (me.store) {
@@ -152,9 +184,10 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
             me.onViewResize(me.view, 0, me.view.getHeight());
         }
     },
-    
+
     unbindStore: function() {
         this.storeListeners.destroy();
+        delete this.view.getStoreListeners;
         this.store = null;
     },
 
@@ -189,7 +222,7 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
     },
 
     onViewResize: function(view, width, height, oldWidth, oldHeight) {
-        // Only process first layout or height resizes.
+        // Only process first layout (the boxready event) or height resizes.
         if (!oldHeight || height !== oldHeight) {
             var me = this,
                 newViewSize,
@@ -297,6 +330,7 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
             total = store.getTotalCount(),
             startIdx, endIdx,
             targetRec,
+            targetRow,
             tableTop;
 
         // Sanitize the requested record
@@ -305,24 +339,22 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
         // Calculate view start index
         startIdx = Math.max(Math.min(recordIdx - ((me.leadingBufferZone + me.trailingBufferZone) / 2), total - me.viewSize + 1), 0);
         tableTop = startIdx * me.rowHeight;
-        endIdx = startIdx + me.viewSize - 1;
+        endIdx = Math.min(startIdx + me.viewSize - 1, total - 1);
 
-        me.disabled = true;
         store.getRange(startIdx, endIdx, {
             callback: function(range, start, end) {
 
-                view.all.clear(true);
-                view.doAdd(range, start, end);
+                me.renderRange(start, end, true);
 
                 targetRec = store.data.getRange(recordIdx, recordIdx)[0];
+                targetRow = view.getNode(targetRec, false);
                 view.body.dom.style.top = tableTop + 'px';
-                me.position = me.scrollTop = viewDom.scrollTop = tableTop = Math.min(Math.max(0, tableTop - view.body.getOffsetsTo(view.getNode(targetRec, false))[1]), viewDom.scrollHeight - viewDom.clientHeight);
+                me.position = me.scrollTop = viewDom.scrollTop = tableTop = Math.min(Math.max(0, tableTop - view.body.getOffsetsTo(targetRow)[1]), viewDom.scrollHeight - viewDom.clientHeight);
 
                 // https://sencha.jira.com/browse/EXTJSIV-7166 IE 6, 7 and 8 won't scroll all the way down first time
                 if (Ext.isIE) {
                     viewDom.scrollTop = tableTop;
                 }
-                me.disabled = false;
                 if (doSelect) {
                     grid.selModel.select(targetRec);
                 }
@@ -407,7 +439,7 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
         }
     },
 
-    renderRange: function(start, end) {
+    renderRange: function(start, end, forceSynchronous) {
         var me = this,
             store = me.store;
 
@@ -415,7 +447,7 @@ Ext.define('Ext.grid.plugin.BufferedRenderer', {
         if (store.rangeCached(start, end)) {
             me.cancelLoad();
 
-            if (me.synchronousRender) {
+            if (me.synchronousRender || forceSynchronous) {
                 me.onRangeFetched(null, start, end);
             } else {
                 if (!me.renderTask) {

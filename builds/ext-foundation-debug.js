@@ -1,7 +1,7 @@
 /*
 This file is part of Ext JS 4.2
 
-Copyright (c) 2011-2012 Sencha Inc
+Copyright (c) 2011-2013 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
@@ -13,7 +13,7 @@ Ext license terms. Public redistribution is prohibited.
 
 For early licensing, please contact us at licensing@sencha.com
 
-Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
+Build date: 2013-01-08 23:25:56 (f0a3d96f987988f3e7bc5b0c0a7355723a686090)
 */
 
 //@tag foundation,core
@@ -625,7 +625,7 @@ Ext.globalEval = Ext.global.execScript
 
 
 
-var version = '4.2.0.179', Version;
+var version = '4.2.0.265', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         
@@ -1050,6 +1050,9 @@ Ext.String = (function() {
 
         
         repeat: function(pattern, count, sep) {
+            if (count < 1) {
+                count = 0;
+            }
             for (var buf = [], i = count; i--; ) {
                 buf.push(pattern);
             }
@@ -2224,7 +2227,7 @@ var TemplateClass = function(){},
     ExtObject = Ext.Object = {
 
     
-    chain: function (object) {
+    chain: Object.create || function (object) {
         TemplateClass.prototype = object;
         var result = new TemplateClass();
         TemplateClass.prototype = null;
@@ -2293,13 +2296,11 @@ var TemplateClass = function(){},
 
             if (Ext.isEmpty(value)) {
                 value = '';
-            }
-            else if (Ext.isDate(value)) {
+            } else if (Ext.isDate(value)) {
                 value = Ext.Date.toString(value);
             }
 
-            params.push(encodeURIComponent(paramObject.name) +
-                (value !== '' ? ('=' + encodeURIComponent(String(value))) : ''));
+            params.push(encodeURIComponent(paramObject.name) + '=' + encodeURIComponent(String(value)));
         }
 
         return params.join('&');
@@ -2511,6 +2512,16 @@ var TemplateClass = function(){},
         }
 
         return size;
+    },
+    
+    
+    isEmpty: function(object){
+        for (var key in object) {
+            if (object.hasOwnProperty(key)) {
+                return false;
+            }
+        }
+        return true;    
     },
     
     

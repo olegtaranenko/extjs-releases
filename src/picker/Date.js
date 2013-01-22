@@ -462,7 +462,7 @@ Ext.define('Ext.picker.Date', {
     },
 
     // @private
-    // @inherit docs
+    // @inheritdoc
     initEvents: function(){
         var me = this,
             eDate = Ext.Date,

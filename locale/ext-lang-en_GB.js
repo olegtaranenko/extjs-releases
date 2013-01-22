@@ -4,6 +4,7 @@
  *
  * English (UK) Translations
  * updated to 2.2 by Condor (8 Aug 2008)
+ * updated by Dawesi (7 Dec 2012)
  */
 Ext.onReady(function() {
     var cm = Ext.ClassManager,
@@ -209,13 +210,13 @@ Ext.onReady(function() {
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 backcolor: {
-                    title: 'Text Highlight Color',
-                    text: 'Change the background color of the selected text.',
+                    title: 'Text Highlight Colour',
+                    text: 'Change the background colour of the selected text.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 forecolor: {
-                    title: 'Font Color',
-                    text: 'Change the color of the selected text.',
+                    title: 'Font Colour',
+                    text: 'Change the colour of the selected text.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 justifyleft: {
@@ -224,8 +225,8 @@ Ext.onReady(function() {
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 justifycenter: {
-                    title: 'Center Text',
-                    text: 'Center text in the editor.',
+                    title: 'Centre Text',
+                    text: 'Centre text in the editor.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 justifyright: {

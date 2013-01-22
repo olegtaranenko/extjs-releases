@@ -168,7 +168,7 @@ Ext.define('Ext.util.CSS', function() {
         getRule: function(selector, refreshCache, rawCache) {
             var i;
 
-            if (refreshCache) {
+            if (!rules || refreshCache) {
                 CSS.refreshCache();
             }
             if (!Ext.isArray(selector)) {
@@ -184,10 +184,10 @@ Ext.define('Ext.util.CSS', function() {
 
         /**
          * Creates a rule.
-         * @param {StyleSheet} styleSheet The StyleSheet to create the rule in as returned from {@link #createStyleSheet}.
+         * @param {CSSStyleSheet} styleSheet The StyleSheet to create the rule in as returned from {@link #createStyleSheet}.
          * @param {String} selector The selector to target the rule.
          * @param {String} property The cssText specification eg `"color:red;font-weight:bold;text-decoration:underline"`
-         * @return {CSSRule} The created rule
+         * @return {CSSStyleRule} The created rule
          */
         createRule: function(styleSheet, selector, cssText) {
             var result,

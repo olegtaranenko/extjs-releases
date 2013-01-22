@@ -328,7 +328,7 @@ function() {
         updateOperation: function(operation, callback, scope) {
             operation.setCompleted();
             operation.setSuccessful();
-            Ext.callback(callback, scope || me, [operation]);
+            Ext.callback(callback, scope || this, [operation]);
         },
         create: function() {
             this.updateOperation.apply(this, arguments);

@@ -33,14 +33,14 @@ Ext.define('Ext.slider.Tip', {
     
     /**
      * @cfg {Array} [offsets=null]
-     * Offsets for aligning the tip to the slider. See {@link Ext.dom.Element#alignTo}. Default values
+     * Offsets for aligning the tip to the slider. See {@link Ext.util.Positionable#alignTo}. Default values
      * for offsets are provided by specifying the {@link #position} config.
      */
     offsets : null,
     
     /**
      * @cfg {String} [align=null]
-     * Alignment configuration for the tip to the slider. See {@link Ext.dom.Element#alignTo}. Default
+     * Alignment configuration for the tip to the slider. See {@link Ext.util.Positionable#alignTo}. Default
      * values for alignment are provided by specifying the {@link #position} config.
      */
     align: null,

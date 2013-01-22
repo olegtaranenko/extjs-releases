@@ -26,8 +26,17 @@ Ext.define('Ext.tree.ViewDragZone', {
     },
 
 <span id='Ext-tree-ViewDragZone-method-getDragText'>    getDragText: function() {
-</span>        var count = this.dragData.records.length;
-        return count == 1 ? this.dragData.records[0].get('text') : Ext.String.format(this.dragText, count, 's');
+</span>        var records = this.dragData.records,
+            count = records.length,
+            text = records[0].get(this.displayField),
+            suffix = 's';
+            
+        if (count === 1 &amp;&amp; text) {
+            return text;    
+        } else if (!text) {
+            suffix = '';
+        }
+        return Ext.String.format(this.dragText, count, suffix);
     },
 
 <span id='Ext-tree-ViewDragZone-method-afterRepair'>    afterRepair: function() {

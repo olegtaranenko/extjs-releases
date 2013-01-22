@@ -203,6 +203,9 @@ Ext.define('Ext.grid.ColumnLayout', {
             cw = ownerContext.peek('contentWidth'),
             view;
 
+        // Allow the other co-operating objects to know whether the columns overflow the available width.
+        me.owner.tooNarrow = ownerContext.state.boxPlan.tooNarrow;
+
         // InnerCt MUST stretch to accommodate all columns so that left/right scrolling is enabled in the header container.
         if ((cw != null) && !me.owner.isHeader) {
             size.width = cw;

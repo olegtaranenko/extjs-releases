@@ -262,7 +262,8 @@ Ext.samples = {
                     "text": "Reconfigure Grid",
                     "url": "grid/reconfigure.html",
                     "icon": "grid-reconfigure.png",
-                    "desc": "Reconfigure the columns & data of a grid dynamically"
+                    "desc": "Reconfigure the columns & data of a grid dynamically",
+                    "status": "new"
                 },
                 {
                     "text": "Grid From Markup",
@@ -525,6 +526,20 @@ Ext.samples = {
                     "url": "tree/custom-drop-logic.html",
                     "icon": "tree-custom-node-logic.png",
                     "desc": "Apply custom logic to determine where nodes can be moved."
+                },
+                {
+                    "text": "Buffer Rendered Tree",
+                    "url": "tree/buffer-rendered-treegrid.html",
+                    "icon": "tree-columns.gif",
+                    "desc": "Rendering very large trees efficiently.",
+                    "status": "new"
+                },
+                {
+                    "text": "Locking Buffer Rendered Tree",
+                    "url": "tree/locking-buffer-rendered-treegrid.html",
+                    "icon": "tree-columns.gif",
+                    "desc": "Rendering very large trees efficiently. With locked columns",
+                    "status": "new"
                 }
             ]
         },
@@ -635,7 +650,8 @@ Ext.samples = {
                     "text": "Grid Cell to Cell DnD",
                     "url": "dd/cell-to-cell-dd.html",
                     "icon": "dd-celltocell.gif",
-                    "desc": "Illustrates how a custom plugin can enable cell drag and drop operations within the same GridView"
+                    "desc": "Illustrates how a custom plugin can enable cell drag and drop operations within the same GridView",
+                    "status": "new"
                 },
                 {
                     "text": "Grid to Form DnD",

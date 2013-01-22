@@ -111,7 +111,8 @@ Ext.define('Ext.calendar.view.Day', {
     },
     
     // private
-    onResize : function(){
+    onResize : function() {
+        this.callParent(arguments);
         this.forceSize();
     },
     

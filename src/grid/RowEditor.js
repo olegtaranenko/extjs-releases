@@ -183,7 +183,7 @@ Ext.define('Ext.grid.RowEditor', {
     onCtScroll: function(e, target) {
         var me = this,
             scrollTop  = target.scrollTop,
-            scrollLeft = target.scrollLeft;
+            scrollLeft = Ext.fly(target).getScrollLeft();
 
         if (scrollTop !== me.lastScrollTop) {
             me.lastScrollTop = scrollTop;
@@ -370,7 +370,7 @@ Ext.define('Ext.grid.RowEditor', {
             // use the minimum as the columns may not fill up the entire grid
             // width
             width = Math.min(mainBodyWidth, scrollerWidth),
-            scrollLeft = grid.view.el.dom.scrollLeft,
+            scrollLeft = Ext.fly(grid.view.el.dom).getScrollLeft(),
             btnWidth = btns.getWidth(),
             left = (width - btnWidth) / 2 + scrollLeft,
             y, rowH, newHeight,
@@ -400,7 +400,7 @@ Ext.define('Ext.grid.RowEditor', {
             // Set editor height to match the row height
             if (me.getHeight() != newHeight) {
                 me.setHeight(newHeight);
-                me.el.setLocalX(0);
+                me.setLocalX(0);
             }
 
             if (animateConfig) {
@@ -425,6 +425,10 @@ Ext.define('Ext.grid.RowEditor', {
         if (me.getWidth() != mainBodyWidth) {
             me.setWidth(mainBodyWidth);
         }
+        me.setButtonPosition(btnEl, left);
+    },
+    
+    setButtonPosition: function(btnEl, left){
         btnEl.setLocalX(left);
     },
 

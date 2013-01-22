@@ -1,7 +1,7 @@
 /*
 This file is part of Ext JS 4.2
 
-Copyright (c) 2011-2012 Sencha Inc
+Copyright (c) 2011-2013 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
@@ -13,7 +13,7 @@ Ext license terms. Public redistribution is prohibited.
 
 For early licensing, please contact us at licensing@sencha.com
 
-Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
+Build date: 2013-01-08 23:25:56 (f0a3d96f987988f3e7bc5b0c0a7355723a686090)
 */
 
 
@@ -28,15 +28,15 @@ Ext.define('Ext.Neptune.button.Button', {
     }
 });
 
-Ext.define('Ext.Neptune.tab.Bar', {
-    override: 'Ext.tab.Bar',
-    
-    onAdd: function(tab) {
-        tab.position = this.dock;
-        tab.ui = this.ui;
-        this.callParent(arguments);
-    }
-});
+
+
+
+
+
+
+
+
+
 
 Ext.define('Ext.Neptune.container.ButtonGroup', {
 	override: 'Ext.container.ButtonGroup',
@@ -308,306 +308,309 @@ Ext.define('Ext.Neptune.Shadow', {
     offset: 3
 });
 
-Ext.define('Ext.Neptune.layout.container.Accordion', {
-    override: 'Ext.layout.container.Accordion',
 
-    targetCls: Ext.baseCSSPrefix + 'box-layout-ct ' + Ext.baseCSSPrefix + 'accordion-body',
-    collapseFirst : true,
 
-    beforeRenderItems: function (items) {
-        var me = this,
-            ln = items.length,
-            i, comp;
 
-        for (i = 0; i < ln; i++) {
-            comp = items[i];
-            if (!comp.rendered) {
-                
-                comp.on({
-                    beforerender: me.onChildPanelRender,
-                    single: true
-                });
 
-                
-                if (me.collapseFirst) {
-                    comp.collapseFirst = me.collapseFirst;
-                }
-                if (me.hideCollapseTool) {
-                    comp.hideCollapseTool = me.hideCollapseTool;
-                    comp.titleCollapse = true;
-                }
-                else if (me.titleCollapse) {
-                    comp.titleCollapse = me.titleCollapse;
-                }
 
-                delete comp.hideHeader;
-                delete comp.width;
-                comp.collapsible = true;
-                comp.title = comp.title || '&#160;';
-                comp.toolsFirst = true;
-                comp.addBodyCls(Ext.baseCSSPrefix + 'accordion-body');
 
-                
-                if (me.fill) {
-                    
-                    if (me.expandedItem !== undefined) {
-                        comp.collapsed = true;
-                    }
-                    
-                    else if (comp.hasOwnProperty('collapsed') && comp.collapsed === false) {
-                        me.expandedItem = i;
-                    } else {
-                        comp.collapsed = true;
-                    }
-                    
-                    me.owner.mon(comp, {
-                        show: me.onComponentShow,
-                        beforeexpand: me.onComponentExpand,
-                        beforecollapse: me.onComponentCollapse,
-                        scope: me
-                    });
-                } else {
-                    comp.animCollapse = me.initialAnimate;
-                    comp.autoScroll = false;
-                }
-                comp.border = comp.collapsed;
-            }
-        }
 
-        
-        if (ln && me.expandedItem === undefined) {
-            me.expandedItem = 0;
-            comp = items[0];
-            comp.collapsed = comp.border = false;
-        }
-    }
-});
 
-Ext.define('Ext.Neptune.panel.Header', {
-    override: 'Ext.panel.Header',
 
-    toolsFirst: false,
 
-    initComponent: function() {
-        var me = this,
-            ruleStyle,
-            rule,
-            style,
-            ui,
-            tempEl;
 
-        me.indicateDragCls = me.baseCls + '-draggable';
-        me.title = me.title || '&#160;';
-        me.tools = me.tools || [];
-        me.items = me.items || [];
-        me.orientation = me.orientation || 'horizontal';
-        me.dock = (me.dock) ? me.dock : (me.orientation == 'horizontal') ? 'top' : 'left';
 
-        
-        
-        me.addClsWithUI([me.orientation, me.dock]);
 
-        if (me.indicateDrag) {
-            me.addCls(me.indicateDragCls);
-        }
 
-        
-        if (!Ext.isEmpty(me.iconCls)) {
-            me.initIconCmp();
-            me.items.push(me.iconCmp);
-        }
 
-        
-        if (me.orientation == 'vertical') {
-            me.layout = {
-                type : 'vbox',
-                align: 'center'
-            };
-            me.textConfig = {
-                width: 15,
-                cls: me.baseCls + '-text',
-                type: 'text',
-                text: me.title,
-                rotate: {
-                    degrees: 90
-                }
-            };
-            ui = me.ui;
-            if (Ext.isArray(ui)) {
-                ui = ui[0];
-            }
-            ruleStyle = '.' + me.baseCls + '-text-' + ui;
-            if (Ext.scopeResetCSS) {
-                ruleStyle = '.' + Ext.baseCSSPrefix + 'reset ' + ruleStyle;
-            }
-            rule = Ext.util.CSS.getRule(ruleStyle);
-            if (rule) {
-                style = rule.style;
-            }else {
-                
-                style = (tempEl = Ext.getBody().createChild({style: 'position:absolute', cls: me.baseCls + '-text-' + ui})).getStyles('fontFamily', 'fontWeight', 'fontSize', 'color');
-                tempEl.remove();
-            }
-            if (style) {
-                Ext.apply(me.textConfig, {
-                    'font-family': style.fontFamily,
-                    'font-weight': style.fontWeight,
-                    'font-size': style.fontSize,
-                    fill: style.color
-                });
-            }
-            me.titleCmp = new Ext.draw.Component({
-                
-                ariaRole  : 'heading',
-                focusable : false,
-                viewBox   : false,
-                flex      : 1,
-                id        : me.id + '_hd',
-                autoSize  : true,
-                margins   : '5 0 0 0',
-                items     : [ me.textConfig ],
-                xhooks: {
-                    setSize: function (width) {
-                        
-                        this.callParent([width]);
-                    }
-                },
-                
-                
-                childEls  : [
-                    { name: 'textEl', select: '.' + me.baseCls + '-text' }
-                ]
-            });
-        } else {
-            me.layout = {
-                type : 'hbox',
-                align: 'middle'
-            };
-            me.titleCmp = new Ext.Component({
-                
-                xtype     : 'component',
-                ariaRole  : 'heading',
-                focusable : false,
-                noWrap    : true,
-                flex      : 1,
-                id        : me.id + '_hd',
-                cls       : me.baseCls + '-text-container',
-                renderTpl : me.getTpl('headingTpl'),
-                renderData: {
-                    title: me.title,
-                    cls  : me.baseCls,
-                    ui   : me.ui
-                },
-                childEls  : ['textEl']
-            });
-        }
 
-        
 
-        if (me.toolsFirst) {
-            me.addCls(me.baseCls + '-tools-first');
-            me.items = me.items.concat(me.tools);
-            me.items.push(me.titleCmp);
-        } else {
-            me.items.push(me.titleCmp);
-            me.items = me.items.concat(me.tools);
-        }
-        
-		Ext.panel.Header.superclass.initComponent.call(this, arguments);
-        
-        me.on({
-            click: me.onClick,
-            mouseover: me.onMouseOver,
-            mouseout : me.onMouseOut,
-            mousedown: me.onMouseDown,
-            mouseup: me.onMouseUp,
-            element: 'el',
-            scope: me
-        });
-    },
 
-    
-    onRender: function() {
-        var me = this;
-        me.doc = Ext.getDoc();
-        me.callParent(arguments);
-    },
 
-    
-    onMouseOver: function() {
-        this.addCls(this.baseCls + '-over');
-    },
 
-    
-    onMouseOut: function() {
-        this.removeCls(this.baseCls + '-over');
-        this.removeCls(this.baseCls + '-pressed');
-    },
 
-    
-    onMouseDown: function() {
-        this.addCls(this.baseCls + '-pressed');
-    },
 
-    
-    onMouseUp: function(e) {
-        this.removeCls(this.baseCls + '-pressed');
-    }
-});
 
-Ext.define('Ext.Neptune.panel.Panel', {
-    override: 'Ext.panel.Panel',
 
-    
-    toolsFirst: false,
 
-    updateHeader: function(force) {
-        var me = this,
-            header = me.header,
-            title = me.title,
-            tools = me.tools;
 
-        if (!me.preventHeader && (force || title || (tools && tools.length))) {
-            if (header) {
-                header.show();
-            } else {
-                header = me.header = new Ext.panel.Header({
-                    title       : title,
-                    orientation : (me.headerPosition == 'left' || me.headerPosition == 'right') ? 'vertical' : 'horizontal',
-                    dock        : me.headerPosition || 'top',
-                    textCls     : me.headerTextCls,
-                    iconCls     : me.iconCls,
-                    baseCls     : me.baseCls + '-header',
-                    tools       : tools,
-                    ui          : me.ui,
-                    id          : me.id + '_header',
-                    indicateDrag: me.draggable,
-                    toolsFirst  : me.toolsFirst,
-                    border      : me.border,
-                    frame       : me.frame && me.frameHeader,
-                    ignoreParentFrame : me.frame || me.overlapHeader,
-                    ignoreBorderManagement: me.frame || me.ignoreHeaderBorderManagement,
-                    listeners   : me.collapsible && me.titleCollapse ? {
-                        click: me.toggleCollapse,
-                        scope: me
-                    } : null
-                });
-                me.addDocked(header, 0);
 
-                
-                
-                me.tools = header.tools;
-            }
-            me.initHeaderAria();
 
-            me.addCls(me.baseCls + '-hasheader-' + me.headerPosition);
-        } else if (header) {
-            header.hide();
-            
-            me.removeCls(me.baseCls + '-hasheader-' + me.headerPosition);
-        }
-    }
-});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Ext.define('Ext.Neptune.resizer.Splitter', {
     override: 'Ext.resizer.Splitter',
@@ -777,6 +780,8 @@ Ext.define('Ext.Neptune.tree.Panel', {
         
         me.cls = cls.join(' ');
         Ext.tree.Panel.superclass.initComponent.apply(me, arguments);
+        
+        me.selModel.treeStore = me.store;
         
         view = me.getView();
 

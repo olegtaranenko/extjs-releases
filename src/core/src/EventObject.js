@@ -309,7 +309,7 @@ Ext.define('Ext.EventObjectImpl', {
     setEvent: function(event, freezeEvent){
         var me = this, button, options;
 
-        if (event == me || (event && event.browserEvent)) { // already wrapped
+        if (event === me || (event && event.browserEvent)) { // already wrapped
             return event;
         }
         me.browserEvent = event;
@@ -477,7 +477,7 @@ Ext.define('Ext.EventObjectImpl', {
      * @return {HTMLElement}
      */
     getRelatedTarget : function(selector, maxDepth, returnEl){
-        if (selector) {
+        if (selector && this.relatedTarget) {
             return Ext.fly(this.relatedTarget).findParent(selector, maxDepth, returnEl);
         }
         return returnEl ? Ext.get(this.relatedTarget) : this.relatedTarget;

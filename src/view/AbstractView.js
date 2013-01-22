@@ -325,6 +325,7 @@ Ext.define('Ext.view.AbstractView', {
         var me = this,
             mask = me.loadMask,
             cfg = {
+                target: me,
                 msg: me.loadingText,
                 msgCls: me.loadingCls,
                 useMsg: me.loadingUseMsg,
@@ -344,7 +345,7 @@ Ext.define('Ext.view.AbstractView', {
             // If this DataView is floating, then mask this DataView.
             // Otherwise, mask its owning Container (or this, if there *is* no owning Container).
             // LoadMask captures the element upon render.
-            me.loadMask = new Ext.LoadMask(me, cfg);
+            me.loadMask = new Ext.LoadMask(cfg);
             me.loadMask.on({
                 scope: me,
                 beforeshow: me.onMaskBeforeShow,
@@ -353,7 +354,7 @@ Ext.define('Ext.view.AbstractView', {
         }
     },
     
-    finishRender: function(){
+    finishRender: function() {
         var me = this;
         me.callParent(arguments);
         // Kick off the refresh before layouts are resumed after the render 
@@ -656,7 +657,7 @@ Ext.define('Ext.view.AbstractView', {
 
     /**
      * Function which can be overridden which returns the data object passed to this
-     * DataView's {@link #tpl template} to render the whole DataView.
+     * DataView's {@link #cfg-tpl template} to render the whole DataView.
      * 
      * This is usually an Array of data objects, each element of which is processed by an
      * {@link Ext.XTemplate XTemplate} which uses `'&lt;tpl for="."&gt;'` to iterate over its supplied
@@ -734,7 +735,10 @@ Ext.define('Ext.view.AbstractView', {
                 nodes = me.all.slice();
             } else {
                 nodes = me.doAdd(records, index);
-                me.selModel.refresh();
+                // Some subclasses do not need to do this. TableView does not need to do this.
+                if (me.refreshSelmodelOnRefresh !== false) {
+                    me.selModel.refresh();
+                }
                 me.updateIndexes(index);
 
                 // Ensure layout system knows about new content size
@@ -800,9 +804,6 @@ Ext.define('Ext.view.AbstractView', {
                     if (fireItemRemove) {
                         me.fireEvent('itemremove', record, index);
                     }
-                }
-                if (me.selModel.refreshOnRemove) {
-                    me.selModel.refresh();
                 }
                 me.updateIndexes(indexes[0]);
             }

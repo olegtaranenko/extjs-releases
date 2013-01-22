@@ -68,7 +68,42 @@ Ext.define('Ext.rtl.dom.Element_scroll', {
         scroll.left = left;
 
         return scroll;
+    },
+    
+    getScrollLeft: function() {
+        var me = this,
+            dom = this.dom,
+            doc = document,
+            flag = me._rtlScrollFlag,
+            left;
+            
+        if (dom === doc || dom === doc.body) {
+            return me.rtlGetScroll().left;
+        } else {
+            left = dom.scrollLeft;
+            if (flag === 0) {
+                left = -left;
+            } else if (flag === 1) {
+                left = dom.scrollWidth - dom.clientWidth - left;
+            }
+            return left;
+        }
+    },
+    
+    setScrollLeft: function(left){
+        var dom = this.dom,
+            flag = this._rtlScrollFlag;
+            
+        if (flag === 0) {
+            dom.scrollLeft = -left;
+        } else if (flag === 1) {
+            dom.scrollLeft = dom.scrollWidth - left - dom.clientWidth;
+        } else {
+            dom.scrollLeft = left;
+        }
+        return this;
     }
+    
 }, function() {
     var Element = this;
     Ext.on({
@@ -121,6 +156,8 @@ Ext.define('Ext.rtl.dom.Element_scroll', {
 
             bodyStyle.direction = 'rtl';
             rtlRight = dom.getBoundingClientRect().right;
+            
+            Element.prototype._rtlScrollFlag = Element.prototype.getRtlScrollFlag.call(Element);
 
             // when the body has vertical overflow some browser continue to show the
             // vertical scrollbar on the right side of the page even in rtl mode.

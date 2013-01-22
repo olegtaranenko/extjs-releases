@@ -89,9 +89,7 @@ Ext.define('Ext.data.proxy.Direct', {
 
     constructor: function(config){
         var me = this,
-            paramOrder,
-            fn,
-            api;
+            paramOrder;
             
         me.callParent(arguments);
         
@@ -99,29 +97,52 @@ Ext.define('Ext.data.proxy.Direct', {
         if (Ext.isString(paramOrder)) {
             me.paramOrder = paramOrder.split(me.paramOrderRe);
         }
+    },
+    
+    resolveMethods: function() {
+        var me = this,
+            fn = me.directFn,
+            api = me.api,
+            Manager = Ext.direct.Manager,
+            method;
         
-        fn = me.directFn;
         if (fn) {
-            me.directFn = Ext.direct.Manager.parseMethod(fn);
-        }
-        
-        api = me.api;
-        for (fn in api) {
-            if (api.hasOwnProperty(fn)) {
-                api[fn] = Ext.direct.Manager.parseMethod(api[fn]);
+            method = me.directFn = Manager.parseMethod(fn);
+            
+            if (!Ext.isFunction(method)) {
+                Ext.Error.raise('Cannot resolve directFn ' + fn);
             }
         }
+        else if (api) {
+            for (fn in api) {
+                if (api.hasOwnProperty(fn)) {
+                    method = api[fn];
+                    api[fn] = Manager.parseMethod(method);
+                    
+                    if (!Ext.isFunction(api[fn])) {
+                        Ext.Error.raise('Cannot resolve Direct api ' + fn + ' method ' + method);
+                    }
+                }
+            }
+        }
+        
+        me.methodsResolved = true;
     },
 
     doRequest: function(operation, callback, scope) {
         var me = this,
             writer = me.getWriter(),
             request = me.buildRequest(operation),
-            fn = me.api[request.action]  || me.directFn,
             params = request.params,
             args = [],
-            method;
+            fn, method;
+        
+        if (!me.methodsResolved) {
+            me.resolveMethods();
+        }
 
+        fn = me.api[request.action] || me.directFn;
+        
         //<debug>
         if (!fn) {
             Ext.Error.raise('No direct function specified for this proxy');

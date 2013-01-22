@@ -98,22 +98,41 @@ Ext.define('Ext.form.action.Submit', {
             }),
             form = me.form,
             paramsProp = form.jsonSubmit ? 'jsonData' : 'params',
-            formEl;
+            formEl, formInfo;
 
         // For uploads we need to create an actual form that contains the file upload fields,
         // and pass that to the ajax call so it can do its iframe-based submit method.
         if (form.hasUpload()) {
-            formEl = ajaxOptions.form = me.buildForm();
+            formInfo = me.buildForm();
+            ajaxOptions.form = formInfo.formEl;
             ajaxOptions.isUpload = true;
         } else {
             ajaxOptions[paramsProp] = me.getParams();
         }
 
         Ext.Ajax.request(ajaxOptions);
-
+        if (formInfo) {
+            me.cleanup(formInfo);
+        }
+    },
+    
+    cleanup: function(formInfo) {
+        var formEl = formInfo.formEl,
+            uploadEls = formInfo.uploadEls,
+            uploadFields = formInfo.uploadFields,
+            len = uploadFields.length,
+            i, field;
+            
+        for (i = 0; i < len; ++i) {
+            field = uploadFields[i];
+            if (!field.clearOnSubmit) {
+                field.restoreInput(uploadEls[i]);
+            }    
+        }
+        
         if (formEl) {
             Ext.removeNode(formEl);
-        }
+        }    
     },
 
     /**
@@ -138,33 +157,27 @@ Ext.define('Ext.form.action.Submit', {
      * @return {HTMLElement}
      */
     buildForm: function() {
-        var fieldsSpec = [],
+        var me = this,
+            fieldsSpec = [],
             formSpec,
             formEl,
-            basicForm = this.form,
-            params = this.getParams(),
+            basicForm = me.form,
+            params = me.getParams(),
             uploadFields = [],
+            uploadEls = [],
             fields = basicForm.getFields().items,
-            f,
-            fLen   = fields.length,
+            i,
+            len   = fields.length,
             field, key, value, v, vLen,
-            u, uLen;
+            el;
 
-        for (f = 0; f < fLen; f++) {
-            field = fields[f];
+        for (i = 0; i < len; ++i) {
+            field = fields[i];
 
-            if (field.isFileUpload()) {
+            // can only have a selected file value after being rendered
+            if (field.rendered && field.isFileUpload()) {
                 uploadFields.push(field);
             }
-        }
-
-        function addField(name, val) {
-            fieldsSpec.push({
-                tag: 'input',
-                type: 'hidden',
-                name: name,
-                value: Ext.String.htmlEncode(val)
-            });
         }
 
         for (key in params) {
@@ -174,19 +187,19 @@ Ext.define('Ext.form.action.Submit', {
                 if (Ext.isArray(value)) {
                     vLen = value.length;
                     for (v = 0; v < vLen; v++) {
-                        addField(key, value[v]);
+                        fieldsSpec.push(me.getFieldConfig(key, value[v]));
                     }
                 } else {
-                    addField(key, value);
+                    fieldsSpec.push(me.getFieldConfig(key, value));
                 }
             }
         }
 
         formSpec = {
             tag: 'form',
-            action: this.getUrl(),
-            method: this.getMethod(),
-            target: this.target || '_self',
+            action: me.getUrl(),
+            method: me.getMethod(),
+            target: me.target || '_self',
             style: 'display:none',
             cn: fieldsSpec
         };
@@ -202,19 +215,29 @@ Ext.define('Ext.form.action.Submit', {
         // Special handling for file upload fields: since browser security measures prevent setting
         // their values programatically, and prevent carrying their selected values over when cloning,
         // we have to move the actual field instances out of their components and into the form.
-        uLen = uploadFields.length;
+        len = uploadFields.length;
 
-        for (u = 0; u < uLen; u++) {
-            field = uploadFields[u];
-            if (field.rendered) { // can only have a selected file value after being rendered
-                formEl.appendChild(field.extractFileInput());
-            }
+        for (i = 0; i < len; ++i) {
+            el = uploadFields[i].extractFileInput();
+            formEl.appendChild(el);
+            uploadEls.push(el);
         }
 
-        return formEl;
+        return {
+            formEl: formEl,
+            uploadFields: uploadFields,
+            uploadEls: uploadEls
+        };
     },
 
-
+    getFieldConfig: function(name, value) {
+        return {
+            tag: 'input',
+            type: 'hidden',
+            name: name,
+            value: Ext.String.htmlEncode(value)
+        };
+    },
 
     /**
      * @private

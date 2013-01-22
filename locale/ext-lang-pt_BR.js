@@ -43,7 +43,7 @@ Ext.onReady(function() {
     });
 
     if (Ext.Date) {
-        Ext.Date.monthNames = ["Janeiro", "Fevereiro", "Març;o", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        Ext.Date.monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
         Ext.Date.getShortMonthName = function(month) {
             return Ext.Date.monthNames[month].substring(0, 3);
@@ -68,7 +68,7 @@ Ext.onReady(function() {
             return Ext.Date.monthNumbers[name.substring(0, 1).toUpperCase() + name.substring(1, 3).toLowerCase()];
         };
 
-        Ext.Date.dayNames = ["Domingo", "Segunda", "Terç;a", "Quarta", "Quinta", "Sexta", "Sábado"];
+        Ext.Date.dayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
     }
 
     if (Ext.MessageBox) {
@@ -244,7 +244,7 @@ Ext.onReady(function() {
                 },
                 sourceedit: {
                     title: 'Editar Fonte',
-                    text: 'Troca para o modo de ediç;ão de código fonte.',
+                    text: 'Troca para o modo de edição de código fonte.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 }
             }

@@ -37,8 +37,7 @@ Ext.define('SimpleTasks.controller.Lists', {
 
     init: function() {
         var me = this,
-            listsStore = me.getListsStore(),
-            tasksStore = me.getTasksStore();
+            listsStore = me.getListsStore();
 
         me.control({
             '[iconCls=tasks-new-list]': {
@@ -264,8 +263,9 @@ Ext.define('SimpleTasks.controller.Lists', {
                         tasksStore.sync();
                     }
 
-                    if(!listsStore.getNodeById(selModel.getSelection()[0].get('id'))) { //if the selection no longer exists in the store (it was part of the deleted node(s))
-                        // change selection to the "All Tasks" list
+                    // If there is no selection, or the selection no longer exists in the store (it was part of the deleted node(s))
+                    // then select the "All Lists" root
+                    if (!selModel.hasSelection() || !listsStore.getNodeById(selModel.getSelection()[0].getId())) {
                         selModel.select(0);
                     }
                     

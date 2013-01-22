@@ -99,9 +99,8 @@ Ext.define('Ext.grid.plugin.RowEditing', {
      * AbstractComponent calls destroy on all its plugins at destroy time.
      */
     destroy: function() {
-        var me = this;
-        Ext.destroy(me.editor);
-        me.callParent(arguments);
+        Ext.destroy(this.editor);
+        this.callParent(arguments);
     },
 
     /**
@@ -192,6 +191,10 @@ Ext.define('Ext.grid.plugin.RowEditing', {
 
     // @private
     initEditor: function() {
+        return new Ext.grid.RowEditor(this.initEditorConfig());
+    },
+    
+    initEditorConfig: function(){
         var me       = this,
             grid     = me.grid,
             view     = me.view,
@@ -218,8 +221,7 @@ Ext.define('Ext.grid.plugin.RowEditing', {
                 cfg[item] = me[item];
             }
         }
-
-        return Ext.create('Ext.grid.RowEditor', cfg);
+        return cfg;    
     },
 
     // @private

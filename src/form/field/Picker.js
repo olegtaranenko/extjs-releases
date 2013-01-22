@@ -23,7 +23,7 @@ Ext.define('Ext.form.field.Picker', {
 
     /**
      * @cfg {String} pickerAlign
-     * The {@link Ext.Element#alignTo alignment position} with which to align the picker. Defaults to "tl-bl?"
+     * The {@link Ext.util.Positionable#alignTo alignment position} with which to align the picker. Defaults to "tl-bl?"
      */
     pickerAlign: 'tl-bl?',
 

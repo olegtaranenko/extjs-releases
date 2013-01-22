@@ -21,10 +21,7 @@ Ext.define('Ext.layout.component.field.Field', {
 
     beginLayout: function(ownerContext) {
         var me = this,
-            owner = me.owner,
-            widthModel = ownerContext.widthModel,
-            ownerNaturalSize = owner[me.naturalSizingProp],
-            width;
+            owner = me.owner;
 
         me.callParent(arguments);
 
@@ -45,7 +42,16 @@ Ext.define('Ext.layout.component.field.Field', {
         // perform preparation on the label and error (setting css classes, qtips, etc.)
         ownerContext.labelStrategy.prepare(ownerContext, owner);
         ownerContext.errorStrategy.prepare(ownerContext, owner);
-
+    },
+    
+    beginLayoutCycle: function(ownerContext){
+        var me = this,
+            owner = me.owner,
+            widthModel = ownerContext.widthModel,
+            ownerNaturalSize = owner[me.naturalSizingProp],
+            width;
+            
+        me.callParent(arguments);
         // Body cell must stretch to use up available width unless the field is auto width
         if (widthModel.shrinkWrap) {
             // When the width needs to be auto, table-layout cannot be fixed
@@ -64,7 +70,7 @@ Ext.define('Ext.layout.component.field.Field', {
             ownerContext.setWidth(width, false);
         } else {
             me.beginLayoutFixed(ownerContext, '100', '%');
-        }
+        }    
     },
 
     beginLayoutFixed: function (ownerContext, width, suffix) {

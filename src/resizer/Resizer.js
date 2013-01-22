@@ -45,6 +45,7 @@ Ext.define('Ext.resizer.Resizer', {
     pinnedCls: Ext.baseCSSPrefix + 'resizable-pinned',
     overCls:   Ext.baseCSSPrefix + 'resizable-over',
     wrapCls:   Ext.baseCSSPrefix + 'resizable-wrap',
+    delimiterRe: /(?:\s*[,;]\s*)|\s+/,
 
     /**
      * @cfg {Boolean} dynamic
@@ -311,7 +312,7 @@ Ext.define('Ext.resizer.Resizer', {
             me.handles = 'n s e w ne nw se sw';
         }
 
-        handles = me.handles = me.handles.split(/ |\s*?[,;]\s*?/);
+        handles = me.handles = me.handles.split(me.delimiterRe);
         possibles = me.possiblePositions;
         len = handles.length;
         handleCls = me.handleCls + ' ' + (me.target.isComponent ? (me.target.baseCls + '-handle ') : '') + me.handleCls + '-';
@@ -453,13 +454,16 @@ Ext.define('Ext.resizer.Resizer', {
     },
 
     destroy: function() {
-        var i = 0,
+        var i,
             handles = this.handles,
             len = handles.length,
-            positions = this.possiblePositions;
+            positions = this.possiblePositions,
+            handle;
 
-        for (; i < len; i++) {
-            this[positions[handles[i]]].remove();
+        for (i = 0; i < len; i++) {
+            if (handle = this[positions[handles[i]]]) {
+                handle.remove();
+            }
         }
     },
 

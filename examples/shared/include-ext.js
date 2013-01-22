@@ -21,7 +21,7 @@
     if (theme && theme !== 'default') {
         suffix.push(theme);
     }
-    if (rtl !== undefined) {
+    if (rtl) {
         suffix.push('rtl');
     } 
 

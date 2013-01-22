@@ -217,11 +217,8 @@ Ext.define('Ext.form.FieldSet', {
             me.addCls(baseCls + '-collapsed');
             me.collapse();
         }
-        if (me.title) {
-            me.addCls(baseCls + '-with-title');
-        }
         if (me.title || me.checkboxToggle || me.collapsible) {
-            me.addCls(baseCls + '-with-legend');
+            me.addTitleClasses();
             me.legend = Ext.widget(me.createLegendCt());
         }
     },
@@ -455,18 +452,39 @@ Ext.define('Ext.form.FieldSet', {
      */
     setTitle: function(title) {
         var me = this,
-            legend = me.legend;
+            legend = me.legend,
+            baseCls = me.baseCls;
             
         me.title = title;
         if (me.rendered) {
-            if (!me.legend) {
+            if (!legend) {
                 me.legend = legend = Ext.widget(me.createLegendCt());
+                me.addTitleClasses();
                 legend.ownerLayout.configureItem(legend);
                 legend.render(me.el, 0);
             }
             me.titleCmp.update(title);
+        } else if (legend) {
+            me.titleCmp.update(title);
+        } else {
+            me.addTitleClasses();
+            me.legend = Ext.widget(me.createLegendCt());
         }
         return me;
+    },
+    
+    addTitleClasses: function(){
+        var me = this,
+            title = me.title,
+            baseCls = me.baseCls;
+            
+        if (title) {
+            me.addCls(baseCls + '-with-title');
+        }
+        
+        if (title || me.checkboxToggle || me.collapsible) {
+            me.addCls(baseCls + '-with-header');
+        }
     },
 
     applyTargetCls: function(targetCls) {

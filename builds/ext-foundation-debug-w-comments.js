@@ -1,7 +1,7 @@
 /*
 This file is part of Ext JS 4.2
 
-Copyright (c) 2011-2012 Sencha Inc
+Copyright (c) 2011-2013 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
@@ -13,7 +13,7 @@ Ext license terms. Public redistribution is prohibited.
 
 For early licensing, please contact us at licensing@sencha.com
 
-Build date: 2012-12-10 14:52:02 (c0572264ad0b8b7f1dff793097bfb8a12e637b78)
+Build date: 2013-01-08 23:25:56 (f0a3d96f987988f3e7bc5b0c0a7355723a686090)
 */
 //@tag foundation,core
 /**
@@ -401,7 +401,7 @@ Ext._startTime = new Date().getTime();
          *
          * Numbers and numeric strings are coerced to Dates using the value as the millisecond era value.
          *
-         * Strings are coerced to Dates by parsing using the {@link Ext.Date.defaultFormat defaultFormat}.
+         * Strings are coerced to Dates by parsing using the {@link Ext.Date#defaultFormat defaultFormat}.
          * 
          * For example
          *
@@ -888,7 +888,7 @@ Ext.globalEval = Ext.global.execScript
 
 // Current core version
 // also fix Ext-more.js
-var version = '4.2.0.179', Version;
+var version = '4.2.0.265', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         /**
@@ -1607,6 +1607,9 @@ Ext.String = (function() {
          * @param {String} sep An option string to separate each pattern.
          */
         repeat: function(pattern, count, sep) {
+            if (count < 1) {
+                count = 0;
+            }
             for (var buf = [], i = count; i--; ) {
                 buf.push(pattern);
             }
@@ -3558,8 +3561,6 @@ Ext.bind = Ext.Function.alias(Ext.Function, 'bind');
 //@require Function.js
 
 /**
- * @author Jacky Nguyen <jacky@sencha.com>
- * @docauthor Jacky Nguyen <jacky@sencha.com>
  * @class Ext.Object
  *
  * A collection of useful static methods to deal with objects.
@@ -3574,10 +3575,16 @@ var TemplateClass = function(){},
     ExtObject = Ext.Object = {
 
     /**
-     * Returns a new object with the given object as the prototype chain.
+     * Returns a new object with the given object as the prototype chain. This method is
+     * designed to mimic the ECMA standard `Object.create` method and is assigned to that
+     * function when it is available.
+     * 
+     * **NOTE** This method does not support the property definitions capability of the
+     * `Object.create` method. Only the first argument is supported.
+     * 
      * @param {Object} object The prototype chain for the new object.
      */
-    chain: function (object) {
+    chain: Object.create || function (object) {
         TemplateClass.prototype = object;
         var result = new TemplateClass();
         TemplateClass.prototype = null;
@@ -3712,13 +3719,11 @@ var TemplateClass = function(){},
 
             if (Ext.isEmpty(value)) {
                 value = '';
-            }
-            else if (Ext.isDate(value)) {
+            } else if (Ext.isDate(value)) {
                 value = Ext.Date.toString(value);
             }
 
-            params.push(encodeURIComponent(paramObject.name) +
-                (value !== '' ? ('=' + encodeURIComponent(String(value))) : ''));
+            params.push(encodeURIComponent(paramObject.name) + '=' + encodeURIComponent(String(value)));
         }
 
         return params.join('&');
@@ -4074,6 +4079,20 @@ var TemplateClass = function(){},
         }
 
         return size;
+    },
+    
+    /**
+     * Checks if there are any properties on this object.
+     * @param {Object} object
+     * @return {Boolean} `true` if there no properties on the object.
+     */
+    isEmpty: function(object){
+        for (var key in object) {
+            if (object.hasOwnProperty(key)) {
+                return false;
+            }
+        }
+        return true;    
     },
     
     /**
@@ -7474,6 +7493,16 @@ var noArgs = [],
      *     iPhone.getPrice(); // 500;
      *     iPhone.getOperatingSystem(); // 'iOS'
      *     iPhone.getHasTouchScreen(); // true;
+     *
+     * NOTE for when configs are reference types, the getter and setter methods do not make copies.
+     *
+     * For example, when a config value is set, the reference is stored on the instance. All instances that set
+     * the same reference type will share it.
+     *
+     * In the case of the getter, the value with either come from the prototype if the setter was never called or from
+     * the instance as the last value passed to the setter.
+     *
+     * For some config properties, the value passed to the setter is transformed prior to being stored on the instance.
      */
     ExtClass.registerPreprocessor('config', function(Class, data) {
         var config = data.config,

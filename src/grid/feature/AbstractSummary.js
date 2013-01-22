@@ -198,7 +198,10 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
                 } else {
                     record = me.populateRecord(group);
                 }
-                group.commit();
+                // Clear the dirty state of the group if this is the only Summary, or this is the right hand (normal grid's) summary
+                if (!lockingPartner || (me.view.ownerCt === me.view.ownerCt.ownerLockable.normalGrid)) {
+                    group.commit();
+                }
             } else {
                 record = group.getAggregateRecord();
                 if (lockingPartner && !record.hasPartnerData) {
@@ -213,8 +216,7 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
     },
     
     populateRemoteRecord: function(group, data) {
-        var me = this,
-            record = group.getAggregateRecord(true),
+        var record = group.getAggregateRecord(true),
             groupData = data[group.key],
             field;
             

@@ -326,7 +326,7 @@ Ext.define('Ext.EventObjectImpl', {
 <span id='Ext-EventObject-method-setEvent'>    setEvent: function(event, freezeEvent){
 </span>        var me = this, button, options;
 
-        if (event == me || (event &amp;&amp; event.browserEvent)) { // already wrapped
+        if (event === me || (event &amp;&amp; event.browserEvent)) { // already wrapped
             return event;
         }
         me.browserEvent = event;
@@ -494,7 +494,7 @@ Ext.define('Ext.EventObjectImpl', {
      * @return {HTMLElement}
      */
     getRelatedTarget : function(selector, maxDepth, returnEl){
-        if (selector) {
+        if (selector &amp;&amp; this.relatedTarget) {
             return Ext.fly(this.relatedTarget).findParent(selector, maxDepth, returnEl);
         }
         return returnEl ? Ext.get(this.relatedTarget) : this.relatedTarget;

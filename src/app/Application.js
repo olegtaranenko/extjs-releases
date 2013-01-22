@@ -86,6 +86,10 @@
 Ext.define('Ext.app.Application', {
     extend: 'Ext.app.Controller',
 
+    requires: [
+        'Ext.tip.QuickTipManager'
+    ],
+
     /**
      * @cfg {String} name
      * The name of your application. This will also be the namespace for your views, controllers
@@ -276,9 +280,8 @@ Ext.define('Ext.app.Application', {
 
     initControllers: function() {
         var me = this,
-            controllers;
+            controllers = Ext.Array.from(me.controllers);
 
-        controllers    = Ext.Array.from(me.controllers);
         me.controllers = new Ext.util.MixedCollection();
 
         for (var i = 0, ln = controllers.length; i < ln; i++) {

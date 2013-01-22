@@ -675,7 +675,7 @@ Ext.define('SimpleTasks.controller.Tasks', {
                 defaultTimeMilliseconds = defaultTimeDate - Ext.Date.clearTime(defaultTimeDate, true);
                 form.findField('reminder').setValue(new Date(dateField.getValue().getTime() + defaultTimeMilliseconds));
                 windowEl.unmask();
-            });
+            }, timeField.format);
         } else { // if the "has reminder" checkbox was unchecked
             // nullify the form's hidden reminder field and disable the reminder date and time fields
             form.findField('reminder').setValue(null);
@@ -825,25 +825,26 @@ Ext.define('SimpleTasks.controller.Tasks', {
                     }
                 });
             }
-        });
+        }, defaultTimeField.format);
     },
 
     /**
      * Gets the default reminder time and passes it to the callback function.
      * Retrieves default reminder time from the server on the first call, then caches it for future calls.
      * @param {Function} callback
+     * @param {String} timeFormat, the time format used to encode the time: the time format of the destination TimeField
      */
-    getDefaultReminderTime: function(callback) {
+    getDefaultReminderTime: function(callback, timeFormat) {
         var me = this,
             defaultReminderTime;
 
         if(me.defaultReminderTime) {
             callback(me.defaultReminderTime);
         } else {
-            me.defaultReminderTime = '8:00 AM'; // the default time if no value can be retrieved from storage
+            me.defaultReminderTime = Ext.Date.format(Ext.Date.parse('8', 'g'), timeFormat || "g:i A"); // the default time if no value can be retrieved from storage
             if (SimpleTasksSettings.useLocalStorage) {
                 defaultReminderTime = localStorage.getItem('SimpleTasks-defaultReminderTime');
-                if (defaultReminderTime) {
+                if (defaultReminderTime && Ext.Date.parse(defaultReminderTime, timeFormat)) {
                     me.defaultReminderTime = defaultReminderTime;
                 }
                 callback(me.defaultReminderTime);
@@ -855,7 +856,7 @@ Ext.define('SimpleTasks.controller.Tasks', {
                     },
                     success: function(response, options) {
                         var responseData = Ext.decode(response.responseText);
-                        if(responseData.success && responseData.value) {
+                        if(responseData.success && responseData.value && Ext.Date.parse(responseData.value, timeFormat)) {
                             me.defaultReminderTime = responseData.value;
                         }
                         callback(me.defaultReminderTime);

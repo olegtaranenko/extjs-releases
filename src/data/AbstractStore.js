@@ -229,6 +229,7 @@ Ext.define('Ext.data.AbstractStore', {
          * @param {Ext.data.Store} store The Store object
          * @param {Ext.data.Model} record The record that was removed
          * @param {Number} index The index of the record that was removed
+         * @param {Boolean} isMove `true` if the child node is being removed so it can be moved to another position in this Store.
          * @since Ext 1
          */
 
@@ -241,6 +242,7 @@ Ext.define('Ext.data.AbstractStore', {
          * @param {Ext.data.Store} store The Store object
          * @param {Ext.data.Model[]} records The array of records that were removed (In the order they appear in the Store)
          * @param {Number[]} indexes The indexes of the records that were removed
+         * @param {Boolean} isMove `true` if the child nodes are being removed so they can be moved to another position in this Store.
          */
 
         /**
@@ -349,7 +351,7 @@ Ext.define('Ext.data.AbstractStore', {
          * other fields. See the Association classes source code for examples. This should not need to be used by application developers.
          */
         Ext.applyIf(me, {
-            modelDefaults: {}
+            modelDefaults: null
         });
 
         //Supports the 3.x style of simply passing an array of fields to the store, implicitly creating a model
@@ -920,6 +922,7 @@ Ext.define('Ext.data.AbstractStore', {
         var me = this;
 
         if (!me.isDestroyed) {
+            me.clearListeners();
             if (me.storeId) {
                 Ext.data.StoreManager.unregister(me);
             }
@@ -929,7 +932,6 @@ Ext.define('Ext.data.AbstractStore', {
                 me.reader.destroyReader();
             }
             me.proxy = me.reader = me.writer = null;
-            me.clearListeners();
             me.isDestroyed = true;
 
             if (me.implicitModel) {

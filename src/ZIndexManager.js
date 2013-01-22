@@ -86,9 +86,6 @@ Ext.define('Ext.ZIndexManager', {
                 zIndex = comp.setZIndex(zIndex);
             }
         }
-
-        // Activate new topmost
-        this._activateLast();
         return zIndex;
     },
 
@@ -170,36 +167,40 @@ Ext.define('Ext.ZIndexManager', {
         var me = this,
             zIndex = comp.el.getStyle('zIndex') - 4,
             maskTarget = comp.floatParent ? comp.floatParent.getTargetEl() : comp.container,
-            viewSize = maskTarget.getBox();
+            mask = me.mask,
+            shim = me.maskShim,
+            viewSize;
 
-        if (!me.mask) {
+        if (!mask) {
             if (Ext.isIE6) {
-                me.maskShim = Ext.getBody().createChild({
+                shim = me.maskShim = Ext.getBody().createChild({
                     tag: 'iframe',
                     cls : Ext.baseCSSPrefix + 'shim ' + Ext.baseCSSPrefix + 'mask-shim'
                 });
-                me.maskShim.setVisibilityMode(Ext.Element.DISPLAY);
+                shim.setVisibilityMode(Ext.Element.DISPLAY);
             }
 
-            me.mask = Ext.getBody().createChild({
+            mask = me.mask = Ext.getBody().createChild({
                 cls: Ext.baseCSSPrefix + 'mask'
             });
-            me.mask.setVisibilityMode(Ext.Element.DISPLAY);
-            me.mask.on('click', me._onMaskClick, me);
+            mask.setVisibilityMode(Ext.Element.DISPLAY);
+            mask.on('click', me._onMaskClick, me);
         }
+        
+        mask.maskTarget = maskTarget;
+        viewSize = me.getMaskBox();
 
-        if (me.maskShim) {
-            me.maskShim.setStyle('zIndex', zIndex);
-            me.maskShim.show();
-            me.maskShim.setBox(viewSize);
+        if (shim) {
+            shim.setStyle('zIndex', zIndex);
+            shim.show();
+            shim.setBox(viewSize);
         }
-        me.mask.maskTarget = maskTarget;
-        me.mask.setStyle('zIndex', zIndex);
+        mask.setStyle('zIndex', zIndex);
 
         // setting mask box before showing it in an IE7 strict iframe within a quirks page
         // can cause body scrolling [EXTJSIV-6219]
-        me.mask.show();
-        me.mask.setBox(viewSize);
+        mask.show();
+        mask.setBox(viewSize);
     },
 
     _hideModalMask: function() {
@@ -220,10 +221,25 @@ Ext.define('Ext.ZIndexManager', {
             this.front.focus();
         }
     },
+    
+    getMaskBox: function(){
+        var maskTarget = this.mask.maskTarget;
+        if (maskTarget.dom === document.body) {
+            return {
+                height: Math.max(document.body.scrollHeight, Ext.dom.Element.getDocumentHeight()),
+                width: Math.max(document.body.scrollWidth, document.documentElement.clientWidth),
+                x: 0,
+                y: 0
+            };
+        } else {
+            return maskTarget.getBox();
+        } 
+    },
 
     _onContainerResize: function() {
-        var mask = this.mask,
-            maskShim = this.maskShim,
+        var me = this,
+            mask = me.mask,
+            maskShim = me.maskShim,
             maskTarget,
             viewSize;
 
@@ -237,14 +253,7 @@ Ext.define('Ext.ZIndexManager', {
             }
             maskTarget = mask.maskTarget;
 
-            if (maskTarget.dom === document.body) {
-                viewSize = {
-                    height: Math.max(document.body.scrollHeight, Ext.dom.Element.getDocumentHeight()),
-                    width: Math.max(document.body.scrollWidth, document.documentElement.clientWidth)
-                };
-            } else {
-                viewSize = maskTarget.getViewSize(true);
-            }
+            viewSize = me.getMaskBox();
             if (maskShim) {
                 maskShim.setSize(viewSize);
                 maskShim.show();
@@ -325,7 +334,7 @@ Ext.define('Ext.ZIndexManager', {
      * @return {Boolean} True if the dialog was brought to the front, else false
      * if it was already in front
      */
-    bringToFront : function(comp) {
+    bringToFront : function(comp, preventFocus) {
         var me = this,
             result = false,
             zIndexStack = me.zIndexStack;
@@ -342,6 +351,11 @@ Ext.define('Ext.ZIndexManager', {
             }
 
             me.assignZIndices();
+
+            // Activate new topmost
+            if (!preventFocus) {
+                this._activateLast();
+            }
             result = true;
             this.front = comp;
         }

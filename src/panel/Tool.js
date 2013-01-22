@@ -237,6 +237,8 @@ Ext.define('Ext.panel.Tool', {
         me.type = type;
         if (me.rendered) {
             me.toolEl.dom.className = me.baseCls + '-' + type;
+        } else {
+            me.renderData.type = type;
         }
         return me;
     },
