@@ -94,8 +94,19 @@ Ext.define('Ext.calendar.form.field.DateRange', {
         me.endDate = me.down('#' + me.id + '-end-date');
         me.allDay = me.down('#' + me.id + '-allday');
         me.toLabel = me.down('#' + me.id + '-to-label');
+
+        me.startDate.validateOnChange = me.endDate.validateOnChange = false,
+
+        me.startDate.isValid = me.endDate.isValid = function() {
+                                    var me = this,
+                                        valid = Ext.isDate(me.getValue());
+                                    if (!valid) {
+                                        me.focus();
+                                    }
+                                    return valid;
+                                 };
     },
-    
+
     getFieldConfigs: function() {
         var me = this;
         return [
@@ -115,7 +126,7 @@ Ext.define('Ext.calendar.form.field.DateRange', {
             format: this.dateFormat,
             width: 100,
             listeners: {
-                'change': {
+                'blur': {
                     fn: function(){
                         this.onFieldChange('date', 'start');
                     },
@@ -153,7 +164,7 @@ Ext.define('Ext.calendar.form.field.DateRange', {
             hideLabel: true,
             width: 100,
             listeners: {
-                'change': {
+                'blur': {
                     fn: function(){
                         this.onFieldChange('date', 'end');
                     },
@@ -256,6 +267,10 @@ Ext.define('Ext.calendar.form.field.DateRange', {
             endField = me.down('#' + me.id + '-end-' + type),
             startValue = me.getDT('start'),
             endValue = me.getDT('end');
+
+        if (!startValue || !endValue) {
+            return;
+        }
 
         if(startValue > endValue){
             if(startend=='start'){

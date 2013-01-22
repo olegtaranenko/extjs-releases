@@ -25,13 +25,13 @@
  *     @example
  *     Ext.create('Ext.data.Store', {
  *         storeId:'employeeStore',
- *         fields:['firstname', 'lastname', 'senority', 'dep', 'hired'],
+ *         fields:['firstname', 'lastname', 'seniority', 'dep', 'hired'],
  *         data:[
- *             {firstname:&quot;Michael&quot;, lastname:&quot;Scott&quot;, senority:7, dep:&quot;Manangement&quot;, hired:&quot;01/10/2004&quot;},
- *             {firstname:&quot;Dwight&quot;, lastname:&quot;Schrute&quot;, senority:2, dep:&quot;Sales&quot;, hired:&quot;04/01/2004&quot;},
- *             {firstname:&quot;Jim&quot;, lastname:&quot;Halpert&quot;, senority:3, dep:&quot;Sales&quot;, hired:&quot;02/22/2006&quot;},
- *             {firstname:&quot;Kevin&quot;, lastname:&quot;Malone&quot;, senority:4, dep:&quot;Accounting&quot;, hired:&quot;06/10/2007&quot;},
- *             {firstname:&quot;Angela&quot;, lastname:&quot;Martin&quot;, senority:5, dep:&quot;Accounting&quot;, hired:&quot;10/21/2008&quot;}
+ *             {firstname:&quot;Michael&quot;, lastname:&quot;Scott&quot;, seniority:7, dep:&quot;Management&quot;, hired:&quot;01/10/2004&quot;},
+ *             {firstname:&quot;Dwight&quot;, lastname:&quot;Schrute&quot;, seniority:2, dep:&quot;Sales&quot;, hired:&quot;04/01/2004&quot;},
+ *             {firstname:&quot;Jim&quot;, lastname:&quot;Halpert&quot;, seniority:3, dep:&quot;Sales&quot;, hired:&quot;02/22/2006&quot;},
+ *             {firstname:&quot;Kevin&quot;, lastname:&quot;Malone&quot;, seniority:4, dep:&quot;Accounting&quot;, hired:&quot;06/10/2007&quot;},
+ *             {firstname:&quot;Angela&quot;, lastname:&quot;Martin&quot;, seniority:5, dep:&quot;Accounting&quot;, hired:&quot;10/21/2008&quot;}
  *         ]
  *     });
  *
@@ -42,7 +42,7 @@
  *             {text: 'First Name',  dataIndex:'firstname'},
  *             {text: 'Last Name',  dataIndex:'lastname'},
  *             {text: 'Hired Month',  dataIndex:'hired', xtype:'datecolumn', format:'M'},
- *             {text: 'Department (Yrs)', xtype:'templatecolumn', tpl:'{dep} ({senority})'}
+ *             {text: 'Department (Yrs)', xtype:'templatecolumn', tpl:'{dep} ({seniority})'}
  *         ],
  *         width: 400,
  *         forceFit: true,
@@ -420,7 +420,7 @@ Ext.define('Ext.grid.column.Column', {
             i,
             columns = [],
             state = {
-                id: me.stateId || me.headerId
+                id: me.getStateId()
             };
 
         me.savePropsToState(['hidden', 'sortable', 'locked', 'flex', 'width'], state);
@@ -442,6 +442,10 @@ Ext.define('Ext.grid.column.Column', {
             delete state.flex; // width wins
         }
         return state;
+    },
+
+    getStateId: function () {
+        return this.stateId || this.headerId;
     },
 
 <span id='Ext-grid-column-Column-method-setText'>    /**

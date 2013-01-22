@@ -86,7 +86,7 @@ Ext.define('SimpleTasks.ux.ReminderColumn', {
             target = Ext.get(e.getTarget());
 
         if (target.hasCls(cssPrefix + 'grid-reminder')) {
-            if(type === 'mousedown') {
+            if(type === 'click') {
                 if(!me.menu) {
                     me.initMenu();
                 }

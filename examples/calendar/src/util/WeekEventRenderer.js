@@ -43,7 +43,7 @@ Ext.define('Ext.calendar.util.WeekEventRenderer', {
                             tag: 'td',
                             cls: 'ext-cal-ev',
                             id: o.id + '-empty-0-day-' + Ext.Date.format(dt, 'Ymd'),
-                            html: '&nbsp;'
+                            html: '&#160;'
                         };
                         if (dayCount > 1) {
                             cellCfg.colspan = dayCount;

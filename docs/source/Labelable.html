@@ -42,7 +42,6 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
 
     autoEl: {
         tag: 'table',
-        cellspacing: 0,
         cellpadding: 0
     },
 
@@ -181,7 +180,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
      */
     activeErrorsTpl: [
         '&lt;tpl if=&quot;errors &amp;&amp; errors.length&quot;&gt;',
-            '&lt;ul&gt;&lt;tpl for=&quot;errors&quot;&gt;&lt;li&lt;tpl if=&quot;xindex == xcount&quot;&gt; class=&quot;last&quot;&lt;/tpl&gt;&gt;{.}&lt;/li&gt;&lt;/tpl&gt;&lt;/ul&gt;',
+            '&lt;ul&gt;&lt;tpl for=&quot;errors&quot;&gt;&lt;li&gt;{.}&lt;/li&gt;&lt;/tpl&gt;&lt;/ul&gt;',
         '&lt;/tpl&gt;'
     ],
 
@@ -536,6 +535,13 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
 
         return data;
     },
+    
+    beforeLabelableRender: function() {
+        var me = this;
+        if (me.ownerLayout) {
+            me.addCls(Ext.baseCSSPrefix + me.ownerLayout.type + '-form-item');
+        }
+    },
 
     onLabelableRender: function() {
         var me = this,
@@ -610,7 +616,7 @@ Ext.define(&quot;Ext.form.Labelable&quot;, {
         if (labelAlign !== 'top') {
             result = 'valign=&quot;top&quot; halign=&quot;' + labelAlign + '&quot; width=&quot;' + (me.labelWidth + me.labelPad) + '&quot;';
         }
-        return result;
+        return result + ' class=&quot;' + Ext.baseCSSPrefix + 'field-label-cell&quot;';
     },
     
 <span id='Ext-form-Labelable-method-getLabelStyle'>    /**

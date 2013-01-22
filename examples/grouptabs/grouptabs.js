@@ -1,19 +1,3 @@
-Ext.Loader.setPath({
-    'Ext.ux': '../ux/',
-    'Ext.app': '../portal/classes/'
-});
-
-Ext.require([
-    'Ext.Viewport',
-    'Ext.tip.QuickTipManager',
-    'Ext.tab.Panel',
-    'Ext.ux.GroupTabPanel',
-    'Ext.grid.*',
-    'Ext.app.PortalColumn',
-    'Ext.app.PortalDropZone',
-    'Ext.app.Portlet'
-]);
-
 Ext.onReady(function () {
     Ext.tip.QuickTipManager.init();
 

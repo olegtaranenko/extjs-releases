@@ -7,8 +7,8 @@ Ext.samples = {
                     "text": "Kitchen Sink",
                     "url": "kitchensink/index.html",
                     "icon": "kitchensink.gif",
-                    "desc": "Showcase of Ext JS components using the new Neptune theme in Ext JS 4.1.",
-                    "status": "new"
+                    "desc": "Showcase of Ext JS components using a preview release of the new Neptune theme",
+                    "status": "Webkit Only"
                 },
                 {
                     "text": "Feed Viewer",
@@ -255,6 +255,13 @@ Ext.samples = {
                     "icon": "grid-summary.gif",
                     "desc": "Advanced grouping grid that allows cell editing and includes custom dynamic summary calculations. With column locking capability",
                     "status": "new"
+                },
+                {
+                    "text": "Infinite Grid with remote filter",
+                    "url": "grid/infinite-scroll-with-filter.html",
+                    "icon": "grid-infinite-scroll.gif",
+                    "desc": "Sample grid which scrolls through thousands of rows dynamically loaded from a server with a filtering UI",
+                    "status": "new"
                 }
             ]
         },
@@ -438,6 +445,13 @@ Ext.samples = {
                    "icon": "tabs-adv.gif",
                    "desc": "Demonstrates the TabPanel overflow menu extension, which makes management of large numbers of tabs easier",
                    "status": "updated"
+                },
+                {
+                   "text": "Group Tabs",
+                   "url": "grouptabs/grouptabs.html",
+                   "icon": "group-tabs.gif",
+                   "desc": "A custom example on how to setup tab grouping using vertical tabs.",
+                   "status": "new"
                 }
             ]
         },

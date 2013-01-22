@@ -39,7 +39,7 @@ Ext.define('Ext.picker.Month', {
         '&lt;div id=&quot;{id}-bodyEl&quot; class=&quot;{baseCls}-body&quot;&gt;',
           '&lt;div id=&quot;{id}-monthEl&quot; class=&quot;{baseCls}-months&quot;&gt;',
               '&lt;tpl for=&quot;months&quot;&gt;',
-                  '&lt;div style=&quot;{parent.monthStyle}&quot; class=&quot;{parent.baseCls}-item {parent.baseCls}-month&quot;&gt;&lt;a href=&quot;#&quot; hidefocus=&quot;on&quot;&gt;{.}&lt;/a&gt;&lt;/div&gt;',
+                  '&lt;div class=&quot;{parent.baseCls}-item {parent.baseCls}-month&quot;&gt;&lt;a style=&quot;{parent.monthStyle}&quot; href=&quot;#&quot; hidefocus=&quot;on&quot;&gt;{.}&lt;/a&gt;&lt;/div&gt;',
               '&lt;/tpl&gt;',
           '&lt;/div&gt;',
           '&lt;div id=&quot;{id}-yearEl&quot; class=&quot;{baseCls}-years&quot;&gt;',
@@ -242,7 +242,7 @@ Ext.define('Ext.picker.Month', {
         me.nextEl.addClsOnOver(me.baseCls + '-yearnav-next-over');
         me.updateBody();
         
-        if (!me.monthMargin) {
+        if (!Ext.isDefined(me.monthMargin)) {
             Ext.picker.Month.prototype.monthMargin = me.calculateMonthMargin();
         }
     },

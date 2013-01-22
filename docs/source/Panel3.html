@@ -240,14 +240,14 @@
  *     @example
  *     var store = Ext.create('Ext.data.Store', {
  *         storeId:'employeeStore',
- *         fields:['name', 'senority', 'department'],
+ *         fields:['name', 'seniority', 'department'],
  *         groupField: 'department',
  *         data: {'employees':[
- *             { &quot;name&quot;: &quot;Michael Scott&quot;,  &quot;senority&quot;: 7, &quot;department&quot;: &quot;Manangement&quot; },
- *             { &quot;name&quot;: &quot;Dwight Schrute&quot;, &quot;senority&quot;: 2, &quot;department&quot;: &quot;Sales&quot; },
- *             { &quot;name&quot;: &quot;Jim Halpert&quot;,    &quot;senority&quot;: 3, &quot;department&quot;: &quot;Sales&quot; },
- *             { &quot;name&quot;: &quot;Kevin Malone&quot;,   &quot;senority&quot;: 4, &quot;department&quot;: &quot;Accounting&quot; },
- *             { &quot;name&quot;: &quot;Angela Martin&quot;,  &quot;senority&quot;: 5, &quot;department&quot;: &quot;Accounting&quot; }
+ *             { &quot;name&quot;: &quot;Michael Scott&quot;,  &quot;seniority&quot;: 7, &quot;department&quot;: &quot;Management&quot; },
+ *             { &quot;name&quot;: &quot;Dwight Schrute&quot;, &quot;seniority&quot;: 2, &quot;department&quot;: &quot;Sales&quot; },
+ *             { &quot;name&quot;: &quot;Jim Halpert&quot;,    &quot;seniority&quot;: 3, &quot;department&quot;: &quot;Sales&quot; },
+ *             { &quot;name&quot;: &quot;Kevin Malone&quot;,   &quot;seniority&quot;: 4, &quot;department&quot;: &quot;Accounting&quot; },
+ *             { &quot;name&quot;: &quot;Angela Martin&quot;,  &quot;seniority&quot;: 5, &quot;department&quot;: &quot;Accounting&quot; }
  *         ]},
  *         proxy: {
  *             type: 'memory',
@@ -263,7 +263,7 @@
  *         store: Ext.data.StoreManager.lookup('employeeStore'),
  *         columns: [
  *             { header: 'Name',     dataIndex: 'name' },
- *             { header: 'Senority', dataIndex: 'senority' }
+ *             { header: 'Seniority', dataIndex: 'seniority' }
  *         ],
  *         features: [{ftype:'grouping'}],
  *         width: 200,

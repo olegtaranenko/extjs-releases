@@ -9,32 +9,31 @@
   <link rel="shortcut icon" type="image/ico" href="favicon.ico" />
   <link rel="stylesheet" href="resources/css/app.css" type="text/css" />
   <link rel="stylesheet" href="resources/prettify/prettify.css" type="text/css" />
-  <!--[if IE]>
-    <link rel="stylesheet" href="resources/css/ie.css" type="text/css" />
-    <link rel="stylesheet" href="resources/css/welcome_ie6.css" type="text/css" />
-  <![endif]-->
 
   <!-- Async script to not block while loading TypeKit fonts -->
+  <!-- TypeKit font-set is only registered for sencha.com and localhost -->
   <script type="text/javascript">
   (function() {
-    var TypekitConfig = {
-      kitId: 'uxj6dew'
-    };
-    var tk = document.createElement('script');
-    tk.src = '//use.typekit.com/' + TypekitConfig.kitId + '.js';
-    tk.type = 'text/javascript';
-    tk.async = 'true';
-    tk.onload = tk.onreadystatechange = function() {
-      var rs = this.readyState;
-      if (rs && rs != 'complete' && rs != 'loaded') return;
-      try { Typekit.load(TypekitConfig); } catch (e) {}
-    };
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(tk, s);
+    if (/sencha.com$|localhost$/.test(window.location.hostname)) {
+      var TypekitConfig = {
+        kitId: 'uxj6dew'
+      };
+      var tk = document.createElement('script');
+      tk.src = '//use.typekit.com/' + TypekitConfig.kitId + '.js';
+      tk.type = 'text/javascript';
+      tk.async = 'true';
+      tk.onload = tk.onreadystatechange = function() {
+        var rs = this.readyState;
+        if (rs && rs != 'complete' && rs != 'loaded') return;
+        try { Typekit.load(TypekitConfig); } catch (e) {}
+      };
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(tk, s);
+    }
   })();
   </script>
 
-  <script type="text/javascript" src="extjs/ext-all.js"></script>
+  <script type="text/javascript" src="../ext.js"></script>
   <script type="text/javascript" src="data.js"></script>
   <script type="text/javascript" src="app.js"></script>
   <script type="text/javascript" src="resources/prettify/prettify.js"></script>
@@ -681,6 +680,7 @@
 <ul>
 <li><a href='#!/guide/getting_started'>Getting Started with Ext JS 4</a></li>
 <li><a href='#!/guide/upgrade'>Upgrade Guide</a></li>
+<li><a href='#!/guide/upgrade_41'>Upgrade 4.0 to 4.1</a></li>
 <li><a href='#!/guide/performance'>Performance Guide</a></li>
 </ul>
 <h3>Concepts</h3>
@@ -715,7 +715,7 @@
 </ul>
         </div>
 
-  <div id='footer-content' style='display: none'>Ext JS 4.1.0 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> 3.7.0. <a href='http://www.sencha.com/legal/terms-of-use/'>Terms of Use</a></div>
+  <div id='footer-content' style='display: none'>Ext JS 4.1.0 Docs - Generated with <a href='https://github.com/senchalabs/jsduck'>JSDuck</a> 3.9.0.pre. <a href='http://www.sencha.com/legal/terms-of-use/'>Terms of Use</a></div>
 
   
 

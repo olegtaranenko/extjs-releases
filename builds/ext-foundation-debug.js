@@ -5,15 +5,18 @@ Copyright (c) 2011-2012 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
-Pre-release code in the Ext repository is intended for development purposes only and will
-not always be stable. 
+GNU General Public License Usage
+This file may be used under the terms of the GNU General Public License version 3.0 as
+published by the Free Software Foundation and appearing in the file LICENSE included in the
+packaging of this file.
 
-Use of pre-release code is permitted with your application at your own risk under standard
-Ext license terms. Public redistribution is prohibited.
+Please review the following information to ensure the GNU General Public License version 3.0
+requirements will be met: http://www.gnu.org/copyleft/gpl.html.
 
-For early licensing, please contact us at licensing@sencha.com
+If you are unsure which license is appropriate for your use, please contact the sales department
+at http://www.sencha.com/contact.
 
-Build date: 2012-04-09 21:11:41 (689b0758837b782dcb0747ba1c4d8ba76344070d)
+Build date: 2012-04-20 14:10:47 (19f55ab932145a3443b228045fa80950dfeaf9cc)
 */
 
 
@@ -530,7 +533,7 @@ Ext.globalEval = Ext.global.execScript
 (function() {
 
 
-var version = '4.1.0RC', Version;
+var version = '4.1.0', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         
@@ -800,7 +803,7 @@ Ext.String = (function() {
                 '&gt;'      :   '>',
                 '&lt;'      :   '<',
                 '&quot;'    :   '"',
-                '&apos;'    :   "'"
+                '&#39;'     :   "'"
             });
         },
 
@@ -2154,7 +2157,7 @@ var TemplateClass = function(){},
     },
 
     
-    merge: function(source) {
+    merge: function(destination) {
         var i = 1,
             ln = arguments.length,
             mergeFn = ExtObject.merge,
@@ -2167,25 +2170,25 @@ var TemplateClass = function(){},
             for (key in object) {
                 value = object[key];
                 if (value && value.constructor === Object) {
-                    sourceKey = source[key];
+                    sourceKey = destination[key];
                     if (sourceKey && sourceKey.constructor === Object) {
                         mergeFn(sourceKey, value);
                     }
                     else {
-                        source[key] = cloneFn(value);
+                        destination[key] = cloneFn(value);
                     }
                 }
                 else {
-                    source[key] = value;
+                    destination[key] = value;
                 }
             }
         }
 
-        return source;
+        return destination;
     },
 
     
-    mergeIf: function(source) {
+    mergeIf: function(destination) {
         var i = 1,
             ln = arguments.length,
             cloneFn = Ext.clone,
@@ -2195,20 +2198,20 @@ var TemplateClass = function(){},
             object = arguments[i];
 
             for (key in object) {
-                if (!(key in source)) {
+                if (!(key in destination)) {
                     value = object[key];
 
                     if (value && value.constructor === Object) {
-                        source[key] = cloneFn(value);
+                        destination[key] = cloneFn(value);
                     }
                     else {
-                        source[key] = value;
+                        destination[key] = value;
                     }
                 }
             }
         }
 
-        return source;
+        return destination;
     },
 
     
@@ -2877,6 +2880,7 @@ Ext.Date = {
             s:"(\\d{1,2})"
         },
         
+        
         a: {
             g:1,
             c:"if (/(am)/i.test(results[{0}])) {\n"
@@ -2885,6 +2889,8 @@ Ext.Date = {
             s:"(am|pm|AM|PM)",
             calcAtEnd: true
         },
+        
+        
         A: {
             g:1,
             c:"if (/(am)/i.test(results[{0}])) {\n"
@@ -2893,6 +2899,7 @@ Ext.Date = {
             s:"(AM|PM|am|pm)",
             calcAtEnd: true
         },
+        
         g: {
             g:1,
             c:"h = parseInt(results[{0}], 10);\n",
@@ -3034,11 +3041,17 @@ Ext.Date = {
 
     
     format: function(date, format) {
-        if (utilDate.formatFunctions[format] == null) {
+        var formatFunctions = utilDate.formatFunctions;
+
+        if (!Ext.isDate(date)) {
+            return '';
+        }
+
+        if (formatFunctions[format] == null) {
             utilDate.createFormat(format);
         }
-        var result = utilDate.formatFunctions[format].call(date);
-        return result + '';
+
+        return formatFunctions[format].call(date) + '';
     },
 
     
@@ -3341,7 +3354,7 @@ var noArgs = [],
         },
 
         
-        '$onExtended': [],
+        $onExtended: [],
 
         
         triggerExtended: function() {
@@ -4131,7 +4144,7 @@ var noArgs = [],
         Class.triggerExtended.apply(Class, arguments);
 
         if (data.onClassExtended) {
-            Class.onExtended(data.onClassExtended);
+            Class.onExtended(data.onClassExtended, Class);
             delete data.onClassExtended;
         }
 
@@ -5320,6 +5333,14 @@ Ext.Loader = new function() {
         },
 
         
+        isAClassNameWithAKnownPrefix: function(className) {
+            var prefix = Loader.getPrefix(className);
+
+            
+            return prefix !== '' && prefix !== className;
+        },
+
+        
         require: function(expressions, fn, scope, excludes) {
             if (fn) {
                 fn.call(scope);
@@ -6098,8 +6119,8 @@ Ext.Error = Ext.extend(Error, {
     
     toString: function(){
         var me = this,
-            className = me.className ? me.className  : '',
-            methodName = me.methodName ? '.' + me.methodName + '(): ' : '',
+            className = me.sourceClass ? me.sourceClass : '',
+            methodName = me.sourceMethod ? '.' + me.sourceMethod + '(): ' : '',
             msg = me.msg || '(No description provided)';
 
         return className + methodName + msg;

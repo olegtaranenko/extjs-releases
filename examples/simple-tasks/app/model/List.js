@@ -4,7 +4,7 @@ Ext.define('SimpleTasks.model.List', {
         { name: 'id', type: 'int' },
         { name: 'name' },
         // if we are using local storage, we need to persist the index field so the ordering of tree nodes will be preserved
-        {name: 'index', type: 'int', defaultValue: null, persist: !!SimpleTasksSettings.useLocalStorage},
+        {name: 'index', type: 'int', defaultValue: null, persist: !!SimpleTasksSettings.useLocalStorage}
     ],
 
     proxy: SimpleTasksSettings.useLocalStorage ? {

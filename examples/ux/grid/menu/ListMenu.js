@@ -31,8 +31,14 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
     single : false,
 
     constructor : function (cfg) {
-        this.selected = [];
-        this.addEvents(
+        var me = this,
+            options,
+            i,
+            len,
+            value;
+            
+        me.selected = [];
+        me.addEvents(
             /**
              * @event checkchange
              * Fires when there is a change in checked items from this list
@@ -42,42 +48,50 @@ Ext.define('Ext.ux.grid.menu.ListMenu', {
             'checkchange'
         );
 
-        this.callParent([cfg = cfg || {}]);
+        me.callParent([cfg = cfg || {}]);
 
         if(!cfg.store && cfg.options) {
-            var options = [];
-            for(var i = 0, len = cfg.options.length; i < len; i++){
-                var value = cfg.options[i];
+            options = [];
+            for(i = 0, len = cfg.options.length; i < len; i++){
+                value = cfg.options[i];
                 switch(Ext.type(value)){
                     case 'array':  options.push(value); break;
-                    case 'object': options.push([value.id, value[this.labelField]]); break;
+                    case 'object': options.push([value.id, value[me.labelField]]); break;
                     case 'string': options.push([value, value]); break;
                 }
             }
 
-            this.store = Ext.create('Ext.data.ArrayStore', {
-                fields: ['id', this.labelField],
+            me.store = Ext.create('Ext.data.ArrayStore', {
+                fields: ['id', me.labelField],
                 data:   options,
                 listeners: {
-                    'load': this.onLoad,
-                    scope:  this
+                    load: me.onLoad,
+                    scope:  me
                 }
             });
-            this.loaded = true;
+            me.loaded = true;
+            me.autoStore = true;
         } else {
-            this.add({
-                text: this.loadingText,
+            me.add({
+                text: me.loadingText,
                 iconCls: 'loading-indicator'
             });
-            this.store.on('load', this.onLoad, this);
+            me.store.on('load', me.onLoad, me);
         }
     },
 
     destroy : function () {
-        if (this.store) {
-            this.store.destroyStore();
+        var me = this,
+            store = me.store;
+            
+        if (store) {
+            if (me.autoStore) {
+                store.destroyStore();
+            } else {
+                store.un('unload', me.onLoad, me);
+            }
         }
-        this.callParent();
+        me.callParent();
     },
 
     /**

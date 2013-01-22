@@ -4,7 +4,9 @@ Ext.require([
     'Ext.form.Panel',
     'Ext.ux.form.MultiSelect',
     'Ext.ux.form.ItemSelector',
-    'Ext.tip.QuickTipManager'
+    'Ext.tip.QuickTipManager',
+    'Ext.ux.ajax.JsonSimlet',
+    'Ext.ux.ajax.SimManager'
 ]);
 
 Ext.onReady(function(){
@@ -83,6 +85,18 @@ Ext.onReady(function(){
         }];
     }
 
+    Ext.ux.ajax.SimManager.init({
+        delay: 300,
+        defaultSimlet: null
+    }).register({
+        'Numbers': {
+            data: [[123,'One Hundred Twenty Three'],
+                    ['1', 'One'], ['2', 'Two'], ['3', 'Three'], ['4', 'Four'], ['5', 'Five'],
+                    ['6', 'Six'], ['7', 'Seven'], ['8', 'Eight'], ['9', 'Nine']],
+            stype: 'json'
+        }
+    });
+
     /*
      * Ext.ux.form.MultiSelect Example Code
      */
@@ -99,20 +113,31 @@ Ext.onReady(function(){
             name: 'multiselect',
             id: 'multiselect-field',
             allowBlank: false,
-            store: [[123,'One Hundred Twenty Three'],
-                    ['1', 'One'], ['2', 'Two'], ['3', 'Three'], ['4', 'Four'], ['5', 'Five'],
-                    ['6', 'Six'], ['7', 'Seven'], ['8', 'Eight'], ['9', 'Nine']],
+            store: {
+                fields: [ 'number', 'numberName' ],
+                proxy: {
+                    type: 'ajax',
+                    url: 'Numbers',
+                    reader: 'array'
+                },
+                autoLoad: true
+            },
+            valueField: 'number',
+            displayField: 'numberName',
             value: ['3', '4', '6'],
             ddReorder: true
         }],
         dockedItems: createDockedItems('multiselect-field')
     });
-    
+
     var ds = Ext.create('Ext.data.ArrayStore', {
-        data: [[123,'One Hundred Twenty Three'],
-            ['1', 'One'], ['2', 'Two'], ['3', 'Three'], ['4', 'Four'], ['5', 'Five'],
-            ['6', 'Six'], ['7', 'Seven'], ['8', 'Eight'], ['9', 'Nine']],
         fields: ['value','text'],
+        proxy: {
+            type: 'ajax',
+            url: 'Numbers',
+            reader: 'array'
+        },
+        autoLoad: true,
         sortInfo: {
             field: 'value',
             direction: 'ASC'

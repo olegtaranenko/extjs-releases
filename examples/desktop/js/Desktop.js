@@ -314,7 +314,7 @@ Ext.define('Ext.ux.desktop.Desktop', {
         });
 
         win.on({
-            afterrender: function () {
+            boxready: function () {
                 win.dd.xTickSize = me.xTickSize;
                 win.dd.yTickSize = me.yTickSize;
 

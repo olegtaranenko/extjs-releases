@@ -75,19 +75,21 @@ Ext.define('Ext.calendar.form.EventWindow', {
                 xtype: 'tbtext',
                 text: '<a href="#" id="tblink">Edit Details...</a>'
             },
-            '->', {
+            '->',
+            {
+                itemId: 'delete-btn',
+                text: 'Delete Event',
+                disabled: false,
+                handler: this.onDelete,
+                scope: this,
+                minWidth: 150,
+                hideMode: 'offsets'
+            },
+            {
                 text: 'Save',
                 disabled: false,
                 handler: this.onSave,
                 scope: this
-            },
-            {
-                itemId: 'delete-btn',
-                text: 'Delete',
-                disabled: false,
-                handler: this.onDelete,
-                scope: this,
-                hideMode: 'offsets'
             },
             {
                 text: 'Cancel',
@@ -163,6 +165,14 @@ Ext.define('Ext.calendar.form.EventWindow', {
         this.dateRangeField = this.down('#date-range');
         this.calendarField = this.down('#calendar');
         this.deleteButton = this.down('#delete-btn');
+
+        this.titleField.isValid = function() {
+                                        var valid = this.getValue().length > 0;
+                                        if (!valid) {
+                                            this.focus();
+                                        }
+                                        return valid;
+                                    };
     },
     
     // private
@@ -188,7 +198,7 @@ Ext.define('Ext.calendar.form.EventWindow', {
             M = Ext.calendar.data.EventMappings;
 
         this.callParent([anim, function(){
-            me.titleField.focus(false, 100);
+            me.titleField.focus(true, 100);
         }]);
         
         this.deleteButton[o.data && o.data[M.EventId.name] ? 'show': 'hide']();

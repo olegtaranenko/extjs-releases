@@ -265,12 +265,12 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
             }
         }
 
-        // We start with filters from our config and then merge on filters from the columns
-        // in the grid. The Grid columns take precedence.
-        Ext.Array.each(me.filterConfigs, function (fc) {
-            add(fc.dataIndex, fc);
+        // We start with filters from our config
+        Ext.Array.each(me.filterConfigs, function (filterConfig) {
+            add(filterConfig.dataIndex, filterConfig);
         });
 
+        // Then we merge on filters from the columns in the grid. The columns' filters take precedence.
         Ext.Array.each(grid.columns, function (column) {
             if (column.filterable === false) {
                 filters.removeAtKey(column.dataIndex);
@@ -278,12 +278,34 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
                 add(column.dataIndex, column.filter, column.filterable);
             }
         });
+        
 
         me.removeAll();
-        me.addFilters(filters.items);
+        if (filters.items) {
+            me.initializeFilters(filters.items);
+        }
 
         if (hadFilters) {
             me.applyState(null, state);
+        }
+    },
+
+<span id='Ext-ux-grid-FiltersFeature-method-initializeFilters'>    /**
+</span>     * @private
+     */
+    initializeFilters: function(filters) {
+        var me = this,
+            filtersLength = filters.length,
+            i, filter, FilterClass;
+
+        for (i = 0; i &lt; filtersLength; i++) {
+            filter = filters[i];
+            if (filter) {
+                FilterClass = me.getFilterClass(filter.type);
+                filter = filter.menu ? filter : new FilterClass(filter);
+                me.filters.add(filter);
+                Ext.util.Observable.capture(filter, this.onStateChange, this);
+            }
         }
     },
 
@@ -353,23 +375,26 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
      * @param {Object} state The hash of state values returned from the StateProvider.
      */
     applyState : function (grid, state) {
-        var key, filter;
-        this.applyingState = true;
-        this.clearFilters();
+        var me = this,
+            key, filter;
+        me.applyingState = true;
+        me.clearFilters();
         if (state.filters) {
             for (key in state.filters) {
-                filter = this.filters.get(key);
-                if (filter) {
-                    filter.setValue(state.filters[key]);
-                    filter.setActive(true);
+                if (state.filters.hasOwnProperty(key)) {
+                    filter = me.filters.get(key);
+                    if (filter) {
+                        filter.setValue(state.filters[key]);
+                        filter.setActive(true);
+                    }
                 }
             }
         }
-        this.deferredUpdate.cancel();
-        if (this.local) {
-            this.reload();
+        me.deferredUpdate.cancel();
+        if (me.local) {
+            me.reload();
         }
-        delete this.applyingState;
+        delete me.applyingState;
         delete state.filters;
     },
 
@@ -504,9 +529,8 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
 </span>     * @private
      * Handler for store's load event when configured for local filtering
      * @param {Object} store
-     * @param {Object} options
      */
-    onLoad : function (store, options) {
+    onLoad : function (store) {
         store.filterBy(this.getRecordFilter());
     },
 
@@ -540,6 +564,7 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
         if (me.local) {
             store.clearFilter(true);
             store.filterBy(me.getRecordFilter());
+            store.sort();
         } else {
             me.deferredUpdate.cancel();
             if (store.buffered) {
@@ -579,12 +604,34 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
      * @return {Ext.ux.grid.filter.Filter} The existing or newly created filter object.
      */
     addFilter : function (config) {
-        var Cls = this.getFilterClass(config.type),
-            filter = config.menu ? config : (new Cls(config));
-        this.filters.add(filter);
+        var me = this,
+            columns = me.getGridPanel().columns,
+            i, columnsLength, column, filtersLength, filter;
 
-        Ext.util.Observable.capture(filter, this.onStateChange, this);
-        return filter;
+        
+        for (i = 0, columnsLength = columns.length; i &lt; columnsLength; i++) {
+            column = columns[i];
+            if (column.dataIndex === config.dataIndex) {
+                column.filter = config;
+            }
+        }
+        
+        if (me.view.headerCt.menu) {
+            me.createFilters();
+        } else {
+            // Call getMenu() to ensure the menu is created, and so, also are the filters. We cannot call
+            // createFilters() withouth having a menu because it will cause in a recursion to applyState()
+            // that ends up to clear all the filter values. This is likely to happen when we reorder a column
+            // and then add a new filter before the menu is recreated.
+            me.view.headerCt.getMenu();
+        }
+        
+        for (i = 0, filtersLength = me.filters.items.length; i &lt; filtersLength; i++) {
+            filter = me.filters.items[i];
+            if (filter.dataIndex === config.dataIndex) {
+                return filter;
+            }
+        }
     },
 
 <span id='Ext-ux-grid-FiltersFeature-method-addFilters'>    /**
@@ -593,13 +640,10 @@ Ext.define('Ext.ux.grid.FiltersFeature', {
      */
     addFilters : function (filters) {
         if (filters) {
-            var i, len, filter;
-            for (i = 0, len = filters.length; i &lt; len; i++) {
-                filter = filters[i];
-                // if filter config found add filter for the column
-                if (filter) {
-                    this.addFilter(filter);
-                }
+            var me = this,
+                i, filtersLength;
+            for (i = 0, filtersLength = filters.length; i &lt; filtersLength; i++) {
+                me.addFilter(filters[i]);
             }
         }
     },

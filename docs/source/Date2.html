@@ -337,6 +337,7 @@ Ext.Date.parse('2009-02', 'Y-m'); // returns a Date object representing February
      */
     defaults: {},
 
+    //&lt;locale type=&quot;array&quot;&gt;
 <span id='Ext-Date-property-dayNames'>    /**
 </span>     * @property {String[]} dayNames
      * An array of textual day names.
@@ -350,7 +351,6 @@ Ext.Date.dayNames = [
 ];
 &lt;/code&gt;&lt;/pre&gt;
      */
-    //&lt;locale type=&quot;array&quot;&gt;
     dayNames : [
         &quot;Sunday&quot;,
         &quot;Monday&quot;,
@@ -362,6 +362,7 @@ Ext.Date.dayNames = [
     ],
     //&lt;/locale&gt;
 
+    //&lt;locale type=&quot;array&quot;&gt;
 <span id='Ext-Date-property-monthNames'>    /**
 </span>     * @property {String[]} monthNames
      * An array of textual month names.
@@ -375,7 +376,6 @@ Ext.Date.monthNames = [
 ];
 &lt;/code&gt;&lt;/pre&gt;
      */
-    //&lt;locale type=&quot;array&quot;&gt;
     monthNames : [
         &quot;January&quot;,
         &quot;February&quot;,
@@ -392,6 +392,7 @@ Ext.Date.monthNames = [
     ],
     //&lt;/locale&gt;
 
+    //&lt;locale type=&quot;object&quot;&gt;
 <span id='Ext-Date-property-monthNumbers'>    /**
 </span>     * @property {Object} monthNumbers
      * An object hash of zero-based javascript month numbers (with short month names as keys. note: keys are case-sensitive).
@@ -407,7 +408,6 @@ Ext.Date.monthNumbers = {
 };
 &lt;/code&gt;&lt;/pre&gt;
      */
-    //&lt;locale type=&quot;object&quot;&gt;
     monthNumbers : {
         January: 0,
         Jan: 0,
@@ -435,46 +435,46 @@ Ext.Date.monthNumbers = {
     },
     //&lt;/locale&gt;
     
+    //&lt;locale&gt;
 <span id='Ext-Date-property-defaultFormat'>    /**
 </span>     * @property {String} defaultFormat
      * &lt;p&gt;The date format string that the {@link Ext.util.Format#dateRenderer}
      * and {@link Ext.util.Format#date} functions use.  See {@link Ext.Date} for details.&lt;/p&gt;
      * &lt;p&gt;This may be overridden in a locale file.&lt;/p&gt;
      */
-    //&lt;locale&gt;
     defaultFormat : &quot;m/d/Y&quot;,
     //&lt;/locale&gt;
+    //&lt;locale type=&quot;function&quot;&gt;
 <span id='Ext-Date-method-getShortMonthName'>    /**
 </span>     * Get the short month name for the given month number.
      * Override this function for international dates.
      * @param {Number} month A zero-based javascript month number.
      * @return {String} The short month name.
      */
-    //&lt;locale type=&quot;function&quot;&gt;
     getShortMonthName : function(month) {
         return Ext.Date.monthNames[month].substring(0, 3);
     },
     //&lt;/locale&gt;
 
+    //&lt;locale type=&quot;function&quot;&gt;
 <span id='Ext-Date-method-getShortDayName'>    /**
 </span>     * Get the short day name for the given day number.
      * Override this function for international dates.
      * @param {Number} day A zero-based javascript day number.
      * @return {String} The short day name.
      */
-    //&lt;locale type=&quot;function&quot;&gt;
     getShortDayName : function(day) {
         return Ext.Date.dayNames[day].substring(0, 3);
     },
     //&lt;/locale&gt;
 
+    //&lt;locale type=&quot;function&quot;&gt;
 <span id='Ext-Date-method-getMonthNumber'>    /**
 </span>     * Get the zero-based javascript month number for the given short/full month name.
      * Override this function for international dates.
      * @param {String} name The short/full month name.
      * @return {Number} The zero-based javascript month number.
      */
-    //&lt;locale type=&quot;function&quot;&gt;
     getMonthNumber : function(name) {
         // handle camel casing for english month names (since the keys for the Ext.Date.monthNumbers hash are case sensitive)
         return Ext.Date.monthNumbers[name.substring(0, 1).toUpperCase() + name.substring(1, 3).toLowerCase()];
@@ -925,6 +925,7 @@ dt = Ext.Date.parse(&quot;2006-02-29 03:20:01&quot;, &quot;Y-m-d H:i:s&quot;, tr
          * even though it doesn't exactly match the spec. It gives much more flexibility
          * in being able to specify case insensitive regexes.
          */
+        //&lt;locale type=&quot;object&quot; property=&quot;parseCodes&quot;&gt;
         a: {
             g:1,
             c:&quot;if (/(am)/i.test(results[{0}])) {\n&quot;
@@ -933,6 +934,8 @@ dt = Ext.Date.parse(&quot;2006-02-29 03:20:01&quot;, &quot;Y-m-d H:i:s&quot;, tr
             s:&quot;(am|pm|AM|PM)&quot;,
             calcAtEnd: true
         },
+        //&lt;/locale&gt;
+        //&lt;locale type=&quot;object&quot; property=&quot;parseCodes&quot;&gt;
         A: {
             g:1,
             c:&quot;if (/(am)/i.test(results[{0}])) {\n&quot;
@@ -941,6 +944,7 @@ dt = Ext.Date.parse(&quot;2006-02-29 03:20:01&quot;, &quot;Y-m-d H:i:s&quot;, tr
             s:&quot;(AM|PM|am|pm)&quot;,
             calcAtEnd: true
         },
+        //&lt;/locale&gt;
         g: {
             g:1,
             c:&quot;h = parseInt(results[{0}], 10);\n&quot;,
@@ -1089,14 +1093,20 @@ dt = Ext.Date.parse(&quot;2006-02-29 03:20:01&quot;, &quot;Y-m-d H:i:s&quot;, tr
 </span>     * Formats a date given the supplied format string.
      * @param {Date} date The date to format
      * @param {String} format The format string
-     * @return {String} The formatted date
+     * @return {String} The formatted date or an empty string if date parameter is not a JavaScript Date object
      */
     format: function(date, format) {
-        if (utilDate.formatFunctions[format] == null) {
+        var formatFunctions = utilDate.formatFunctions;
+
+        if (!Ext.isDate(date)) {
+            return '';
+        }
+
+        if (formatFunctions[format] == null) {
             utilDate.createFormat(format);
         }
-        var result = utilDate.formatFunctions[format].call(date);
-        return result + '';
+
+        return formatFunctions[format].call(date) + '';
     },
 
 <span id='Ext-Date-method-getTimezone'>    /**
@@ -1259,12 +1269,12 @@ console.log(Ext.Date.dayNames[lastDay]); //output: 'Wednesday'
         };
     }()),
 
+    //&lt;locale type=&quot;function&quot;&gt;
 <span id='Ext-Date-method-getSuffix'>    /**
 </span>     * Get the English ordinal suffix of the current day (equivalent to the format specifier 'S').
      * @param {Date} date The date
      * @return {String} 'st, 'nd', 'rd' or 'th'.
      */
-    //&lt;locale type=&quot;function&quot;&gt;
     getSuffix : function(date) {
         switch (date.getDate()) {
             case 1:

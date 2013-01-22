@@ -128,7 +128,7 @@
                     "name": "TextMetrics.js"
                 },
                 {
-                    "path": "../../../../platform/src/app/",
+                    "path": "../../../src/app/",
                     "name": "Controller.js"
                 },
                 {
@@ -192,7 +192,7 @@
                     "name": "Component.js"
                 },
                 {
-                    "path": "../../../../platform/src/app/",
+                    "path": "../../../src/app/",
                     "name": "EventBus.js"
                 },
                 {

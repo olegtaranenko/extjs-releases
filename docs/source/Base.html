@@ -107,15 +107,13 @@ var noArgs = [],
             //&lt;/feature&gt;
         },
 
-<span id='Ext-Base-method-S-onExtended'>        /**
+<span id='Ext-Base-property-S-onExtended'>        /**
 </span>         * @private
-         * @param config
          */
-        '$onExtended': [],
+        $onExtended: [],
 
 <span id='Ext-Base-method-triggerExtended'>        /**
 </span>         * @private
-         * @param config
          */
         triggerExtended: function() {
             var callbacks = this.$onExtended,
@@ -132,7 +130,6 @@ var noArgs = [],
 
 <span id='Ext-Base-method-onExtended'>        /**
 </span>         * @private
-         * @param config
          */
         onExtended: function(fn, scope) {
             this.$onExtended.push({

@@ -438,7 +438,6 @@ Ext.define('PageAnalyzer.MainForm', {
                     xtype: 'panel',
                     layout: 'fit',
                     tbar: {
-                        layout: 'table',
                         items: [
                             {
                                 xtype: 'tbtext',
@@ -460,12 +459,7 @@ Ext.define('PageAnalyzer.MainForm', {
                                 itemId: 'targetUrl',
                                 stateId: 'targetUrlField',
                                 selectOnFocus: true,
-                                tdAttrs: {
-                                    width: '100%'
-                                },
-                                style: {
-                                    width: '100%'
-                                },
+                                flex: 1,
                                 enableKeyEvents: true,
                                 listeners: {
                                     keypress: function(f, e) {

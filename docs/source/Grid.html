@@ -29,7 +29,7 @@
  *             &quot;(name)&quot;: &quot;My Object&quot;,
  *             &quot;Created&quot;: Ext.Date.parse('10/15/2006', 'm/d/Y'),
  *             &quot;Available&quot;: false,
- *             &quot;Version&quot;: .01,
+ *             &quot;Version&quot;: 0.01,
  *             &quot;Description&quot;: &quot;A test object&quot;
  *         }
  *     });
@@ -231,7 +231,7 @@ Ext.define('Ext.grid.property.Grid', {
         var me = this,
             v, oldValue;
 
-        if (operation == Ext.data.Model.EDIT) {
+        if (me.rendered &amp;&amp; operation == Ext.data.Model.EDIT) {
             v = record.get(me.valueField);
             oldValue = record.modified.value;
             if (me.fireEvent('beforepropertychange', me.source, record.getId(), v, oldValue) !== false) {

@@ -54,7 +54,7 @@ Ext.define('SimpleTasks.view.tasks.ReminderWindow', {
                         [10080, '1 week'],
                         [20160, '2 weeks'],
                         [30240, '3 weeeks'],
-                        [40320, '4 weeks'],
+                        [40320, '4 weeks']
                     ]
                 }
             ],

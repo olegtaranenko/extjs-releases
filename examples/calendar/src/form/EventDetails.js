@@ -129,7 +129,7 @@ Ext.define('Ext.calendar.form.EventDetails', {
                 name: Ext.calendar.data.EventMappings.CalendarId.name
             });
             leftFields.splice(2, 0, this.calendarField);
-        };
+        }
 
         this.items = [{
             id: 'left-col',
@@ -147,16 +147,17 @@ Ext.define('Ext.calendar.form.EventDetails', {
         }];
 
         this.fbar = [{
+            cls: 'ext-del-btn',
+            itemId: this.id+'-del-btn',
+            text: 'Delete Event',
+            scope: this,
+            handler: this.onDelete,
+            minWidth: 150
+        },
+        {
             text: 'Save',
             scope: this,
             handler: this.onSave
-        },
-        {
-            cls: 'ext-del-btn',
-            itemId: this.id+'-del-btn',
-            text: 'Delete',
-            scope: this,
-            handler: this.onDelete
         },
         {
             text: 'Cancel',

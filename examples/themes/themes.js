@@ -527,9 +527,9 @@ function getStore () {
     return Ext.create('Ext.data.ArrayStore', {
         fields: [
            {name: 'company'},
-           {name: 'price', type: 'float'},
-           {name: 'change', type: 'float'},
-           {name: 'pctChange', type: 'float'},
+           {name: 'price', type: 'float', convert: null},
+           {name: 'change', type: 'float', convert: null},
+           {name: 'pctChange', type: 'float', convert: null},
            {name: 'lastChange', type: 'date', dateFormat: 'n/j h:ia'}
         ],
         sorters: {

@@ -47,7 +47,7 @@ Ext.define('Ext.panel.Header', {
 
     renderTpl: [
         '&lt;div id=&quot;{id}-body&quot; class=&quot;{baseCls}-body {bodyCls}',
-        '&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&quot;&lt;/tpl&gt;',
+        '&lt;tpl for=&quot;uiCls&quot;&gt; {parent.baseCls}-body-{parent.ui}-{.}&lt;/tpl&gt;&quot;',
         '&lt;tpl if=&quot;bodyStyle&quot;&gt; style=&quot;{bodyStyle}&quot;&lt;/tpl&gt;&gt;',
             '{%this.renderContainer(out,values)%}',
         '&lt;/div&gt;'

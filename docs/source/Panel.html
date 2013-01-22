@@ -304,6 +304,13 @@ Ext.define('Ext.panel.Panel', {
      *     });
      */
 
+<span id='Ext-panel-Panel-cfg-placeholderCollapseHideMode'>    /**
+</span>     * @cfg {Number} placeholderCollapseHideMode
+     * The {@link Ext.dom.Element#setVisibilityMode mode} for hiding collapsed panels when
+     * using {@link #collapseMode} &quot;placeholder&quot;.
+     */
+    placeholderCollapseHideMode: Ext.Element.VISIBILITY,
+
 <span id='Ext-panel-Panel-cfg-preventHeader'>    /**
 </span>     * @cfg {Boolean} preventHeader
      * @deprecated 4.1.0 Use {@link #header} instead.
@@ -945,7 +952,7 @@ Ext.define('Ext.panel.Panel', {
 
         // Append collapse tool if needed.
         if (me.collapseTool &amp;&amp; !me.collapseFirst) {
-            me.tools.push(me.collapseTool);
+            me.addTool(me.collapseTool);
         }
     },
 
@@ -1045,7 +1052,8 @@ Ext.define('Ext.panel.Panel', {
     },
 
     getTargetEl: function() {
-        return this.body || this.frameBody || this.el;
+        var me = this;
+        return me.body || me.protoBody || me.frameBody || me.el;
     },
 
     // the overrides below allow for collapsed regions inside the border layout to be hidden
@@ -1632,7 +1640,7 @@ Ext.define('Ext.panel.Panel', {
 
         if (me.rendered) {
             // We MUST NOT hide using display because that resets all scroll information.
-            me.el.setVisibilityMode(Ext.Element.VISIBILITY);
+            me.el.setVisibilityMode(me.placeholderCollapseHideMode);
             if (animate) {
                 me.el.addCls(floatCls);
                 placeholder.el.hide();
@@ -2079,7 +2087,8 @@ Ext.define('Ext.panel.Panel', {
                 floating: {
                     shadow: false
                 },
-                frame: (Ext.supports.CSS3BorderRadius &amp;&amp; !me.isWindow) ? me.frame : false,
+                frame: me.frame &amp;&amp; !me.alwaysFramed,
+                alwaysFramed: me.alwaysFramed,
                 overlapHeader: me.overlapHeader,
                 headerPosition: me.headerPosition,
                 baseCls: me.baseCls,

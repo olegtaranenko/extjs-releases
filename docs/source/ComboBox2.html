@@ -121,7 +121,7 @@ Ext.define('Ext.form.field.ComboBox', {
      */
     fieldSubTpl: [
         '&lt;div class=&quot;{hiddenDataCls}&quot; role=&quot;presentation&quot;&gt;&lt;/div&gt;',
-        '&lt;input id=&quot;{id}&quot; type=&quot;{type}&quot; {inputAttrTpl}',
+        '&lt;input id=&quot;{id}&quot; type=&quot;{type}&quot; {inputAttrTpl} class=&quot;{fieldCls} {typeCls}&quot; autocomplete=&quot;off&quot;',
             '&lt;tpl if=&quot;value&quot;&gt; value=&quot;{[Ext.util.Format.htmlEncode(values.value)]}&quot;&lt;/tpl&gt;',
             '&lt;tpl if=&quot;name&quot;&gt; name=&quot;{name}&quot;&lt;/tpl&gt;',
             '&lt;tpl if=&quot;placeholder&quot;&gt; placeholder=&quot;{placeholder}&quot;&lt;/tpl&gt;',
@@ -131,7 +131,7 @@ Ext.define('Ext.form.field.ComboBox', {
             '&lt;tpl if=&quot;disabled&quot;&gt; disabled=&quot;disabled&quot;&lt;/tpl&gt;',
             '&lt;tpl if=&quot;tabIdx&quot;&gt; tabIndex=&quot;{tabIdx}&quot;&lt;/tpl&gt;',
             '&lt;tpl if=&quot;fieldStyle&quot;&gt; style=&quot;{fieldStyle}&quot;&lt;/tpl&gt;',
-            'class=&quot;{fieldCls} {typeCls}&quot; autocomplete=&quot;off&quot; /&gt;',
+            '/&gt;',
         {
             compiled: true,
             disableFormats: true

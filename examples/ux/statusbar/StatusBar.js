@@ -161,7 +161,7 @@ Ext.define('Ext.ux.statusbar.StatusBar', {
      * Use `''` if the toolbar should collapse in height vertically when no text is
      * specified and there are no other items in the toolbar.
      */
-    emptyText : '&nbsp;',
+    emptyText : '&#160;',
 
     // private
     activeThreadId : 0,

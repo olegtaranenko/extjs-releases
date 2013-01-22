@@ -5,15 +5,18 @@ Copyright (c) 2011-2012 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
-Pre-release code in the Ext repository is intended for development purposes only and will
-not always be stable. 
+GNU General Public License Usage
+This file may be used under the terms of the GNU General Public License version 3.0 as
+published by the Free Software Foundation and appearing in the file LICENSE included in the
+packaging of this file.
 
-Use of pre-release code is permitted with your application at your own risk under standard
-Ext license terms. Public redistribution is prohibited.
+Please review the following information to ensure the GNU General Public License version 3.0
+requirements will be met: http://www.gnu.org/copyleft/gpl.html.
 
-For early licensing, please contact us at licensing@sencha.com
+If you are unsure which license is appropriate for your use, please contact the sales department
+at http://www.sencha.com/contact.
 
-Build date: 2012-04-09 21:11:41 (689b0758837b782dcb0747ba1c4d8ba76344070d)
+Build date: 2012-04-20 14:10:47 (19f55ab932145a3443b228045fa80950dfeaf9cc)
 */
 /**
  * @class Ext
@@ -59,7 +62,7 @@ Ext._startTime = new Date().getTime();
      * {@link Ext.Object#merge} instead.
      * @param {Object} object The receiver of the properties
      * @param {Object} config The source of the properties
-     * @param {Object} defaults A different object that will also be applied for default values
+     * @param {Object} [defaults] A different object that will also be applied for default values
      * @return {Object} returns obj
      */
     Ext.apply = function(object, config, defaults) {
@@ -762,7 +765,7 @@ Ext.globalEval = Ext.global.execScript
 (function() {
 
 // Current core version
-var version = '4.1.0RC', Version;
+var version = '4.1.0', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         /**
@@ -1213,7 +1216,7 @@ Ext.String = (function() {
                 '&gt;'      :   '>',
                 '&lt;'      :   '<',
                 '&quot;'    :   '"',
-                '&apos;'    :   "'"
+                '&#39;'     :   "'"
             });
         },
 
@@ -2353,7 +2356,7 @@ Ext.Number = new function() {
          * end. Negative values are offsets from the end of the array. If end is omitted,
          * all items up to the end of the array are copied.
          * @return {Array} The copied piece of the array.
-         * @method
+         * @method slice
          */
         // Note: IE6 will return [] on slice.call(x, undefined).
         slice: ([1,2].slice(1, undefined).length ?
@@ -3597,15 +3600,16 @@ var TemplateClass = function(){},
      *         isSuperCool: true,
      *         office: {
      *             size: 40000,
-     *             location: 'Redwood City'
+     *             location: 'Redwood City',
      *             isFun: true
      *         }
      *     }
      *
-     * @param {Object...} object Any number of objects to merge.
-     * @return {Object} merged The object that is created as a result of merging all the objects passed in.
+     * @param {Object} destination The object into which all subsequent objects are merged.
+     * @param {Object...} object Any number of objects to merge into the destination.
+     * @return {Object} merged The destination object with all passed objects merged in.
      */
-    merge: function(source) {
+    merge: function(destination) {
         var i = 1,
             ln = arguments.length,
             mergeFn = ExtObject.merge,
@@ -3618,28 +3622,28 @@ var TemplateClass = function(){},
             for (key in object) {
                 value = object[key];
                 if (value && value.constructor === Object) {
-                    sourceKey = source[key];
+                    sourceKey = destination[key];
                     if (sourceKey && sourceKey.constructor === Object) {
                         mergeFn(sourceKey, value);
                     }
                     else {
-                        source[key] = cloneFn(value);
+                        destination[key] = cloneFn(value);
                     }
                 }
                 else {
-                    source[key] = value;
+                    destination[key] = value;
                 }
             }
         }
 
-        return source;
+        return destination;
     },
 
     /**
      * @private
-     * @param source
+     * @param destination
      */
-    mergeIf: function(source) {
+    mergeIf: function(destination) {
         var i = 1,
             ln = arguments.length,
             cloneFn = Ext.clone,
@@ -3649,20 +3653,20 @@ var TemplateClass = function(){},
             object = arguments[i];
 
             for (key in object) {
-                if (!(key in source)) {
+                if (!(key in destination)) {
                     value = object[key];
 
                     if (value && value.constructor === Object) {
-                        source[key] = cloneFn(value);
+                        destination[key] = cloneFn(value);
                     }
                     else {
-                        source[key] = value;
+                        destination[key] = value;
                     }
                 }
             }
         }
 
-        return source;
+        return destination;
     },
 
     /**
@@ -4175,6 +4179,7 @@ Ext.Date.parse('2009-02', 'Y-m'); // returns a Date object representing February
      */
     defaults: {},
 
+    //<locale type="array">
     /**
      * @property {String[]} dayNames
      * An array of textual day names.
@@ -4188,7 +4193,6 @@ Ext.Date.dayNames = [
 ];
 </code></pre>
      */
-    //<locale type="array">
     dayNames : [
         "Sunday",
         "Monday",
@@ -4200,6 +4204,7 @@ Ext.Date.dayNames = [
     ],
     //</locale>
 
+    //<locale type="array">
     /**
      * @property {String[]} monthNames
      * An array of textual month names.
@@ -4213,7 +4218,6 @@ Ext.Date.monthNames = [
 ];
 </code></pre>
      */
-    //<locale type="array">
     monthNames : [
         "January",
         "February",
@@ -4230,6 +4234,7 @@ Ext.Date.monthNames = [
     ],
     //</locale>
 
+    //<locale type="object">
     /**
      * @property {Object} monthNumbers
      * An object hash of zero-based javascript month numbers (with short month names as keys. note: keys are case-sensitive).
@@ -4245,7 +4250,6 @@ Ext.Date.monthNumbers = {
 };
 </code></pre>
      */
-    //<locale type="object">
     monthNumbers : {
         January: 0,
         Jan: 0,
@@ -4273,46 +4277,46 @@ Ext.Date.monthNumbers = {
     },
     //</locale>
     
+    //<locale>
     /**
      * @property {String} defaultFormat
      * <p>The date format string that the {@link Ext.util.Format#dateRenderer}
      * and {@link Ext.util.Format#date} functions use.  See {@link Ext.Date} for details.</p>
      * <p>This may be overridden in a locale file.</p>
      */
-    //<locale>
     defaultFormat : "m/d/Y",
     //</locale>
+    //<locale type="function">
     /**
      * Get the short month name for the given month number.
      * Override this function for international dates.
      * @param {Number} month A zero-based javascript month number.
      * @return {String} The short month name.
      */
-    //<locale type="function">
     getShortMonthName : function(month) {
         return Ext.Date.monthNames[month].substring(0, 3);
     },
     //</locale>
 
+    //<locale type="function">
     /**
      * Get the short day name for the given day number.
      * Override this function for international dates.
      * @param {Number} day A zero-based javascript day number.
      * @return {String} The short day name.
      */
-    //<locale type="function">
     getShortDayName : function(day) {
         return Ext.Date.dayNames[day].substring(0, 3);
     },
     //</locale>
 
+    //<locale type="function">
     /**
      * Get the zero-based javascript month number for the given short/full month name.
      * Override this function for international dates.
      * @param {String} name The short/full month name.
      * @return {Number} The zero-based javascript month number.
      */
-    //<locale type="function">
     getMonthNumber : function(name) {
         // handle camel casing for english month names (since the keys for the Ext.Date.monthNumbers hash are case sensitive)
         return Ext.Date.monthNumbers[name.substring(0, 1).toUpperCase() + name.substring(1, 3).toLowerCase()];
@@ -4763,6 +4767,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
          * even though it doesn't exactly match the spec. It gives much more flexibility
          * in being able to specify case insensitive regexes.
          */
+        //<locale type="object" property="parseCodes">
         a: {
             g:1,
             c:"if (/(am)/i.test(results[{0}])) {\n"
@@ -4771,6 +4776,8 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
             s:"(am|pm|AM|PM)",
             calcAtEnd: true
         },
+        //</locale>
+        //<locale type="object" property="parseCodes">
         A: {
             g:1,
             c:"if (/(am)/i.test(results[{0}])) {\n"
@@ -4779,6 +4786,7 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
             s:"(AM|PM|am|pm)",
             calcAtEnd: true
         },
+        //</locale>
         g: {
             g:1,
             c:"h = parseInt(results[{0}], 10);\n",
@@ -4927,14 +4935,20 @@ dt = Ext.Date.parse("2006-02-29 03:20:01", "Y-m-d H:i:s", true); // returns null
      * Formats a date given the supplied format string.
      * @param {Date} date The date to format
      * @param {String} format The format string
-     * @return {String} The formatted date
+     * @return {String} The formatted date or an empty string if date parameter is not a JavaScript Date object
      */
     format: function(date, format) {
-        if (utilDate.formatFunctions[format] == null) {
+        var formatFunctions = utilDate.formatFunctions;
+
+        if (!Ext.isDate(date)) {
+            return '';
+        }
+
+        if (formatFunctions[format] == null) {
             utilDate.createFormat(format);
         }
-        var result = utilDate.formatFunctions[format].call(date);
-        return result + '';
+
+        return formatFunctions[format].call(date) + '';
     },
 
     /**
@@ -5097,12 +5111,12 @@ console.log(Ext.Date.dayNames[lastDay]); //output: 'Wednesday'
         };
     }()),
 
+    //<locale type="function">
     /**
      * Get the English ordinal suffix of the current day (equivalent to the format specifier 'S').
      * @param {Date} date The date
      * @return {String} 'st, 'nd', 'rd' or 'th'.
      */
-    //<locale type="function">
     getSuffix : function(date) {
         switch (date.getDate()) {
             case 1:
@@ -5397,13 +5411,11 @@ var noArgs = [],
 
         /**
          * @private
-         * @param config
          */
-        '$onExtended': [],
+        $onExtended: [],
 
         /**
          * @private
-         * @param config
          */
         triggerExtended: function() {
             var callbacks = this.$onExtended,
@@ -5420,7 +5432,6 @@ var noArgs = [],
 
         /**
          * @private
-         * @param config
          */
         onExtended: function(fn, scope) {
             this.$onExtended.push({
@@ -6720,7 +6731,7 @@ var noArgs = [],
         Class.triggerExtended.apply(Class, arguments);
 
         if (data.onClassExtended) {
-            Class.onExtended(data.onClassExtended);
+            Class.onExtended(data.onClassExtended, Class);
             delete data.onClassExtended;
         }
 
@@ -8864,6 +8875,17 @@ Ext.Loader = new function() {
         },
 
         /**
+         * @private
+         * @param {String} className
+         */
+        isAClassNameWithAKnownPrefix: function(className) {
+            var prefix = Loader.getPrefix(className);
+
+            // we can only say it's really a class if className is not equal to any known namespace
+            return prefix !== '' && prefix !== className;
+        },
+
+        /**
          * Loads all classes by the given names and all their direct dependencies; optionally executes the given callback function when
          * finishes, within the optional scope. This method is aliased by {@link Ext#require Ext.require} for convenience
          * @param {String/Array} expressions Can either be a string or an array of string
@@ -9990,8 +10012,8 @@ Ext.Error = Ext.extend(Error, {
      */
     toString: function(){
         var me = this,
-            className = me.className ? me.className  : '',
-            methodName = me.methodName ? '.' + me.methodName + '(): ' : '',
+            className = me.sourceClass ? me.sourceClass : '',
+            methodName = me.sourceMethod ? '.' + me.sourceMethod + '(): ' : '',
             msg = me.msg || '(No description provided)';
 
         return className + methodName + msg;

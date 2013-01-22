@@ -396,6 +396,17 @@ Ext.Loader = new function() {
             return deepestPrefix;
         },
 
+<span id='Ext-Loader-method-isAClassNameWithAKnownPrefix'>        /**
+</span>         * @private
+         * @param {String} className
+         */
+        isAClassNameWithAKnownPrefix: function(className) {
+            var prefix = Loader.getPrefix(className);
+
+            // we can only say it's really a class if className is not equal to any known namespace
+            return prefix !== '' &amp;&amp; prefix !== className;
+        },
+
 <span id='Ext-Loader-method-require'>        /**
 </span>         * Loads all classes by the given names and all their direct dependencies; optionally executes the given callback function when
          * finishes, within the optional scope. This method is aliased by {@link Ext#require Ext.require} for convenience

@@ -7,8 +7,8 @@ Ext.require([
 ]);
 
 Ext.onReady(function(){
-    var floater, constrainedWin, constrainedWin2;
-
+    var constrainedWin, constrainedWin2;
+    
     Ext.util.Region.override({
         colors: ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'],
         nextColor: 0,

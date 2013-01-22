@@ -79,6 +79,14 @@ Ext.require('Ext.util.DelayedTask', function() {
      * @private
      */
     Ext.util.Event = Ext.extend(Object, (function() {
+        function createTargeted(handler, listener, o, scope){
+            return function(){
+                if (o.target === arguments[0]){
+                    handler.apply(scope, arguments);
+                }
+            };
+        }
+
         function createBuffered(handler, listener, o, scope) {
             listener.task = new Ext.util.DelayedTask();
             return function() {
@@ -165,6 +173,9 @@ Ext.require('Ext.util.DelayedTask', function() {
                 // because the event removal that the single listener does destroys the listener's DelayedTask(s)
                 if (o.single) {
                     handler = createSingle(handler, listener, o, scope);
+                }
+                if (o.target) {
+                    handler = createTargeted(handler, listener, o, scope);
                 }
                 if (o.delay) {
                     handler = createDelayed(handler, listener, o, scope);
@@ -912,7 +923,7 @@ Ext.EventManager = new function() {
         createListenerWrap : function(dom, ename, fn, scope, options) {
             options = options || {};
 
-            var f, gen, wrap = function(e, args) {
+            var f, gen, escapeRx = /\\/g, wrap = function(e, args) {
                 // Compile the implementation upon first firing
                 if (!gen) {
                     f = ['if(!' + Ext.name + ') {return;}'];
@@ -924,7 +935,9 @@ Ext.EventManager = new function() {
                     }
 
                     if (options.delegate) {
-                        f.push('var t = e.getTarget("' + options.delegate + '", this);');
+                        // double up '\' characters so escape sequences survive the
+                        // string-literal translation
+                        f.push('var t = e.getTarget("' + (options.delegate + '').replace(escapeRx, '\\\\') + '", this);');
                         f.push('if(!t) {return;}');
                     } else {
                         f.push('var t = e.target;');
@@ -1128,13 +1141,15 @@ Ext.EventManager = new function() {
             return EventManager.resolveTextNode(event.target || event.srcElement);
         },
 
+        // technically no need to browser sniff this, however it makes
+        // no sense to check this every time, for every event, whether
+        // the string is equal.
         /**
          * Resolve any text nodes accounting for browser differences.
          * @private
          * @param {HTMLElement} node The node
          * @return {HTMLElement} The resolved node
          */
-        // technically no need to browser sniff this, however it makes no sense to check this every time, for every event, whether the string is equal.
         resolveTextNode: Ext.isGecko ?
             function(node) {
                 if (!node) {
@@ -3746,12 +3761,13 @@ Ext.dom.AbstractElement.addInheritableStatics({
         },
 
         getXY: function(el) {
-            var bd = (doc.body || doc.documentElement),
+            var bd = doc.body,
+                docEl = doc.documentElement,
                 leftBorder = 0,
                 topBorder = 0,
                 ret = [0,0],
                 round = Math.round,
-                b,
+                box,
                 scroll;
 
             el = Ext.getDom(el);
@@ -3761,19 +3777,19 @@ Ext.dom.AbstractElement.addInheritableStatics({
                 // on element not attached to dom
                 if (Ext.isIE) {
                     try {
-                        b = el.getBoundingClientRect();
-                        // In some versions of IE, the html element will have a 1px border that gets included, so subtract it off
-                        topBorder = bd.clientTop;
-                        leftBorder = bd.clientLeft;
+                        box = el.getBoundingClientRect();
+                        // In some versions of IE, the documentElement (HTML element) will have a 2px border that gets included, so subtract it off
+                        topBorder = docEl.clientTop || bd.clientTop;
+                        leftBorder = docEl.clientLeft || bd.clientLeft;
                     } catch (ex) {
-                        b = { left: 0, top: 0 };
+                        box = { left: 0, top: 0 };
                     }
                 } else {
-                    b = el.getBoundingClientRect();
+                    box = el.getBoundingClientRect();
                 }
 
                 scroll = fly(document).getScroll();
-                ret = [round(b.left + scroll.left - leftBorder), round(b.top + scroll.top - topBorder)];
+                ret = [round(box.left + scroll.left - leftBorder), round(box.top + scroll.top - topBorder)];
             }
             return ret;
         },
@@ -6577,6 +6593,14 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 lmode = path.match(modeRe),
                 tokenMatch, matched, j, t, m;
 
+            hasEscapes = (path.indexOf('\\') > -1);
+            if (hasEscapes) {
+                path = path
+                    .replace(shortHex, shortToLongHex)
+                    .replace(nonHex, charToLongHex)
+                    .replace(escapes, '\\\\');  // double the '\' for js compilation
+            }
+
             if(lmode && lmode[1]){
                 fn[fn.length] = 'mode="'+lmode[1].replace(trimRe, "")+'";';
                 path = path.replace(lmode[1], "");
@@ -6661,13 +6685,6 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
         jsSelect: function(path, root, type){
             // set root to doc if not specified.
             root = root || document;
-
-            if (hasEscapes = (path.indexOf('\\') > -1)) {
-                path = path
-                    .replace(shortHex, shortToLongHex)
-                    .replace(nonHex, charToLongHex)
-                    .replace(escapes, '\\\\');  // double the '\' for js compilation
-            }
 
             if(typeof root == "string"){
                 root = document.getElementById(root);
@@ -7427,15 +7444,17 @@ var HIDDEN = 'hidden',
             visFly = new Element.Fly();
         }
 
-        for (; dom !== stopNode; dom = dom.parentNode) {
-            // We're invisible if we hit a nonexistent parentNode or computed style visibility:hidden or display:none
-            if (!dom || (visFly.attach(dom)).isStyle(VISIBILITY, HIDDEN) || visFly.isStyle(DISPLAY, NONE)) {
+        while (dom !== stopNode) {
+            // We're invisible if we hit a nonexistent parentNode or a document
+            // fragment or computed style visibility:hidden or display:none
+            if (!dom || dom.nodeType === 11 || (visFly.attach(dom)).isStyle(VISIBILITY, HIDDEN) || visFly.isStyle(DISPLAY, NONE)) {
                 return false;
             }
             // Quit now unless we are being asked to check parent nodes.
             if (!deep) {
                 break;
             }
+            dom = dom.parentNode;
         }
         return true;
     },
@@ -9759,8 +9778,20 @@ Ext.dom.Element.override({
      * @return {Ext.Element} The Element
      */
     fadeIn: function(o) {
-        this.animate(Ext.apply({}, o, {
-            opacity: 1
+        var me = this;
+        me.animate(Ext.apply({}, o, {
+            opacity: 1,
+            internalListeners: {
+                beforeanimate: function(anim){
+                    // restore any visibility/display that may have 
+                    // been applied by a fadeout animation
+                    if (me.isStyle('display', 'none')) {
+                        me.setDisplayed('');
+                    } else {
+                        me.show();
+                    } 
+                }
+            }
         }));
         return this;
     },
@@ -9790,7 +9821,7 @@ Ext.dom.Element.override({
      */
     fadeOut: function(o) {
         var me = this;
-        me.animate(Ext.applyIf(o || {}, {
+        o = Ext.apply({
             opacity: 0,
             internalListeners: {
                 afteranimate: function(anim){
@@ -9804,7 +9835,8 @@ Ext.dom.Element.override({
                     }         
                 }
             }
-        }));
+        }, o);
+        me.animate(o);
         return me;
     },
 
@@ -10907,7 +10939,9 @@ if (!view || !view.getComputedStyle) {
                         out = '';
                     }
                 } else {
-                    out = style[camel];
+                    // EXTJSIV-5657 - In IE9 quirks mode there is a chance that VML root element 
+                    // has neither `currentStyle` nor `style`. Return '' this case.
+                    out = style ? style[camel] : '';
                 }
             }
 
